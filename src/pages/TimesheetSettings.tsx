@@ -611,13 +611,18 @@ export default function TimesheetSettings() {
 
                   {/* Digests */}
                   <div className="space-y-4">
-                    <h4 className="font-medium">Digests</h4>
+                    <div>
+                      <h4 className="font-medium">Approvals Digest</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        A scheduled summary of pending timesheet approvals — sent to the roles you choose.
+                      </p>
+                    </div>
                     <div className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="font-medium">Enable Daily Digest</p>
-                          <p className="text-sm text-muted-foreground">Summary of pending approvals each morning</p>
+                          <p className="font-medium">Enable digest</p>
+                          <p className="text-sm text-muted-foreground">Aggregate reminders instead of one notification per timesheet.</p>
                         </div>
                       </div>
                       <Switch
@@ -631,27 +636,101 @@ export default function TimesheetSettings() {
                     {notifications.dailyDigest && (
                       <div className="grid gap-4 md:grid-cols-2 pl-4">
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Staff digest time</Label>
-                          <Input
-                            type="time"
-                            value={notifications.digestTime}
-                            onChange={(e) => {
-                              setNotifications({ ...notifications, digestTime: e.target.value });
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Frequency</Label>
+                          <Select
+                            value={notifications.digestFrequency}
+                            onValueChange={(v: 'daily' | 'weekly' | 'pay_cycle') => {
+                              setNotifications({ ...notifications, digestFrequency: v });
                               setHasUnsavedChanges(true);
                             }}
-                          />
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="pay_cycle">Once per pay cycle</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {notifications.digestFrequency === 'daily' && 'Sent every working day at the time below.'}
+                            {notifications.digestFrequency === 'weekly' && 'Sent once a week on the selected day.'}
+                            {notifications.digestFrequency === 'pay_cycle' && 'Sent once per pay period — typically the day before pay cut-off.'}
+                          </p>
                         </div>
                         <div>
-                          <Label className="text-xs text-muted-foreground mb-1.5 block">Manager digest time</Label>
-                          <Input
-                            type="time"
-                            value={notifications.managerDigestTime}
-                            onChange={(e) => {
-                              setNotifications({ ...notifications, managerDigestTime: e.target.value });
-                              setHasUnsavedChanges(true);
-                            }}
-                          />
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Recipients</Label>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" className="w-full justify-between font-normal">
+                                <span className="truncate text-sm">
+                                  {(() => {
+                                    const sel = NOTIF_ROLES.filter(r => notifications.digestRecipients[r.key]);
+                                    if (sel.length === 0) return 'No recipients';
+                                    if (sel.length <= 2) return sel.map(r => r.short).join(', ');
+                                    return `${sel.length} roles selected`;
+                                  })()}
+                                </span>
+                                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56">
+                              <DropdownMenuLabel className="text-xs">Send digest to</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {NOTIF_ROLES.map((r) => (
+                                <DropdownMenuCheckboxItem
+                                  key={r.key}
+                                  checked={notifications.digestRecipients[r.key]}
+                                  onCheckedChange={(checked) => {
+                                    setNotifications({
+                                      ...notifications,
+                                      digestRecipients: { ...notifications.digestRecipients, [r.key]: !!checked },
+                                    });
+                                    setHasUnsavedChanges(true);
+                                  }}
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  {r.label}
+                                </DropdownMenuCheckboxItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
+                        {notifications.digestFrequency === 'weekly' && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Send on</Label>
+                            <Select
+                              value={notifications.digestWeekday}
+                              onValueChange={(v: any) => {
+                                setNotifications({ ...notifications, digestWeekday: v });
+                                setHasUnsavedChanges(true);
+                              }}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="mon">Monday</SelectItem>
+                                <SelectItem value="tue">Tuesday</SelectItem>
+                                <SelectItem value="wed">Wednesday</SelectItem>
+                                <SelectItem value="thu">Thursday</SelectItem>
+                                <SelectItem value="fri">Friday</SelectItem>
+                                <SelectItem value="sat">Saturday</SelectItem>
+                                <SelectItem value="sun">Sunday</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        {notifications.digestFrequency !== 'pay_cycle' && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Send time</Label>
+                            <Input
+                              type="time"
+                              value={notifications.digestTime}
+                              onChange={(e) => {
+                                setNotifications({ ...notifications, digestTime: e.target.value });
+                                setHasUnsavedChanges(true);
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
