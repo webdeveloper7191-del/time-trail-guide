@@ -890,31 +890,6 @@ export default function TimesheetSettings() {
                     )}
                   </div>
 
-                  <Separator />
-
-                  {/* Integrations */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Integrations</h4>
-
-
-
-
-                    <div className="p-4 rounded-lg border space-y-2">
-                      <Label className="text-sm font-medium">Webhook URL (optional)</Label>
-                      <Input
-                        type="url"
-                        placeholder="https://example.com/webhooks/timesheets"
-                        value={notifications.webhookUrl}
-                        onChange={(e) => {
-                          setNotifications({ ...notifications, webhookUrl: e.target.value });
-                          setHasUnsavedChanges(true);
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        POST JSON payloads for every enabled event. Useful for custom integrations.
-                      </p>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
 
