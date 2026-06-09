@@ -192,11 +192,16 @@ export default function TimesheetSettings() {
     emailOnRejection: true,
     webhookUrl: '',
     dailyDigest: true,
-    digestFrequency: 'daily' as 'daily' | 'weekly' | 'pay_cycle',
+    digestFrequency: 'weekly' as 'weekly' | 'pay_cycle',
     digestWeekday: 'mon' as 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun',
+    payCycleSendDay: 'last_day' as 'last_day' | 'day_before_cutoff' | 'first_day_next',
     digestRecipients: rolesOf('direct_manager', 'senior_manager') as NotifRecipients,
     digestTime: '09:00',
     managerDigestTime: '17:00',
+    // Auto-generate timesheets from clock-in data when staff don't submit
+    autoGenerateFromClockData: true,
+    autoGenerateAfterHours: 24,
+    autoGenerateFlag: 'warning' as 'info' | 'warning' | 'critical',
     quietHoursEnabled: false,
     quietHoursStart: '20:00',
     quietHoursEnd: '07:00',
@@ -475,9 +480,76 @@ export default function TimesheetSettings() {
                 onDirty={() => setHasUnsavedChanges(true)}
               />
 
+              {/* Auto-generate timesheets from clock-in data */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Auto-generate Timesheets from Clock Data
+                  </CardTitle>
+                  <CardDescription>
+                    If a staff member hasn't submitted their timesheet, automatically build one from their clock-in / clock-out events so payroll and approvals aren't blocked.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border">
+                    <div>
+                      <p className="font-medium">Enable auto-generation</p>
+                      <p className="text-sm text-muted-foreground">
+                        Generated timesheets are flagged so approvers know they came from clock data, not staff submission.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifications.autoGenerateFromClockData}
+                      onCheckedChange={(checked) => {
+                        setNotifications({ ...notifications, autoGenerateFromClockData: checked });
+                        setHasUnsavedChanges(true);
+                      }}
+                    />
+                  </div>
+                  {notifications.autoGenerateFromClockData && (
+                    <div className="grid gap-4 md:grid-cols-2 pl-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">Generate after (hours past shift end)</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={168}
+                          value={notifications.autoGenerateAfterHours}
+                          onChange={(e) => {
+                            setNotifications({ ...notifications, autoGenerateAfterHours: Number(e.target.value) || 0 });
+                            setHasUnsavedChanges(true);
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Wait this long after the shift ends before auto-building from clock data.
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">Flag severity</Label>
+                        <Select
+                          value={notifications.autoGenerateFlag}
+                          onValueChange={(v: 'info' | 'warning' | 'critical') => {
+                            setNotifications({ ...notifications, autoGenerateFlag: v });
+                            setHasUnsavedChanges(true);
+                          }}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="info">Info — note on the timesheet</SelectItem>
+                            <SelectItem value="warning">Warning — approver review required</SelectItem>
+                            <SelectItem value="critical">Critical — block auto-approval</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Controls how strongly the generated timesheet is flagged for review.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-
-              {/* Notifications */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -639,23 +711,26 @@ export default function TimesheetSettings() {
                           <Label className="text-xs text-muted-foreground mb-1.5 block">Frequency</Label>
                           <Select
                             value={notifications.digestFrequency}
-                            onValueChange={(v: 'daily' | 'weekly' | 'pay_cycle') => {
+                            onValueChange={(v: 'weekly' | 'pay_cycle') => {
                               setNotifications({ ...notifications, digestFrequency: v });
                               setHasUnsavedChanges(true);
                             }}
                           >
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="daily">Daily</SelectItem>
                               <SelectItem value="weekly">Weekly</SelectItem>
                               <SelectItem value="pay_cycle">Once per pay cycle</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {notifications.digestFrequency === 'daily' && 'Sent every working day at the time below.'}
                             {notifications.digestFrequency === 'weekly' && 'Sent once a week on the selected day.'}
-                            {notifications.digestFrequency === 'pay_cycle' && 'Sent once per pay period — typically the day before pay cut-off.'}
+                            {notifications.digestFrequency === 'pay_cycle' && 'Sent once per pay period. For fortnightly cycles it sends every other week aligned to your pay-period end date — not on a fixed weekday. For monthly cycles, once per month.'}
                           </p>
+                          {notifications.digestFrequency === 'pay_cycle' && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              If a staff member has not submitted their timesheet by the send time, the digest falls back to <strong>clock-in / clock-out data</strong> so approvers still see hours worked.
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground mb-1.5 block">Recipients</Label>
@@ -718,19 +793,39 @@ export default function TimesheetSettings() {
                             </Select>
                           </div>
                         )}
-                        {notifications.digestFrequency !== 'pay_cycle' && (
+                        {notifications.digestFrequency === 'pay_cycle' && (
                           <div>
-                            <Label className="text-xs text-muted-foreground mb-1.5 block">Send time</Label>
-                            <Input
-                              type="time"
-                              value={notifications.digestTime}
-                              onChange={(e) => {
-                                setNotifications({ ...notifications, digestTime: e.target.value });
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Send on</Label>
+                            <Select
+                              value={notifications.payCycleSendDay}
+                              onValueChange={(v: 'last_day' | 'day_before_cutoff' | 'first_day_next') => {
+                                setNotifications({ ...notifications, payCycleSendDay: v });
                                 setHasUnsavedChanges(true);
                               }}
-                            />
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="day_before_cutoff">Day before pay cut-off</SelectItem>
+                                <SelectItem value="last_day">Last day of pay period</SelectItem>
+                                <SelectItem value="first_day_next">First day of next pay period</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Aligned to the pay cycle configured in Payroll settings.
+                            </p>
                           </div>
                         )}
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1.5 block">Send time</Label>
+                          <Input
+                            type="time"
+                            value={notifications.digestTime}
+                            onChange={(e) => {
+                              setNotifications({ ...notifications, digestTime: e.target.value });
+                              setHasUnsavedChanges(true);
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
