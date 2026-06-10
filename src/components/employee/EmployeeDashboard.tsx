@@ -319,6 +319,16 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                     <LogIn className="h-3.5 w-3.5" /> Clock In
                   </Button>
                 )}
+                <Button
+                  onClick={() => setExceptionDialogOpen(true)}
+                  variant="outline" size="sm"
+                  className="gap-2 border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                >
+                  <AlertTriangle className="h-3.5 w-3.5" /> Raise exception
+                  {raisedExceptions.length > 0 && (
+                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{raisedExceptions.length}</Badge>
+                  )}
+                </Button>
               </div>
             </div>
             {/* Break Tracker */}
