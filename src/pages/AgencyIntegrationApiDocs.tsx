@@ -256,6 +256,9 @@ const AgencyIntegrationApiDocs: React.FC = () => {
             <h1 className="text-xl font-semibold tracking-tight">Agency Integration API</h1>
             <p className="text-sm text-muted-foreground">Request &amp; response contracts for integrating 3rd-party staffing agency platforms.</p>
           </div>
+          <Button size="sm" onClick={() => setDispatchOpen(true)}>
+            <Send className="h-4 w-4 mr-1.5" /> Dispatch shift
+          </Button>
           <div className="relative w-72">
             <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search endpoints…" className="pl-8 h-9" />
