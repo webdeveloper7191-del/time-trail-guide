@@ -12,6 +12,9 @@ import {
   agencyApiCommonHeaders,
   agencyApiErrorEnvelope,
   agencyApiWebhookNotes,
+  agencyWebhookDeliveryHeaders,
+  agencyWebhookRetrySchedule,
+  agencyWebhookExpectedResponse,
   type ApiEndpoint,
   type ApiField,
 } from '@/data/agencyIntegrationApiSpec';
