@@ -9,11 +9,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, addDays, parseISO } from 'date-fns';
 import { formatTime12h } from '@/lib/timeFormat';
+import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
 
 interface AddTimesheetPanelProps {
   open: boolean;
