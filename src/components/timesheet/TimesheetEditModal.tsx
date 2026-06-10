@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Timesheet, ClockEntry, BreakEntry } from '@/types/timesheet';
+import { Timesheet, ClockEntry, BreakEntry, TimesheetException } from '@/types/timesheet';
 import { AppliedAllowance, AwardType } from '@/types/allowances';
 import { AllowanceEditor } from './AllowanceEditor';
+import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
 import { format } from 'date-fns';
 import {
   Sheet,
@@ -37,8 +38,10 @@ import {
   Clock,
   Coffee,
   AlertCircle,
+  AlertTriangle,
   Calendar,
   Briefcase,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
