@@ -1316,7 +1316,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     direction: 'webhook',
     auth: 'HMAC X-Lovable-Signature',
     summary: 'shift_request.accepted — candidate confirmed for shift',
-    description: 'Fired when one of the agency\\'s submitted candidates is accepted by the client (managed mode) or auto-confirmed (express mode). Carries the resulting placement id. Multiple events fire for multi-position shifts — one per filled seat.',
+    description: "Fired when one of the agency's submitted candidates is accepted by the client (managed mode) or auto-confirmed (express mode). Carries the resulting placement id. Multiple events fire for multi-position shifts — one per filled seat.",
     webhook: {
       eventName: 'shift_request.accepted',
       deliveryHeaders: agencyWebhookDeliveryHeaders,
