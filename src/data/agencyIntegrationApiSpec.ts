@@ -292,187 +292,98 @@ export const agencyApiSpec: ApiEndpoint[] = [
     ],
   },
 
-  // ============ AGENCY PROFILE ============
-  // Note: agency onboarding (registering the agency, issuing OAuth credentials,
-  // configuring webhookUrl + webhookSecret) is performed manually by the platform
-  // admin out of band. There is no public registration endpoint.
-
-
-
+  // ============ SHIFT DISPATCH (Platform → selected agencies) ============
+  // Agencies are onboarded manually by the platform admin (out of band).
+  // The integration is consumption-only: agencies receive shift requests via
+  // webhook and respond through the Shift Requests / Placements / Timesheets / Invoices APIs.
   {
-    id: 'agency-get',
-    group: 'Agency Profile',
-    method: 'GET',
-    path: '/v1/agencies/{agencyId}',
-    direction: 'outbound',
-    auth: 'Bearer',
-    summary: 'Retrieve agency profile, compliance score & metrics',
-    description: 'Returns the full agency record including compliance documents, rate cards, fill rate and reliability score.',
-    pathParams: [{ name: 'agencyId', type: 'string', required: true, description: 'Agency identifier.', example: 'agy_01HXYZ…' }],
-    responseBody: [
-      { name: 'id', type: 'string', description: 'Agency id.' },
-      { name: 'name', type: 'string', description: 'Legal name.' },
-      { name: 'status', type: 'enum', description: 'pending | active | suspended | inactive' },
-      { name: 'complianceScore', type: 'integer (0-100)', description: 'Aggregate compliance score.' },
-      { name: 'fillRate', type: 'number (0-100)', description: 'Percentage of requested shifts filled.' },
-      { name: 'avgTimeToFill', type: 'integer (minutes)', description: 'Average time-to-fill.' },
-      { name: 'reliabilityScore', type: 'integer (0-100)', description: 'Show-rate based score.' },
-      { name: 'complianceDocuments', type: 'object[]', description: 'See ComplianceDocument schema.' },
-      { name: 'rateCards', type: 'object[]', description: 'See RateCard schema.' },
-    ],
-    responseSchema: {
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      required: ['id', 'name', 'status', 'createdAt', 'updatedAt'],
-      properties: {
-        id: { type: 'string' },
-        name: { type: 'string' },
-        tradingName: { type: 'string' },
-        abn: { type: 'string' },
-        status: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
-        address: addressSchema,
-        complianceScore: { type: 'integer', minimum: 0, maximum: 100 },
-        fillRate: { type: 'number', minimum: 0, maximum: 100 },
-        avgTimeToFill: { type: 'integer', minimum: 0 },
-        reliabilityScore: { type: 'integer', minimum: 0, maximum: 100 },
-        complianceDocuments: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['id', 'type', 'name', 'issueDate', 'expiryDate', 'status'],
-            properties: {
-              id: { type: 'string' },
-              type: { type: 'string', enum: ['abn', 'insurance', 'licence', 'certification', 'policy', 'other'] },
-              name: { type: 'string' },
-              documentNumber: { type: 'string' },
-              issueDate: isoDate,
-              expiryDate: isoDate,
-              status: { type: 'string', enum: ['valid', 'expiring_soon', 'expired', 'missing'] },
-              fileUrl: { type: 'string', format: 'uri' },
-              uploadedAt: isoDateTime,
-              verifiedAt: { ...isoDateTime, nullable: true },
-              verifiedBy: { type: 'string' },
-            },
-          },
-        },
-        rateCards: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['id', 'roleName', 'baseRate', 'effectiveFrom'],
-            properties: {
-              id: { type: 'string' },
-              roleName: { type: 'string' },
-              baseRate: moneySchema,
-              casualLoading: { type: 'number', minimum: 0, maximum: 1 },
-              weekendRate: moneySchema,
-              publicHolidayRate: moneySchema,
-              overtimeRate: moneySchema,
-              nightShiftRate: moneySchema,
-              effectiveFrom: isoDate,
-              effectiveTo: { ...isoDate, nullable: true },
-            },
-          },
-        },
-        createdAt: isoDateTime,
-        updatedAt: isoDateTime,
-      },
-    },
-    responseExample: `{
-  "id": "agy_01HXYZ…",
-  "name": "Bright Staffing Pty Ltd",
-  "status": "active",
-  "complianceScore": 96,
-  "fillRate": 87.4,
-  "avgTimeToFill": 42,
-  "reliabilityScore": 92,
-  "complianceDocuments": [
-    { "id":"doc_88f2","type":"insurance","name":"Public Liability $20M",
-      "issueDate":"2026-04-01","expiryDate":"2027-03-31","status":"valid" }
-  ],
-  "rateCards": [
-    { "id":"rc_1","roleName":"Educator – Diploma","baseRate":38.50,
-      "casualLoading":0.25,"weekendRate":48.13,"publicHolidayRate":96.25,
-      "effectiveFrom":"2026-01-01" }
-  ]
-}`,
-  },
-
-  // ============ COMPLIANCE ============
-  {
-    id: 'compliance-upload',
-    group: 'Compliance',
+    id: 'shift-dispatch',
+    group: 'Shift Dispatch',
     method: 'POST',
-    path: '/v1/agencies/{agencyId}/compliance-documents',
+    path: '/v1/shift-requests/{shiftRequestId}/dispatch',
     direction: 'inbound',
-    auth: 'Bearer (agency)',
-    summary: 'Upload or update a compliance document',
-    description: 'Agency uploads insurance certificates, licences, policies, etc. The platform verifies expiry and recomputes complianceScore.',
-    pathParams: [{ name: 'agencyId', type: 'string', required: true, description: 'Agency id.' }],
+    auth: 'Bearer (tenant admin scope)',
+    summary: 'Push a shift request to one or more selected agencies',
+    description: 'Targets specific agencies by id rather than broadcasting to all. Each selected agency receives a `shift.broadcast` webhook with the same eventId so the agency can de-duplicate. Returns per-agency delivery status.',
+    pathParams: [{ name: 'shiftRequestId', type: 'string', required: true, description: 'Platform shift request id.' }],
+    requestHeaders: commonHeaders,
     requestBody: [
-      { name: 'type', type: 'enum', required: true, description: 'abn | insurance | licence | certification | policy | other' },
-      { name: 'name', type: 'string', required: true, description: 'Display name.', example: 'Public Liability Insurance' },
-      { name: 'documentNumber', type: 'string', required: false, description: 'Reference / policy number.' },
-      { name: 'issueDate', type: 'string (ISO date)', required: true, description: 'Issue date.' },
-      { name: 'expiryDate', type: 'string (ISO date)', required: true, description: 'Expiry date.' },
-      { name: 'fileUrl', type: 'string (uri)', required: true, description: 'Signed URL to the PDF/image (must be HTTPS, ≤ 25 MB).' },
-      { name: 'fileSha256', type: 'string', required: false, description: 'Hex SHA-256 hash for integrity verification.' },
+      { name: 'agencyIds', type: 'string[]', required: true, description: 'Agencies to dispatch to. 1–20 ids per call.', example: '["agy_01","agy_02"]' },
+      { name: 'fillMode', type: 'enum', required: false, description: 'Override fillMode on the broadcast: express | managed. Defaults to the shift request value.' },
+      { name: 'urgency', type: 'enum', required: false, description: 'Override urgency: standard | urgent | critical.' },
+      { name: 'slaDeadline', type: 'string (ISO-8601)', required: false, description: 'Override respond-by deadline. Must be in the future.' },
+      { name: 'allowOverfill', type: 'boolean', required: false, description: 'When true, multiple agencies may fill the same shift up to totalPositions. Default false (first-to-confirm wins).' },
+      { name: 'note', type: 'string', required: false, description: 'Free-text note relayed to agencies in the webhook (max 500 chars).' },
     ],
     requestSchema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
-      required: ['type', 'name', 'issueDate', 'expiryDate', 'fileUrl'],
+      required: ['agencyIds'],
       properties: {
-        type: { type: 'string', enum: ['abn', 'insurance', 'licence', 'certification', 'policy', 'other'] },
-        name: { type: 'string', minLength: 2, maxLength: 200 },
-        documentNumber: { type: 'string' },
-        issueDate: isoDate,
-        expiryDate: isoDate,
-        fileUrl: { type: 'string', format: 'uri', pattern: '^https://' },
-        fileSha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
-        coverageAmount: { type: 'number', minimum: 0, description: 'For insurance, the sum insured.' },
-        insurer: { type: 'string' },
-        jurisdiction: { type: 'string', description: 'State/territory the licence applies to.' },
+        agencyIds: { type: 'array', minItems: 1, maxItems: 20, uniqueItems: true, items: { type: 'string', pattern: '^agy_' } },
+        fillMode: { type: 'string', enum: ['express', 'managed'] },
+        urgency: { type: 'string', enum: ['standard', 'urgent', 'critical'] },
+        slaDeadline: isoDateTime,
+        allowOverfill: { type: 'boolean', default: false },
+        note: { type: 'string', maxLength: 500 },
       },
     },
     requestExample: `{
-  "type": "insurance",
-  "name": "Public Liability $20M",
-  "documentNumber": "PL-998877",
-  "issueDate": "2026-04-01",
-  "expiryDate": "2027-03-31",
-  "fileUrl": "https://files.brightstaff.com.au/pl-998877.pdf?sig=…",
-  "fileSha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-  "coverageAmount": 20000000,
-  "insurer": "QBE"
+  "agencyIds": ["agy_01HXYZ", "agy_02ABCD", "agy_03EFGH"],
+  "fillMode": "managed",
+  "urgency": "urgent",
+  "slaDeadline": "2026-06-14T18:00:00+10:00",
+  "allowOverfill": false,
+  "note": "Priority partners only — please respond within 2 hours."
 }`,
     responseBody: [
-      { name: 'id', type: 'string', description: 'Document id.' },
-      { name: 'status', type: 'enum', description: 'valid | expiring_soon | expired | missing' },
-      { name: 'uploadedAt', type: 'string (ISO-8601)', description: 'Server timestamp.' },
-      { name: 'verifiedAt', type: 'string|null', description: 'When platform verified it (null until reviewed).' },
+      { name: 'shiftRequestId', type: 'string', description: 'Echo of the target shift request id.' },
+      { name: 'dispatchId', type: 'string', description: 'Identifier for this dispatch batch (use to query webhook deliveries).' },
+      { name: 'dispatchedAt', type: 'string (ISO-8601)', description: 'Server timestamp.' },
+      { name: 'results', type: 'object[]', description: '[{ agencyId, status, deliveryId, reason }]' },
     ],
     responseSchema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       type: 'object',
-      required: ['id', 'status', 'uploadedAt'],
+      required: ['shiftRequestId', 'dispatchId', 'dispatchedAt', 'results'],
       properties: {
-        id: { type: 'string' },
-        status: { type: 'string', enum: ['valid', 'expiring_soon', 'expired', 'missing'] },
-        uploadedAt: isoDateTime,
-        verifiedAt: { ...isoDateTime, nullable: true },
-        verifiedBy: { type: 'string', nullable: true },
-        newComplianceScore: { type: 'integer', minimum: 0, maximum: 100 },
+        shiftRequestId: { type: 'string' },
+        dispatchId: { type: 'string' },
+        dispatchedAt: isoDateTime,
+        results: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['agencyId', 'status'],
+            properties: {
+              agencyId: { type: 'string' },
+              status: { type: 'string', enum: ['queued', 'delivered', 'skipped', 'failed'] },
+              deliveryId: { type: 'string', description: 'Webhook delivery id (when queued / delivered).' },
+              reason: { type: 'string', description: 'Populated when status = skipped | failed (e.g. "agency_inactive", "no_matching_coverage", "webhook_unreachable").' },
+            },
+          },
+        },
       },
     },
     responseExample: `{
-  "id":"doc_88f2",
-  "status":"valid",
-  "uploadedAt":"2026-06-10T09:20:11Z",
-  "verifiedAt":null,
-  "newComplianceScore":96
+  "shiftRequestId": "sr_01HXYZ",
+  "dispatchId": "dsp_9f2a",
+  "dispatchedAt": "2026-06-10T09:00:00+10:00",
+  "results": [
+    { "agencyId":"agy_01HXYZ","status":"queued","deliveryId":"whd_aa11" },
+    { "agencyId":"agy_02ABCD","status":"queued","deliveryId":"whd_bb22" },
+    { "agencyId":"agy_03EFGH","status":"skipped","reason":"no_matching_coverage" }
+  ]
 }`,
+    errorCodes: [
+      { code: '404 shift_not_found', description: 'shiftRequestId does not exist.' },
+      { code: '409 shift_already_filled', description: 'Shift is already filled and not in overfill mode.' },
+      { code: '410 shift_closed', description: 'Shift SLA has expired or the shift was cancelled.' },
+      { code: '422 invalid_agencies', description: 'One or more agencyIds are unknown or inactive (see errors[]).' },
+    ],
   },
+
+
 
   // ============ SHIFT REQUESTS (Broadcast → Agency) ============
   {
