@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -80,21 +80,21 @@ export function RaiseExceptionDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0">
+        <SheetHeader className="px-6 py-4 border-b border-border">
+          <SheetTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             Raise exception
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription className="text-xs">
             {contextLabel
               ? `Flag this entry (${contextLabel}) for review.`
               : 'Flag this timesheet for human review before approval.'}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div className="space-y-1.5">
             <Label className="text-xs">Reason</Label>
             <Select value={reason} onValueChange={(v) => setReason(v as ExceptionReason)}>
@@ -112,20 +112,23 @@ export function RaiseExceptionDialog({
               placeholder="Explain briefly what happened..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="min-h-[90px]"
+              className="min-h-[140px]"
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            This routes to the approver tier configured under{' '}
-            <em>Workflow &amp; Notifications → Manual exception raised</em>.
-          </p>
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+            <p className="text-[11px] text-muted-foreground">
+              This routes to the approver tier configured under{' '}
+              <em>Workflow &amp; Notifications → Manual exception raised</em>. The timesheet
+              will be locked from auto-approval until reviewed.
+            </p>
+          </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Raise exception</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <SheetFooter className="px-6 py-4 border-t border-border flex gap-2">
+          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+          <Button onClick={handleSubmit} className="flex-1">Raise exception</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

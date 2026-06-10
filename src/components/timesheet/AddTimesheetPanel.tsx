@@ -9,11 +9,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, addDays, parseISO } from 'date-fns';
 import { formatTime12h } from '@/lib/timeFormat';
+import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
 
 interface AddTimesheetPanelProps {
   open: boolean;
@@ -43,16 +44,6 @@ const emptyEntry = (): EntryForm => ({
   exceptionNote: '',
 });
 
-const EXCEPTION_REASONS: { value: ExceptionReason; label: string }[] = [
-  { value: 'missed_clock_in', label: 'Missed clock-in' },
-  { value: 'missed_clock_out', label: 'Missed clock-out' },
-  { value: 'missed_break', label: 'Missed / short break' },
-  { value: 'unpaid_overtime', label: 'Unpaid overtime worked' },
-  { value: 'equipment_issue', label: 'Equipment / kiosk issue' },
-  { value: 'incorrect_rate', label: 'Incorrect pay rate' },
-  { value: 'shift_cut_short', label: 'Shift cut short' },
-  { value: 'other', label: 'Other' },
-];
 
 export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelProps) {
   const [employeeName, setEmployeeName] = useState('');
@@ -63,6 +54,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   const [weekStartDate, setWeekStartDate] = useState('');
   const [entries, setEntries] = useState<EntryForm[]>([emptyEntry()]);
   const [notes, setNotes] = useState('');
+  const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
 
   const resetForm = () => {
     setEmployeeName('');
@@ -333,46 +325,41 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                     <Input className="h-8 text-xs" placeholder="Optional notes" value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
                   </div>
 
-                  {/* Exception block — required when a clock time is missing, otherwise optional */}
-                  {(entryNeedsException(entry) || entry.exceptionReason) && (
-                    <div className="space-y-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
-                      <div className="flex items-center justify-between">
+                  {/* Exception summary / trigger */}
+                  {entry.exceptionReason && entry.exceptionNote ? (
+                    <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                          <Label className="text-[11px] font-semibold text-amber-700">
-                            {entryNeedsException(entry) ? 'Exception required' : 'Exception (optional)'}
-                          </Label>
-                        </div>
-                        {entryNeedsException(entry) && (
+                          <span className="text-[11px] font-semibold text-amber-700">
+                            {EXCEPTION_REASONS.find(r => r.value === entry.exceptionReason)?.label ?? 'Exception'}
+                          </span>
                           <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
-                            Missing clock time
+                            Raised
                           </Badge>
-                        )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{entry.exceptionNote}</p>
                       </div>
-                      <Select
-                        value={entry.exceptionReason || ''}
-                        onValueChange={(v) => updateEntry(i, 'exceptionReason', v as ExceptionReason)}
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Select reason..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {EXCEPTION_REASONS.map(r => (
-                            <SelectItem key={r.value} value={r.value} className="text-xs">{r.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Textarea
-                        placeholder="Explain what happened (required for approval)..."
-                        className="text-xs min-h-[52px]"
-                        value={entry.exceptionNote || ''}
-                        onChange={e => updateEntry(i, 'exceptionNote', e.target.value)}
-                      />
-                      <p className="text-[10px] text-muted-foreground">
-                        This routes the timesheet to the approver tier configured under
-                        <em> Workflow &amp; Notifications → Manual exception raised</em>.
-                      </p>
+                      <div className="flex items-center gap-1">
+                        <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2"
+                          onClick={() => setExceptionEntryIndex(i)}>
+                          Edit
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => { updateEntry(i, 'exceptionReason', ''); updateEntry(i, 'exceptionNote', ''); }}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
+                  ) : (
+                    <Button
+                      type="button" variant="outline" size="sm"
+                      className={`h-7 text-xs w-full ${entryNeedsException(entry) ? 'border-amber-500/60 text-amber-700 hover:bg-amber-500/10' : ''}`}
+                      onClick={() => setExceptionEntryIndex(i)}
+                    >
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {entryNeedsException(entry) ? 'Raise exception (required — missing clock time)' : 'Raise exception'}
+                    </Button>
                   )}
                 </div>
               ))}
@@ -393,6 +380,28 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
           <Button onClick={handleSubmit} className="flex-1">Add Timesheet</Button>
         </SheetFooter>
       </SheetContent>
+      <RaiseExceptionDialog
+        open={exceptionEntryIndex !== null}
+        onClose={() => setExceptionEntryIndex(null)}
+        onSubmit={(exc) => {
+          if (exceptionEntryIndex !== null) {
+            updateEntry(exceptionEntryIndex, 'exceptionReason', exc.reason);
+            updateEntry(exceptionEntryIndex, 'exceptionNote', exc.note);
+          }
+        }}
+        raisedBy="manager"
+        contextLabel={exceptionEntryIndex !== null ? `Entry ${exceptionEntryIndex + 1}` : undefined}
+        initial={
+          exceptionEntryIndex !== null && entries[exceptionEntryIndex]?.exceptionReason
+            ? {
+                reason: entries[exceptionEntryIndex]!.exceptionReason as ExceptionReason,
+                note: entries[exceptionEntryIndex]!.exceptionNote ?? '',
+                raisedBy: 'manager',
+                raisedAt: new Date().toISOString(),
+              }
+            : undefined
+        }
+      />
     </Sheet>
   );
 }
