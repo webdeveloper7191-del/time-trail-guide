@@ -15,8 +15,14 @@ import {
   User, Building2, Hourglass, ShieldCheck, ShieldAlert,
   GraduationCap, Target, MessageSquare, Users, Sparkles,
   ClipboardCheck, LayoutDashboard, Search, Bell, Settings as SettingsIcon,
+  Send,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
