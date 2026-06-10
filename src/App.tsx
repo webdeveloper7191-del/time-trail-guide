@@ -25,6 +25,7 @@ import FormBuilder from "./pages/FormBuilder";
 import MyTasksDashboard from "./pages/MyTasksDashboard";
 import DatabaseDocumentation from "./pages/DatabaseDocumentation";
 import SRSDocumentation from "./pages/SRSDocumentation";
+import AgencyIntegrationApiDocs from "./pages/AgencyIntegrationApiDocs";
 import LocationManagement from "./pages/LocationManagement";
 import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,7 @@ const App = () => {
                   <Route path="/my-tasks" element={<MyTasksDashboard />} />
                   <Route path="/docs/database" element={<DatabaseDocumentation />} />
                   <Route path="/docs/srs" element={<SRSDocumentation />} />
+                  <Route path="/docs/agency-api" element={<AgencyIntegrationApiDocs />} />
                   <Route path="/locations" element={<LocationManagement />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
