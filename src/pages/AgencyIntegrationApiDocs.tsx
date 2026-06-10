@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, ArrowDownToLine, ArrowUpFromLine, Webhook, Copy, Check, Send } from 'lucide-react';
+import { ArrowLeft, Search, ArrowDownToLine, ArrowUpFromLine, Webhook, Copy, Check, Send, FileDown } from 'lucide-react';
 import DispatchShiftToAgenciesDialog from '@/components/agency/DispatchShiftToAgenciesDialog';
+import { downloadAgencyApiPdf } from '@/utils/agencyApiPdf';
 import {
   agencyApiSpec,
   agencyApiCommonHeaders,
@@ -256,6 +257,9 @@ const AgencyIntegrationApiDocs: React.FC = () => {
             <h1 className="text-xl font-semibold tracking-tight">Agency Integration API</h1>
             <p className="text-sm text-muted-foreground">Request &amp; response contracts for integrating 3rd-party staffing agency platforms.</p>
           </div>
+          <Button size="sm" variant="outline" onClick={() => downloadAgencyApiPdf()}>
+            <FileDown className="h-4 w-4 mr-1.5" /> Download PDF
+          </Button>
           <Button size="sm" onClick={() => setDispatchOpen(true)}>
             <Send className="h-4 w-4 mr-1.5" /> Dispatch shift
           </Button>
@@ -298,8 +302,8 @@ const AgencyIntegrationApiDocs: React.FC = () => {
                 <CardTitle className="text-base">Base URL &amp; versioning</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p><span className="font-mono">https://api.lovable-roster.app/v1</span> — production</p>
-                <p><span className="font-mono">https://api.sandbox.lovable-roster.app/v1</span> — sandbox</p>
+                <p><span className="font-mono">https://api.rostered.ai/v1</span> — production</p>
+                <p><span className="font-mono">https://api.sandbox.rostered.ai/v1</span> — sandbox</p>
                 <p>Breaking changes are released under a new major version (<span className="font-mono">/v2</span>). Backwards-compatible additions roll out to <span className="font-mono">/v1</span> without notice.</p>
               </CardContent>
             </Card>
@@ -357,7 +361,7 @@ const AgencyIntegrationApiDocs: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-base">Signature scheme (v1)</CardTitle>
                 <CardDescription>
-                  <span className="font-mono">X-Lovable-Signature: t=&lt;unix_ts&gt;,v1=&lt;hex&gt;</span> where
+                  <span className="font-mono">X-RosteredAI-Signature: t=&lt;unix_ts&gt;,v1=&lt;hex&gt;</span> where
                   <span className="font-mono"> hex = HMAC_SHA256(webhookSecret, unix_ts + "." + rawBody)</span>.
                 </CardDescription>
               </CardHeader>
@@ -367,7 +371,7 @@ const AgencyIntegrationApiDocs: React.FC = () => {
 // Reject requests older than 5 minutes to prevent replay.
 const TOLERANCE_SECONDS = 300;
 
-export function verifyLovableSignature(rawBody, headerValue, secret) {
+export function verifyRosteredSignature(rawBody, headerValue, secret) {
   const parts = Object.fromEntries(
     headerValue.split(',').map(p => p.split('='))
   );

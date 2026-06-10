@@ -166,17 +166,17 @@ const commonHeaders: ApiField[] = [
 
 export const agencyWebhookDeliveryHeaders: ApiField[] = [
   { name: 'Content-Type', type: 'string', required: true, description: 'Always application/json; charset=utf-8.', example: 'application/json; charset=utf-8' },
-  { name: 'User-Agent', type: 'string', required: true, description: 'Identifies the platform delivery agent.', example: 'Lovable-Roster-Webhooks/1.0' },
-  { name: 'X-Lovable-Event', type: 'string', required: true, description: 'Event name (dot-namespaced).', example: 'shift.broadcast' },
-  { name: 'X-Lovable-Event-Id', type: 'string (uuid)', required: true, description: 'Unique id per logical event. Use for idempotency — duplicate ids MUST be ignored.', example: '8a4e7e10-7e1c-4f0d-9c1e-bc2f4a8b1234' },
-  { name: 'X-Lovable-Delivery-Id', type: 'string (uuid)', required: true, description: 'Unique id per delivery attempt. Differs across retries even when Event-Id is identical.' },
-  { name: 'X-Lovable-Delivery-Attempt', type: 'integer', required: true, description: 'Retry attempt number, starting at 1. Max 8.', example: 1 },
-  { name: 'X-Lovable-Timestamp', type: 'integer', required: true, description: 'Unix seconds at the moment the signature was computed. Reject requests skewed > 5 minutes.', example: 1749543600 },
-  { name: 'X-Lovable-Signature', type: 'string', required: true, description: 'Comma-separated list of versioned signatures, e.g. "t=<ts>,v1=<hex>". v1 = hex(HMAC_SHA256(secret, timestamp + "." + rawBody)).', example: 't=1749543600,v1=3f7b…' },
-  { name: 'X-Lovable-Signature-Version', type: 'string', required: true, description: 'Active signature scheme. Currently always "v1".', example: 'v1' },
-  { name: 'X-Lovable-Tenant-Id', type: 'string', required: true, description: 'Originating tenant id.', example: 'tnt_4f9a…' },
-  { name: 'X-Lovable-Agency-Id', type: 'string', required: true, description: 'Target agency id.', example: 'agy_01HXYZ…' },
-  { name: 'X-Lovable-Api-Version', type: 'string', required: true, description: 'Webhook payload schema version.', example: '2026-06-01' },
+  { name: 'User-Agent', type: 'string', required: true, description: 'Identifies the platform delivery agent.', example: 'RosteredAI-Webhooks/1.0' },
+  { name: 'X-RosteredAI-Event', type: 'string', required: true, description: 'Event name (dot-namespaced).', example: 'shift.broadcast' },
+  { name: 'X-RosteredAI-Event-Id', type: 'string (uuid)', required: true, description: 'Unique id per logical event. Use for idempotency — duplicate ids MUST be ignored.', example: '8a4e7e10-7e1c-4f0d-9c1e-bc2f4a8b1234' },
+  { name: 'X-RosteredAI-Delivery-Id', type: 'string (uuid)', required: true, description: 'Unique id per delivery attempt. Differs across retries even when Event-Id is identical.' },
+  { name: 'X-RosteredAI-Delivery-Attempt', type: 'integer', required: true, description: 'Retry attempt number, starting at 1. Max 8.', example: 1 },
+  { name: 'X-RosteredAI-Timestamp', type: 'integer', required: true, description: 'Unix seconds at the moment the signature was computed. Reject requests skewed > 5 minutes.', example: 1749543600 },
+  { name: 'X-RosteredAI-Signature', type: 'string', required: true, description: 'Comma-separated list of versioned signatures, e.g. "t=<ts>,v1=<hex>". v1 = hex(HMAC_SHA256(secret, timestamp + "." + rawBody)).', example: 't=1749543600,v1=3f7b…' },
+  { name: 'X-RosteredAI-Signature-Version', type: 'string', required: true, description: 'Active signature scheme. Currently always "v1".', example: 'v1' },
+  { name: 'X-RosteredAI-Tenant-Id', type: 'string', required: true, description: 'Originating tenant id.', example: 'tnt_4f9a…' },
+  { name: 'X-RosteredAI-Agency-Id', type: 'string', required: true, description: 'Target agency id.', example: 'agy_01HXYZ…' },
+  { name: 'X-RosteredAI-Api-Version', type: 'string', required: true, description: 'Webhook payload schema version.', example: '2026-06-01' },
 ];
 
 export const agencyWebhookRetrySchedule = [
@@ -248,7 +248,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     requestBody: [
       { name: 'grant_type', type: 'string', required: true, description: 'Must be "client_credentials".', example: 'client_credentials' },
       { name: 'scope', type: 'string', required: false, description: 'Space-separated scopes: shifts.read shifts.write candidates.read placements.write timesheets.read invoices.write analytics.read', example: 'shifts.read placements.write' },
-      { name: 'audience', type: 'string', required: false, description: 'Resource server audience. Defaults to "api.lovable-roster.app".' },
+      { name: 'audience', type: 'string', required: false, description: 'Resource server audience. Defaults to "api.rostered.ai".' },
     ],
     requestSchema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -392,7 +392,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift.broadcast — open shift dispatched to agency',
     description: 'Fired when the tenant broadcasts an open shift. Agency must respond 2xx within 5 s; matching candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates.',
     webhook: {
@@ -404,7 +404,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     },
     requestHeaders: agencyWebhookDeliveryHeaders,
     requestBody: [
-      { name: 'eventId', type: 'string (uuid)', required: true, description: 'Echo of X-Lovable-Event-Id for idempotency at the payload level.' },
+      { name: 'eventId', type: 'string (uuid)', required: true, description: 'Echo of X-RosteredAI-Event-Id for idempotency at the payload level.' },
       { name: 'eventType', type: 'string', required: true, description: 'Always "shift.broadcast".' },
       { name: 'occurredAt', type: 'string (ISO-8601)', required: true, description: 'When the event was generated.' },
       { name: 'apiVersion', type: 'string', required: true, description: 'Payload schema version.', example: '2026-06-01' },
@@ -565,7 +565,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift.cancelled — open shift withdrawn',
     description: 'Fired when a tenant cancels a shift before it has been filled. Agency should stop matching candidates immediately.',
     webhook: {
@@ -814,7 +814,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'placement.status — placement lifecycle event',
     description: 'Emitted on every transition: pending → confirmed → checked_in → completed; or → no_show / cancelled.',
     webhook: {
@@ -993,7 +993,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'timesheet.status — approval / rejection',
     webhook: {
       eventName: 'timesheet.status',
@@ -1180,7 +1180,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'invoice.status — payment / dispute update',
     webhook: {
       eventName: 'invoice.status',
@@ -1239,7 +1239,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift_request.updated — broadcast details changed',
     description: 'Fired when a tenant edits a live shift request after dispatch (time, break, rates, requirements, instructions). Includes the full new payload plus a diff of what changed. Agency should re-evaluate any pending candidate submissions.',
     webhook: {
@@ -1314,7 +1314,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift_request.accepted — candidate confirmed for shift',
     description: "Fired when one of the agency's submitted candidates is accepted by the client (managed mode) or auto-confirmed (express mode). Carries the resulting placement id. Multiple events fire for multi-position shifts — one per filled seat.",
     webhook: {
@@ -1377,7 +1377,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Lovable-Signature',
+    auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift_request.rejected — submission(s) declined or shift closed to agency',
     description: 'Fired when (a) the client rejects one or more candidates submitted by this agency, (b) the shift is fully filled by another agency, or (c) the SLA deadline elapses with no accepted submissions. Inspect `data.scope` to differentiate.',
     webhook: {
@@ -1588,9 +1588,9 @@ export const agencyApiErrorEnvelope = {
 
 export const agencyApiWebhookNotes = [
   'Transport: HTTPS POST (TLS 1.2+). Bodies are UTF-8 JSON.',
-  'Signing: X-Lovable-Signature = "t=<unix_ts>,v1=<hex>" where hex = HMAC_SHA256(webhookSecret, "<unix_ts>." + rawBody). Verify the timestamp is within 5 minutes of now to prevent replay.',
-  'Idempotency: X-Lovable-Event-Id is unique per logical event. Persist seen ids for ≥ 48 h and treat duplicates as no-ops.',
-  'Delivery attempts: X-Lovable-Delivery-Id changes per attempt; X-Lovable-Delivery-Attempt counts from 1 (max 8).',
+  'Signing: X-RosteredAI-Signature = "t=<unix_ts>,v1=<hex>" where hex = HMAC_SHA256(webhookSecret, "<unix_ts>." + rawBody). Verify the timestamp is within 5 minutes of now to prevent replay.',
+  'Idempotency: X-RosteredAI-Event-Id is unique per logical event. Persist seen ids for ≥ 48 h and treat duplicates as no-ops.',
+  'Delivery attempts: X-RosteredAI-Delivery-Id changes per attempt; X-RosteredAI-Delivery-Attempt counts from 1 (max 8).',
   'Expected response: HTTP 2xx within 5 s. Body is optional; for shift.broadcast you may return { accepted, estimatedCandidates, declineReason } to control downstream behaviour.',
   'Retries: 30 s, 2 m, 10 m, 1 h, 6 h, 12 h, 24 h (cumulative ≈ 43 h). After 8 failed attempts the event is dead-lettered.',
   'Dead-letter: replay via POST /v1/agencies/{agencyId}/webhook-deliveries/{deliveryId}/replay. Visible for 30 days.',
