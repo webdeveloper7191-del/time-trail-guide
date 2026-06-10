@@ -1232,21 +1232,22 @@ export const agencyApiSpec: ApiEndpoint[] = [
     responseExample: `{ "received": true }`,
   },
 
-  // ============ AGENCY STATUS WEBHOOK ============
+  // ============ SHIFT REQUEST LIFECYCLE WEBHOOKS ============
   {
-    id: 'agency-status-webhook',
-    group: 'Agency Profile',
+    id: 'shift-updated',
+    group: 'Shift Requests',
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
     auth: 'HMAC X-Lovable-Signature',
-    summary: 'agency.status.changed — agency activated / suspended',
+    summary: 'shift_request.updated — broadcast details changed',
+    description: 'Fired when a tenant edits a live shift request after dispatch (time, break, rates, requirements, instructions). Includes the full new payload plus a diff of what changed. Agency should re-evaluate any pending candidate submissions.',
     webhook: {
-      eventName: 'agency.status.changed',
+      eventName: 'shift_request.updated',
       deliveryHeaders: agencyWebhookDeliveryHeaders,
       retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
-      expectedResponse: '2xx within 5 s.',
-      deadLetter: 'Same as other webhooks.',
+      expectedResponse: '2xx within 5 s. Body MAY include `{ "withdrawCandidates": boolean }` to auto-withdraw previously submitted candidates that no longer match.',
+      deadLetter: 'After 8 failed attempts the event is dead-lettered; replay via /v1/agencies/{agencyId}/webhook-deliveries/{deliveryId}/replay.',
     },
     requestHeaders: agencyWebhookDeliveryHeaders,
     requestSchema: {
@@ -1255,51 +1256,136 @@ export const agencyApiSpec: ApiEndpoint[] = [
       required: ['eventId', 'eventType', 'occurredAt', 'data'],
       properties: {
         eventId: { type: 'string', format: 'uuid' },
-        eventType: { type: 'string', const: 'agency.status.changed' },
+        eventType: { type: 'string', const: 'shift_request.updated' },
         occurredAt: isoDateTime,
         data: {
           type: 'object',
-          required: ['agencyId', 'status', 'previousStatus'],
+          required: ['shiftRequestId', 'tenantId', 'updatedAt', 'changes', 'shift'],
           properties: {
-            agencyId: { type: 'string' },
-            status: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
-            previousStatus: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
-            reason: { type: 'string' },
-            effectiveAt: isoDateTime,
+            shiftRequestId: { type: 'string' },
+            tenantId: { type: 'string' },
+            updatedBy: { type: 'string' },
+            updatedAt: isoDateTime,
+            changes: {
+              type: 'array',
+              description: 'Field-level diff of every changed property.',
+              items: {
+                type: 'object',
+                required: ['field', 'from', 'to'],
+                properties: {
+                  field: { type: 'string', example: 'startTime' },
+                  from: { },
+                  to: { },
+                },
+              },
+            },
+            shift: { type: 'object', description: 'Full updated shift payload (same shape as shift.broadcast → data).' },
           },
         },
       },
     },
     requestExample: `{
-  "eventId":"d2a1…",
-  "eventType":"agency.status.changed",
-  "occurredAt":"2026-06-10T09:30:00Z",
+  "eventId":"u1f4c2a0-…",
+  "eventType":"shift_request.updated",
+  "occurredAt":"2026-06-12T11:05:00+10:00",
   "data": {
-    "agencyId":"agy_01HXYZ",
-    "status":"active",
-    "previousStatus":"pending",
-    "reason":"All compliance documents verified.",
-    "effectiveAt":"2026-06-10T09:30:00Z"
+    "shiftRequestId":"sr_01HXYZ",
+    "tenantId":"tnt_4f9a",
+    "updatedBy":"Jane Manager",
+    "updatedAt":"2026-06-12T11:05:00+10:00",
+    "changes":[
+      { "field":"startTime","from":"07:30","to":"08:00" },
+      { "field":"chargeRate","from":62.00,"to":65.00 }
+    ],
+    "shift": {
+      "shiftRequestId":"sr_01HXYZ","tenantId":"tnt_4f9a","date":"2026-06-15",
+      "startTime":"08:00","endTime":"16:30","breakMinutes":30,
+      "payRate":38.50,"chargeRate":65.00,"currency":"AUD",
+      "requirements":[{ "roleName":"Educator – Diploma","quantity":2 }]
+    }
+  }
+}`,
+    responseExample: `{ "received": true, "withdrawCandidates": false }`,
+  },
+
+  {
+    id: 'shift-accepted',
+    group: 'Shift Requests',
+    method: 'POST',
+    path: '{agency.webhookUrl}',
+    direction: 'webhook',
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'shift_request.accepted — candidate confirmed for shift',
+    description: 'Fired when one of the agency\\'s submitted candidates is accepted by the client (managed mode) or auto-confirmed (express mode). Carries the resulting placement id. Multiple events fire for multi-position shifts — one per filled seat.',
+    webhook: {
+      eventName: 'shift_request.accepted',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s. Empty body or `{ "received": true }`.',
+      deadLetter: 'After 8 failed attempts the event is dead-lettered. The placement remains valid regardless.',
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'shift_request.accepted' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['shiftRequestId', 'placementId', 'candidateId', 'positionsFilled', 'totalPositions'],
+          properties: {
+            shiftRequestId: { type: 'string' },
+            placementId: { type: 'string' },
+            candidateId: { type: 'string' },
+            externalCandidateId: { type: 'string' },
+            acceptedBy: { type: 'string' },
+            acceptedAt: isoDateTime,
+            positionsFilled: { type: 'integer', minimum: 1 },
+            totalPositions: { type: 'integer', minimum: 1 },
+            agreedPayRate: moneySchema,
+            agreedChargeRate: moneySchema,
+          },
+        },
+      },
+    },
+    requestExample: `{
+  "eventId":"a2b8…",
+  "eventType":"shift_request.accepted",
+  "occurredAt":"2026-06-12T14:22:11+10:00",
+  "data": {
+    "shiftRequestId":"sr_01HXYZ",
+    "placementId":"plc_55ab",
+    "candidateId":"cand_77a1",
+    "externalCandidateId":"bsc_993",
+    "acceptedBy":"Jane Manager",
+    "acceptedAt":"2026-06-12T14:22:11+10:00",
+    "positionsFilled":1,
+    "totalPositions":2,
+    "agreedPayRate":38.50,
+    "agreedChargeRate":62.00
   }
 }`,
     responseExample: `{ "received": true }`,
   },
 
   {
-    id: 'compliance-expiring-webhook',
-    group: 'Compliance',
+    id: 'shift-rejected',
+    group: 'Shift Requests',
     method: 'POST',
     path: '{agency.webhookUrl}',
     direction: 'webhook',
     auth: 'HMAC X-Lovable-Signature',
-    summary: 'compliance.document.expiring — document about to expire',
-    description: 'Fired 60, 30, 14 and 1 days before expiry, then daily until renewed or status flips to expired.',
+    summary: 'shift_request.rejected — submission(s) declined or shift closed to agency',
+    description: 'Fired when (a) the client rejects one or more candidates submitted by this agency, (b) the shift is fully filled by another agency, or (c) the SLA deadline elapses with no accepted submissions. Inspect `data.scope` to differentiate.',
     webhook: {
-      eventName: 'compliance.document.expiring',
+      eventName: 'shift_request.rejected',
       deliveryHeaders: agencyWebhookDeliveryHeaders,
       retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
       expectedResponse: '2xx within 5 s.',
-      deadLetter: 'Same as other webhooks.',
+      deadLetter: 'After 8 failed attempts the event is dead-lettered.',
     },
     requestHeaders: agencyWebhookDeliveryHeaders,
     requestSchema: {
@@ -1308,39 +1394,52 @@ export const agencyApiSpec: ApiEndpoint[] = [
       required: ['eventId', 'eventType', 'occurredAt', 'data'],
       properties: {
         eventId: { type: 'string', format: 'uuid' },
-        eventType: { type: 'string', const: 'compliance.document.expiring' },
+        eventType: { type: 'string', const: 'shift_request.rejected' },
         occurredAt: isoDateTime,
         data: {
           type: 'object',
-          required: ['agencyId', 'documentId', 'type', 'expiryDate', 'daysUntilExpiry'],
+          required: ['shiftRequestId', 'scope', 'reason'],
           properties: {
-            agencyId: { type: 'string' },
-            documentId: { type: 'string' },
-            type: { type: 'string', enum: ['abn', 'insurance', 'licence', 'certification', 'policy', 'other'] },
-            name: { type: 'string' },
-            expiryDate: isoDate,
-            daysUntilExpiry: { type: 'integer' },
-            severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
+            shiftRequestId: { type: 'string' },
+            scope: { type: 'string', enum: ['candidate', 'shift_closed_filled_elsewhere', 'sla_expired'] },
+            reason: { type: 'string', enum: ['not_qualified', 'compliance_failed', 'price_too_high', 'duplicate_submission', 'client_choice', 'shift_filled', 'sla_expired', 'other'] },
+            note: { type: 'string', maxLength: 1000 },
+            rejectedBy: { type: 'string', nullable: true },
+            rejectedAt: isoDateTime,
+            rejectedCandidates: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['candidateId'],
+                properties: {
+                  candidateId: { type: 'string' },
+                  externalCandidateId: { type: 'string' },
+                  reason: { type: 'string' },
+                },
+              },
+            },
           },
         },
       },
     },
     requestExample: `{
-  "eventId":"b8c3…",
-  "eventType":"compliance.document.expiring",
-  "occurredAt":"2027-02-01T09:00:00Z",
+  "eventId":"r9d4…",
+  "eventType":"shift_request.rejected",
+  "occurredAt":"2026-06-12T15:00:00+10:00",
   "data": {
-    "agencyId":"agy_01HXYZ",
-    "documentId":"doc_88f2",
-    "type":"insurance",
-    "name":"Public Liability $20M",
-    "expiryDate":"2027-03-31",
-    "daysUntilExpiry":58,
-    "severity":"info"
+    "shiftRequestId":"sr_01HXYZ",
+    "scope":"candidate",
+    "reason":"compliance_failed",
+    "rejectedBy":"Jane Manager",
+    "rejectedAt":"2026-06-12T15:00:00+10:00",
+    "rejectedCandidates":[
+      { "candidateId":"cand_77a2","externalCandidateId":"bsc_994","reason":"First Aid certificate expires before shift date." }
+    ]
   }
 }`,
     responseExample: `{ "received": true }`,
   },
+
 
   // ============ WEBHOOK DELIVERIES (introspection) ============
   {
