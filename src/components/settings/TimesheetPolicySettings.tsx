@@ -249,7 +249,7 @@ export function PolicyPermissions() {
           <SelectRow
             {...fieldProps('permissions', 'earlyClockInPolicy', 'Early Clock-in Policy',
               'Control whether team members can clock in before their scheduled shift start.',
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Up to X minutes early"</em> to prevent staff clocking in 45 minutes before their shift (and accumulating unwanted early-start pay). Choose <em>"Not allowed"</em> for strict on-the-minute starts.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Up to X minutes early"</em> to prevent staff clocking in 45 minutes before their shift (and accumulating unwanted early-start pay). Choose <em>"Not allowed"</em> for strict on-the-minute starts.</p>{earlyClockInOptionGuide}</>)}
             value={resolved.permissions.earlyClockInPolicy}
             options={earlyClockInOptions}
             onChange={v => setField('permissions', 'earlyClockInPolicy', v as TimesheetPolicy['permissions']['earlyClockInPolicy'])}
@@ -339,6 +339,7 @@ export function PolicyApproving() {
                 <p className="mb-2">Decides when timesheets bypass manual approval.</p>
                 <p className="font-medium mb-1">Example</p>
                 <p>Choose <em>"When matches scheduled shift"</em>. Sarah was rostered 9:00–17:00 and clocked 9:02–17:01. The system auto-approves because the drift sits within the match tolerance below.</p>
+                {autoApprovalOptionGuide}
               </>)}
             value={resolved.approving.autoApproval}
             options={approvalCadenceOptions}
@@ -430,6 +431,7 @@ export function PolicyApproving() {
                   <>
                     <p className="font-medium mb-1">Example</p>
                     <p>Choose <em>"Nearest 15 minutes"</em>. Clock-in 9:07 → recorded as 9:00. Clock-in 9:08 → 9:15. Choose <em>"Round up to 15"</em> to always favour the employee on late starts.</p>
+                    {roundingOptionGuide}
                   </>)}
                 value={resolved.approving.startTimeAdjustment}
                 options={roundingOptions}
@@ -451,6 +453,7 @@ export function PolicyApproving() {
                   <>
                     <p className="font-medium mb-1">Example</p>
                     <p>Choose <em>"Nearest 15 minutes"</em>. Clock-out 16:53 → 16:45 (staff loses 5 min). Choose <em>"Round down to 15"</em> for strict trimming, or <em>"Nearest 5"</em> for a fairer split.</p>
+                    {roundingOptionGuide}
                   </>)}
                 value={resolved.approving.endTimeAdjustment}
                 options={roundingOptions}
@@ -492,14 +495,16 @@ export function PolicyUnscheduled() {
       <CardContent className="space-y-1 divide-y">
         <SelectRow
           {...fieldProps('unscheduled', 'linkUnscheduledToScheduled', 'Link Unscheduled Timesheets to Scheduled Shifts',
-            "Automatically associate unscheduled timesheets with a scheduled shift if they match the same location or area. 'Best Fit' links timesheets starting up to 8 hours before or after the scheduled shift.")}
+            "Automatically associate unscheduled timesheets with a scheduled shift if they match the same location or area. 'Best Fit' links timesheets starting up to 8 hours before or after the scheduled shift.",
+            linkUnscheduledOptionGuide)}
           value={resolved.unscheduled.linkUnscheduledToScheduled}
           options={linkUnscheduledOptions}
           onChange={v => setField('unscheduled', 'linkUnscheduledToScheduled', v as TimesheetPolicy['unscheduled']['linkUnscheduledToScheduled'])}
         />
         <SelectRow
           {...fieldProps('unscheduled', 'allowTimeDriftMatching', 'Allow Time Drift Matching',
-            'Set the acceptable time range (drift) for linking unscheduled timesheets to scheduled shifts based on start/end time differences.')}
+            'Set the acceptable time range (drift) for linking unscheduled timesheets to scheduled shifts based on start/end time differences.',
+            timeDriftOptionGuide)}
           value={resolved.unscheduled.allowTimeDriftMatching}
           options={timeDriftOptions}
           onChange={v => setField('unscheduled', 'allowTimeDriftMatching', v as TimesheetPolicy['unscheduled']['allowTimeDriftMatching'])}
@@ -554,7 +559,7 @@ export function PolicyBreaks() {
           <SelectRow
             {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
               "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.",
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Paid if shift exceeds threshold"</em>. A 4-hour shift → meal break is unpaid. A 9-hour shift exceeding the threshold below → meal break is paid. Award rules (if defined) always take precedence over this fallback.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Paid if shift exceeds threshold"</em>. A 4-hour shift → meal break is unpaid. A 9-hour shift exceeding the threshold below → meal break is paid. Award rules (if defined) always take precedence over this fallback.</p>{paidMealOptionGuide}</>)}
             value={resolved.breaks.paidMealBreaks}
             options={paidMealOptions}
             onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
@@ -582,7 +587,7 @@ export function PolicyBreaks() {
           <SelectRow
             {...fieldProps('approving', 'breakRoundingAdjustment', 'Break Time Rounding',
               'How non-snapped break durations are rounded. Later rounding may reduce payable time.',
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Nearest 5 minutes"</em>. A 32-min break records as 30 min. A 38-min break records as 40 min. Keeps timesheet entries tidy and consistent for payroll.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Nearest 5 minutes"</em>. A 32-min break records as 30 min. A 38-min break records as 40 min. Keeps timesheet entries tidy and consistent for payroll.</p>{roundingOptionGuide}</>)}
             value={resolved.approving.breakRoundingAdjustment}
             options={roundingOptions}
             onChange={v => setField('approving', 'breakRoundingAdjustment', v as TimesheetPolicy['approving']['breakRoundingAdjustment'])}
@@ -718,6 +723,7 @@ export function PolicyIssues() {
                 <>
                   <p className="font-medium mb-1">Tip</p>
                   <p>Pick a threshold larger than your rounding step (Approving → Rounding) so rounding doesn't absorb the variance before it can be flagged.</p>
+                  {varianceThresholdOptionGuide}
                 </>)}
               value={String(shiftVarMins)}
               options={thresholdOptions}
@@ -742,6 +748,7 @@ export function PolicyIssues() {
                 <>
                   <p className="font-medium mb-1">Example</p>
                   <p>Set to <em>more than 10 minutes</em>. Required 30-min break taken in 22 min (8 min short) → no flag. Taken in 18 min (12 min short) → flagged.</p>
+                  {varianceThresholdOptionGuide}
                 </>)}
               value={String(varianceMinutes(resolved.issues.flagBreakDurationVariance))}
               options={thresholdOptions}
@@ -755,7 +762,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagMissingClockOut', 'Missing Clock-Out',
               'Severity assigned when a shift has a clock-in but no clock-out (likely a forgotten punch).',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>Critical</em>. Ava clocked in at 7:00 and never clocked out. The timesheet cannot be submitted until a manager corrects the missing punch — preventing a 24-hour pay event.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Set to <em>Critical</em>. Ava clocked in at 7:00 and never clocked out. The timesheet cannot be submitted until a manager corrects the missing punch — preventing a 24-hour pay event.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagMissingClockOut}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagMissingClockOut', v as TimesheetPolicy['issues']['flagMissingClockOut'])}
@@ -763,7 +770,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagClockBoundaryBreach', 'Flag Out-of-Bounds Clock Events',
               'Raise a flag when staff clock in too early or clock out too late, relative to the boundary chosen below.',
-              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>, boundary = <em>Scheduled shift</em>, early tolerance = <em>15 min</em>. Clock-in 20 min before shift start → flagged. 10 min early → no flag.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>, boundary = <em>Scheduled shift</em>, early tolerance = <em>15 min</em>. Clock-in 20 min before shift start → flagged. 10 min early → no flag.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagClockBoundaryBreach}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagClockBoundaryBreach', v as TimesheetPolicy['issues']['flagClockBoundaryBreach'])}
@@ -771,7 +778,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'clockBoundaryReference', 'Boundary Reference',
               'Decide whether the tolerances below are measured against each staff member\'s scheduled shift, or against the location\'s operating hours (configured in Location settings). Choose Scheduled shift for roster-driven sites; choose Operating window for open-floor / drop-in sites.',
-              <><p className="font-medium mb-1">Example</p><p>A 24/7 hospital sets operating hours to "always open" in Location settings, then picks <em>Scheduled shift</em> here so flags fire only when a punch drifts from the rostered start/end.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>A 24/7 hospital sets operating hours to "always open" in Location settings, then picks <em>Scheduled shift</em> here so flags fire only when a punch drifts from the rostered start/end.</p>{boundaryReferenceOptionGuide}</>)}
             value={resolved.issues.clockBoundaryReference}
             options={clockBoundaryReferenceOptions}
             onChange={v => setField('issues', 'clockBoundaryReference', v as TimesheetPolicy['issues']['clockBoundaryReference'])}
@@ -798,7 +805,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagExcessiveDailyHours', 'Excessive Daily Hours',
               'Severity when a single day exceeds the maximum allowed working hours.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>12h</em>, severity = <em>Critical</em>. Liam records a 13h25m shift. The system blocks submission until a manager verifies it was a genuine emergency callout.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>12h</em>, severity = <em>Critical</em>. Liam records a 13h25m shift. The system blocks submission until a manager verifies it was a genuine emergency callout.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagExcessiveDailyHours}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagExcessiveDailyHours', v as TimesheetPolicy['issues']['flagExcessiveDailyHours'])}
@@ -813,7 +820,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagLongShiftWithoutBreak', 'Long Shift Without Break',
               'Flag shifts that exceed the threshold but have no break recorded — a common compliance risk.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>6h</em>, severity = <em>Warning</em>. Mia worked 7h15m with zero breaks recorded. The timesheet is held for review since a meal break is legally required after 5 hours under most awards.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>6h</em>, severity = <em>Warning</em>. Mia worked 7h15m with zero breaks recorded. The timesheet is held for review since a meal break is legally required after 5 hours under most awards.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagLongShiftWithoutBreak}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagLongShiftWithoutBreak', v as TimesheetPolicy['issues']['flagLongShiftWithoutBreak'])}
@@ -828,7 +835,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagHighWeeklyOvertime', 'High Weekly Overtime',
               'Flag weeks where overtime exceeds a threshold so payroll and managers are alerted to budget impact.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>8h</em>, severity = <em>Warning</em>. Sam logged 12h of overtime in one week. The timesheet routes to a senior manager for sign-off before payroll.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>8h</em>, severity = <em>Warning</em>. Sam logged 12h of overtime in one week. The timesheet routes to a senior manager for sign-off before payroll.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagHighWeeklyOvertime}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagHighWeeklyOvertime', v as TimesheetPolicy['issues']['flagHighWeeklyOvertime'])}
@@ -846,7 +853,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagExceededBreak', 'Exceeded Break Duration',
               'Flag when a recorded break runs longer than the allowed/scheduled duration by more than the percentage below.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>150%</em>, severity = <em>Info</em>. A 30-min meal break stretches to 50 min (167%) — flagged so the manager can decide whether to deduct unpaid time.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>150%</em>, severity = <em>Info</em>. A 30-min meal break stretches to 50 min (167%) — flagged so the manager can decide whether to deduct unpaid time.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagExceededBreak}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagExceededBreak', v as TimesheetPolicy['issues']['flagExceededBreak'])}
@@ -864,7 +871,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagPatternDrift', 'Pattern Drift',
               'Detect when clock-in times deviate significantly from a staff member\'s historical average — possible buddy-punching or schedule confusion.',
-              <><p className="font-medium mb-1">Example</p><p>Drift = <em>60 min</em>, severity = <em>Info</em>. Noah usually clocks in around 8:30 AM. He clocks in at 10:15 AM — flagged as informational so managers can spot a missed shift swap.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Drift = <em>60 min</em>, severity = <em>Info</em>. Noah usually clocks in around 8:30 AM. He clocks in at 10:15 AM — flagged as informational so managers can spot a missed shift swap.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagPatternDrift}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagPatternDrift', v as TimesheetPolicy['issues']['flagPatternDrift'])}
@@ -879,7 +886,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagBuddyPunching', 'Suspected Buddy Punching',
               'Detect when two staff clock in/out from the same device within seconds of each other — a classic indicator of one person punching for another.',
-              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Critical</em>. Two clock-ins from the same kiosk within 4 seconds on different staff IDs route the timesheets to HR for investigation before payroll.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Critical</em>. Two clock-ins from the same kiosk within 4 seconds on different staff IDs route the timesheets to HR for investigation before payroll.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagBuddyPunching}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagBuddyPunching', v as TimesheetPolicy['issues']['flagBuddyPunching'])}
@@ -887,7 +894,7 @@ export function PolicyIssues() {
           <SelectRow
             {...fieldProps('issues', 'flagIrregularPunchPattern', 'Irregular Punch Pattern',
               'Catch unusual punch sequences such as multiple clock-ins without a clock-out, rapid in/out cycles, or out-of-order timestamps.',
-              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>. Mia clocks in, out, in, and out three times within 20 minutes. The pattern is flagged so a manager can confirm whether a device or training issue is to blame.</p></>)}
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>. Mia clocks in, out, in, and out three times within 20 minutes. The pattern is flagged so a manager can confirm whether a device or training issue is to blame.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagIrregularPunchPattern}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagIrregularPunchPattern', v as TimesheetPolicy['issues']['flagIrregularPunchPattern'])}
@@ -934,13 +941,108 @@ function HelpHint({ content }: { content: React.ReactNode }) {
             <HelpCircle className="h-3.5 w-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        <TooltipContent side="top" className="max-w-sm text-xs leading-relaxed">
           {content}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 }
+
+// ---------- Reusable "All options" guide ----------
+function OptionGuide({ items }: { items: { label: string; description: string }[] }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-border/60">
+      <p className="font-medium mb-1.5">All options</p>
+      <ul className="space-y-1.5">
+        {items.map(o => (
+          <li key={o.label}>
+            <span className="font-medium text-foreground">{o.label}</span>
+            <span className="text-muted-foreground"> — {o.description}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const severityOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Off', description: 'Detection disabled. No flag is ever raised.' },
+    { label: 'Info', description: 'Logged for reporting only. Does not affect approval.' },
+    { label: 'Warning', description: 'Blocks auto-approval and surfaces to the reviewer.' },
+    { label: 'Critical', description: 'As above, plus blocks submission when "Block on critical" is on.' },
+  ]} />
+);
+
+const roundingOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'Use the exact recorded time. No rounding applied.' },
+    { label: 'Nearest 5 / 10 / 15 minutes', description: 'Round to the closest interval (fair split — half up, half down).' },
+    { label: 'Round up to 15 minutes', description: 'Always round forward. Favours the employee on late starts, the employer on early ends.' },
+    { label: 'Round down to 15 minutes', description: 'Always round backward. Strictest trim — may shave minutes off pay.' },
+  ]} />
+);
+
+const earlyClockInOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Not allowed', description: 'Clock-in is blocked until the scheduled start time.' },
+    { label: 'Up to X minutes early', description: 'Allow a buffer (set below). Common for sites where staff need setup time.' },
+    { label: 'Anytime before shift', description: 'No restriction. Use cautiously — can create unwanted early-start pay.' },
+  ]} />
+);
+
+const autoApprovalOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'Every timesheet goes through the approval chain manually.' },
+    { label: 'On submission', description: 'Approves immediately when staff submit — fastest path, weakest control.' },
+    { label: 'When matches scheduled shift', description: 'Approves only if actual times sit within the match tolerance of the roster.' },
+    { label: 'Daily (end of day)', description: 'Batch-approves qualifying entries at end of day. Useful for high-volume sites.' },
+  ]} />
+);
+
+const linkUnscheduledOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'Unscheduled entries stay standalone — they always need manual review.' },
+    { label: 'Best Fit (±8 hours)', description: 'Match to the nearest scheduled shift within an 8-hour window. Most forgiving.' },
+    { label: 'Exact start/end match', description: 'Only link if start and end match the roster precisely. Strictest.' },
+    { label: 'Same location/area only', description: 'Link any same-day shift at the same location, regardless of time drift.' },
+  ]} />
+);
+
+const timeDriftOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'No drift tolerance — times must align exactly to link.' },
+    { label: 'Within 15 / 30 minutes', description: 'Small buffer for routine variation in clock-in habits.' },
+    { label: 'Within 1 / 2 hours', description: 'Broad buffer for variable start times (e.g. on-call, callouts).' },
+    { label: 'Within 4 hours', description: 'Very loose — useful only for fully ad-hoc rostering.' },
+  ]} />
+);
+
+const paidMealOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never (unpaid)', description: 'Meal breaks are always unpaid (default for most awards).' },
+    { label: 'Always paid', description: 'Meal breaks are always paid regardless of shift length.' },
+    { label: 'Paid if shift exceeds threshold', description: 'Paid only on longer shifts (e.g. 6h+). Set the threshold below.' },
+  ]} />
+);
+
+const boundaryReferenceOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Scheduled shift (per staff roster)', description: 'Tolerances measured against each staff member\'s rostered start/end. Use for roster-driven sites.' },
+    { label: 'Operating window (location hours)', description: 'Tolerances measured against the location\'s open/close hours. Use for drop-in, open-floor, or kiosk sites without strict rosters.' },
+  ]} />
+);
+
+const varianceThresholdOptionGuide = (
+  <OptionGuide items={[
+    { label: 'More than 5 minutes', description: 'Tight tolerance. Surfaces small drifts; can be noisy on busy sites.' },
+    { label: 'More than 10 minutes', description: 'Balanced default. Catches genuine deviations without flooding reviewers.' },
+    { label: 'More than 15 minutes', description: 'Lenient. Use when rounding is on at a 10–15 min step.' },
+    { label: 'Any difference at all', description: 'Strictest — fires whenever actual ≠ scheduled. Use sparingly.' },
+  ]} />
+);
+
 
 function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
