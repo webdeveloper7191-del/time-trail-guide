@@ -575,6 +575,16 @@ export function TimesheetEditModal({
           </Button>
         </div>
       </SheetContent>
+      <RaiseExceptionDialog
+        open={exceptionEntryIndex !== null}
+        onClose={() => setExceptionEntryIndex(null)}
+        onSubmit={(exc) => {
+          if (exceptionEntryIndex !== null) handleSetException(exceptionEntryIndex, exc);
+        }}
+        raisedBy="manager"
+        contextLabel={exceptionEntryIndex !== null ? format(new Date(entries[exceptionEntryIndex]?.date ?? new Date()), 'EEE, MMM d') : undefined}
+        initial={exceptionEntryIndex !== null ? entries[exceptionEntryIndex]?.exception : undefined}
+      />
     </Sheet>
   );
 }
