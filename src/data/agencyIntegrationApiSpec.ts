@@ -240,7 +240,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     direction: 'outbound',
     auth: 'client_id + client_secret (Basic auth)',
     summary: 'Exchange client credentials for an access token',
-    description: 'OAuth 2.0 client_credentials grant. Returns a short-lived bearer token used for all subsequent calls.',
+    description: 'OAuth 2.0 client_credentials grant. The client_id / client_secret pair is issued manually by the platform admin during onboarding (out of band) and shared with the agency. This endpoint exchanges those credentials for a short-lived bearer token used for all subsequent calls.',
     requestHeaders: [
       { name: 'Authorization', type: 'string', required: true, description: 'Basic base64(client_id:client_secret).' },
       { name: 'Content-Type', type: 'string', required: true, description: 'application/x-www-form-urlencoded' },
