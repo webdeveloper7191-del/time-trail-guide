@@ -934,13 +934,108 @@ function HelpHint({ content }: { content: React.ReactNode }) {
             <HelpCircle className="h-3.5 w-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        <TooltipContent side="top" className="max-w-sm text-xs leading-relaxed">
           {content}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
 }
+
+// ---------- Reusable "All options" guide ----------
+function OptionGuide({ items }: { items: { label: string; description: string }[] }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-border/60">
+      <p className="font-medium mb-1.5">All options</p>
+      <ul className="space-y-1.5">
+        {items.map(o => (
+          <li key={o.label}>
+            <span className="font-medium text-foreground">{o.label}</span>
+            <span className="text-muted-foreground"> — {o.description}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const severityOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Off', description: 'Detection disabled. No flag is ever raised.' },
+    { label: 'Info', description: 'Logged for reporting only. Does not affect approval.' },
+    { label: 'Warning', description: 'Blocks auto-approval and surfaces to the reviewer.' },
+    { label: 'Critical', description: 'As above, plus blocks submission when "Block on critical" is on.' },
+  ]} />
+);
+
+const roundingOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'Use the exact recorded time. No rounding applied.' },
+    { label: 'Nearest 5 / 10 / 15 minutes', description: 'Round to the closest interval (fair split — half up, half down).' },
+    { label: 'Round up to 15 minutes', description: 'Always round forward. Favours the employee on late starts, the employer on early ends.' },
+    { label: 'Round down to 15 minutes', description: 'Always round backward. Strictest trim — may shave minutes off pay.' },
+  ]} />
+);
+
+const earlyClockInOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Not allowed', description: 'Clock-in is blocked until the scheduled start time.' },
+    { label: 'Up to X minutes early', description: 'Allow a buffer (set below). Common for sites where staff need setup time.' },
+    { label: 'Anytime before shift', description: 'No restriction. Use cautiously — can create unwanted early-start pay.' },
+  ]} />
+);
+
+const autoApprovalOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'Every timesheet goes through the approval chain manually.' },
+    { label: 'On submission', description: 'Approves immediately when staff submit — fastest path, weakest control.' },
+    { label: 'When matches scheduled shift', description: 'Approves only if actual times sit within the match tolerance of the roster.' },
+    { label: 'Daily (end of day)', description: 'Batch-approves qualifying entries at end of day. Useful for high-volume sites.' },
+  ]} />
+);
+
+const linkUnscheduledOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'Unscheduled entries stay standalone — they always need manual review.' },
+    { label: 'Best Fit (±8 hours)', description: 'Match to the nearest scheduled shift within an 8-hour window. Most forgiving.' },
+    { label: 'Exact start/end match', description: 'Only link if start and end match the roster precisely. Strictest.' },
+    { label: 'Same location/area only', description: 'Link any same-day shift at the same location, regardless of time drift.' },
+  ]} />
+);
+
+const timeDriftOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'No drift tolerance — times must align exactly to link.' },
+    { label: 'Within 15 / 30 minutes', description: 'Small buffer for routine variation in clock-in habits.' },
+    { label: 'Within 1 / 2 hours', description: 'Broad buffer for variable start times (e.g. on-call, callouts).' },
+    { label: 'Within 4 hours', description: 'Very loose — useful only for fully ad-hoc rostering.' },
+  ]} />
+);
+
+const paidMealOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Never (unpaid)', description: 'Meal breaks are always unpaid (default for most awards).' },
+    { label: 'Always paid', description: 'Meal breaks are always paid regardless of shift length.' },
+    { label: 'Paid if shift exceeds threshold', description: 'Paid only on longer shifts (e.g. 6h+). Set the threshold below.' },
+  ]} />
+);
+
+const boundaryReferenceOptionGuide = (
+  <OptionGuide items={[
+    { label: 'Scheduled shift (per staff roster)', description: 'Tolerances measured against each staff member\'s rostered start/end. Use for roster-driven sites.' },
+    { label: 'Operating window (location hours)', description: 'Tolerances measured against the location\'s open/close hours. Use for drop-in, open-floor, or kiosk sites without strict rosters.' },
+  ]} />
+);
+
+const varianceThresholdOptionGuide = (
+  <OptionGuide items={[
+    { label: 'More than 5 minutes', description: 'Tight tolerance. Surfaces small drifts; can be noisy on busy sites.' },
+    { label: 'More than 10 minutes', description: 'Balanced default. Catches genuine deviations without flooding reviewers.' },
+    { label: 'More than 15 minutes', description: 'Lenient. Use when rounding is on at a 10–15 min step.' },
+    { label: 'Any difference at all', description: 'Strictest — fires whenever actual ≠ scheduled. Use sparingly.' },
+  ]} />
+);
+
 
 function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
