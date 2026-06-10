@@ -1,7 +1,7 @@
 // Agency Integration API Specification
 // REST contract for integrating 3rd-party staffing agency platforms with the Roster platform.
-// All endpoints are JSON over HTTPS. Auth: Bearer token (OAuth 2.0 client credentials) +
-// optional HMAC-SHA256 signature header (X-Signature) for webhooks.
+// All endpoints are JSON over HTTPS (TLS 1.2+). Auth: OAuth 2.0 client_credentials bearer token.
+// Webhooks are signed with HMAC-SHA256 over the raw request body.
 
 export interface ApiField {
   name: string;
@@ -9,7 +9,10 @@ export interface ApiField {
   required?: boolean;
   description: string;
   example?: string | number | boolean | null;
+  enum?: string[];
 }
+
+export type JSONSchema = Record<string, any>;
 
 export interface ApiEndpoint {
   id: string;
@@ -24,18 +27,208 @@ export interface ApiEndpoint {
   pathParams?: ApiField[];
   queryParams?: ApiField[];
   requestBody?: ApiField[];
+  requestSchema?: JSONSchema;
   requestExample?: string;
   responseBody?: ApiField[];
+  responseSchema?: JSONSchema;
   responseExample?: string;
   errorCodes?: { code: string; description: string }[];
+  // Webhook-only metadata
+  webhook?: {
+    eventName: string;
+    deliveryHeaders: ApiField[];
+    retrySchedule: string[]; // human-readable schedule
+    expectedResponse: string;
+    deadLetter: string;
+  };
 }
+
+// ============ COMMON SCHEMA FRAGMENTS ============
+
+const addressSchema: JSONSchema = {
+  type: 'object',
+  required: ['street', 'suburb', 'state', 'postcode', 'country'],
+  properties: {
+    street: { type: 'string', example: '12 King St' },
+    suburb: { type: 'string', example: 'Sydney' },
+    state: { type: 'string', example: 'NSW' },
+    postcode: { type: 'string', example: '2000' },
+    country: { type: 'string', minLength: 2, maxLength: 2, example: 'AU', description: 'ISO 3166-1 alpha-2.' },
+  },
+};
+
+const moneySchema: JSONSchema = {
+  type: 'number',
+  minimum: 0,
+  description: 'Decimal amount with at most 2 decimal places.',
+  multipleOf: 0.01,
+};
+
+const isoDateTime: JSONSchema = { type: 'string', format: 'date-time', description: 'ISO-8601 with timezone offset.' };
+const isoDate: JSONSchema = { type: 'string', format: 'date', description: 'YYYY-MM-DD.' };
+
+const candidateInputSchema: JSONSchema = {
+  type: 'object',
+  required: ['externalId', 'firstName', 'lastName', 'email', 'phone', 'primaryRole', 'awardClassification', 'payRate', 'certifications'],
+  properties: {
+    externalId: { type: 'string', description: 'Agency-local candidate id. Unique per agency.' },
+    firstName: { type: 'string' },
+    lastName: { type: 'string' },
+    dateOfBirth: { ...isoDate, description: 'Required for compliance checks where law requires age verification.' },
+    email: { type: 'string', format: 'email' },
+    phone: { type: 'string', description: 'E.164 phone, e.g. +61400999111.' },
+    employmentType: { type: 'string', enum: ['casual', 'temp', 'temp_to_perm', 'contractor'] },
+    primaryRole: { type: 'string' },
+    secondaryRoles: { type: 'array', items: { type: 'string' }, default: [] },
+    yearsExperience: { type: 'integer', minimum: 0 },
+    awardClassification: { type: 'string', description: 'Award + level, e.g. "CS Level 3.4".' },
+    payRate: { ...moneySchema, description: 'Worker pay $/hr.' },
+    skills: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['name', 'level'],
+        properties: {
+          name: { type: 'string' },
+          level: { type: 'string', enum: ['beginner', 'intermediate', 'advanced', 'expert'] },
+          yearsExperience: { type: 'integer', minimum: 0 },
+        },
+      },
+    },
+    certifications: {
+      type: 'array',
+      minItems: 1,
+      items: {
+        type: 'object',
+        required: ['name', 'issuer', 'issueDate', 'expiryDate'],
+        properties: {
+          name: { type: 'string' },
+          issuer: { type: 'string' },
+          documentNumber: { type: 'string' },
+          issueDate: isoDate,
+          expiryDate: isoDate,
+          documentUrl: { type: 'string', format: 'uri', description: 'HTTPS signed URL to the certificate file.' },
+          status: { type: 'string', enum: ['valid', 'expiring_soon', 'expired', 'missing'] },
+        },
+      },
+    },
+    preferredLocations: { type: 'array', items: { type: 'string' } },
+    maxTravelDistanceKm: { type: 'integer', minimum: 0 },
+    complianceScore: { type: 'integer', minimum: 0, maximum: 100 },
+    reliabilityScore: { type: 'integer', minimum: 0, maximum: 100 },
+    hoursWorkedThisWeek: { type: 'number', minimum: 0 },
+    lastShiftEndTime: { ...isoDateTime, description: 'Used for fatigue / rest-break checks.' },
+    rightToWork: {
+      type: 'object',
+      required: ['status'],
+      properties: {
+        status: { type: 'string', enum: ['citizen', 'permanent_resident', 'visa_holder'] },
+        visaSubclass: { type: 'string' },
+        workHoursLimit: { type: 'integer', description: 'Weekly hours cap if applicable.' },
+        evidenceUrl: { type: 'string', format: 'uri' },
+        verifiedAt: isoDateTime,
+      },
+    },
+    bankDetails: {
+      type: 'object',
+      description: 'Optional. Only required if platform handles payroll on behalf of agency.',
+      properties: {
+        bsb: { type: 'string', pattern: '^[0-9]{3}-?[0-9]{3}$' },
+        accountNumber: { type: 'string' },
+        accountName: { type: 'string' },
+      },
+    },
+    superannuation: {
+      type: 'object',
+      properties: {
+        fundName: { type: 'string' },
+        memberNumber: { type: 'string' },
+        usi: { type: 'string', description: 'Unique Superannuation Identifier.' },
+      },
+    },
+    tfn: { type: 'string', description: 'Tax File Number. Encrypted at rest.' },
+  },
+};
+
+// ============ COMMON HEADERS ============
 
 const commonHeaders: ApiField[] = [
   { name: 'Authorization', type: 'string', required: true, description: 'Bearer access token (OAuth2 client_credentials).', example: 'Bearer eyJhbGciOi…' },
   { name: 'X-Tenant-Id', type: 'string', required: true, description: 'Tenant (client organisation) identifier.', example: 'tnt_4f9a…' },
-  { name: 'X-Request-Id', type: 'string (uuid)', required: false, description: 'Idempotency / tracing key. Echoed in the response.', example: 'a1b2c3d4-…' },
+  { name: 'X-Request-Id', type: 'string (uuid)', required: false, description: 'Idempotency / tracing key. Echoed in the response. Required for POST/PATCH/DELETE to safely retry.', example: 'a1b2c3d4-…' },
+  { name: 'X-Idempotency-Key', type: 'string', required: false, description: 'Optional alternative to X-Request-Id for mutating requests. Server stores the first response for 24h.' },
   { name: 'Content-Type', type: 'string', required: true, description: 'Must be application/json.', example: 'application/json' },
+  { name: 'Accept', type: 'string', required: false, description: 'Must be application/json.', example: 'application/json' },
+  { name: 'User-Agent', type: 'string', required: false, description: 'Identify your integration, e.g. "BrightStaff-Connector/2.1".' },
 ];
+
+// ============ WEBHOOK DELIVERY HEADERS (sent BY platform TO agency) ============
+
+export const agencyWebhookDeliveryHeaders: ApiField[] = [
+  { name: 'Content-Type', type: 'string', required: true, description: 'Always application/json; charset=utf-8.', example: 'application/json; charset=utf-8' },
+  { name: 'User-Agent', type: 'string', required: true, description: 'Identifies the platform delivery agent.', example: 'Lovable-Roster-Webhooks/1.0' },
+  { name: 'X-Lovable-Event', type: 'string', required: true, description: 'Event name (dot-namespaced).', example: 'shift.broadcast' },
+  { name: 'X-Lovable-Event-Id', type: 'string (uuid)', required: true, description: 'Unique id per logical event. Use for idempotency — duplicate ids MUST be ignored.', example: '8a4e7e10-7e1c-4f0d-9c1e-bc2f4a8b1234' },
+  { name: 'X-Lovable-Delivery-Id', type: 'string (uuid)', required: true, description: 'Unique id per delivery attempt. Differs across retries even when Event-Id is identical.' },
+  { name: 'X-Lovable-Delivery-Attempt', type: 'integer', required: true, description: 'Retry attempt number, starting at 1. Max 8.', example: 1 },
+  { name: 'X-Lovable-Timestamp', type: 'integer', required: true, description: 'Unix seconds at the moment the signature was computed. Reject requests skewed > 5 minutes.', example: 1749543600 },
+  { name: 'X-Lovable-Signature', type: 'string', required: true, description: 'Comma-separated list of versioned signatures, e.g. "t=<ts>,v1=<hex>". v1 = hex(HMAC_SHA256(secret, timestamp + "." + rawBody)).', example: 't=1749543600,v1=3f7b…' },
+  { name: 'X-Lovable-Signature-Version', type: 'string', required: true, description: 'Active signature scheme. Currently always "v1".', example: 'v1' },
+  { name: 'X-Lovable-Tenant-Id', type: 'string', required: true, description: 'Originating tenant id.', example: 'tnt_4f9a…' },
+  { name: 'X-Lovable-Agency-Id', type: 'string', required: true, description: 'Target agency id.', example: 'agy_01HXYZ…' },
+  { name: 'X-Lovable-Api-Version', type: 'string', required: true, description: 'Webhook payload schema version.', example: '2026-06-01' },
+];
+
+export const agencyWebhookRetrySchedule = [
+  { attempt: 1, delay: 'immediate', cumulative: '0 s' },
+  { attempt: 2, delay: '+30 seconds', cumulative: '30 s' },
+  { attempt: 3, delay: '+2 minutes', cumulative: '~2 m 30 s' },
+  { attempt: 4, delay: '+10 minutes', cumulative: '~12 m 30 s' },
+  { attempt: 5, delay: '+1 hour', cumulative: '~1 h 12 m' },
+  { attempt: 6, delay: '+6 hours', cumulative: '~7 h 12 m' },
+  { attempt: 7, delay: '+12 hours', cumulative: '~19 h 12 m' },
+  { attempt: 8, delay: '+24 hours', cumulative: '~43 h (final)' },
+];
+
+export const agencyWebhookExpectedResponse = {
+  success: '2xx within 5 seconds. Body may be empty or `{ "received": true }`.',
+  rejectSilently: '410 Gone tells the platform to stop retrying and disable the endpoint after 3 consecutive 410s.',
+  retry: 'Any non-2xx (other than 410) triggers the retry schedule above. After attempt 8 the event is moved to the dead-letter queue.',
+  timeout: 'Connection or read timeout = 5 s. Timeouts count as a failed attempt.',
+  deadLetter: 'Dead-lettered events are visible at GET /v1/agencies/{agencyId}/webhook-deliveries?status=dead_letter and can be replayed for up to 30 days.',
+};
+
+// ============ JSON SCHEMA BUILDERS FOR REUSE ============
+
+const errorEnvelopeSchema: JSONSchema = {
+  type: 'object',
+  required: ['error'],
+  properties: {
+    error: {
+      type: 'object',
+      required: ['code', 'message', 'requestId'],
+      properties: {
+        code: { type: 'string', example: 'validation_error' },
+        message: { type: 'string' },
+        requestId: { type: 'string', format: 'uuid' },
+        errors: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['field', 'code', 'message'],
+            properties: {
+              field: { type: 'string' },
+              code: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+// ============ ENDPOINTS ============
 
 export const agencyApiSpec: ApiEndpoint[] = [
   // ============ AUTH ============
@@ -54,8 +247,19 @@ export const agencyApiSpec: ApiEndpoint[] = [
     ],
     requestBody: [
       { name: 'grant_type', type: 'string', required: true, description: 'Must be "client_credentials".', example: 'client_credentials' },
-      { name: 'scope', type: 'string', required: false, description: 'Space-separated scopes: shifts.read shifts.write candidates.read placements.write timesheets.read invoices.write', example: 'shifts.read placements.write' },
+      { name: 'scope', type: 'string', required: false, description: 'Space-separated scopes: shifts.read shifts.write candidates.read placements.write timesheets.read invoices.write analytics.read', example: 'shifts.read placements.write' },
+      { name: 'audience', type: 'string', required: false, description: 'Resource server audience. Defaults to "api.lovable-roster.app".' },
     ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['grant_type'],
+      properties: {
+        grant_type: { type: 'string', const: 'client_credentials' },
+        scope: { type: 'string' },
+        audience: { type: 'string' },
+      },
+    },
     requestExample: `grant_type=client_credentials&scope=shifts.read+placements.write`,
     responseBody: [
       { name: 'access_token', type: 'string', description: 'JWT bearer token.', example: 'eyJhbGciOi…' },
@@ -63,6 +267,18 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'expires_in', type: 'integer', description: 'Lifetime in seconds.', example: 3600 },
       { name: 'scope', type: 'string', description: 'Granted scopes.', example: 'shifts.read placements.write' },
     ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['access_token', 'token_type', 'expires_in', 'scope'],
+      properties: {
+        access_token: { type: 'string' },
+        token_type: { type: 'string', const: 'Bearer' },
+        expires_in: { type: 'integer', minimum: 60, maximum: 86400 },
+        scope: { type: 'string' },
+        issued_token_type: { type: 'string' },
+      },
+    },
     responseExample: `{
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…",
   "token_type": "Bearer",
@@ -72,6 +288,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     errorCodes: [
       { code: '401 invalid_client', description: 'client_id / client_secret rejected.' },
       { code: '400 invalid_scope', description: 'Requested scope not allowed for this agency.' },
+      { code: '400 unsupported_grant_type', description: 'Only client_credentials is supported.' },
     ],
   },
 
@@ -84,12 +301,13 @@ export const agencyApiSpec: ApiEndpoint[] = [
     direction: 'inbound',
     auth: 'Bearer (admin scope)',
     summary: 'Register a new 3rd-party agency',
-    description: 'Called by the Roster platform admin when onboarding a new agency partner. Returns the agency record plus a one-time bootstrap secret used to exchange for OAuth credentials.',
+    description: 'Called by the Roster platform admin when onboarding a new agency partner. Returns the agency record plus a one-time clientSecret used for OAuth.',
     requestHeaders: commonHeaders,
     requestBody: [
       { name: 'name', type: 'string', required: true, description: 'Legal/registered name.', example: 'Bright Staffing Pty Ltd' },
       { name: 'tradingName', type: 'string', required: false, description: 'Public trading name.', example: 'Bright Staff' },
-      { name: 'abn', type: 'string', required: true, description: 'Australian Business Number (11 digits).', example: '53 004 085 616' },
+      { name: 'abn', type: 'string', required: true, description: 'Australian Business Number (11 digits).', example: '53004085616' },
+      { name: 'acn', type: 'string', required: false, description: 'Australian Company Number (9 digits).' },
       { name: 'primaryContactName', type: 'string', required: true, description: 'Account owner full name.' },
       { name: 'primaryContactEmail', type: 'string (email)', required: true, description: 'Account owner email.' },
       { name: 'primaryContactPhone', type: 'string (E.164)', required: true, description: 'Account owner phone.' },
@@ -97,20 +315,68 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'serviceCategories', type: 'string[]', required: true, description: 'Role types the agency supplies.', example: '["Educator","Cook"]' },
       { name: 'coverageZones', type: 'object[]', required: true, description: '[{ name, postcodes[], responseSlaMinutes }]' },
       { name: 'applicableAwards', type: 'string[]', required: false, description: 'Award codes the agency operates under.', example: '["MA000120"]' },
+      { name: 'currency', type: 'string', required: false, description: 'ISO 4217 currency. Defaults to AUD.', example: 'AUD' },
+      { name: 'timezone', type: 'string', required: false, description: 'IANA timezone for the agency HQ.', example: 'Australia/Sydney' },
       { name: 'webhookUrl', type: 'string (uri)', required: true, description: 'HTTPS endpoint that will receive shift / placement events.' },
-      { name: 'webhookSecret', type: 'string', required: true, description: 'Shared secret used to sign X-Signature header.' },
+      { name: 'webhookSecret', type: 'string', required: true, description: 'Shared secret used to sign X-Lovable-Signature header. Minimum 32 chars.' },
+      { name: 'webhookSubscriptions', type: 'string[]', required: false, description: 'Event subscriptions. Defaults to all. Supports wildcards (e.g. "shift.*").' },
     ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['name', 'abn', 'primaryContactName', 'primaryContactEmail', 'primaryContactPhone', 'address', 'serviceCategories', 'coverageZones', 'webhookUrl', 'webhookSecret'],
+      properties: {
+        name: { type: 'string', minLength: 2, maxLength: 200 },
+        tradingName: { type: 'string', maxLength: 200 },
+        abn: { type: 'string', pattern: '^[0-9]{11}$' },
+        acn: { type: 'string', pattern: '^[0-9]{9}$' },
+        primaryContactName: { type: 'string' },
+        primaryContactEmail: { type: 'string', format: 'email' },
+        primaryContactPhone: { type: 'string', pattern: '^\\+[1-9][0-9]{6,14}$' },
+        address: addressSchema,
+        serviceCategories: { type: 'array', minItems: 1, items: { type: 'string' } },
+        coverageZones: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            required: ['name', 'postcodes', 'responseSlaMinutes'],
+            properties: {
+              name: { type: 'string' },
+              postcodes: { type: 'array', minItems: 1, items: { type: 'string' } },
+              responseSlaMinutes: { type: 'integer', minimum: 1 },
+            },
+          },
+        },
+        applicableAwards: { type: 'array', items: { type: 'string' } },
+        currency: { type: 'string', pattern: '^[A-Z]{3}$', default: 'AUD' },
+        timezone: { type: 'string', default: 'Australia/Sydney' },
+        webhookUrl: { type: 'string', format: 'uri', pattern: '^https://' },
+        webhookSecret: { type: 'string', minLength: 32 },
+        webhookSubscriptions: { type: 'array', items: { type: 'string' }, default: ['*'] },
+      },
+    },
     requestExample: `{
   "name": "Bright Staffing Pty Ltd",
+  "tradingName": "Bright Staff",
   "abn": "53004085616",
   "primaryContactName": "Sarah Lee",
   "primaryContactEmail": "sarah@brightstaff.com.au",
   "primaryContactPhone": "+61400111222",
-  "address": { "street": "12 King St", "suburb": "Sydney", "state": "NSW", "postcode": "2000", "country": "AU" },
+  "address": {
+    "street": "12 King St", "suburb": "Sydney", "state": "NSW",
+    "postcode": "2000", "country": "AU"
+  },
   "serviceCategories": ["Educator", "Cook"],
-  "coverageZones": [{ "name": "Inner Sydney", "postcodes": ["2000","2010","2011"], "responseSlaMinutes": 30 }],
+  "coverageZones": [
+    { "name": "Inner Sydney", "postcodes": ["2000","2010","2011"], "responseSlaMinutes": 30 }
+  ],
+  "applicableAwards": ["MA000120"],
+  "currency": "AUD",
+  "timezone": "Australia/Sydney",
   "webhookUrl": "https://api.brightstaff.com.au/lovable/events",
-  "webhookSecret": "whsec_3f9c…"
+  "webhookSecret": "whsec_3f9c8a2b1d4e6f7a9b0c1d2e3f4a5b6c7d",
+  "webhookSubscriptions": ["shift.*", "placement.*", "timesheet.*", "invoice.*"]
 }`,
     responseBody: [
       { name: 'id', type: 'string', description: 'Agency identifier.', example: 'agy_01HXYZ…' },
@@ -119,16 +385,33 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'clientSecret', type: 'string', description: 'OAuth client_secret. Shown ONCE — store securely.' },
       { name: 'createdAt', type: 'string (ISO-8601)', description: 'Creation timestamp.' },
     ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['id', 'status', 'clientId', 'clientSecret', 'createdAt'],
+      properties: {
+        id: { type: 'string' },
+        status: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
+        clientId: { type: 'string' },
+        clientSecret: { type: 'string', description: 'Shown once; never returned again.' },
+        webhookUrl: { type: 'string', format: 'uri' },
+        webhookSecretFingerprint: { type: 'string', description: 'sha256 fingerprint of the webhookSecret for verification.' },
+        createdAt: isoDateTime,
+      },
+    },
     responseExample: `{
   "id": "agy_01HXYZABCD1234",
   "status": "pending",
   "clientId": "cli_brightstaff_prod",
   "clientSecret": "cs_8d4b…(shown once)",
+  "webhookUrl": "https://api.brightstaff.com.au/lovable/events",
+  "webhookSecretFingerprint": "sha256:9f86d081884c…",
   "createdAt": "2026-06-10T09:14:22Z"
 }`,
     errorCodes: [
       { code: '409 abn_exists', description: 'An agency with this ABN is already registered.' },
       { code: '422 validation_error', description: 'Missing or malformed fields. See `errors[]` in response.' },
+      { code: '422 webhook_url_unreachable', description: 'Platform verification ping to webhookUrl failed.' },
     ],
   },
 
@@ -153,6 +436,64 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'complianceDocuments', type: 'object[]', description: 'See ComplianceDocument schema.' },
       { name: 'rateCards', type: 'object[]', description: 'See RateCard schema.' },
     ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['id', 'name', 'status', 'createdAt', 'updatedAt'],
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        tradingName: { type: 'string' },
+        abn: { type: 'string' },
+        status: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
+        address: addressSchema,
+        complianceScore: { type: 'integer', minimum: 0, maximum: 100 },
+        fillRate: { type: 'number', minimum: 0, maximum: 100 },
+        avgTimeToFill: { type: 'integer', minimum: 0 },
+        reliabilityScore: { type: 'integer', minimum: 0, maximum: 100 },
+        complianceDocuments: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['id', 'type', 'name', 'issueDate', 'expiryDate', 'status'],
+            properties: {
+              id: { type: 'string' },
+              type: { type: 'string', enum: ['abn', 'insurance', 'licence', 'certification', 'policy', 'other'] },
+              name: { type: 'string' },
+              documentNumber: { type: 'string' },
+              issueDate: isoDate,
+              expiryDate: isoDate,
+              status: { type: 'string', enum: ['valid', 'expiring_soon', 'expired', 'missing'] },
+              fileUrl: { type: 'string', format: 'uri' },
+              uploadedAt: isoDateTime,
+              verifiedAt: { ...isoDateTime, nullable: true },
+              verifiedBy: { type: 'string' },
+            },
+          },
+        },
+        rateCards: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['id', 'roleName', 'baseRate', 'effectiveFrom'],
+            properties: {
+              id: { type: 'string' },
+              roleName: { type: 'string' },
+              baseRate: moneySchema,
+              casualLoading: { type: 'number', minimum: 0, maximum: 1 },
+              weekendRate: moneySchema,
+              publicHolidayRate: moneySchema,
+              overtimeRate: moneySchema,
+              nightShiftRate: moneySchema,
+              effectiveFrom: isoDate,
+              effectiveTo: { ...isoDate, nullable: true },
+            },
+          },
+        },
+        createdAt: isoDateTime,
+        updatedAt: isoDateTime,
+      },
+    },
     responseExample: `{
   "id": "agy_01HXYZ…",
   "name": "Bright Staffing Pty Ltd",
@@ -162,10 +503,13 @@ export const agencyApiSpec: ApiEndpoint[] = [
   "avgTimeToFill": 42,
   "reliabilityScore": 92,
   "complianceDocuments": [
-    { "type": "insurance", "name": "Public Liability $20M", "expiryDate": "2027-03-31", "status": "valid" }
+    { "id":"doc_88f2","type":"insurance","name":"Public Liability $20M",
+      "issueDate":"2026-04-01","expiryDate":"2027-03-31","status":"valid" }
   ],
   "rateCards": [
-    { "roleName": "Educator – Diploma", "baseRate": 38.50, "casualLoading": 0.25, "weekendRate": 48.13, "publicHolidayRate": 96.25, "effectiveFrom": "2026-01-01" }
+    { "id":"rc_1","roleName":"Educator – Diploma","baseRate":38.50,
+      "casualLoading":0.25,"weekendRate":48.13,"publicHolidayRate":96.25,
+      "effectiveFrom":"2026-01-01" }
   ]
 }`,
   },
@@ -188,14 +532,35 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'issueDate', type: 'string (ISO date)', required: true, description: 'Issue date.' },
       { name: 'expiryDate', type: 'string (ISO date)', required: true, description: 'Expiry date.' },
       { name: 'fileUrl', type: 'string (uri)', required: true, description: 'Signed URL to the PDF/image (must be HTTPS, ≤ 25 MB).' },
+      { name: 'fileSha256', type: 'string', required: false, description: 'Hex SHA-256 hash for integrity verification.' },
     ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['type', 'name', 'issueDate', 'expiryDate', 'fileUrl'],
+      properties: {
+        type: { type: 'string', enum: ['abn', 'insurance', 'licence', 'certification', 'policy', 'other'] },
+        name: { type: 'string', minLength: 2, maxLength: 200 },
+        documentNumber: { type: 'string' },
+        issueDate: isoDate,
+        expiryDate: isoDate,
+        fileUrl: { type: 'string', format: 'uri', pattern: '^https://' },
+        fileSha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+        coverageAmount: { type: 'number', minimum: 0, description: 'For insurance, the sum insured.' },
+        insurer: { type: 'string' },
+        jurisdiction: { type: 'string', description: 'State/territory the licence applies to.' },
+      },
+    },
     requestExample: `{
   "type": "insurance",
   "name": "Public Liability $20M",
   "documentNumber": "PL-998877",
   "issueDate": "2026-04-01",
   "expiryDate": "2027-03-31",
-  "fileUrl": "https://files.brightstaff.com.au/pl-998877.pdf?sig=…"
+  "fileUrl": "https://files.brightstaff.com.au/pl-998877.pdf?sig=…",
+  "fileSha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "coverageAmount": 20000000,
+  "insurer": "QBE"
 }`,
     responseBody: [
       { name: 'id', type: 'string', description: 'Document id.' },
@@ -203,7 +568,26 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'uploadedAt', type: 'string (ISO-8601)', description: 'Server timestamp.' },
       { name: 'verifiedAt', type: 'string|null', description: 'When platform verified it (null until reviewed).' },
     ],
-    responseExample: `{ "id":"doc_88f2…","status":"valid","uploadedAt":"2026-06-10T09:20:11Z","verifiedAt":null }`,
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['id', 'status', 'uploadedAt'],
+      properties: {
+        id: { type: 'string' },
+        status: { type: 'string', enum: ['valid', 'expiring_soon', 'expired', 'missing'] },
+        uploadedAt: isoDateTime,
+        verifiedAt: { ...isoDateTime, nullable: true },
+        verifiedBy: { type: 'string', nullable: true },
+        newComplianceScore: { type: 'integer', minimum: 0, maximum: 100 },
+      },
+    },
+    responseExample: `{
+  "id":"doc_88f2",
+  "status":"valid",
+  "uploadedAt":"2026-06-10T09:20:11Z",
+  "verifiedAt":null,
+  "newComplianceScore":96
+}`,
   },
 
   // ============ SHIFT REQUESTS (Broadcast → Agency) ============
@@ -211,58 +595,228 @@ export const agencyApiSpec: ApiEndpoint[] = [
     id: 'shift-broadcast',
     group: 'Shift Requests',
     method: 'POST',
-    path: '{agency.webhookUrl}/shifts.broadcast',
+    path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Signature',
-    summary: 'Broadcast a new open shift to the agency',
-    description: 'Fired when the tenant broadcasts an open shift. Agency must respond 200 within 5 s; matching candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates.',
-    requestHeaders: [
-      { name: 'X-Signature', type: 'string', required: true, description: 'hex(HMAC_SHA256(webhookSecret, rawBody))' },
-      { name: 'X-Event', type: 'string', required: true, description: 'Event name.', example: 'shift.broadcast' },
-      { name: 'X-Event-Id', type: 'string (uuid)', required: true, description: 'Unique event id (use for idempotency).' },
-    ],
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'shift.broadcast — open shift dispatched to agency',
+    description: 'Fired when the tenant broadcasts an open shift. Agency must respond 2xx within 5 s; matching candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates.',
+    webhook: {
+      eventName: 'shift.broadcast',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s. Body MAY include `{ "accepted": boolean, "estimatedCandidates": integer, "declineReason": string }` to short-circuit the matching pipeline.',
+      deadLetter: 'After attempt 8 the shift is marked as agency_unreachable and the platform tries the next-priority agency.',
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
     requestBody: [
-      { name: 'shiftRequestId', type: 'string', required: true, description: 'Platform shift request id.', example: 'sr_01HXYZ…' },
-      { name: 'tenantId', type: 'string', required: true, description: 'Originating tenant.' },
-      { name: 'clientName', type: 'string', required: true, description: 'End-client / location name.' },
-      { name: 'locationAddress', type: 'string', required: true, description: 'Address of the work site.' },
-      { name: 'date', type: 'string (ISO date)', required: true, description: 'Shift date.' },
-      { name: 'startTime', type: 'string (HH:mm)', required: true, description: 'Local start time.' },
-      { name: 'endTime', type: 'string (HH:mm)', required: true, description: 'Local end time.' },
-      { name: 'breakMinutes', type: 'integer', required: true, description: 'Unpaid break minutes.' },
-      { name: 'requirements', type: 'object[]', required: true, description: '[{ roleName, quantity, skills[], certifications[], minExperience }]' },
-      { name: 'urgency', type: 'enum', required: true, description: 'standard | urgent | critical' },
-      { name: 'fillMode', type: 'enum', required: true, description: 'express (auto-confirm first qualified) | managed (await agency selection)' },
-      { name: 'slaDeadline', type: 'string (ISO-8601)', required: true, description: 'Respond-by deadline.' },
-      { name: 'payRate', type: 'number', required: true, description: 'Pay rate $/hr to worker.' },
-      { name: 'chargeRate', type: 'number', required: true, description: 'Agreed charge rate $/hr.' },
-      { name: 'instructions', type: 'string', required: false, description: 'Free-text site instructions.' },
+      { name: 'eventId', type: 'string (uuid)', required: true, description: 'Echo of X-Lovable-Event-Id for idempotency at the payload level.' },
+      { name: 'eventType', type: 'string', required: true, description: 'Always "shift.broadcast".' },
+      { name: 'occurredAt', type: 'string (ISO-8601)', required: true, description: 'When the event was generated.' },
+      { name: 'apiVersion', type: 'string', required: true, description: 'Payload schema version.', example: '2026-06-01' },
+      { name: 'data.shiftRequestId', type: 'string', required: true, description: 'Platform shift request id.', example: 'sr_01HXYZ…' },
+      { name: 'data.tenantId', type: 'string', required: true, description: 'Originating tenant.' },
+      { name: 'data.clientName', type: 'string', required: true, description: 'End-client / location name.' },
+      { name: 'data.locationAddress', type: 'string', required: true, description: 'Address of the work site.' },
+      { name: 'data.locationCoordinates', type: 'object', required: false, description: '{ lat, lng } for distance matching.' },
+      { name: 'data.timezone', type: 'string', required: true, description: 'IANA timezone (e.g. Australia/Sydney) for date/startTime/endTime.' },
+      { name: 'data.date', type: 'string (ISO date)', required: true, description: 'Shift date (in location timezone).' },
+      { name: 'data.startTime', type: 'string (HH:mm)', required: true, description: 'Local start time.' },
+      { name: 'data.endTime', type: 'string (HH:mm)', required: true, description: 'Local end time.' },
+      { name: 'data.breakMinutes', type: 'integer', required: true, description: 'Unpaid break minutes.' },
+      { name: 'data.requirements', type: 'object[]', required: true, description: '[{ roleName, quantity, skills[], certifications[], minExperience }]' },
+      { name: 'data.urgency', type: 'enum', required: true, description: 'standard | urgent | critical' },
+      { name: 'data.fillMode', type: 'enum', required: true, description: 'express | managed' },
+      { name: 'data.slaDeadline', type: 'string (ISO-8601)', required: true, description: 'Respond-by deadline.' },
+      { name: 'data.payRate', type: 'number', required: true, description: 'Pay rate $/hr to worker.' },
+      { name: 'data.chargeRate', type: 'number', required: true, description: 'Agreed charge rate $/hr.' },
+      { name: 'data.currency', type: 'string', required: true, description: 'ISO 4217 currency code.', example: 'AUD' },
+      { name: 'data.instructions', type: 'string', required: false, description: 'Free-text site instructions.' },
+      { name: 'data.dresscode', type: 'string', required: false, description: 'Required attire.' },
+      { name: 'data.cancellationPolicy', type: 'object', required: false, description: '{ noticeHours, chargeIfWithinNotice }' },
     ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'apiVersion', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'shift.broadcast' },
+        occurredAt: isoDateTime,
+        apiVersion: { type: 'string' },
+        data: {
+          type: 'object',
+          required: ['shiftRequestId', 'tenantId', 'clientName', 'locationAddress', 'timezone', 'date', 'startTime', 'endTime', 'breakMinutes', 'requirements', 'urgency', 'fillMode', 'slaDeadline', 'payRate', 'chargeRate', 'currency'],
+          properties: {
+            shiftRequestId: { type: 'string' },
+            tenantId: { type: 'string' },
+            clientId: { type: 'string' },
+            clientName: { type: 'string' },
+            locationName: { type: 'string' },
+            locationAddress: { type: 'string' },
+            locationCoordinates: {
+              type: 'object',
+              properties: {
+                lat: { type: 'number', minimum: -90, maximum: 90 },
+                lng: { type: 'number', minimum: -180, maximum: 180 },
+              },
+              required: ['lat', 'lng'],
+            },
+            timezone: { type: 'string', example: 'Australia/Sydney' },
+            date: isoDate,
+            startTime: { type: 'string', pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' },
+            endTime: { type: 'string', pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' },
+            breakMinutes: { type: 'integer', minimum: 0, maximum: 480 },
+            totalPositions: { type: 'integer', minimum: 1 },
+            requirements: {
+              type: 'array',
+              minItems: 1,
+              items: {
+                type: 'object',
+                required: ['roleName', 'quantity'],
+                properties: {
+                  roleId: { type: 'string' },
+                  roleName: { type: 'string' },
+                  quantity: { type: 'integer', minimum: 1 },
+                  skills: { type: 'array', items: { type: 'string' }, default: [] },
+                  certifications: { type: 'array', items: { type: 'string' }, default: [] },
+                  minExperience: { type: 'integer', minimum: 0 },
+                  preferredCandidateIds: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
+            urgency: { type: 'string', enum: ['standard', 'urgent', 'critical'] },
+            fillMode: { type: 'string', enum: ['express', 'managed'] },
+            slaDeadline: isoDateTime,
+            payRate: moneySchema,
+            chargeRate: moneySchema,
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+            instructions: { type: 'string', maxLength: 2000 },
+            dresscode: { type: 'string' },
+            cancellationPolicy: {
+              type: 'object',
+              properties: {
+                noticeHours: { type: 'integer', minimum: 0 },
+                chargeIfWithinNotice: { type: 'string', enum: ['none', 'partial', 'full'] },
+              },
+            },
+          },
+        },
+      },
+    },
     requestExample: `{
-  "shiftRequestId": "sr_01HXYZ",
-  "tenantId": "tnt_4f9a",
-  "clientName": "Sunrise Early Learning – Bondi",
-  "locationAddress": "12 Beach Rd, Bondi NSW 2026",
-  "date": "2026-06-15",
-  "startTime": "07:30",
-  "endTime": "16:30",
-  "breakMinutes": 30,
-  "requirements": [
-    { "roleName": "Educator – Diploma", "quantity": 2, "skills": ["0-2yr room"], "certifications": ["WWCC","First Aid"], "minExperience": 2 }
-  ],
-  "urgency": "urgent",
-  "fillMode": "managed",
-  "slaDeadline": "2026-06-14T18:00:00+10:00",
-  "payRate": 38.50,
-  "chargeRate": 62.00,
-  "instructions": "Use staff entry on Curlewis St."
+  "eventId": "8a4e7e10-7e1c-4f0d-9c1e-bc2f4a8b1234",
+  "eventType": "shift.broadcast",
+  "occurredAt": "2026-06-10T09:00:00+10:00",
+  "apiVersion": "2026-06-01",
+  "data": {
+    "shiftRequestId": "sr_01HXYZ",
+    "tenantId": "tnt_4f9a",
+    "clientId": "loc_bondi",
+    "clientName": "Sunrise Early Learning – Bondi",
+    "locationAddress": "12 Beach Rd, Bondi NSW 2026",
+    "locationCoordinates": { "lat": -33.8915, "lng": 151.2767 },
+    "timezone": "Australia/Sydney",
+    "date": "2026-06-15",
+    "startTime": "07:30",
+    "endTime": "16:30",
+    "breakMinutes": 30,
+    "totalPositions": 2,
+    "requirements": [
+      {
+        "roleId": "role_edu_dip",
+        "roleName": "Educator – Diploma",
+        "quantity": 2,
+        "skills": ["0-2yr room"],
+        "certifications": ["WWCC","First Aid"],
+        "minExperience": 2
+      }
+    ],
+    "urgency": "urgent",
+    "fillMode": "managed",
+    "slaDeadline": "2026-06-14T18:00:00+10:00",
+    "payRate": 38.50,
+    "chargeRate": 62.00,
+    "currency": "AUD",
+    "instructions": "Use staff entry on Curlewis St.",
+    "cancellationPolicy": { "noticeHours": 24, "chargeIfWithinNotice": "partial" }
+  }
 }`,
     responseBody: [
       { name: 'accepted', type: 'boolean', description: 'Whether the agency accepts the brief.', example: true },
       { name: 'estimatedCandidates', type: 'integer', description: 'Number of candidates the agency expects to submit.', example: 3 },
       { name: 'declineReason', type: 'string', description: 'Required when accepted=false.' },
+      { name: 'received', type: 'boolean', description: 'Generic ACK if no decision yet. Defaults to true on any 2xx with no body.' },
     ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      properties: {
+        accepted: { type: 'boolean' },
+        estimatedCandidates: { type: 'integer', minimum: 0 },
+        declineReason: { type: 'string' },
+        received: { type: 'boolean' },
+      },
+      allOf: [{
+        if: { properties: { accepted: { const: false } }, required: ['accepted'] },
+        then: { required: ['declineReason'] },
+      }],
+    },
     responseExample: `{ "accepted": true, "estimatedCandidates": 3 }`,
+  },
+
+  {
+    id: 'shift-cancelled',
+    group: 'Shift Requests',
+    method: 'POST',
+    path: '{agency.webhookUrl}',
+    direction: 'webhook',
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'shift.cancelled — open shift withdrawn',
+    description: 'Fired when a tenant cancels a shift before it has been filled. Agency should stop matching candidates immediately.',
+    webhook: {
+      eventName: 'shift.cancelled',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s with empty body or `{ "received": true }`.',
+      deadLetter: 'Same as shift.broadcast.',
+    },
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'shift.cancelled' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['shiftRequestId', 'tenantId', 'cancelledAt', 'reason'],
+          properties: {
+            shiftRequestId: { type: 'string' },
+            tenantId: { type: 'string' },
+            cancelledBy: { type: 'string' },
+            cancelledAt: isoDateTime,
+            reason: { type: 'string', enum: ['filled_internally', 'no_longer_needed', 'duplicate', 'client_cancelled', 'other'] },
+            notes: { type: 'string' },
+            chargeAmount: { ...moneySchema, description: 'Cancellation fee if applicable.' },
+          },
+        },
+      },
+    },
+    requestExample: `{
+  "eventId": "c5b2…",
+  "eventType": "shift.cancelled",
+  "occurredAt": "2026-06-14T16:10:00+10:00",
+  "data": {
+    "shiftRequestId": "sr_01HXYZ",
+    "tenantId": "tnt_4f9a",
+    "cancelledBy": "Jane Manager",
+    "cancelledAt": "2026-06-14T16:10:00+10:00",
+    "reason": "no_longer_needed",
+    "chargeAmount": 0
+  }
+}`,
+    responseExample: `{ "received": true }`,
   },
 
   {
@@ -276,8 +830,16 @@ export const agencyApiSpec: ApiEndpoint[] = [
     description: 'Agency posts one or more candidates it proposes for the shift. Platform runs eligibility + compliance checks and returns per-candidate status.',
     pathParams: [{ name: 'shiftRequestId', type: 'string', required: true, description: 'Platform shift request id.' }],
     requestBody: [
-      { name: 'candidates', type: 'object[]', required: true, description: 'See Candidate schema below.' },
+      { name: 'candidates', type: 'object[]', required: true, description: 'See Candidate schema.' },
     ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['candidates'],
+      properties: {
+        candidates: { type: 'array', minItems: 1, maxItems: 50, items: candidateInputSchema },
+      },
+    },
     requestExample: `{
   "candidates": [
     {
@@ -286,32 +848,60 @@ export const agencyApiSpec: ApiEndpoint[] = [
       "lastName": "Nguyen",
       "email": "maria.n@brightstaff.com.au",
       "phone": "+61400999111",
+      "employmentType": "casual",
       "primaryRole": "Educator – Diploma",
       "yearsExperience": 5,
       "awardClassification": "CS Level 3.4",
       "payRate": 38.50,
       "skills": [{ "name":"0-2yr room","level":"advanced","yearsExperience":4 }],
       "certifications": [
-        { "name":"WWCC","issuer":"NSW Govt","expiryDate":"2028-02-10","status":"valid" },
-        { "name":"First Aid","issuer":"St John","expiryDate":"2026-09-01","status":"valid" }
+        { "name":"WWCC","issuer":"NSW Govt","issueDate":"2023-02-10","expiryDate":"2028-02-10","status":"valid","documentUrl":"https://files.brightstaff.com.au/wwcc.pdf" },
+        { "name":"First Aid","issuer":"St John","issueDate":"2024-09-01","expiryDate":"2026-09-01","status":"valid" }
       ],
+      "rightToWork": { "status":"citizen" },
       "complianceScore": 98,
       "reliabilityScore": 95,
-      "hoursWorkedThisWeek": 22
+      "hoursWorkedThisWeek": 22,
+      "lastShiftEndTime": "2026-06-14T16:30:00+10:00"
     }
   ]
 }`,
     responseBody: [
       { name: 'results', type: 'object[]', description: '[{ externalId, candidateId, matchScore, isEligible, ineligibilityReasons[] }]' },
     ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['results'],
+      properties: {
+        results: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['externalId', 'isEligible'],
+            properties: {
+              externalId: { type: 'string' },
+              candidateId: { type: 'string', description: 'Platform-side id assigned to this candidate. Empty if ineligible.' },
+              matchScore: { type: 'integer', minimum: 0, maximum: 100 },
+              skillMatch: { type: 'integer', minimum: 0, maximum: 100 },
+              proximityMatch: { type: 'integer', minimum: 0, maximum: 100 },
+              availabilityMatch: { type: 'integer', minimum: 0, maximum: 100 },
+              isEligible: { type: 'boolean' },
+              ineligibilityReasons: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+      },
+    },
     responseExample: `{
   "results": [
-    { "externalId":"bsc_993","candidateId":"cand_77a1","matchScore":92,"isEligible":true }
+    { "externalId":"bsc_993","candidateId":"cand_77a1","matchScore":92,"skillMatch":90,"proximityMatch":95,"availabilityMatch":91,"isEligible":true }
   ]
 }`,
     errorCodes: [
       { code: '404 shift_not_found', description: 'Shift request id not recognised.' },
       { code: '410 shift_closed', description: 'SLA expired or shift already filled.' },
+      { code: '422 candidate_validation_error', description: 'One or more candidate records failed schema validation.' },
     ],
   },
 
@@ -333,24 +923,64 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'breakMinutes', type: 'integer', required: true, description: 'Unpaid break minutes.' },
       { name: 'isBackup', type: 'boolean', required: false, description: 'Mark as standby candidate.', example: false },
       { name: 'backupPriority', type: 'integer', required: false, description: '1 = first standby.' },
+      { name: 'agreedPayRate', type: 'number', required: false, description: 'Per-placement override of broadcast pay rate.' },
+      { name: 'agreedChargeRate', type: 'number', required: false, description: 'Per-placement override of broadcast charge rate.' },
     ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['shiftRequestId', 'candidateId', 'scheduledStart', 'scheduledEnd', 'breakMinutes'],
+      properties: {
+        shiftRequestId: { type: 'string' },
+        candidateId: { type: 'string' },
+        scheduledStart: isoDateTime,
+        scheduledEnd: isoDateTime,
+        breakMinutes: { type: 'integer', minimum: 0, maximum: 480 },
+        isBackup: { type: 'boolean', default: false },
+        backupPriority: { type: 'integer', minimum: 1 },
+        agreedPayRate: moneySchema,
+        agreedChargeRate: moneySchema,
+        notes: { type: 'string', maxLength: 1000 },
+      },
+    },
     requestExample: `{
   "shiftRequestId": "sr_01HXYZ",
   "candidateId": "cand_77a1",
   "scheduledStart": "2026-06-15T07:30:00+10:00",
   "scheduledEnd": "2026-06-15T16:30:00+10:00",
   "breakMinutes": 30,
-  "isBackup": false
+  "isBackup": false,
+  "agreedChargeRate": 62.00
 }`,
     responseBody: [
       { name: 'id', type: 'string', description: 'Placement id.' },
       { name: 'status', type: 'enum', description: 'pending | confirmed | checked_in | completed | no_show | cancelled' },
       { name: 'assignedAt', type: 'string (ISO-8601)', description: 'Assignment timestamp.' },
     ],
-    responseExample: `{ "id":"plc_55ab","status":"confirmed","assignedAt":"2026-06-10T09:42:11Z" }`,
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['id', 'status', 'assignedAt'],
+      properties: {
+        id: { type: 'string' },
+        shiftRequestId: { type: 'string' },
+        candidateId: { type: 'string' },
+        status: { type: 'string', enum: ['pending', 'confirmed', 'checked_in', 'completed', 'no_show', 'cancelled'] },
+        assignedAt: isoDateTime,
+        confirmationDeadline: { ...isoDateTime, description: 'Managed mode only.' },
+      },
+    },
+    responseExample: `{
+  "id":"plc_55ab",
+  "shiftRequestId":"sr_01HXYZ",
+  "candidateId":"cand_77a1",
+  "status":"confirmed",
+  "assignedAt":"2026-06-10T09:42:11Z"
+}`,
     errorCodes: [
       { code: '409 already_filled', description: 'All positions already filled.' },
       { code: '422 not_eligible', description: 'Candidate failed eligibility (returned reasons in errors[]).' },
+      { code: '422 fatigue_violation', description: 'Candidate exceeds weekly hours or rest break rule.' },
     ],
   },
 
@@ -364,12 +994,22 @@ export const agencyApiSpec: ApiEndpoint[] = [
     summary: 'Update placement status (cancel / replace candidate)',
     description: 'Used to cancel a placement or swap to another candidate before the shift starts.',
     pathParams: [{ name: 'placementId', type: 'string', required: true, description: 'Placement id.' }],
-    requestBody: [
-      { name: 'status', type: 'enum', required: false, description: 'cancelled | confirmed' },
-      { name: 'replacementCandidateId', type: 'string', required: false, description: 'New candidate id (for swap).' },
-      { name: 'reason', type: 'string', required: false, description: 'Required when status=cancelled.' },
-    ],
-    requestExample: `{ "status":"cancelled","reason":"Candidate sick" }`,
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      minProperties: 1,
+      properties: {
+        status: { type: 'string', enum: ['cancelled', 'confirmed'] },
+        replacementCandidateId: { type: 'string' },
+        reason: { type: 'string', enum: ['candidate_sick', 'candidate_unavailable', 'duplicate', 'client_request', 'other'] },
+        notes: { type: 'string', maxLength: 1000 },
+      },
+      allOf: [{
+        if: { properties: { status: { const: 'cancelled' } }, required: ['status'] },
+        then: { required: ['reason'] },
+      }],
+    },
+    requestExample: `{ "status":"cancelled","reason":"candidate_sick","notes":"Flu, returning Monday." }`,
     responseExample: `{ "id":"plc_55ab","status":"cancelled","updatedAt":"2026-06-14T22:10:00+10:00" }`,
   },
 
@@ -377,29 +1017,71 @@ export const agencyApiSpec: ApiEndpoint[] = [
     id: 'placement-webhook',
     group: 'Placements',
     method: 'POST',
-    path: '{agency.webhookUrl}/placement.status',
+    path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Signature',
-    summary: 'Placement status change pushed to agency',
-    description: 'Emitted when status transitions: confirmed → checked_in → completed → no_show / cancelled.',
-    requestBody: [
-      { name: 'placementId', type: 'string', required: true, description: 'Placement id.' },
-      { name: 'shiftRequestId', type: 'string', required: true, description: 'Related shift.' },
-      { name: 'candidateId', type: 'string', required: true, description: 'Candidate id.' },
-      { name: 'status', type: 'enum', required: true, description: 'pending|confirmed|checked_in|completed|no_show|cancelled' },
-      { name: 'clockedInAt', type: 'string (ISO-8601)', required: false, description: 'Actual clock-in.' },
-      { name: 'clockedOutAt', type: 'string (ISO-8601)', required: false, description: 'Actual clock-out.' },
-      { name: 'geoLocationClockIn', type: 'object', required: false, description: '{ lat, lng }' },
-      { name: 'occurredAt', type: 'string (ISO-8601)', required: true, description: 'When this event happened.' },
-    ],
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'placement.status — placement lifecycle event',
+    description: 'Emitted on every transition: pending → confirmed → checked_in → completed; or → no_show / cancelled.',
+    webhook: {
+      eventName: 'placement.status',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s.',
+      deadLetter: 'Event moved to dead_letter; agency can replay via /v1/agencies/{agencyId}/webhook-deliveries.',
+    },
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'placement.status' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['placementId', 'shiftRequestId', 'candidateId', 'status', 'previousStatus'],
+          properties: {
+            placementId: { type: 'string' },
+            shiftRequestId: { type: 'string' },
+            candidateId: { type: 'string' },
+            externalCandidateId: { type: 'string', description: 'Agency-side candidate id, if known.' },
+            status: { type: 'string', enum: ['pending', 'confirmed', 'checked_in', 'completed', 'no_show', 'cancelled'] },
+            previousStatus: { type: 'string', enum: ['pending', 'confirmed', 'checked_in', 'completed', 'no_show', 'cancelled'] },
+            scheduledStart: isoDateTime,
+            scheduledEnd: isoDateTime,
+            clockedInAt: { ...isoDateTime, nullable: true },
+            clockedOutAt: { ...isoDateTime, nullable: true },
+            geoLocationClockIn: {
+              type: 'object',
+              properties: { lat: { type: 'number' }, lng: { type: 'number' }, accuracyMeters: { type: 'number' } },
+            },
+            geoLocationClockOut: {
+              type: 'object',
+              properties: { lat: { type: 'number' }, lng: { type: 'number' }, accuracyMeters: { type: 'number' } },
+            },
+            cancellationReason: { type: 'string' },
+            replacedByPlacementId: { type: 'string' },
+          },
+        },
+      },
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
     requestExample: `{
-  "placementId":"plc_55ab",
-  "shiftRequestId":"sr_01HXYZ",
-  "candidateId":"cand_77a1",
-  "status":"checked_in",
-  "clockedInAt":"2026-06-15T07:28:42+10:00",
-  "geoLocationClockIn":{ "lat":-33.8915,"lng":151.2767 },
-  "occurredAt":"2026-06-15T07:28:43+10:00"
+  "eventId":"e7c2…",
+  "eventType":"placement.status",
+  "occurredAt":"2026-06-15T07:28:43+10:00",
+  "data": {
+    "placementId":"plc_55ab",
+    "shiftRequestId":"sr_01HXYZ",
+    "candidateId":"cand_77a1",
+    "externalCandidateId":"bsc_993",
+    "status":"checked_in",
+    "previousStatus":"confirmed",
+    "scheduledStart":"2026-06-15T07:30:00+10:00",
+    "scheduledEnd":"2026-06-15T16:30:00+10:00",
+    "clockedInAt":"2026-06-15T07:28:42+10:00",
+    "geoLocationClockIn":{ "lat":-33.8915,"lng":151.2767,"accuracyMeters":12 }
+  }
 }`,
     responseExample: `{ "received": true }`,
   },
@@ -415,18 +1097,64 @@ export const agencyApiSpec: ApiEndpoint[] = [
     summary: 'Submit a timesheet for an agency placement',
     description: 'Submitted after the shift ends. Triggers approval workflow on the client side.',
     pathParams: [{ name: 'placementId', type: 'string', required: true, description: 'Placement id.' }],
-    requestBody: [
-      { name: 'actualStart', type: 'string (ISO-8601)', required: true, description: 'Actual start.' },
-      { name: 'actualEnd', type: 'string (ISO-8601)', required: true, description: 'Actual end.' },
-      { name: 'breakMinutes', type: 'integer', required: true, description: 'Unpaid break minutes taken.' },
-      { name: 'grossHours', type: 'number', required: true, description: 'Hours before break deduction.' },
-      { name: 'netHours', type: 'number', required: true, description: 'Hours after break deduction.' },
-      { name: 'overtimeHours', type: 'number', required: false, description: 'Overtime portion.' },
-      { name: 'allowances', type: 'object[]', required: false, description: '[{ name, type, amount, taxable }]' },
-      { name: 'exceptions', type: 'object[]', required: false, description: '[{ reason, note }] — see ExceptionReason enum.' },
-      { name: 'supervisorSignatureUrl', type: 'string (uri)', required: false, description: 'Signed image of supervisor approval.' },
-      { name: 'notes', type: 'string', required: false, description: 'Free-text notes.' },
-    ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['actualStart', 'actualEnd', 'breakMinutes', 'grossHours', 'netHours'],
+      properties: {
+        actualStart: isoDateTime,
+        actualEnd: isoDateTime,
+        breakMinutes: { type: 'integer', minimum: 0, maximum: 480 },
+        grossHours: { type: 'number', minimum: 0, multipleOf: 0.01 },
+        netHours: { type: 'number', minimum: 0, multipleOf: 0.01 },
+        overtimeHours: { type: 'number', minimum: 0, multipleOf: 0.01 },
+        publicHolidayHours: { type: 'number', minimum: 0 },
+        nightShiftHours: { type: 'number', minimum: 0 },
+        allowances: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['name', 'type', 'amount', 'taxable'],
+            properties: {
+              name: { type: 'string' },
+              type: { type: 'string', enum: ['per_shift', 'per_hour', 'per_km', 'fixed'] },
+              amount: moneySchema,
+              quantity: { type: 'number', minimum: 0 },
+              taxable: { type: 'boolean' },
+            },
+          },
+        },
+        exceptions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['reason'],
+            properties: {
+              reason: { type: 'string', enum: ['unpaid_overtime', 'late_start', 'early_finish', 'no_break_taken', 'incident', 'equipment_issue', 'other'] },
+              note: { type: 'string', maxLength: 1000 },
+            },
+          },
+        },
+        supervisorSignatureUrl: { type: 'string', format: 'uri' },
+        supervisorName: { type: 'string' },
+        supervisorApprovedAt: isoDateTime,
+        clockEvents: {
+          type: 'array',
+          description: 'Raw clock-in/out events for audit. Optional.',
+          items: {
+            type: 'object',
+            required: ['type', 'timestamp'],
+            properties: {
+              type: { type: 'string', enum: ['clock_in', 'clock_out', 'break_start', 'break_end'] },
+              timestamp: isoDateTime,
+              geo: { type: 'object', properties: { lat: { type: 'number' }, lng: { type: 'number' } } },
+              source: { type: 'string', enum: ['mobile', 'kiosk', 'manual'] },
+            },
+          },
+        },
+        notes: { type: 'string', maxLength: 2000 },
+      },
+    },
     requestExample: `{
   "actualStart":"2026-06-15T07:28:42+10:00",
   "actualEnd":"2026-06-15T16:32:10+10:00",
@@ -434,42 +1162,104 @@ export const agencyApiSpec: ApiEndpoint[] = [
   "grossHours":9.05,
   "netHours":8.55,
   "overtimeHours":0.55,
-  "allowances":[{ "name":"Travel","type":"per_shift","amount":15.00,"taxable":true }],
-  "exceptions":[{ "reason":"unpaid_overtime","note":"Stayed late for handover" }],
-  "supervisorSignatureUrl":"https://files.brightstaff.com.au/sig_plc55ab.png"
+  "allowances":[
+    { "name":"Travel","type":"per_shift","amount":15.00,"taxable":true }
+  ],
+  "exceptions":[
+    { "reason":"unpaid_overtime","note":"Stayed late for handover" }
+  ],
+  "supervisorSignatureUrl":"https://files.brightstaff.com.au/sig_plc55ab.png",
+  "supervisorName":"Priya Manager",
+  "supervisorApprovedAt":"2026-06-15T16:35:00+10:00",
+  "clockEvents":[
+    { "type":"clock_in","timestamp":"2026-06-15T07:28:42+10:00","source":"mobile" },
+    { "type":"break_start","timestamp":"2026-06-15T12:00:00+10:00","source":"mobile" },
+    { "type":"break_end","timestamp":"2026-06-15T12:30:00+10:00","source":"mobile" },
+    { "type":"clock_out","timestamp":"2026-06-15T16:32:10+10:00","source":"mobile" }
+  ]
 }`,
-    responseBody: [
-      { name: 'timesheetId', type: 'string', description: 'Platform timesheet id.' },
-      { name: 'status', type: 'enum', description: 'pending | approved | rejected' },
-      { name: 'submittedAt', type: 'string (ISO-8601)', description: 'Server timestamp.' },
-    ],
-    responseExample: `{ "timesheetId":"ts_91cd","status":"pending","submittedAt":"2026-06-15T16:40:02+10:00" }`,
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['timesheetId', 'status', 'submittedAt'],
+      properties: {
+        timesheetId: { type: 'string' },
+        status: { type: 'string', enum: ['pending', 'approved', 'rejected'] },
+        submittedAt: isoDateTime,
+        approvalDeadline: isoDateTime,
+      },
+    },
+    responseExample: `{ "timesheetId":"ts_91cd","status":"pending","submittedAt":"2026-06-15T16:40:02+10:00","approvalDeadline":"2026-06-17T16:40:02+10:00" }`,
   },
 
   {
     id: 'timesheet-status-webhook',
     group: 'Timesheets',
     method: 'POST',
-    path: '{agency.webhookUrl}/timesheet.status',
+    path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Signature',
-    summary: 'Timesheet approved / rejected event',
-    requestBody: [
-      { name: 'timesheetId', type: 'string', required: true, description: 'Timesheet id.' },
-      { name: 'placementId', type: 'string', required: true, description: 'Related placement.' },
-      { name: 'status', type: 'enum', required: true, description: 'approved | rejected' },
-      { name: 'reviewedBy', type: 'string', required: true, description: 'Reviewer name.' },
-      { name: 'reviewedAt', type: 'string (ISO-8601)', required: true, description: 'Decision timestamp.' },
-      { name: 'rejectionReason', type: 'string', required: false, description: 'Required when status=rejected.' },
-      { name: 'approvedHours', type: 'number', required: false, description: 'Adjusted hours if reviewer edited.' },
-    ],
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'timesheet.status — approval / rejection',
+    webhook: {
+      eventName: 'timesheet.status',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s.',
+      deadLetter: 'Same as other webhooks.',
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'timesheet.status' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['timesheetId', 'placementId', 'status', 'reviewedBy', 'reviewedAt'],
+          properties: {
+            timesheetId: { type: 'string' },
+            placementId: { type: 'string' },
+            shiftRequestId: { type: 'string' },
+            status: { type: 'string', enum: ['approved', 'rejected'] },
+            reviewedBy: { type: 'string' },
+            reviewedAt: isoDateTime,
+            rejectionReason: { type: 'string' },
+            approvedHours: { type: 'number', minimum: 0 },
+            approvedOvertimeHours: { type: 'number', minimum: 0 },
+            adjustments: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['field', 'from', 'to', 'reason'],
+                properties: {
+                  field: { type: 'string', enum: ['actualStart', 'actualEnd', 'breakMinutes', 'netHours'] },
+                  from: { type: ['string', 'number'] },
+                  to: { type: ['string', 'number'] },
+                  reason: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     requestExample: `{
-  "timesheetId":"ts_91cd",
-  "placementId":"plc_55ab",
-  "status":"approved",
-  "reviewedBy":"Jane Manager",
-  "reviewedAt":"2026-06-16T09:14:00+10:00",
-  "approvedHours":8.55
+  "eventId":"a91c…",
+  "eventType":"timesheet.status",
+  "occurredAt":"2026-06-16T09:14:00+10:00",
+  "data": {
+    "timesheetId":"ts_91cd",
+    "placementId":"plc_55ab",
+    "shiftRequestId":"sr_01HXYZ",
+    "status":"approved",
+    "reviewedBy":"Jane Manager",
+    "reviewedAt":"2026-06-16T09:14:00+10:00",
+    "approvedHours":8.55,
+    "approvedOvertimeHours":0.55
+  }
 }`,
     responseExample: `{ "received": true }`,
   },
@@ -484,39 +1274,105 @@ export const agencyApiSpec: ApiEndpoint[] = [
     auth: 'Bearer (agency)',
     summary: 'Generate invoice for approved timesheets',
     description: 'Roll up one or more approved timesheets into an invoice. Platform validates line items against approved hours and rate cards.',
-    requestBody: [
-      { name: 'invoiceNumber', type: 'string', required: true, description: 'Agency-issued number.', example: 'INV-2026-00091' },
-      { name: 'periodStart', type: 'string (ISO date)', required: true, description: 'Billing period start.' },
-      { name: 'periodEnd', type: 'string (ISO date)', required: true, description: 'Billing period end.' },
-      { name: 'clientId', type: 'string', required: true, description: 'Billed client (tenant) id.' },
-      { name: 'lineItems', type: 'object[]', required: true, description: '[{ placementId, hours, rate, loadings[], total }]' },
-      { name: 'subtotal', type: 'number', required: true, description: 'Sum of line items ex-GST.' },
-      { name: 'gst', type: 'number', required: true, description: 'GST amount (10% AU).' },
-      { name: 'total', type: 'number', required: true, description: 'Grand total inc-GST.' },
-      { name: 'dueDate', type: 'string (ISO date)', required: true, description: 'Payment due date.' },
-      { name: 'pdfUrl', type: 'string (uri)', required: false, description: 'Signed URL to invoice PDF.' },
-    ],
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['invoiceNumber', 'periodStart', 'periodEnd', 'clientId', 'lineItems', 'subtotal', 'gst', 'total', 'dueDate', 'currency'],
+      properties: {
+        invoiceNumber: { type: 'string', maxLength: 50 },
+        periodStart: isoDate,
+        periodEnd: isoDate,
+        clientId: { type: 'string' },
+        currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+        lineItems: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            required: ['description', 'hours', 'rate', 'subtotal', 'total'],
+            properties: {
+              id: { type: 'string' },
+              placementId: { type: 'string' },
+              timesheetId: { type: 'string' },
+              candidateName: { type: 'string' },
+              shiftDate: isoDate,
+              description: { type: 'string' },
+              hours: { type: 'number', minimum: 0 },
+              rate: moneySchema,
+              subtotal: moneySchema,
+              loadings: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  required: ['type', 'percentage', 'amount'],
+                  properties: {
+                    type: { type: 'string', enum: ['weekend', 'public_holiday', 'overtime', 'night_shift', 'casual_loading', 'other'] },
+                    percentage: { type: 'number', minimum: 0 },
+                    amount: moneySchema,
+                  },
+                },
+              },
+              total: moneySchema,
+            },
+          },
+        },
+        subtotal: moneySchema,
+        gst: moneySchema,
+        total: moneySchema,
+        dueDate: isoDate,
+        paymentTerms: { type: 'string', description: 'e.g. NET-30.' },
+        purchaseOrderNumber: { type: 'string' },
+        pdfUrl: { type: 'string', format: 'uri' },
+        bankDetails: {
+          type: 'object',
+          properties: {
+            bsb: { type: 'string' },
+            accountNumber: { type: 'string' },
+            accountName: { type: 'string' },
+          },
+        },
+      },
+    },
     requestExample: `{
   "invoiceNumber":"INV-2026-00091",
   "periodStart":"2026-06-08",
   "periodEnd":"2026-06-14",
   "clientId":"tnt_4f9a",
+  "currency":"AUD",
   "lineItems":[
-    { "placementId":"plc_55ab","hours":8.55,"rate":62.00,
+    {
+      "placementId":"plc_55ab",
+      "timesheetId":"ts_91cd",
+      "candidateName":"Maria Nguyen",
+      "shiftDate":"2026-06-15",
+      "description":"Educator – Diploma · Bondi",
+      "hours":8.55,
+      "rate":62.00,
+      "subtotal":530.10,
       "loadings":[{ "type":"weekend","percentage":25,"amount":132.55 }],
-      "total":662.65 }
+      "total":662.65
+    }
   ],
   "subtotal":662.65,
   "gst":66.27,
   "total":728.92,
-  "dueDate":"2026-07-14"
+  "dueDate":"2026-07-14",
+  "paymentTerms":"NET-30",
+  "purchaseOrderNumber":"PO-2026-AC-118"
 }`,
-    responseBody: [
-      { name: 'id', type: 'string', description: 'Platform invoice id.' },
-      { name: 'status', type: 'enum', description: 'draft | sent | paid | overdue | disputed' },
-      { name: 'createdAt', type: 'string (ISO-8601)', description: 'Server timestamp.' },
-    ],
-    responseExample: `{ "id":"inv_22ef","status":"sent","createdAt":"2026-06-16T10:00:00+10:00" }`,
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['id', 'status', 'createdAt'],
+      properties: {
+        id: { type: 'string' },
+        invoiceNumber: { type: 'string' },
+        status: { type: 'string', enum: ['draft', 'sent', 'paid', 'overdue', 'disputed'] },
+        createdAt: isoDateTime,
+        dueDate: isoDate,
+      },
+    },
+    responseExample: `{ "id":"inv_22ef","invoiceNumber":"INV-2026-00091","status":"sent","createdAt":"2026-06-16T10:00:00+10:00","dueDate":"2026-07-14" }`,
     errorCodes: [
       { code: '422 line_item_mismatch', description: 'A line item does not match approved hours or contracted rate.' },
       { code: '409 duplicate_invoice_number', description: 'invoiceNumber already used for this agency.' },
@@ -527,26 +1383,255 @@ export const agencyApiSpec: ApiEndpoint[] = [
     id: 'invoice-status-webhook',
     group: 'Invoices',
     method: 'POST',
-    path: '{agency.webhookUrl}/invoice.status',
+    path: '{agency.webhookUrl}',
     direction: 'webhook',
-    auth: 'HMAC X-Signature',
-    summary: 'Invoice payment / dispute update',
-    requestBody: [
-      { name: 'invoiceId', type: 'string', required: true, description: 'Platform invoice id.' },
-      { name: 'invoiceNumber', type: 'string', required: true, description: 'Agency invoice number.' },
-      { name: 'status', type: 'enum', required: true, description: 'sent | paid | overdue | disputed' },
-      { name: 'paidAt', type: 'string (ISO-8601)', required: false, description: 'When payment was settled.' },
-      { name: 'amountPaid', type: 'number', required: false, description: 'Amount settled.' },
-      { name: 'disputeReason', type: 'string', required: false, description: 'Required when status=disputed.' },
-    ],
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'invoice.status — payment / dispute update',
+    webhook: {
+      eventName: 'invoice.status',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s.',
+      deadLetter: 'Same as other webhooks.',
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'invoice.status' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['invoiceId', 'invoiceNumber', 'status'],
+          properties: {
+            invoiceId: { type: 'string' },
+            invoiceNumber: { type: 'string' },
+            status: { type: 'string', enum: ['sent', 'paid', 'overdue', 'disputed', 'cancelled'] },
+            paidAt: { ...isoDateTime, nullable: true },
+            amountPaid: moneySchema,
+            currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+            paymentReference: { type: 'string' },
+            disputeReason: { type: 'string' },
+            disputedLineItemIds: { type: 'array', items: { type: 'string' } },
+          },
+        },
+      },
+    },
     requestExample: `{
-  "invoiceId":"inv_22ef",
-  "invoiceNumber":"INV-2026-00091",
-  "status":"paid",
-  "paidAt":"2026-06-30T11:22:00+10:00",
-  "amountPaid":728.92
+  "eventId":"f3b9…",
+  "eventType":"invoice.status",
+  "occurredAt":"2026-06-30T11:22:00+10:00",
+  "data": {
+    "invoiceId":"inv_22ef",
+    "invoiceNumber":"INV-2026-00091",
+    "status":"paid",
+    "paidAt":"2026-06-30T11:22:00+10:00",
+    "amountPaid":728.92,
+    "currency":"AUD",
+    "paymentReference":"EFT-998812"
+  }
 }`,
     responseExample: `{ "received": true }`,
+  },
+
+  // ============ AGENCY STATUS WEBHOOK ============
+  {
+    id: 'agency-status-webhook',
+    group: 'Agency Profile',
+    method: 'POST',
+    path: '{agency.webhookUrl}',
+    direction: 'webhook',
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'agency.status.changed — agency activated / suspended',
+    webhook: {
+      eventName: 'agency.status.changed',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s.',
+      deadLetter: 'Same as other webhooks.',
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'agency.status.changed' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['agencyId', 'status', 'previousStatus'],
+          properties: {
+            agencyId: { type: 'string' },
+            status: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
+            previousStatus: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
+            reason: { type: 'string' },
+            effectiveAt: isoDateTime,
+          },
+        },
+      },
+    },
+    requestExample: `{
+  "eventId":"d2a1…",
+  "eventType":"agency.status.changed",
+  "occurredAt":"2026-06-10T09:30:00Z",
+  "data": {
+    "agencyId":"agy_01HXYZ",
+    "status":"active",
+    "previousStatus":"pending",
+    "reason":"All compliance documents verified.",
+    "effectiveAt":"2026-06-10T09:30:00Z"
+  }
+}`,
+    responseExample: `{ "received": true }`,
+  },
+
+  {
+    id: 'compliance-expiring-webhook',
+    group: 'Compliance',
+    method: 'POST',
+    path: '{agency.webhookUrl}',
+    direction: 'webhook',
+    auth: 'HMAC X-Lovable-Signature',
+    summary: 'compliance.document.expiring — document about to expire',
+    description: 'Fired 60, 30, 14 and 1 days before expiry, then daily until renewed or status flips to expired.',
+    webhook: {
+      eventName: 'compliance.document.expiring',
+      deliveryHeaders: agencyWebhookDeliveryHeaders,
+      retrySchedule: agencyWebhookRetrySchedule.map(r => `Attempt ${r.attempt}: ${r.delay} (cumulative ${r.cumulative})`),
+      expectedResponse: '2xx within 5 s.',
+      deadLetter: 'Same as other webhooks.',
+    },
+    requestHeaders: agencyWebhookDeliveryHeaders,
+    requestSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['eventId', 'eventType', 'occurredAt', 'data'],
+      properties: {
+        eventId: { type: 'string', format: 'uuid' },
+        eventType: { type: 'string', const: 'compliance.document.expiring' },
+        occurredAt: isoDateTime,
+        data: {
+          type: 'object',
+          required: ['agencyId', 'documentId', 'type', 'expiryDate', 'daysUntilExpiry'],
+          properties: {
+            agencyId: { type: 'string' },
+            documentId: { type: 'string' },
+            type: { type: 'string', enum: ['abn', 'insurance', 'licence', 'certification', 'policy', 'other'] },
+            name: { type: 'string' },
+            expiryDate: isoDate,
+            daysUntilExpiry: { type: 'integer' },
+            severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
+          },
+        },
+      },
+    },
+    requestExample: `{
+  "eventId":"b8c3…",
+  "eventType":"compliance.document.expiring",
+  "occurredAt":"2027-02-01T09:00:00Z",
+  "data": {
+    "agencyId":"agy_01HXYZ",
+    "documentId":"doc_88f2",
+    "type":"insurance",
+    "name":"Public Liability $20M",
+    "expiryDate":"2027-03-31",
+    "daysUntilExpiry":58,
+    "severity":"info"
+  }
+}`,
+    responseExample: `{ "received": true }`,
+  },
+
+  // ============ WEBHOOK DELIVERIES (introspection) ============
+  {
+    id: 'webhook-deliveries-list',
+    group: 'Webhook Deliveries',
+    method: 'GET',
+    path: '/v1/agencies/{agencyId}/webhook-deliveries',
+    direction: 'outbound',
+    auth: 'Bearer (agency)',
+    summary: 'List webhook deliveries (debug / replay)',
+    pathParams: [{ name: 'agencyId', type: 'string', required: true, description: 'Agency id.' }],
+    queryParams: [
+      { name: 'status', type: 'enum', required: false, description: 'pending | success | failed | dead_letter' },
+      { name: 'eventType', type: 'string', required: false, description: 'Filter by event name.' },
+      { name: 'from', type: 'string (ISO-8601)', required: false, description: 'Created from.' },
+      { name: 'to', type: 'string (ISO-8601)', required: false, description: 'Created to.' },
+      { name: 'cursor', type: 'string', required: false, description: 'Pagination cursor.' },
+      { name: 'limit', type: 'integer', required: false, description: 'Default 50, max 200.' },
+    ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['data'],
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['id', 'eventId', 'eventType', 'status', 'attempts', 'createdAt'],
+            properties: {
+              id: { type: 'string' },
+              eventId: { type: 'string', format: 'uuid' },
+              eventType: { type: 'string' },
+              status: { type: 'string', enum: ['pending', 'success', 'failed', 'dead_letter'] },
+              attempts: { type: 'integer', minimum: 1 },
+              lastAttemptAt: isoDateTime,
+              nextAttemptAt: { ...isoDateTime, nullable: true },
+              responseStatus: { type: 'integer' },
+              responseBody: { type: 'string' },
+              createdAt: isoDateTime,
+            },
+          },
+        },
+        nextCursor: { type: 'string', nullable: true },
+      },
+    },
+    responseExample: `{
+  "data": [
+    {
+      "id":"whd_01HZ",
+      "eventId":"8a4e7e10-…",
+      "eventType":"shift.broadcast",
+      "status":"success",
+      "attempts":1,
+      "lastAttemptAt":"2026-06-10T09:00:01+10:00",
+      "responseStatus":200,
+      "createdAt":"2026-06-10T09:00:00+10:00"
+    }
+  ],
+  "nextCursor": null
+}`,
+  },
+
+  {
+    id: 'webhook-deliveries-replay',
+    group: 'Webhook Deliveries',
+    method: 'POST',
+    path: '/v1/agencies/{agencyId}/webhook-deliveries/{deliveryId}/replay',
+    direction: 'inbound',
+    auth: 'Bearer (agency)',
+    summary: 'Replay a failed / dead-lettered webhook',
+    pathParams: [
+      { name: 'agencyId', type: 'string', required: true, description: 'Agency id.' },
+      { name: 'deliveryId', type: 'string', required: true, description: 'Webhook delivery id.' },
+    ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['deliveryId', 'status', 'queuedAt'],
+      properties: {
+        deliveryId: { type: 'string' },
+        status: { type: 'string', enum: ['queued', 'success', 'failed'] },
+        queuedAt: isoDateTime,
+      },
+    },
+    responseExample: `{ "deliveryId":"whd_01HZ","status":"queued","queuedAt":"2026-06-11T10:00:00+10:00" }`,
   },
 
   // ============ ANALYTICS ============
@@ -563,23 +1648,29 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { name: 'from', type: 'string (ISO date)', required: false, description: 'Period start.' },
       { name: 'to', type: 'string (ISO date)', required: false, description: 'Period end.' },
     ],
-    responseBody: [
-      { name: 'totalShiftsRequested', type: 'integer', description: 'Shifts broadcast in period.' },
-      { name: 'totalShiftsFilled', type: 'integer', description: 'Shifts successfully filled.' },
-      { name: 'fillRate', type: 'number', description: 'Percentage filled.' },
-      { name: 'avgTimeToFillMinutes', type: 'integer', description: 'Avg minutes to fill.' },
-      { name: 'totalRevenue', type: 'number', description: 'Billed revenue.' },
-      { name: 'totalCost', type: 'number', description: 'Worker pay cost.' },
-      { name: 'grossProfit', type: 'number', description: 'Revenue − cost.' },
-      { name: 'marginPercentage', type: 'number', description: 'Margin %.' },
-      { name: 'complianceAlerts', type: 'integer', description: 'Current open compliance alerts.' },
-      { name: 'expiringDocuments', type: 'integer', description: 'Docs expiring < 30 days.' },
-    ],
+    responseSchema: {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      type: 'object',
+      required: ['totalShiftsRequested', 'totalShiftsFilled', 'fillRate'],
+      properties: {
+        totalShiftsRequested: { type: 'integer', minimum: 0 },
+        totalShiftsFilled: { type: 'integer', minimum: 0 },
+        fillRate: { type: 'number', minimum: 0, maximum: 100 },
+        avgTimeToFillMinutes: { type: 'integer', minimum: 0 },
+        totalRevenue: moneySchema,
+        totalCost: moneySchema,
+        grossProfit: { type: 'number' },
+        marginPercentage: { type: 'number' },
+        complianceAlerts: { type: 'integer', minimum: 0 },
+        expiringDocuments: { type: 'integer', minimum: 0 },
+        currency: { type: 'string', pattern: '^[A-Z]{3}$' },
+      },
+    },
     responseExample: `{
   "totalShiftsRequested":124,"totalShiftsFilled":108,"fillRate":87.1,
   "avgTimeToFillMinutes":42,"totalRevenue":58420.00,"totalCost":36210.00,
   "grossProfit":22210.00,"marginPercentage":38.0,
-  "complianceAlerts":1,"expiringDocuments":2
+  "complianceAlerts":1,"expiringDocuments":2,"currency":"AUD"
 }`,
   },
 ];
@@ -588,6 +1679,7 @@ export const agencyApiCommonHeaders = commonHeaders;
 
 export const agencyApiErrorEnvelope = {
   description: 'All 4xx/5xx responses follow this envelope.',
+  schema: errorEnvelopeSchema,
   example: `{
   "error": {
     "code": "validation_error",
@@ -601,8 +1693,13 @@ export const agencyApiErrorEnvelope = {
 };
 
 export const agencyApiWebhookNotes = [
-  'All webhooks require X-Signature: hex(HMAC_SHA256(webhookSecret, rawBody)). Reject if mismatch.',
-  'X-Event-Id is unique per event — use it for idempotency (ignore duplicates).',
-  'Respond within 5 seconds with HTTP 2xx. Non-2xx triggers exponential-backoff retry up to 24h.',
-  'Retries use the same X-Event-Id; ensure handler is idempotent.',
+  'Transport: HTTPS POST (TLS 1.2+). Bodies are UTF-8 JSON.',
+  'Signing: X-Lovable-Signature = "t=<unix_ts>,v1=<hex>" where hex = HMAC_SHA256(webhookSecret, "<unix_ts>." + rawBody). Verify the timestamp is within 5 minutes of now to prevent replay.',
+  'Idempotency: X-Lovable-Event-Id is unique per logical event. Persist seen ids for ≥ 48 h and treat duplicates as no-ops.',
+  'Delivery attempts: X-Lovable-Delivery-Id changes per attempt; X-Lovable-Delivery-Attempt counts from 1 (max 8).',
+  'Expected response: HTTP 2xx within 5 s. Body is optional; for shift.broadcast you may return { accepted, estimatedCandidates, declineReason } to control downstream behaviour.',
+  'Retries: 30 s, 2 m, 10 m, 1 h, 6 h, 12 h, 24 h (cumulative ≈ 43 h). After 8 failed attempts the event is dead-lettered.',
+  'Dead-letter: replay via POST /v1/agencies/{agencyId}/webhook-deliveries/{deliveryId}/replay. Visible for 30 days.',
+  '410 Gone: respond 410 to permanently reject an event. Three consecutive 410s on any subscription suspend that subscription pending re-confirmation.',
+  'Auto-disable: if no 2xx is received for 24 h across any events, the webhook is disabled and the agency primary contact is emailed.',
 ];
