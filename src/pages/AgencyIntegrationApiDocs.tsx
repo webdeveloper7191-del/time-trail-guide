@@ -117,6 +117,24 @@ const EndpointCard: React.FC<{ ep: ApiEndpoint }> = ({ ep }) => {
         <div className="text-[11px] text-muted-foreground mt-1">Auth: <span className="font-mono">{ep.auth}</span></div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {ep.webhook && (
+          <section className="rounded-md border bg-fuchsia-50/40 border-fuchsia-200 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Webhook className="h-4 w-4 text-fuchsia-700" />
+              <h4 className="text-sm font-semibold">Webhook delivery — <span className="font-mono">{ep.webhook.eventName}</span></h4>
+            </div>
+            <div className="text-xs grid sm:grid-cols-2 gap-2">
+              <div><span className="font-semibold">Expected response:</span> {ep.webhook.expectedResponse}</div>
+              <div><span className="font-semibold">Dead-letter:</span> {ep.webhook.deadLetter}</div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold mb-1">Retry schedule</div>
+              <ul className="text-xs list-disc pl-5 space-y-0.5">
+                {ep.webhook.retrySchedule.map((r, i) => <li key={i} className="font-mono">{r}</li>)}
+              </ul>
+            </div>
+          </section>
+        )}
         {ep.requestHeaders && ep.requestHeaders.length > 0 && (
           <section>
             <h4 className="text-sm font-semibold mb-2">Headers</h4>
@@ -141,6 +159,14 @@ const EndpointCard: React.FC<{ ep: ApiEndpoint }> = ({ ep }) => {
             <FieldsTable fields={ep.requestBody} />
           </section>
         )}
+        {ep.requestSchema && (
+          <details className="rounded-md border bg-muted/30">
+            <summary className="cursor-pointer text-xs font-semibold px-3 py-2">Request JSON Schema</summary>
+            <div className="p-3 pt-0">
+              <CodeBlock code={JSON.stringify(ep.requestSchema, null, 2)} label="JSON Schema (Draft 2020-12)" />
+            </div>
+          </details>
+        )}
         {ep.requestExample && (
           <section>
             <h4 className="text-sm font-semibold mb-2">Request example</h4>
@@ -152,6 +178,14 @@ const EndpointCard: React.FC<{ ep: ApiEndpoint }> = ({ ep }) => {
             <h4 className="text-sm font-semibold mb-2">Response body</h4>
             <FieldsTable fields={ep.responseBody} />
           </section>
+        )}
+        {ep.responseSchema && (
+          <details className="rounded-md border bg-muted/30">
+            <summary className="cursor-pointer text-xs font-semibold px-3 py-2">Response JSON Schema</summary>
+            <div className="p-3 pt-0">
+              <CodeBlock code={JSON.stringify(ep.responseSchema, null, 2)} label="JSON Schema (Draft 2020-12)" />
+            </div>
+          </details>
         )}
         {ep.responseExample && (
           <section>
