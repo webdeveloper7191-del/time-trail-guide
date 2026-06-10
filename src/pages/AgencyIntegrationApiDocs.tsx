@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, ArrowDownToLine, ArrowUpFromLine, Webhook, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Search, ArrowDownToLine, ArrowUpFromLine, Webhook, Copy, Check, Send } from 'lucide-react';
+import DispatchShiftToAgenciesDialog from '@/components/agency/DispatchShiftToAgenciesDialog';
 import {
   agencyApiSpec,
   agencyApiCommonHeaders,
@@ -224,6 +225,7 @@ const EndpointCard: React.FC<{ ep: ApiEndpoint }> = ({ ep }) => {
 const AgencyIntegrationApiDocs: React.FC = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [dispatchOpen, setDispatchOpen] = useState(false);
   const groups = useMemo(() => {
     const g: Record<string, ApiEndpoint[]> = {};
     for (const ep of agencyApiSpec) {
@@ -254,6 +256,9 @@ const AgencyIntegrationApiDocs: React.FC = () => {
             <h1 className="text-xl font-semibold tracking-tight">Agency Integration API</h1>
             <p className="text-sm text-muted-foreground">Request &amp; response contracts for integrating 3rd-party staffing agency platforms.</p>
           </div>
+          <Button size="sm" onClick={() => setDispatchOpen(true)}>
+            <Send className="h-4 w-4 mr-1.5" /> Dispatch shift
+          </Button>
           <div className="relative w-72">
             <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search endpoints…" className="pl-8 h-9" />
@@ -505,6 +510,7 @@ export function verifyLovableSignature(rawBody, headerValue, secret) {
           </TabsContent>
         </Tabs>
       </div>
+      <DispatchShiftToAgenciesDialog open={dispatchOpen} onOpenChange={setDispatchOpen} />
     </div>
   );
 };
