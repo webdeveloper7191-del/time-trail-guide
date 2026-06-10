@@ -64,6 +64,11 @@ export function TimesheetEditModal({
   const [expandedDays, setExpandedDays] = useState<string[]>([]);
   const [appliedAllowances, setAppliedAllowances] = useState<AppliedAllowance[]>([]);
   const [awardType, setAwardType] = useState<AwardType>('children_services');
+  const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
+
+  const handleSetException = (index: number, exception: TimesheetException | null) => {
+    setEntries(prev => prev.map((e, i) => i === index ? { ...e, exception: exception ?? undefined } : e));
+  };
 
   useEffect(() => {
     if (timesheet) {
