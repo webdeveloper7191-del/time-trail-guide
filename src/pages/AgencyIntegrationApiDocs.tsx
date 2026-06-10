@@ -225,6 +225,7 @@ const EndpointCard: React.FC<{ ep: ApiEndpoint }> = ({ ep }) => {
 const AgencyIntegrationApiDocs: React.FC = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [dispatchOpen, setDispatchOpen] = useState(false);
   const groups = useMemo(() => {
     const g: Record<string, ApiEndpoint[]> = {};
     for (const ep of agencyApiSpec) {
