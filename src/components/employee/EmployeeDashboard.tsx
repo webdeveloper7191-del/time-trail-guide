@@ -20,6 +20,9 @@ import { toast } from 'sonner';
 import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 import { SwapInboxDialog, generateMockSwapRequests, type SwapRequest } from './SwapInboxDialog';
 import { BreakTracker, type BreakRecord } from './BreakTracker';
+import { RaiseExceptionDialog } from '@/components/timesheet/RaiseExceptionDialog';
+import { TimesheetException } from '@/types/timesheet';
+import { AlertTriangle } from 'lucide-react';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
