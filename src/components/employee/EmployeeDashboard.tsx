@@ -859,6 +859,14 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         onAccept={handleSwapAccept}
         onDecline={handleSwapDecline}
       />
+
+      <RaiseExceptionDialog
+        open={exceptionDialogOpen}
+        onClose={() => setExceptionDialogOpen(false)}
+        onSubmit={(exc) => setRaisedExceptions(prev => [...prev, exc])}
+        raisedBy="staff"
+        contextLabel={todayShift ? `${todayShift.role} · ${todayShift.startTime}–${todayShift.endTime}` : undefined}
+      />
     </div>
   );
 }
