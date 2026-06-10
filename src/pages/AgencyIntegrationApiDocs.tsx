@@ -510,6 +510,7 @@ export function verifyLovableSignature(rawBody, headerValue, secret) {
           </TabsContent>
         </Tabs>
       </div>
+      <DispatchShiftToAgenciesDialog open={dispatchOpen} onOpenChange={setDispatchOpen} />
     </div>
   );
 };
