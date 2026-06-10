@@ -380,6 +380,28 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
           <Button onClick={handleSubmit} className="flex-1">Add Timesheet</Button>
         </SheetFooter>
       </SheetContent>
+      <RaiseExceptionDialog
+        open={exceptionEntryIndex !== null}
+        onClose={() => setExceptionEntryIndex(null)}
+        onSubmit={(exc) => {
+          if (exceptionEntryIndex !== null) {
+            updateEntry(exceptionEntryIndex, 'exceptionReason', exc.reason);
+            updateEntry(exceptionEntryIndex, 'exceptionNote', exc.note);
+          }
+        }}
+        raisedBy="manager"
+        contextLabel={exceptionEntryIndex !== null ? `Entry ${exceptionEntryIndex + 1}` : undefined}
+        initial={
+          exceptionEntryIndex !== null && entries[exceptionEntryIndex]?.exceptionReason
+            ? {
+                reason: entries[exceptionEntryIndex]!.exceptionReason as ExceptionReason,
+                note: entries[exceptionEntryIndex]!.exceptionNote ?? '',
+                raisedBy: 'manager',
+                raisedAt: new Date().toISOString(),
+              }
+            : undefined
+        }
+      />
     </Sheet>
   );
 }
