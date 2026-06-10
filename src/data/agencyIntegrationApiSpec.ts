@@ -240,7 +240,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     direction: 'outbound',
     auth: 'client_id + client_secret (Basic auth)',
     summary: 'Exchange client credentials for an access token',
-    description: 'OAuth 2.0 client_credentials grant. Returns a short-lived bearer token used for all subsequent calls.',
+    description: 'OAuth 2.0 client_credentials grant. The client_id / client_secret pair is issued manually by the platform admin during onboarding (out of band) and shared with the agency. This endpoint exchanges those credentials for a short-lived bearer token used for all subsequent calls.',
     requestHeaders: [
       { name: 'Authorization', type: 'string', required: true, description: 'Basic base64(client_id:client_secret).' },
       { name: 'Content-Type', type: 'string', required: true, description: 'application/x-www-form-urlencoded' },
@@ -293,127 +293,11 @@ export const agencyApiSpec: ApiEndpoint[] = [
   },
 
   // ============ AGENCY PROFILE ============
-  {
-    id: 'agency-register',
-    group: 'Agency Profile',
-    method: 'POST',
-    path: '/v1/agencies',
-    direction: 'inbound',
-    auth: 'Bearer (admin scope)',
-    summary: 'Register a new 3rd-party agency',
-    description: 'Called by the Roster platform admin when onboarding a new agency partner. Returns the agency record plus a one-time clientSecret used for OAuth.',
-    requestHeaders: commonHeaders,
-    requestBody: [
-      { name: 'name', type: 'string', required: true, description: 'Legal/registered name.', example: 'Bright Staffing Pty Ltd' },
-      { name: 'tradingName', type: 'string', required: false, description: 'Public trading name.', example: 'Bright Staff' },
-      { name: 'abn', type: 'string', required: true, description: 'Australian Business Number (11 digits).', example: '53004085616' },
-      { name: 'acn', type: 'string', required: false, description: 'Australian Company Number (9 digits).' },
-      { name: 'primaryContactName', type: 'string', required: true, description: 'Account owner full name.' },
-      { name: 'primaryContactEmail', type: 'string (email)', required: true, description: 'Account owner email.' },
-      { name: 'primaryContactPhone', type: 'string (E.164)', required: true, description: 'Account owner phone.' },
-      { name: 'address', type: 'object', required: true, description: '{ street, suburb, state, postcode, country }' },
-      { name: 'serviceCategories', type: 'string[]', required: true, description: 'Role types the agency supplies.', example: '["Educator","Cook"]' },
-      { name: 'coverageZones', type: 'object[]', required: true, description: '[{ name, postcodes[], responseSlaMinutes }]' },
-      { name: 'applicableAwards', type: 'string[]', required: false, description: 'Award codes the agency operates under.', example: '["MA000120"]' },
-      { name: 'currency', type: 'string', required: false, description: 'ISO 4217 currency. Defaults to AUD.', example: 'AUD' },
-      { name: 'timezone', type: 'string', required: false, description: 'IANA timezone for the agency HQ.', example: 'Australia/Sydney' },
-      { name: 'webhookUrl', type: 'string (uri)', required: true, description: 'HTTPS endpoint that will receive shift / placement events.' },
-      { name: 'webhookSecret', type: 'string', required: true, description: 'Shared secret used to sign X-Lovable-Signature header. Minimum 32 chars.' },
-      { name: 'webhookSubscriptions', type: 'string[]', required: false, description: 'Event subscriptions. Defaults to all. Supports wildcards (e.g. "shift.*").' },
-    ],
-    requestSchema: {
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      required: ['name', 'abn', 'primaryContactName', 'primaryContactEmail', 'primaryContactPhone', 'address', 'serviceCategories', 'coverageZones', 'webhookUrl', 'webhookSecret'],
-      properties: {
-        name: { type: 'string', minLength: 2, maxLength: 200 },
-        tradingName: { type: 'string', maxLength: 200 },
-        abn: { type: 'string', pattern: '^[0-9]{11}$' },
-        acn: { type: 'string', pattern: '^[0-9]{9}$' },
-        primaryContactName: { type: 'string' },
-        primaryContactEmail: { type: 'string', format: 'email' },
-        primaryContactPhone: { type: 'string', pattern: '^\\+[1-9][0-9]{6,14}$' },
-        address: addressSchema,
-        serviceCategories: { type: 'array', minItems: 1, items: { type: 'string' } },
-        coverageZones: {
-          type: 'array',
-          minItems: 1,
-          items: {
-            type: 'object',
-            required: ['name', 'postcodes', 'responseSlaMinutes'],
-            properties: {
-              name: { type: 'string' },
-              postcodes: { type: 'array', minItems: 1, items: { type: 'string' } },
-              responseSlaMinutes: { type: 'integer', minimum: 1 },
-            },
-          },
-        },
-        applicableAwards: { type: 'array', items: { type: 'string' } },
-        currency: { type: 'string', pattern: '^[A-Z]{3}$', default: 'AUD' },
-        timezone: { type: 'string', default: 'Australia/Sydney' },
-        webhookUrl: { type: 'string', format: 'uri', pattern: '^https://' },
-        webhookSecret: { type: 'string', minLength: 32 },
-        webhookSubscriptions: { type: 'array', items: { type: 'string' }, default: ['*'] },
-      },
-    },
-    requestExample: `{
-  "name": "Bright Staffing Pty Ltd",
-  "tradingName": "Bright Staff",
-  "abn": "53004085616",
-  "primaryContactName": "Sarah Lee",
-  "primaryContactEmail": "sarah@brightstaff.com.au",
-  "primaryContactPhone": "+61400111222",
-  "address": {
-    "street": "12 King St", "suburb": "Sydney", "state": "NSW",
-    "postcode": "2000", "country": "AU"
-  },
-  "serviceCategories": ["Educator", "Cook"],
-  "coverageZones": [
-    { "name": "Inner Sydney", "postcodes": ["2000","2010","2011"], "responseSlaMinutes": 30 }
-  ],
-  "applicableAwards": ["MA000120"],
-  "currency": "AUD",
-  "timezone": "Australia/Sydney",
-  "webhookUrl": "https://api.brightstaff.com.au/lovable/events",
-  "webhookSecret": "whsec_3f9c8a2b1d4e6f7a9b0c1d2e3f4a5b6c7d",
-  "webhookSubscriptions": ["shift.*", "placement.*", "timesheet.*", "invoice.*"]
-}`,
-    responseBody: [
-      { name: 'id', type: 'string', description: 'Agency identifier.', example: 'agy_01HXYZ…' },
-      { name: 'status', type: 'enum', description: 'pending | active | suspended | inactive', example: 'pending' },
-      { name: 'clientId', type: 'string', description: 'OAuth client_id issued to the agency.' },
-      { name: 'clientSecret', type: 'string', description: 'OAuth client_secret. Shown ONCE — store securely.' },
-      { name: 'createdAt', type: 'string (ISO-8601)', description: 'Creation timestamp.' },
-    ],
-    responseSchema: {
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      required: ['id', 'status', 'clientId', 'clientSecret', 'createdAt'],
-      properties: {
-        id: { type: 'string' },
-        status: { type: 'string', enum: ['pending', 'active', 'suspended', 'inactive'] },
-        clientId: { type: 'string' },
-        clientSecret: { type: 'string', description: 'Shown once; never returned again.' },
-        webhookUrl: { type: 'string', format: 'uri' },
-        webhookSecretFingerprint: { type: 'string', description: 'sha256 fingerprint of the webhookSecret for verification.' },
-        createdAt: isoDateTime,
-      },
-    },
-    responseExample: `{
-  "id": "agy_01HXYZABCD1234",
-  "status": "pending",
-  "clientId": "cli_brightstaff_prod",
-  "clientSecret": "cs_8d4b…(shown once)",
-  "webhookUrl": "https://api.brightstaff.com.au/lovable/events",
-  "webhookSecretFingerprint": "sha256:9f86d081884c…",
-  "createdAt": "2026-06-10T09:14:22Z"
-}`,
-    errorCodes: [
-      { code: '409 abn_exists', description: 'An agency with this ABN is already registered.' },
-      { code: '422 validation_error', description: 'Missing or malformed fields. See `errors[]` in response.' },
-      { code: '422 webhook_url_unreachable', description: 'Platform verification ping to webhookUrl failed.' },
-    ],
-  },
+  // Note: agency onboarding (registering the agency, issuing OAuth credentials,
+  // configuring webhookUrl + webhookSecret) is performed manually by the platform
+  // admin out of band. There is no public registration endpoint.
+
+
 
   {
     id: 'agency-get',
