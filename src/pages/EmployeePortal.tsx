@@ -262,6 +262,24 @@ export function EmployeePortal() {
 
 function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
   const validation = validateCompliance(timesheet);
+  const [localStatus, setLocalStatus] = useState(timesheet.status);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(
+    timesheet.status !== 'pending' ? timesheet.submittedAt : null
+  );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const hasOpenEntry = timesheet.entries.some(e => !e.clockOut);
+  const canSubmit = localStatus === 'pending' && !submittedAt;
+
+  const handleSubmit = () => {
+    setSubmittedAt(new Date().toISOString());
+    setConfirmOpen(false);
+    toast.success('Timesheet submitted for approval', {
+      description: validation.isCompliant
+        ? 'Your manager has been notified.'
+        : `${validation.flags.length} compliance issue${validation.flags.length === 1 ? '' : 's'} flagged for review.`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -273,8 +291,32 @@ function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
               <Calendar className="h-4 w-4 text-primary" />
               {format(parseISO(timesheet.weekStartDate), 'MMMM d')} - {format(parseISO(timesheet.weekEndDate), 'd, yyyy')}
             </CardTitle>
-            <StatusBadge status={timesheet.status} />
+            <div className="flex items-center gap-2">
+              <StatusBadge status={localStatus} />
+              {canSubmit ? (
+                <Button
+                  size="sm"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={hasOpenEntry}
+                  className="gap-1.5"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Submit Timesheet
+                </Button>
+              ) : submittedAt ? (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <CheckCircle2 className="h-3 w-3 text-status-approved" />
+                  Submitted {format(parseISO(submittedAt), 'MMM d, h:mm a')}
+                </Badge>
+              ) : null}
+            </div>
           </div>
+          {hasOpenEntry && canSubmit && (
+            <p className="text-xs text-status-pending mt-2 flex items-center gap-1.5">
+              <AlertCircle className="h-3 w-3" />
+              Clock out of all entries before submitting.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 gap-4 mb-6">
@@ -299,7 +341,7 @@ function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
           {/* Compliance Status */}
           <div className={cn(
             "flex items-center gap-3 p-4 rounded-lg",
-            validation.isCompliant 
+            validation.isCompliant
               ? "bg-status-approved/10 border border-status-approved/20"
               : "bg-status-rejected/10 border border-status-rejected/20"
           )}>
@@ -325,6 +367,29 @@ function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Submit confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit timesheet for approval?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're submitting <strong>{timesheet.totalHours}h</strong> for the week of{' '}
+              {format(parseISO(timesheet.weekStartDate), 'MMM d')}.
+              {!validation.isCompliant && (
+                <span className="block mt-2 text-status-rejected">
+                  {validation.flags.length} compliance issue{validation.flags.length === 1 ? '' : 's'} will be flagged for your approver.
+                </span>
+              )}
+              {' '}Once submitted, you'll need to raise an exception to make changes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Daily Entries */}
       <Card className="border-border/50">
