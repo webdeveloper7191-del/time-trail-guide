@@ -54,6 +54,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   const [weekStartDate, setWeekStartDate] = useState('');
   const [entries, setEntries] = useState<EntryForm[]>([emptyEntry()]);
   const [notes, setNotes] = useState('');
+  const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
 
   const resetForm = () => {
     setEmployeeName('');
