@@ -626,6 +626,42 @@ export function PolicyBreaks() {
 
 export function PolicyIssues() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
+
+  // ---- Variance helpers: map enum <-> {enabled, minutes} for clearer UX ----
+  type VFlag = TimesheetPolicy['issues']['flagShiftTimeVariance'];
+  const varianceMinutes = (v: VFlag): number =>
+    v === 'over_5m' ? 5 : v === 'over_10m' ? 10 : v === 'over_15m' ? 15 : v === 'always' ? 0 : 10;
+  const varianceEnabled = (v: VFlag) => v !== 'never';
+  const buildVariance = (enabled: boolean, mins: number): VFlag => {
+    if (!enabled) return 'never';
+    if (mins <= 0) return 'always';
+    if (mins <= 5) return 'over_5m';
+    if (mins <= 10) return 'over_10m';
+    return 'over_15m';
+  };
+  const thresholdOptions: { value: string; label: string }[] = [
+    { value: '5', label: 'More than 5 minutes' },
+    { value: '10', label: 'More than 10 minutes' },
+    { value: '15', label: 'More than 15 minutes' },
+    { value: '0', label: 'Any difference at all' },
+  ];
+
+  // ---- Conflict detection: rounding step >= variance threshold ----
+  const roundingStepMinutes = (() => {
+    if (!resolved.approving.roundingEnabled) return 0;
+    const steps: Record<string, number> = {
+      nearest_5: 5, nearest_10: 10, nearest_15: 15,
+      up_nearest_15: 15, down_nearest_15: 15, never: 0,
+    };
+    return Math.max(
+      steps[resolved.approving.startTimeAdjustment] ?? 0,
+      steps[resolved.approving.endTimeAdjustment] ?? 0,
+    );
+  })();
+  const shiftVarMins = varianceMinutes(resolved.issues.flagShiftTimeVariance);
+  const shiftVarOn = varianceEnabled(resolved.issues.flagShiftTimeVariance);
+  const showRoundingConflict = shiftVarOn && roundingStepMinutes > 0 && roundingStepMinutes >= shiftVarMins;
+
   return (
     <Card>
       <CardHeader>
@@ -646,23 +682,74 @@ export function PolicyIssues() {
         </div>
 
         <PermissionGroup title="Time Variance">
-          <SelectRow
-            {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag Shift Time Variance',
-              'Raise a flag when actual clock-in/out differs from the scheduled start/end by more than this threshold.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>Over 10 minutes</em>. Priya was rostered 9:00–17:00 but clocked 8:42–17:24. Both ends drift &gt;10 min, so the timesheet is flagged for review instead of auto-approving.</p></>)}
-            value={resolved.issues.flagShiftTimeVariance}
-            options={varianceFlagOptions}
-            onChange={v => setField('issues', 'flagShiftTimeVariance', v as TimesheetPolicy['issues']['flagShiftTimeVariance'])}
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+            Variance flags compare <span className="font-medium text-foreground">actual</span> times to{' '}
+            <span className="font-medium text-foreground">scheduled / expected</span> times and raise a flag for review.
+            They do not change recorded time or pay — for that, use{' '}
+            <span className="font-medium text-foreground">Rounding</span> in the Approving tab.
+          </div>
+
+          {showRoundingConflict && (
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+              <p className="font-medium mb-1">Heads up — rounding may swallow this flag</p>
+              <p>
+                Your start/end rounding rounds to <strong>{roundingStepMinutes} min</strong>, which is at or above your{' '}
+                <strong>{shiftVarMins}-min</strong> variance threshold. Most variances will be rounded away before
+                the flag can fire. Either raise the variance threshold above {roundingStepMinutes} min, or use a
+                smaller rounding step.
+              </p>
+            </div>
+          )}
+
+          <ToggleRow
+            {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag shift time variance',
+              "Raise a flag when actual clock-in or clock-out differs from the scheduled shift by more than the threshold below. The time itself isn't changed — only a flag is raised for the reviewer.",
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Threshold = <em>more than 10 minutes</em>. Priya was rostered 9:00 AM – 5:00 PM but clocked 8:42 AM – 5:24 PM. Both ends drift &gt;10 min, so the timesheet is flagged for review instead of auto-approving.</p>
+              </>)}
+            value={shiftVarOn}
+            onChange={v => setField('issues', 'flagShiftTimeVariance', buildVariance(v, shiftVarMins))}
           />
-          <SelectRow
-            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag Break Duration Variance',
-              'Raise a flag when the recorded break duration differs from what was scheduled.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>Over 10 minutes</em>. A 30-min meal break is scheduled. Tom records only 14 min — flagged. A 32-min break — within tolerance, no flag.</p></>)}
-            value={resolved.issues.flagBreakDurationVariance}
-            options={varianceFlagOptions}
-            onChange={v => setField('issues', 'flagBreakDurationVariance', v as TimesheetPolicy['issues']['flagBreakDurationVariance'])}
+          {shiftVarOn && (
+            <SelectRow
+              {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag when variance is',
+                'How far the actual clock time may drift from the scheduled time before a flag is raised.',
+                <>
+                  <p className="font-medium mb-1">Tip</p>
+                  <p>Pick a threshold larger than your rounding step (Approving → Rounding) so rounding doesn't absorb the variance before it can be flagged.</p>
+                </>)}
+              value={String(shiftVarMins)}
+              options={thresholdOptions}
+              onChange={v => setField('issues', 'flagShiftTimeVariance', buildVariance(true, Number(v)))}
+            />
+          )}
+
+          <ToggleRow
+            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag break duration variance',
+              'Raise a flag when the recorded break is shorter or longer than the required duration (from the applicable Break Rule, or the scheduled break) by more than the threshold below.',
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Threshold = <em>more than 10 minutes</em>. A 30-min meal break is required. Tom records only 14 min (16 min short) — flagged. A 32-min break — within tolerance, no flag.</p>
+              </>)}
+            value={varianceEnabled(resolved.issues.flagBreakDurationVariance)}
+            onChange={v => setField('issues', 'flagBreakDurationVariance', buildVariance(v, varianceMinutes(resolved.issues.flagBreakDurationVariance)))}
           />
+          {varianceEnabled(resolved.issues.flagBreakDurationVariance) && (
+            <SelectRow
+              {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag when break differs by',
+                'How many minutes the recorded break may differ from the required duration before a flag is raised.',
+                <>
+                  <p className="font-medium mb-1">Example</p>
+                  <p>Set to <em>more than 10 minutes</em>. Required 30-min break taken in 22 min (8 min short) → no flag. Taken in 18 min (12 min short) → flagged.</p>
+                </>)}
+              value={String(varianceMinutes(resolved.issues.flagBreakDurationVariance))}
+              options={thresholdOptions}
+              onChange={v => setField('issues', 'flagBreakDurationVariance', buildVariance(true, Number(v)))}
+            />
+          )}
         </PermissionGroup>
+
 
         <PermissionGroup title="Missing & Unusual Entries">
           <SelectRow
