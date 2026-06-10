@@ -298,8 +298,8 @@ const AgencyIntegrationApiDocs: React.FC = () => {
                 <CardTitle className="text-base">Base URL &amp; versioning</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p><span className="font-mono">https://api.lovable-roster.app/v1</span> — production</p>
-                <p><span className="font-mono">https://api.sandbox.lovable-roster.app/v1</span> — sandbox</p>
+                <p><span className="font-mono">https://api.rostered.ai/v1</span> — production</p>
+                <p><span className="font-mono">https://api.sandbox.rostered.ai/v1</span> — sandbox</p>
                 <p>Breaking changes are released under a new major version (<span className="font-mono">/v2</span>). Backwards-compatible additions roll out to <span className="font-mono">/v1</span> without notice.</p>
               </CardContent>
             </Card>
@@ -357,7 +357,7 @@ const AgencyIntegrationApiDocs: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-base">Signature scheme (v1)</CardTitle>
                 <CardDescription>
-                  <span className="font-mono">X-Lovable-Signature: t=&lt;unix_ts&gt;,v1=&lt;hex&gt;</span> where
+                  <span className="font-mono">X-RosteredAI-Signature: t=&lt;unix_ts&gt;,v1=&lt;hex&gt;</span> where
                   <span className="font-mono"> hex = HMAC_SHA256(webhookSecret, unix_ts + "." + rawBody)</span>.
                 </CardDescription>
               </CardHeader>
@@ -367,7 +367,7 @@ const AgencyIntegrationApiDocs: React.FC = () => {
 // Reject requests older than 5 minutes to prevent replay.
 const TOLERANCE_SECONDS = 300;
 
-export function verifyLovableSignature(rawBody, headerValue, secret) {
+export function verifyRosteredSignature(rawBody, headerValue, secret) {
   const parts = Object.fromEntries(
     headerValue.split(',').map(p => p.split('='))
   );

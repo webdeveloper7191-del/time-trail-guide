@@ -131,7 +131,7 @@ const DispatchShiftToAgenciesDialog: React.FC<Props> = ({
 
   const requestJson = JSON.stringify(requestPayload, null, 2);
   const webhookJson = JSON.stringify(webhookPayload, null, 2);
-  const curlCmd = `curl -X POST 'https://api.lovable-roster.app/v1/shift-requests/${shift.shiftRequestId}/dispatch' \\
+  const curlCmd = `curl -X POST 'https://api.rostered.ai/v1/shift-requests/${shift.shiftRequestId}/dispatch' \\
   -H 'Authorization: Bearer <ACCESS_TOKEN>' \\
   -H 'X-Tenant-Id: ${shift.tenantId}' \\
   -H 'X-Request-Id: $(uuidgen)' \\
@@ -315,7 +315,7 @@ const DispatchShiftToAgenciesDialog: React.FC<Props> = ({
               <TabsContent value="webhook" className="mt-2">
                 <div className="rounded-md border bg-slate-950 text-slate-50 overflow-hidden">
                   <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-slate-900">
-                    <span className="text-[11px] font-mono text-slate-400">POST {'{agency.webhookUrl}'}  ·  X-Lovable-Event: shift.broadcast</span>
+                    <span className="text-[11px] font-mono text-slate-400">POST {'{agency.webhookUrl}'}  ·  X-RosteredAI-Event: shift.broadcast</span>
                     <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-slate-300 hover:text-slate-50" onClick={() => copy(webhookJson, 'Webhook payload')}>
                       <Copy className="h-3 w-3 mr-1" /> Copy
                     </Button>
