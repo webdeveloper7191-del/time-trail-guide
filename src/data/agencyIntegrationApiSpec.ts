@@ -17,7 +17,7 @@ export interface ApiEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
   summary: string;
-  description: string;
+  description?: string;
   direction: 'outbound' | 'inbound' | 'webhook';
   auth: string;
   requestHeaders?: ApiField[];
