@@ -20,6 +20,9 @@ import { toast } from 'sonner';
 import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 import { SwapInboxDialog, generateMockSwapRequests, type SwapRequest } from './SwapInboxDialog';
 import { BreakTracker, type BreakRecord } from './BreakTracker';
+import { RaiseExceptionDialog } from '@/components/timesheet/RaiseExceptionDialog';
+import { TimesheetException } from '@/types/timesheet';
+import { AlertTriangle } from 'lucide-react';
 
 interface EmployeeDashboardProps {
   employee: { id: string; name: string; department: string; position: string; hourlyRate: number };
@@ -137,6 +140,10 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
   // ── Break tracking ──
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [totalBreakSeconds, setTotalBreakSeconds] = useState(0);
+
+  // ── Exception raising ──
+  const [exceptionDialogOpen, setExceptionDialogOpen] = useState(false);
+  const [raisedExceptions, setRaisedExceptions] = useState<TimesheetException[]>([]);
 
   const nextShift = upcomingShifts[0];
   const todayShift = upcomingShifts.find(s => isToday(s.date));
@@ -312,6 +319,16 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
                     <LogIn className="h-3.5 w-3.5" /> Clock In
                   </Button>
                 )}
+                <Button
+                  onClick={() => setExceptionDialogOpen(true)}
+                  variant="outline" size="sm"
+                  className="gap-2 border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                >
+                  <AlertTriangle className="h-3.5 w-3.5" /> Raise exception
+                  {raisedExceptions.length > 0 && (
+                    <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">{raisedExceptions.length}</Badge>
+                  )}
+                </Button>
               </div>
             </div>
             {/* Break Tracker */}
@@ -841,6 +858,14 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
         requests={swapRequests}
         onAccept={handleSwapAccept}
         onDecline={handleSwapDecline}
+      />
+
+      <RaiseExceptionDialog
+        open={exceptionDialogOpen}
+        onClose={() => setExceptionDialogOpen(false)}
+        onSubmit={(exc) => setRaisedExceptions(prev => [...prev, exc])}
+        raisedBy="staff"
+        contextLabel={todayShift ? `${todayShift.role} · ${todayShift.startTime}–${todayShift.endTime}` : undefined}
       />
     </div>
   );

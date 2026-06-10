@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Timesheet, ClockEntry, BreakEntry } from '@/types/timesheet';
+import { Timesheet, ClockEntry, BreakEntry, TimesheetException } from '@/types/timesheet';
 import { AppliedAllowance, AwardType } from '@/types/allowances';
 import { AllowanceEditor } from './AllowanceEditor';
+import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
 import { format } from 'date-fns';
 import {
   Sheet,
@@ -37,8 +38,10 @@ import {
   Clock,
   Coffee,
   AlertCircle,
+  AlertTriangle,
   Calendar,
   Briefcase,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -61,6 +64,11 @@ export function TimesheetEditModal({
   const [expandedDays, setExpandedDays] = useState<string[]>([]);
   const [appliedAllowances, setAppliedAllowances] = useState<AppliedAllowance[]>([]);
   const [awardType, setAwardType] = useState<AwardType>('children_services');
+  const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
+
+  const handleSetException = (index: number, exception: TimesheetException | null) => {
+    setEntries(prev => prev.map((e, i) => i === index ? { ...e, exception: exception ?? undefined } : e));
+  };
 
   useEffect(() => {
     if (timesheet) {
@@ -402,7 +410,50 @@ export function TimesheetEditModal({
                           </div>
                         </div>
 
-                        {/* Breaks */}
+                        {/* Exception block */}
+                        <div>
+                          {entry.exception ? (
+                            <div className="p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5 space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                                  <span className="text-[11px] font-semibold text-amber-700">
+                                    Exception · {EXCEPTION_REASONS.find(r => r.value === entry.exception!.reason)?.label}
+                                  </span>
+                                  <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
+                                    {entry.exception.raisedBy}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button" variant="ghost" size="sm"
+                                    className="h-6 text-[10px] px-2"
+                                    onClick={() => setExceptionEntryIndex(entryIndex)}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    type="button" variant="ghost" size="icon"
+                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    onClick={() => handleSetException(entryIndex, null)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground">{entry.exception.note}</p>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button" variant="outline" size="sm"
+                              className="h-7 text-xs w-full border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                              onClick={() => setExceptionEntryIndex(entryIndex)}
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Raise exception
+                            </Button>
+                          )}
+                        </div>
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
@@ -524,6 +575,16 @@ export function TimesheetEditModal({
           </Button>
         </div>
       </SheetContent>
+      <RaiseExceptionDialog
+        open={exceptionEntryIndex !== null}
+        onClose={() => setExceptionEntryIndex(null)}
+        onSubmit={(exc) => {
+          if (exceptionEntryIndex !== null) handleSetException(exceptionEntryIndex, exc);
+        }}
+        raisedBy="manager"
+        contextLabel={exceptionEntryIndex !== null ? format(new Date(entries[exceptionEntryIndex]?.date ?? new Date()), 'EEE, MMM d') : undefined}
+        initial={exceptionEntryIndex !== null ? entries[exceptionEntryIndex]?.exception : undefined}
+      />
     </Sheet>
   );
 }
