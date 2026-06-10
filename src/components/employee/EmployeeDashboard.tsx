@@ -141,6 +141,10 @@ export function EmployeeDashboard({ employee, onNavigate, onboardingProgress, on
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [totalBreakSeconds, setTotalBreakSeconds] = useState(0);
 
+  // ── Exception raising ──
+  const [exceptionDialogOpen, setExceptionDialogOpen] = useState(false);
+  const [raisedExceptions, setRaisedExceptions] = useState<TimesheetException[]>([]);
+
   const nextShift = upcomingShifts[0];
   const todayShift = upcomingShifts.find(s => isToday(s.date));
 
