@@ -328,7 +328,7 @@ const AgencyIntegrationApiDocs: React.FC = () => {
           <TabsContent value="webhooks" className="mt-4 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Webhook delivery</CardTitle>
+                <CardTitle className="text-base">Webhook delivery contract</CardTitle>
                 <CardDescription>Events posted from the platform to <span className="font-mono">{'{agency.webhookUrl}'}</span>.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
@@ -337,25 +337,125 @@ const AgencyIntegrationApiDocs: React.FC = () => {
                 </ul>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Signature verification (Node)</CardTitle>
+                <CardTitle className="text-base">Delivery headers</CardTitle>
+                <CardDescription>Sent on every webhook POST.</CardDescription>
               </CardHeader>
               <CardContent>
-                <CodeBlock label="JavaScript" code={`import crypto from 'crypto';
+                <FieldsTable fields={agencyWebhookDeliveryHeaders} />
+              </CardContent>
+            </Card>
 
-function verify(rawBody, signature, secret) {
-  const expected = crypto.createHmac('sha256', secret)
-    .update(rawBody)
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature)
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Signature scheme (v1)</CardTitle>
+                <CardDescription>
+                  <span className="font-mono">X-Lovable-Signature: t=&lt;unix_ts&gt;,v1=&lt;hex&gt;</span> where
+                  <span className="font-mono"> hex = HMAC_SHA256(webhookSecret, unix_ts + "." + rawBody)</span>.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock label="Node.js — verify signature" code={`import crypto from 'crypto';
+
+// Reject requests older than 5 minutes to prevent replay.
+const TOLERANCE_SECONDS = 300;
+
+export function verifyLovableSignature(rawBody, headerValue, secret) {
+  const parts = Object.fromEntries(
+    headerValue.split(',').map(p => p.split('='))
   );
+  const ts = parseInt(parts.t, 10);
+  const sig = parts.v1;
+  if (!ts || !sig) return false;
+  if (Math.abs(Date.now() / 1000 - ts) > TOLERANCE_SECONDS) return false;
+
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(\`\${ts}.\${rawBody}\`)
+    .digest('hex');
+
+  // timingSafeEqual requires equal length buffers
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(sig, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }`} />
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Retry schedule</CardTitle>
+                <CardDescription>Applied to any non-2xx response (other than 410 Gone) or timeout (5 s).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="w-[120px]">Attempt</TableHead>
+                        <TableHead className="w-[200px]">Delay from previous</TableHead>
+                        <TableHead>Cumulative time since first attempt</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {agencyWebhookRetrySchedule.map(r => (
+                        <TableRow key={r.attempt}>
+                          <TableCell className="font-mono text-xs">#{r.attempt}</TableCell>
+                          <TableCell className="text-sm">{r.delay}</TableCell>
+                          <TableCell className="text-sm">{r.cumulative}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Expected responses</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <p><span className="font-semibold">Success:</span> {agencyWebhookExpectedResponse.success}</p>
+                <p><span className="font-semibold">Reject permanently:</span> {agencyWebhookExpectedResponse.rejectSilently}</p>
+                <p><span className="font-semibold">Retryable failure:</span> {agencyWebhookExpectedResponse.retry}</p>
+                <p><span className="font-semibold">Timeout:</span> {agencyWebhookExpectedResponse.timeout}</p>
+                <p><span className="font-semibold">Dead-letter:</span> {agencyWebhookExpectedResponse.deadLetter}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Event catalog</CardTitle>
+                <CardDescription>All webhook events emitted by the platform.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="w-[260px]">Event</TableHead>
+                        <TableHead>Description</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {agencyApiSpec.filter(e => e.direction === 'webhook').map(e => (
+                        <TableRow key={e.id}>
+                          <TableCell className="font-mono text-xs">{e.webhook?.eventName ?? e.id}</TableCell>
+                          <TableCell className="text-sm">
+                            <a href={`#${e.id}`} className="text-primary hover:underline">{e.summary}</a>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
+
 
           <TabsContent value="errors" className="mt-4 space-y-4">
             <Card>
