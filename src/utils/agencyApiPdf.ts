@@ -296,7 +296,10 @@ export function generateAgencyApiPdf(): Blob {
   for (const r of agencyWebhookRetrySchedule) w.text(`• ${r}`, { size: 9, indent: 2, gap: 0.4 });
   w.y += 2;
   w.h3('Expected response');
-  w.text(agencyWebhookExpectedResponse, { size: 9, gap: 2 });
+  for (const [k, v] of Object.entries(agencyWebhookExpectedResponse)) {
+    w.text(`• ${k}: ${v}`, { size: 9, indent: 2, gap: 0.6 });
+  }
+  w.y += 1;
   w.h3('Implementation notes');
   for (const n of agencyApiWebhookNotes) w.text(`• ${n}`, { size: 9, indent: 2, gap: 0.6 });
 
@@ -304,7 +307,11 @@ export function generateAgencyApiPdf(): Blob {
   w.newPage();
   w.h1('4. Errors');
   w.h3('Error envelope');
-  w.fieldTable(agencyApiErrorEnvelope);
+  w.text(agencyApiErrorEnvelope.description, { size: 9, gap: 1 });
+  w.text('Example', { size: 9, bold: true, gap: 0.5 });
+  w.code(agencyApiErrorEnvelope.example);
+  w.text('JSON Schema', { size: 9, bold: true, gap: 0.5 });
+  w.code(JSON.stringify(agencyApiErrorEnvelope.schema, null, 2));
 
   w.footer();
   return w.doc.output('blob');
