@@ -374,11 +374,11 @@ function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
       </Card>
 
       {/* Submit confirmation */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Submit timesheet for approval?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit timesheet for approval?</DialogTitle>
+            <DialogDescription>
               You're submitting <strong>{timesheet.totalHours}h</strong> for the week of{' '}
               {format(parseISO(timesheet.weekStartDate), 'MMM d')}.
               {!validation.isCompliant && (
@@ -387,14 +387,14 @@ function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
                 </span>
               )}
               {' '}Once submitted, you'll need to raise an exception to make changes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmit}>Submit</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit}>Submit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Daily Entries */}
       <Card className="border-border/50">
