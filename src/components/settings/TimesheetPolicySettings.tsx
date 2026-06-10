@@ -393,6 +393,14 @@ export function PolicyApproving() {
         </PermissionGroup>
 
         <PermissionGroup title="Rounding">
+          <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground/80 mb-2">
+            <p className="font-medium text-foreground mb-1">Rounding vs. variance flags — what's the difference?</p>
+            <ul className="space-y-1 list-disc pl-4">
+              <li><span className="font-medium">Rounding</span> silently <em>changes</em> the recorded time → affects what gets paid.</li>
+              <li><span className="font-medium">Variance flags</span> (in the <span className="font-medium">Anomaly Flags</span> tab) leave times untouched and just raise a flag → affects what gets reviewed.</li>
+              <li>If both are on, rounding runs first, so flags only fire on what's left over. Keep your variance threshold higher than your rounding step to avoid double-handling.</li>
+            </ul>
+          </div>
           <ToggleRow
             {...fieldProps('approving', 'roundingEnabled', 'Timesheet Rounding (Auto)',
               'Master switch for automatic rounding of start and end times. When off, the rules below are ignored.',
@@ -403,6 +411,7 @@ export function PolicyApproving() {
             value={resolved.approving.roundingEnabled}
             onChange={v => setField('approving', 'roundingEnabled', v)}
           />
+
           <div className={roundingOn ? '' : 'opacity-50 pointer-events-none select-none'}>
             <div className="space-y-1 divide-y">
               <ToggleRow
