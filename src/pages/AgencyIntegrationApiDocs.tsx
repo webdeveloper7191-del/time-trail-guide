@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, ArrowDownToLine, ArrowUpFromLine, Webhook, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Search, ArrowDownToLine, ArrowUpFromLine, Webhook, Copy, Check, Send } from 'lucide-react';
+import DispatchShiftToAgenciesDialog from '@/components/agency/DispatchShiftToAgenciesDialog';
 import {
   agencyApiSpec,
   agencyApiCommonHeaders,
