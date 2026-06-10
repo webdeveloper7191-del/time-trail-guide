@@ -723,6 +723,7 @@ export function PolicyIssues() {
                 <>
                   <p className="font-medium mb-1">Tip</p>
                   <p>Pick a threshold larger than your rounding step (Approving → Rounding) so rounding doesn't absorb the variance before it can be flagged.</p>
+                  {varianceThresholdOptionGuide}
                 </>)}
               value={String(shiftVarMins)}
               options={thresholdOptions}
@@ -747,6 +748,7 @@ export function PolicyIssues() {
                 <>
                   <p className="font-medium mb-1">Example</p>
                   <p>Set to <em>more than 10 minutes</em>. Required 30-min break taken in 22 min (8 min short) → no flag. Taken in 18 min (12 min short) → flagged.</p>
+                  {varianceThresholdOptionGuide}
                 </>)}
               value={String(varianceMinutes(resolved.issues.flagBreakDurationVariance))}
               options={thresholdOptions}
