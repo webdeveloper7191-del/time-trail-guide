@@ -565,6 +565,15 @@ function AddTimesheetEntryDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
+  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
+  const period = useMemo(
+    () => getPayPeriodRange(anchorDate, payFrequency),
+    [anchorDate, payFrequency]
+  );
+  const goPrev = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, -1));
+  const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
+  const goToday = () => setAnchorDate(new Date());
   const [entries, setEntries] = useState<EntryDraft[]>([newEntry()]);
 
   const updateEntry = <K extends keyof EntryDraft>(id: string, field: K, value: EntryDraft[K]) => {
