@@ -16,7 +16,7 @@ import {
   User, Building2, Hourglass, ShieldCheck, ShieldAlert,
   GraduationCap, Target, MessageSquare, Users, Sparkles,
   ClipboardCheck, LayoutDashboard, Search, Bell, Settings as SettingsIcon,
-  Send,
+  Send, AlertTriangle, X,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
