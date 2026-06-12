@@ -614,6 +614,25 @@ function AddTimesheetEntryDialog({
 
   const reset = () => setEntries([newEntry()]);
 
+  const fillPeriod = () => {
+    const days: EntryDraft[] = [];
+    const totalDays = Math.round((period.end.getTime() - period.start.getTime()) / 86400000) + 1;
+    for (let i = 0; i < totalDays; i++) {
+      const d = addDays(period.start, i);
+      // skip weekends by default to keep the list tidy
+      const dow = d.getDay();
+      if (dow === 0 || dow === 6) continue;
+      days.push(newEntry(format(d, 'yyyy-MM-dd')));
+    }
+    if (days.length === 0) {
+      toast.error('No weekdays in the selected pay period');
+      return;
+    }
+    setEntries(days);
+    toast.success(`Filled ${days.length} day${days.length === 1 ? '' : 's'} from ${period.label}`);
+  };
+
+
   const handleSave = () => {
     for (const e of entries) {
       if (!e.date || !e.clockIn || !e.clockOut) {
