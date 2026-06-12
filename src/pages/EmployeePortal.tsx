@@ -570,7 +570,7 @@ function AddTimesheetEntryDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
+  const payFrequency = BUSINESS_PAY_CONFIG.frequency;
   const [anchorDate, setAnchorDate] = useState<Date>(new Date());
   const period = useMemo(
     () => getPayPeriodRange(anchorDate, payFrequency),
