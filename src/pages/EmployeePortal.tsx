@@ -674,7 +674,6 @@ function AddTimesheetEntryDialog({
         <div className="px-6 py-3 border-b bg-muted/20 space-y-2">
           <PayPeriodSelector
             frequency={payFrequency}
-            onFrequencyChange={setPayFrequency}
             period={period}
             onPrev={goPrev}
             onNext={goNext}
