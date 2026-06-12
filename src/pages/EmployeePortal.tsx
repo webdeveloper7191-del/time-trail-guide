@@ -29,7 +29,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
-import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import {
+  format, parseISO, startOfWeek, endOfWeek, isWithinInterval,
+  startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subWeeks, subMonths,
+} from 'date-fns';
+import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
 import { EmployeeLMSPanel } from '@/components/performance/EmployeeLMSPanel';
@@ -123,8 +127,7 @@ export function EmployeePortal() {
       case 'current':
         return (
           <MyTimesheetsView
-            currentWeek={currentWeekTimesheet}
-            history={pastTimesheets}
+            allTimesheets={myTimesheets}
             stats={stats}
           />
         );
@@ -266,18 +269,137 @@ export function EmployeePortal() {
 }
 
 // ============================================================
+// Pay period helpers + selector
+// ============================================================
+type PayFrequency = 'weekly' | 'fortnightly' | 'monthly';
+
+interface PayPeriodRange {
+  start: Date;
+  end: Date;
+  label: string;
+}
+
+function getPayPeriodRange(anchor: Date, frequency: PayFrequency): PayPeriodRange {
+  if (frequency === 'monthly') {
+    const start = startOfMonth(anchor);
+    const end = endOfMonth(anchor);
+    return { start, end, label: format(start, 'MMMM yyyy') };
+  }
+  // weekly / fortnightly anchored to Monday
+  const wkStart = startOfWeek(anchor, { weekStartsOn: 1 });
+  if (frequency === 'weekly') {
+    const end = endOfWeek(anchor, { weekStartsOn: 1 });
+    return {
+      start: wkStart,
+      end,
+      label: `${format(wkStart, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
+    };
+  }
+  // fortnightly: 14-day window starting Monday of the week containing anchor
+  const end = addDays(wkStart, 13);
+  return {
+    start: wkStart,
+    end,
+    label: `${format(wkStart, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
+  };
+}
+
+function shiftPayPeriod(anchor: Date, frequency: PayFrequency, direction: 1 | -1): Date {
+  if (frequency === 'monthly') return direction > 0 ? addMonths(anchor, 1) : subMonths(anchor, 1);
+  if (frequency === 'weekly') return direction > 0 ? addWeeks(anchor, 1) : subWeeks(anchor, 1);
+  return direction > 0 ? addWeeks(anchor, 2) : subWeeks(anchor, 2);
+}
+
+function PayPeriodSelector({
+  frequency,
+  onFrequencyChange,
+  period,
+  onPrev,
+  onNext,
+  onToday,
+}: {
+  frequency: PayFrequency;
+  onFrequencyChange: (v: PayFrequency) => void;
+  period: PayPeriodRange;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+}) {
+  return (
+    <Card className="border-border/50">
+      <CardContent className="p-3 flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 mr-2">
+          <Calendar className="h-4 w-4 text-primary" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pay period</span>
+        </div>
+        <Select value={frequency} onValueChange={(v) => onFrequencyChange(v as PayFrequency)}>
+          <SelectTrigger className="h-8 w-[140px] text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="weekly">Weekly</SelectItem>
+            <SelectItem value="fortnightly">Fortnightly</SelectItem>
+            <SelectItem value="monthly">Monthly</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-1 ml-1">
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onPrev} aria-label="Previous period">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="px-3 h-8 inline-flex items-center rounded-md border border-border/60 bg-muted/30 text-sm font-medium min-w-[200px] justify-center">
+            {period.label}
+          </div>
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onNext} aria-label="Next period">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={onToday}>
+          Today
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================
 // My Timesheets — full view with clock in/out, add entry, tabs
 // ============================================================
 function MyTimesheetsView({
-  currentWeek,
-  history,
+  allTimesheets,
   stats,
 }: {
-  currentWeek?: Timesheet;
-  history: Timesheet[];
+  allTimesheets: Timesheet[];
   stats: any;
 }) {
   const [tab, setTab] = useState('current');
+  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
+  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
+
+  const period = useMemo(
+    () => getPayPeriodRange(anchorDate, payFrequency),
+    [anchorDate, payFrequency]
+  );
+
+  const inPeriod = (ts: Timesheet) => {
+    const wkStart = parseISO(ts.weekStartDate);
+    const wkEnd = parseISO(ts.weekEndDate);
+    // include any timesheet whose week overlaps the pay period
+    return wkEnd >= period.start && wkStart <= period.end;
+  };
+
+  const periodTimesheets = useMemo(
+    () => allTimesheets.filter(inPeriod).sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate)),
+    [allTimesheets, period.start, period.end]
+  );
+  const historyTimesheets = useMemo(
+    () => allTimesheets.filter(ts => !inPeriod(ts)),
+    [allTimesheets, period.start, period.end]
+  );
+
+  const goPrev = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, -1));
+  const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
+  const goToday = () => setAnchorDate(new Date());
+
   const [clockState, setClockState] = useState<{
     clockedIn: boolean;
     onBreak: boolean;
@@ -392,34 +514,44 @@ function MyTimesheetsView({
         </CardContent>
       </Card>
 
+      <PayPeriodSelector
+        frequency={payFrequency}
+        onFrequencyChange={setPayFrequency}
+        period={period}
+        onPrev={goPrev}
+        onNext={goNext}
+        onToday={goToday}
+      />
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="current">Current Week</TabsTrigger>
+          <TabsTrigger value="current">Current Period</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="summary">Summary</TabsTrigger>
         </TabsList>
-        <TabsContent value="current" className="mt-4">
-          {currentWeek ? (
-            <CurrentWeekView timesheet={currentWeek} />
+        <TabsContent value="current" className="mt-4 space-y-4">
+          {periodTimesheets.length > 0 ? (
+            periodTimesheets.map(ts => <CurrentWeekView key={ts.id} timesheet={ts} />)
           ) : (
             <Card className="border-border/50">
               <CardContent className="py-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="font-medium">No timesheet for current week</p>
+                <p className="font-medium">No timesheets in this pay period</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Clock in or add an entry to start your timesheet
+                  Clock in, add an entry, or change the pay period above.
                 </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
         <TabsContent value="history" className="mt-4">
-          <HistoryView timesheets={history} />
+          <HistoryView timesheets={historyTimesheets} />
         </TabsContent>
         <TabsContent value="summary" className="mt-4">
-          <SummaryView timesheets={history} stats={stats} />
+          <SummaryView timesheets={historyTimesheets} stats={stats} />
         </TabsContent>
       </Tabs>
+
 
       <AddTimesheetEntryDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
