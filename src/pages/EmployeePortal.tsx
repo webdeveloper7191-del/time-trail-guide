@@ -259,6 +259,244 @@ export function EmployeePortal() {
   );
 }
 
+// ============================================================
+// My Timesheets — full view with clock in/out, add entry, tabs
+// ============================================================
+function MyTimesheetsView({
+  currentWeek,
+  history,
+  stats,
+}: {
+  currentWeek?: Timesheet;
+  history: Timesheet[];
+  stats: any;
+}) {
+  const [tab, setTab] = useState('current');
+  const [clockState, setClockState] = useState<{
+    clockedIn: boolean;
+    onBreak: boolean;
+    startedAt: string | null;
+    breakStartedAt: string | null;
+    todayMinutes: number;
+    breakMinutes: number;
+  }>({
+    clockedIn: false,
+    onBreak: false,
+    startedAt: null,
+    breakStartedAt: null,
+    todayMinutes: 0,
+    breakMinutes: 0,
+  });
+  const [addOpen, setAddOpen] = useState(false);
+
+  const handleClockIn = () => {
+    setClockState((s) => ({ ...s, clockedIn: true, startedAt: new Date().toISOString() }));
+    toast.success('Clocked in', { description: `Started at ${format(new Date(), 'h:mm a')}` });
+  };
+  const handleClockOut = () => {
+    const started = clockState.startedAt ? new Date(clockState.startedAt) : new Date();
+    const minutes = Math.max(0, Math.round((Date.now() - started.getTime()) / 60000));
+    setClockState((s) => ({
+      ...s,
+      clockedIn: false,
+      onBreak: false,
+      startedAt: null,
+      breakStartedAt: null,
+      todayMinutes: s.todayMinutes + minutes,
+    }));
+    toast.success('Clocked out', {
+      description: `${Math.floor(minutes / 60)}h ${minutes % 60}m logged today`,
+    });
+  };
+  const handleBreakToggle = () => {
+    if (!clockState.onBreak) {
+      setClockState((s) => ({ ...s, onBreak: true, breakStartedAt: new Date().toISOString() }));
+      toast.info('Break started');
+    } else {
+      const bStart = clockState.breakStartedAt ? new Date(clockState.breakStartedAt) : new Date();
+      const mins = Math.max(0, Math.round((Date.now() - bStart.getTime()) / 60000));
+      setClockState((s) => ({
+        ...s,
+        onBreak: false,
+        breakStartedAt: null,
+        breakMinutes: s.breakMinutes + mins,
+      }));
+      toast.success('Break ended', { description: `${mins}m break logged` });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Clock in / out + add entry */}
+      <Card className="border-border/50">
+        <CardContent className="p-5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div
+                className={cn(
+                  'h-12 w-12 rounded-full flex items-center justify-center',
+                  clockState.clockedIn
+                    ? 'bg-status-approved/15 text-status-approved'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold">
+                  {clockState.clockedIn
+                    ? clockState.onBreak
+                      ? 'On break'
+                      : 'Clocked in'
+                    : 'Not clocked in'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {clockState.startedAt
+                    ? `Since ${format(parseISO(clockState.startedAt), 'h:mm a')}`
+                    : 'Tap clock-in to start your shift'}
+                  {' · '}Today: {Math.floor(clockState.todayMinutes / 60)}h {clockState.todayMinutes % 60}m
+                  {clockState.breakMinutes > 0 && ` · Break: ${clockState.breakMinutes}m`}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {clockState.clockedIn ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleBreakToggle} className="gap-1.5">
+                    <Coffee className="h-3.5 w-3.5" />
+                    {clockState.onBreak ? 'End Break' : 'Start Break'}
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={handleClockOut} className="gap-1.5">
+                    <XCircle className="h-3.5 w-3.5" />
+                    Clock Out
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" onClick={handleClockIn} className="gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Clock In
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                Add Timesheet Entry
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="current">Current Week</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+        </TabsList>
+        <TabsContent value="current" className="mt-4">
+          {currentWeek ? (
+            <CurrentWeekView timesheet={currentWeek} />
+          ) : (
+            <Card className="border-border/50">
+              <CardContent className="py-12 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="font-medium">No timesheet for current week</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Clock in or add an entry to start your timesheet
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        <TabsContent value="history" className="mt-4">
+          <HistoryView timesheets={history} />
+        </TabsContent>
+        <TabsContent value="summary" className="mt-4">
+          <SummaryView timesheets={history} stats={stats} />
+        </TabsContent>
+      </Tabs>
+
+      <AddTimesheetEntryDialog open={addOpen} onOpenChange={setAddOpen} />
+    </div>
+  );
+}
+
+function AddTimesheetEntryDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [clockIn, setClockIn] = useState('09:00');
+  const [clockOut, setClockOut] = useState('17:00');
+  const [breakMin, setBreakMin] = useState('30');
+  const [notes, setNotes] = useState('');
+
+  const handleSave = () => {
+    if (!date || !clockIn || !clockOut) {
+      toast.error('Date, clock in and clock out are required');
+      return;
+    }
+    toast.success('Timesheet entry added', {
+      description: `${format(parseISO(date), 'MMM d')} · ${clockIn}–${clockOut}`,
+    });
+    onOpenChange(false);
+    setNotes('');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add timesheet entry</DialogTitle>
+          <DialogDescription>
+            Manually log hours for a past or current day. Entries go to your manager for approval.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <label className="text-xs font-medium text-muted-foreground">Date</label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-2">
+              <label className="text-xs font-medium text-muted-foreground">Clock in</label>
+              <Input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-xs font-medium text-muted-foreground">Clock out</label>
+              <Input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <label className="text-xs font-medium text-muted-foreground">Break (minutes)</label>
+            <Input
+              type="number"
+              min={0}
+              value={breakMin}
+              onChange={(e) => setBreakMin(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <label className="text-xs font-medium text-muted-foreground">Notes (optional)</label>
+            <Input
+              placeholder="Add context for your manager"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave}>Save entry</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 
 function CurrentWeekView({ timesheet }: { timesheet: Timesheet }) {
   const validation = validateCompliance(timesheet);
