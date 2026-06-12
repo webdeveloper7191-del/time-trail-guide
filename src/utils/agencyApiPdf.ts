@@ -359,22 +359,25 @@ export function generateAgencyApiPdf(): Blob {
   w.text('rostered.ai', { size: 28, bold: true, color: COLORS.accent, gapAfter: 3 });
   w.text('Agency Integration API', { size: 22, bold: true, color: COLORS.brand, gapAfter: 5 });
   w.text(
-    'Request and response contracts for integrating 3rd-party staffing agency platforms with the rostered.ai workforce platform.',
-    { size: 11, color: COLORS.muted, gapAfter: 6 },
+    'A strategic view of how third-party staffing agency platforms will be able to integrate with the rostered.ai workforce platform.',
+    { size: 11, color: COLORS.muted, gapAfter: 3 },
+  );
+  w.text(
+    'This version is a draft design and implementation is pending, so it is to be used only as a guide to align stakeholders on the operating model before the technical contract is finalised.',
+    { size: 10, color: COLORS.muted, gapAfter: 6 },
   );
   w.text(`Generated ${new Date().toLocaleString()}`, { size: 9, color: COLORS.muted, gapAfter: 1 });
-  w.text('Version 2026-06-01', { size: 9, color: COLORS.muted });
+  w.text('Draft — Version 2026-06-01', { size: 9, color: COLORS.muted });
 
   // ── 1. Conventions ───────────────────────────────────────────────────
   w.newPage();
   w.h1('1. Conventions');
-  w.h3('Base URL & versioning');
-  w.text('Production:  https://api.rostered.ai/v1', { size: 10, mono: true, gapAfter: 0.5 });
-  w.text('Sandbox:     https://api.sandbox.rostered.ai/v1', { size: 10, mono: true, gapAfter: 2 });
+  w.h3('Versioning');
   w.text(
-    'Breaking changes are released under a new major version (/v2). Backwards-compatible additions roll out to /v1 without notice.',
+    'Breaking changes will be released under a new major version (/v2). Backwards-compatible additions will roll out to /v1 without notice. Base URLs for production and sandbox environments will be provided during onboarding.',
     { size: 9.5, gapAfter: 3 },
   );
+
 
   w.h3('Common request headers');
   w.fieldTable(agencyApiCommonHeaders);
