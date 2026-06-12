@@ -666,6 +666,26 @@ function AddTimesheetEntryDialog({
           </SheetDescription>
         </SheetHeader>
 
+        <div className="px-6 py-3 border-b bg-muted/20 space-y-2">
+          <PayPeriodSelector
+            frequency={payFrequency}
+            onFrequencyChange={setPayFrequency}
+            period={period}
+            onPrev={goPrev}
+            onNext={goNext}
+            onToday={goToday}
+          />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] text-muted-foreground">
+              Pre-fill an entry for each weekday in the selected pay period.
+            </p>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={fillPeriod}>
+              <Plus className="h-3 w-3 mr-1" /> Fill period
+            </Button>
+          </div>
+        </div>
+
+
         <ScrollArea className="flex-1 px-6">
           <div className="space-y-4 py-6">
             {entries.map((entry, idx) => (
