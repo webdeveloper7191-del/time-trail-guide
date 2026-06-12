@@ -29,7 +29,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
-import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import {
+  format, parseISO, startOfWeek, endOfWeek, isWithinInterval,
+  startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subWeeks, subMonths,
+} from 'date-fns';
+import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusBadge } from '@/components/timesheet/StatusBadge';
 import { EmployeeLMSPanel } from '@/components/performance/EmployeeLMSPanel';
