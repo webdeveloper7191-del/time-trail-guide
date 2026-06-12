@@ -127,7 +127,8 @@ export function EmployeePortal() {
       case 'current':
         return (
           <MyTimesheetsView
-            allTimesheets={myTimesheets}
+            currentWeek={currentWeekTimesheet}
+            history={pastTimesheets}
             stats={stats}
           />
         );
