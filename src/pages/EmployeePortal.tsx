@@ -21,6 +21,12 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+} from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
