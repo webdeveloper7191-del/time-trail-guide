@@ -582,6 +582,7 @@ function AddTimesheetEntryDialog({
   const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
   const goToday = () => setAnchorDate(new Date());
   const [entries, setEntries] = useState<EntryDraft[]>([newEntry()]);
+  const [exceptionEntryId, setExceptionEntryId] = useState<string | null>(null);
 
   const updateEntry = <K extends keyof EntryDraft>(id: string, field: K, value: EntryDraft[K]) => {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
