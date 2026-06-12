@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { mockTimesheets } from '@/data/mockTimesheets';
-import { Timesheet } from '@/types/timesheet';
+import { Timesheet, ExceptionReason, TimesheetException } from '@/types/timesheet';
+import { RaiseExceptionDialog, EXCEPTION_REASONS } from '@/components/timesheet/RaiseExceptionDialog';
 import { validateCompliance } from '@/lib/complianceEngine';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import {
   User, Building2, Hourglass, ShieldCheck, ShieldAlert,
   GraduationCap, Target, MessageSquare, Users, Sparkles,
   ClipboardCheck, LayoutDashboard, Search, Bell, Settings as SettingsIcon,
-  Send,
+  Send, AlertTriangle, X,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -545,6 +546,7 @@ interface EntryDraft {
   clockOut: string;
   breaks: BreakDraft[];
   notes: string;
+  exception?: TimesheetException;
 }
 
 const newBreak = (): BreakDraft => ({
@@ -580,6 +582,7 @@ function AddTimesheetEntryDialog({
   const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
   const goToday = () => setAnchorDate(new Date());
   const [entries, setEntries] = useState<EntryDraft[]>([newEntry()]);
+  const [exceptionEntryId, setExceptionEntryId] = useState<string | null>(null);
 
   const updateEntry = <K extends keyof EntryDraft>(id: string, field: K, value: EntryDraft[K]) => {
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
@@ -771,6 +774,45 @@ function AddTimesheetEntryDialog({
                     onChange={(e) => updateEntry(entry.id, 'notes', e.target.value)}
                   />
                 </div>
+
+                {/* Exception (optional) — raise if clock in/out data is wrong or missing */}
+                {entry.exception ? (
+                  <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-semibold text-amber-700">
+                          {EXCEPTION_REASONS.find(r => r.value === entry.exception!.reason)?.label ?? 'Exception'}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
+                          Raised
+                        </Badge>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{entry.exception.note}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2"
+                        onClick={() => setExceptionEntryId(entry.id)}>
+                        Edit
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => updateEntry(entry.id, 'exception', undefined as unknown as TimesheetException)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs w-full border-amber-500/40 text-amber-700 hover:bg-amber-500/10"
+                    onClick={() => setExceptionEntryId(entry.id)}
+                  >
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Raise exception (clock in / out incorrect or missing)
+                  </Button>
+                )}
               </div>
             ))}
 
@@ -787,6 +829,20 @@ function AddTimesheetEntryDialog({
           </Button>
         </SheetFooter>
       </SheetContent>
+
+      <RaiseExceptionDialog
+        open={exceptionEntryId !== null}
+        onClose={() => setExceptionEntryId(null)}
+        onSubmit={(exc) => {
+          if (exceptionEntryId) updateEntry(exceptionEntryId, 'exception', exc);
+        }}
+        raisedBy="staff"
+        contextLabel={(() => {
+          const e = entries.find(en => en.id === exceptionEntryId);
+          return e ? format(parseISO(e.date), 'EEE, MMM d') : undefined;
+        })()}
+        initial={entries.find(en => en.id === exceptionEntryId)?.exception}
+      />
     </Sheet>
   );
 }
