@@ -681,10 +681,10 @@ function AddTimesheetEntryDialog({
           />
           <div className="flex items-center justify-between gap-2">
             <p className="text-[11px] text-muted-foreground">
-              Pre-fill an entry for each weekday in the selected pay period.
+              Pre-fill entries from your recorded clock in / clock out data for this pay period.
             </p>
             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={fillPeriod}>
-              <Plus className="h-3 w-3 mr-1" /> Fill period
+              <Plus className="h-3 w-3 mr-1" /> Fill from clock in / out data
             </Button>
           </div>
         </div>
