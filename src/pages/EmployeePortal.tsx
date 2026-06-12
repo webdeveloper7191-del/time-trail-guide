@@ -115,19 +115,14 @@ export function EmployeePortal() {
       case 'schedule':
         return <EmployeeShiftsPanel />;
       case 'current':
-        return currentWeekTimesheet ? (
-          <CurrentWeekView timesheet={currentWeekTimesheet} />
-        ) : (
-          <Card className="border-border/50">
-            <CardContent className="py-12 text-center">
-              <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-              <p className="font-medium">No timesheet for current week</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Start clocking in to create your timesheet
-              </p>
-            </CardContent>
-          </Card>
+        return (
+          <MyTimesheetsView
+            currentWeek={currentWeekTimesheet}
+            history={pastTimesheets}
+            stats={stats}
+          />
         );
+
       case 'recognition':
         return <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />;
       case 'performance':
