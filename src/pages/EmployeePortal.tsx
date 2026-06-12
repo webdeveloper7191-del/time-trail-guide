@@ -366,41 +366,15 @@ function PayPeriodSelector({
 // My Timesheets — full view with clock in/out, add entry, tabs
 // ============================================================
 function MyTimesheetsView({
-  allTimesheets,
+  currentWeek,
+  history,
   stats,
 }: {
-  allTimesheets: Timesheet[];
+  currentWeek?: Timesheet;
+  history: Timesheet[];
   stats: any;
 }) {
   const [tab, setTab] = useState('current');
-  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
-  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
-
-  const period = useMemo(
-    () => getPayPeriodRange(anchorDate, payFrequency),
-    [anchorDate, payFrequency]
-  );
-
-  const inPeriod = (ts: Timesheet) => {
-    const wkStart = parseISO(ts.weekStartDate);
-    const wkEnd = parseISO(ts.weekEndDate);
-    // include any timesheet whose week overlaps the pay period
-    return wkEnd >= period.start && wkStart <= period.end;
-  };
-
-  const periodTimesheets = useMemo(
-    () => allTimesheets.filter(inPeriod).sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate)),
-    [allTimesheets, period.start, period.end]
-  );
-  const historyTimesheets = useMemo(
-    () => allTimesheets.filter(ts => !inPeriod(ts)),
-    [allTimesheets, period.start, period.end]
-  );
-
-  const goPrev = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, -1));
-  const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
-  const goToday = () => setAnchorDate(new Date());
-
   const [clockState, setClockState] = useState<{
     clockedIn: boolean;
     onBreak: boolean;
