@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { mockTimesheets } from '@/data/mockTimesheets';
-import { Timesheet } from '@/types/timesheet';
+import { Timesheet, ExceptionReason, TimesheetException } from '@/types/timesheet';
+import { RaiseExceptionDialog, EXCEPTION_REASONS } from '@/components/timesheet/RaiseExceptionDialog';
 import { validateCompliance } from '@/lib/complianceEngine';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
