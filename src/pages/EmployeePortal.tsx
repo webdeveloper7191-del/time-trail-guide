@@ -21,6 +21,12 @@ import { Input } from '@/components/ui/input';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+} from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
@@ -420,6 +426,40 @@ function MyTimesheetsView({
   );
 }
 
+type BreakType = 'lunch' | 'short' | 'other';
+
+interface BreakDraft {
+  id: string;
+  type: BreakType;
+  startTime: string;
+  endTime: string;
+}
+
+interface EntryDraft {
+  id: string;
+  date: string;
+  clockIn: string;
+  clockOut: string;
+  breaks: BreakDraft[];
+  notes: string;
+}
+
+const newBreak = (): BreakDraft => ({
+  id: `brk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  type: 'lunch',
+  startTime: '12:00',
+  endTime: '12:30',
+});
+
+const newEntry = (date?: string): EntryDraft => ({
+  id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  date: date ?? format(new Date(), 'yyyy-MM-dd'),
+  clockIn: '09:00',
+  clockOut: '17:00',
+  breaks: [newBreak()],
+  notes: '',
+});
+
 function AddTimesheetEntryDialog({
   open,
   onOpenChange,
@@ -427,72 +467,177 @@ function AddTimesheetEntryDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [clockIn, setClockIn] = useState('09:00');
-  const [clockOut, setClockOut] = useState('17:00');
-  const [breakMin, setBreakMin] = useState('30');
-  const [notes, setNotes] = useState('');
+  const [entries, setEntries] = useState<EntryDraft[]>([newEntry()]);
+
+  const updateEntry = <K extends keyof EntryDraft>(id: string, field: K, value: EntryDraft[K]) => {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, [field]: value } : e)));
+  };
+
+  const updateBreak = <K extends keyof BreakDraft>(entryId: string, breakId: string, field: K, value: BreakDraft[K]) => {
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.id === entryId
+          ? { ...e, breaks: e.breaks.map((b) => (b.id === breakId ? { ...b, [field]: value } : b)) }
+          : e,
+      ),
+    );
+  };
+
+  const addBreak = (entryId: string) => {
+    setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, breaks: [...e.breaks, newBreak()] } : e)));
+  };
+
+  const removeBreak = (entryId: string, breakId: string) => {
+    setEntries((prev) =>
+      prev.map((e) => (e.id === entryId ? { ...e, breaks: e.breaks.filter((b) => b.id !== breakId) } : e)),
+    );
+  };
+
+  const addDay = () => {
+    const last = entries[entries.length - 1];
+    const baseDate = last ? parseISO(last.date) : new Date();
+    const next = new Date(baseDate);
+    next.setDate(next.getDate() + 1);
+    setEntries((prev) => [...prev, newEntry(format(next, 'yyyy-MM-dd'))]);
+  };
+
+  const removeDay = (id: string) => {
+    setEntries((prev) => (prev.length > 1 ? prev.filter((e) => e.id !== id) : prev));
+  };
+
+  const reset = () => setEntries([newEntry()]);
 
   const handleSave = () => {
-    if (!date || !clockIn || !clockOut) {
-      toast.error('Date, clock in and clock out are required');
-      return;
+    for (const e of entries) {
+      if (!e.date || !e.clockIn || !e.clockOut) {
+        toast.error('Each entry needs a date, clock in and clock out');
+        return;
+      }
+      for (const b of e.breaks) {
+        if (!b.startTime || !b.endTime) {
+          toast.error(`Break on ${format(parseISO(e.date), 'MMM d')} is missing start or end time`);
+          return;
+        }
+      }
     }
-    toast.success('Timesheet entry added', {
-      description: `${format(parseISO(date), 'MMM d')} · ${clockIn}–${clockOut}`,
+    toast.success(`${entries.length} timesheet ${entries.length === 1 ? 'entry' : 'entries'} added`, {
+      description: entries.map((e) => `${format(parseISO(e.date), 'MMM d')} · ${e.clockIn}–${e.clockOut}`).join(' · '),
     });
     onOpenChange(false);
-    setNotes('');
+    reset();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add timesheet entry</DialogTitle>
-          <DialogDescription>
-            Manually log hours for a past or current day. Entries go to your manager for approval.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-2">
-          <div className="grid gap-2">
-            <label className="text-xs font-medium text-muted-foreground">Date</label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+    <Sheet open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
+      <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b">
+          <SheetTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            Add timesheet entries
+          </SheetTitle>
+          <SheetDescription>
+            Log hours for one or more days. Record break type and times for each entry. Submissions go to your manager for approval.
+          </SheetDescription>
+        </SheetHeader>
+
+        <ScrollArea className="flex-1 px-6">
+          <div className="space-y-4 py-6">
+            {entries.map((entry, idx) => (
+              <div key={entry.id} className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Day {idx + 1}
+                  </span>
+                  {entries.length > 1 && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDay(entry.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Date</label>
+                  <Input type="date" value={entry.date} onChange={(e) => updateEntry(entry.id, 'date', e.target.value)} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-2">
+                    <label className="text-xs font-medium text-muted-foreground">Clock in</label>
+                    <Input type="time" value={entry.clockIn} onChange={(e) => updateEntry(entry.id, 'clockIn', e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <label className="text-xs font-medium text-muted-foreground">Clock out</label>
+                    <Input type="time" value={entry.clockOut} onChange={(e) => updateEntry(entry.id, 'clockOut', e.target.value)} />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Coffee className="h-3 w-3" /> Breaks
+                    </label>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => addBreak(entry.id)}>
+                      <Plus className="h-3 w-3 mr-1" /> Add break
+                    </Button>
+                  </div>
+                  {entry.breaks.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">No breaks recorded.</p>
+                  )}
+                  {entry.breaks.map((b, bIdx) => (
+                    <div key={b.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
+                      <div className="grid gap-1">
+                        <label className="text-[10px] text-muted-foreground">Type</label>
+                        <Select value={b.type} onValueChange={(v) => updateBreak(entry.id, b.id, 'type', v as BreakType)}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="lunch">Lunch (unpaid)</SelectItem>
+                            <SelectItem value="short">Short / rest (paid)</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-1">
+                        <label className="text-[10px] text-muted-foreground">Start</label>
+                        <Input type="time" className="h-8 text-xs" value={b.startTime} onChange={(e) => updateBreak(entry.id, b.id, 'startTime', e.target.value)} />
+                      </div>
+                      <div className="grid gap-1">
+                        <label className="text-[10px] text-muted-foreground">End</label>
+                        <Input type="time" className="h-8 text-xs" value={b.endTime} onChange={(e) => updateBreak(entry.id, b.id, 'endTime', e.target.value)} />
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeBreak(entry.id, b.id)} aria-label={`Remove break ${bIdx + 1}`}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-xs font-medium text-muted-foreground">Notes (optional)</label>
+                  <Input
+                    placeholder="Add context for your manager"
+                    value={entry.notes}
+                    onChange={(e) => updateEntry(entry.id, 'notes', e.target.value)}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <Button variant="outline" className="w-full" onClick={addDay}>
+              <Plus className="h-4 w-4 mr-1.5" /> Add another day
+            </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <label className="text-xs font-medium text-muted-foreground">Clock in</label>
-              <Input type="time" value={clockIn} onChange={(e) => setClockIn(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-xs font-medium text-muted-foreground">Clock out</label>
-              <Input type="time" value={clockOut} onChange={(e) => setClockOut(e.target.value)} />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <label className="text-xs font-medium text-muted-foreground">Break (minutes)</label>
-            <Input
-              type="number"
-              min={0}
-              value={breakMin}
-              onChange={(e) => setBreakMin(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <label className="text-xs font-medium text-muted-foreground">Notes (optional)</label>
-            <Input
-              placeholder="Add context for your manager"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Save entry</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ScrollArea>
+
+        <SheetFooter className="px-6 py-4 border-t flex gap-2">
+          <Button variant="outline" onClick={() => { reset(); onOpenChange(false); }} className="flex-1">Cancel</Button>
+          <Button onClick={handleSave} className="flex-1">
+            Save {entries.length > 1 ? `${entries.length} entries` : 'entry'}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
