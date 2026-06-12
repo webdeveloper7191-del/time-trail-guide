@@ -269,6 +269,99 @@ export function EmployeePortal() {
 }
 
 // ============================================================
+// Pay period helpers + selector
+// ============================================================
+type PayFrequency = 'weekly' | 'fortnightly' | 'monthly';
+
+interface PayPeriodRange {
+  start: Date;
+  end: Date;
+  label: string;
+}
+
+function getPayPeriodRange(anchor: Date, frequency: PayFrequency): PayPeriodRange {
+  if (frequency === 'monthly') {
+    const start = startOfMonth(anchor);
+    const end = endOfMonth(anchor);
+    return { start, end, label: format(start, 'MMMM yyyy') };
+  }
+  // weekly / fortnightly anchored to Monday
+  const wkStart = startOfWeek(anchor, { weekStartsOn: 1 });
+  if (frequency === 'weekly') {
+    const end = endOfWeek(anchor, { weekStartsOn: 1 });
+    return {
+      start: wkStart,
+      end,
+      label: `${format(wkStart, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
+    };
+  }
+  // fortnightly: 14-day window starting Monday of the week containing anchor
+  const end = addDays(wkStart, 13);
+  return {
+    start: wkStart,
+    end,
+    label: `${format(wkStart, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
+  };
+}
+
+function shiftPayPeriod(anchor: Date, frequency: PayFrequency, direction: 1 | -1): Date {
+  if (frequency === 'monthly') return direction > 0 ? addMonths(anchor, 1) : subMonths(anchor, 1);
+  if (frequency === 'weekly') return direction > 0 ? addWeeks(anchor, 1) : subWeeks(anchor, 1);
+  return direction > 0 ? addWeeks(anchor, 2) : subWeeks(anchor, 2);
+}
+
+function PayPeriodSelector({
+  frequency,
+  onFrequencyChange,
+  period,
+  onPrev,
+  onNext,
+  onToday,
+}: {
+  frequency: PayFrequency;
+  onFrequencyChange: (v: PayFrequency) => void;
+  period: PayPeriodRange;
+  onPrev: () => void;
+  onNext: () => void;
+  onToday: () => void;
+}) {
+  return (
+    <Card className="border-border/50">
+      <CardContent className="p-3 flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 mr-2">
+          <Calendar className="h-4 w-4 text-primary" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pay period</span>
+        </div>
+        <Select value={frequency} onValueChange={(v) => onFrequencyChange(v as PayFrequency)}>
+          <SelectTrigger className="h-8 w-[140px] text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="weekly">Weekly</SelectItem>
+            <SelectItem value="fortnightly">Fortnightly</SelectItem>
+            <SelectItem value="monthly">Monthly</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-1 ml-1">
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onPrev} aria-label="Previous period">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="px-3 h-8 inline-flex items-center rounded-md border border-border/60 bg-muted/30 text-sm font-medium min-w-[200px] justify-center">
+            {period.label}
+          </div>
+          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onNext} aria-label="Next period">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={onToday}>
+          Today
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================
 // My Timesheets — full view with clock in/out, add entry, tabs
 // ============================================================
 function MyTimesheetsView({
