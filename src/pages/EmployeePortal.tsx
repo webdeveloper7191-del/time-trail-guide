@@ -271,8 +271,21 @@ export function EmployeePortal() {
 
 // ============================================================
 // Pay period helpers + selector
+// Pay frequency is a fixed business configuration — staff cannot change it.
+// Only the date window navigates (prev / next / today).
 // ============================================================
 type PayFrequency = 'weekly' | 'fortnightly' | 'monthly';
+
+// Business-level configuration (would come from tenant settings in production)
+const BUSINESS_PAY_CONFIG: { frequency: PayFrequency } = {
+  frequency: 'fortnightly',
+};
+
+const PAY_FREQUENCY_LABEL: Record<PayFrequency, string> = {
+  weekly: 'Weekly',
+  fortnightly: 'Fortnightly',
+  monthly: 'Monthly',
+};
 
 interface PayPeriodRange {
   start: Date;
@@ -286,7 +299,6 @@ function getPayPeriodRange(anchor: Date, frequency: PayFrequency): PayPeriodRang
     const end = endOfMonth(anchor);
     return { start, end, label: format(start, 'MMMM yyyy') };
   }
-  // weekly / fortnightly anchored to Monday
   const wkStart = startOfWeek(anchor, { weekStartsOn: 1 });
   if (frequency === 'weekly') {
     const end = endOfWeek(anchor, { weekStartsOn: 1 });
@@ -296,7 +308,6 @@ function getPayPeriodRange(anchor: Date, frequency: PayFrequency): PayPeriodRang
       label: `${format(wkStart, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
     };
   }
-  // fortnightly: 14-day window starting Monday of the week containing anchor
   const end = addDays(wkStart, 13);
   return {
     start: wkStart,
@@ -313,14 +324,12 @@ function shiftPayPeriod(anchor: Date, frequency: PayFrequency, direction: 1 | -1
 
 function PayPeriodSelector({
   frequency,
-  onFrequencyChange,
   period,
   onPrev,
   onNext,
   onToday,
 }: {
   frequency: PayFrequency;
-  onFrequencyChange: (v: PayFrequency) => void;
   period: PayPeriodRange;
   onPrev: () => void;
   onNext: () => void;
@@ -333,16 +342,9 @@ function PayPeriodSelector({
           <Calendar className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pay period</span>
         </div>
-        <Select value={frequency} onValueChange={(v) => onFrequencyChange(v as PayFrequency)}>
-          <SelectTrigger className="h-8 w-[140px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="fortnightly">Fortnightly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-          </SelectContent>
-        </Select>
+        <Badge variant="secondary" className="h-7 px-2.5 text-xs font-medium">
+          {PAY_FREQUENCY_LABEL[frequency]}
+        </Badge>
         <div className="flex items-center gap-1 ml-1">
           <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onPrev} aria-label="Previous period">
             <ChevronLeft className="h-4 w-4" />
@@ -357,6 +359,9 @@ function PayPeriodSelector({
         <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={onToday}>
           Today
         </Button>
+        <span className="text-[11px] text-muted-foreground ml-auto">
+          Set by your organisation
+        </span>
       </CardContent>
     </Card>
   );
@@ -565,7 +570,7 @@ function AddTimesheetEntryDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
+  const payFrequency = BUSINESS_PAY_CONFIG.frequency;
   const [anchorDate, setAnchorDate] = useState<Date>(new Date());
   const period = useMemo(
     () => getPayPeriodRange(anchorDate, payFrequency),
@@ -669,7 +674,6 @@ function AddTimesheetEntryDialog({
         <div className="px-6 py-3 border-b bg-muted/20 space-y-2">
           <PayPeriodSelector
             frequency={payFrequency}
-            onFrequencyChange={setPayFrequency}
             period={period}
             onPrev={goPrev}
             onNext={goNext}
