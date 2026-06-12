@@ -829,6 +829,20 @@ function AddTimesheetEntryDialog({
           </Button>
         </SheetFooter>
       </SheetContent>
+
+      <RaiseExceptionDialog
+        open={exceptionEntryId !== null}
+        onClose={() => setExceptionEntryId(null)}
+        onSubmit={(exc) => {
+          if (exceptionEntryId) updateEntry(exceptionEntryId, 'exception', exc);
+        }}
+        raisedBy="staff"
+        contextLabel={(() => {
+          const e = entries.find(en => en.id === exceptionEntryId);
+          return e ? format(parseISO(e.date), 'EEE, MMM d') : undefined;
+        })()}
+        initial={entries.find(en => en.id === exceptionEntryId)?.exception}
+      />
     </Sheet>
   );
 }
