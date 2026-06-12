@@ -421,34 +421,44 @@ function MyTimesheetsView({
         </CardContent>
       </Card>
 
+      <PayPeriodSelector
+        frequency={payFrequency}
+        onFrequencyChange={setPayFrequency}
+        period={period}
+        onPrev={goPrev}
+        onNext={goNext}
+        onToday={goToday}
+      />
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="current">Current Week</TabsTrigger>
+          <TabsTrigger value="current">Current Period</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="summary">Summary</TabsTrigger>
         </TabsList>
-        <TabsContent value="current" className="mt-4">
-          {currentWeek ? (
-            <CurrentWeekView timesheet={currentWeek} />
+        <TabsContent value="current" className="mt-4 space-y-4">
+          {periodTimesheets.length > 0 ? (
+            periodTimesheets.map(ts => <CurrentWeekView key={ts.id} timesheet={ts} />)
           ) : (
             <Card className="border-border/50">
               <CardContent className="py-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="font-medium">No timesheet for current week</p>
+                <p className="font-medium">No timesheets in this pay period</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Clock in or add an entry to start your timesheet
+                  Clock in, add an entry, or change the pay period above.
                 </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
         <TabsContent value="history" className="mt-4">
-          <HistoryView timesheets={history} />
+          <HistoryView timesheets={historyTimesheets} />
         </TabsContent>
         <TabsContent value="summary" className="mt-4">
-          <SummaryView timesheets={history} stats={stats} />
+          <SummaryView timesheets={historyTimesheets} stats={stats} />
         </TabsContent>
       </Tabs>
+
 
       <AddTimesheetEntryDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
