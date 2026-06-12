@@ -546,6 +546,7 @@ interface EntryDraft {
   clockOut: string;
   breaks: BreakDraft[];
   notes: string;
+  exception?: TimesheetException;
 }
 
 const newBreak = (): BreakDraft => ({
