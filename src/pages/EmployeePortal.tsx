@@ -127,7 +127,8 @@ export function EmployeePortal() {
       case 'current':
         return (
           <MyTimesheetsView
-            allTimesheets={myTimesheets}
+            currentWeek={currentWeekTimesheet}
+            history={pastTimesheets}
             stats={stats}
           />
         );
@@ -365,41 +366,15 @@ function PayPeriodSelector({
 // My Timesheets — full view with clock in/out, add entry, tabs
 // ============================================================
 function MyTimesheetsView({
-  allTimesheets,
+  currentWeek,
+  history,
   stats,
 }: {
-  allTimesheets: Timesheet[];
+  currentWeek?: Timesheet;
+  history: Timesheet[];
   stats: any;
 }) {
   const [tab, setTab] = useState('current');
-  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
-  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
-
-  const period = useMemo(
-    () => getPayPeriodRange(anchorDate, payFrequency),
-    [anchorDate, payFrequency]
-  );
-
-  const inPeriod = (ts: Timesheet) => {
-    const wkStart = parseISO(ts.weekStartDate);
-    const wkEnd = parseISO(ts.weekEndDate);
-    // include any timesheet whose week overlaps the pay period
-    return wkEnd >= period.start && wkStart <= period.end;
-  };
-
-  const periodTimesheets = useMemo(
-    () => allTimesheets.filter(inPeriod).sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate)),
-    [allTimesheets, period.start, period.end]
-  );
-  const historyTimesheets = useMemo(
-    () => allTimesheets.filter(ts => !inPeriod(ts)),
-    [allTimesheets, period.start, period.end]
-  );
-
-  const goPrev = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, -1));
-  const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
-  const goToday = () => setAnchorDate(new Date());
-
   const [clockState, setClockState] = useState<{
     clockedIn: boolean;
     onBreak: boolean;
@@ -514,41 +489,32 @@ function MyTimesheetsView({
         </CardContent>
       </Card>
 
-      <PayPeriodSelector
-        frequency={payFrequency}
-        onFrequencyChange={setPayFrequency}
-        period={period}
-        onPrev={goPrev}
-        onNext={goNext}
-        onToday={goToday}
-      />
-
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="current">Current Period</TabsTrigger>
+          <TabsTrigger value="current">Current Week</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="summary">Summary</TabsTrigger>
         </TabsList>
-        <TabsContent value="current" className="mt-4 space-y-4">
-          {periodTimesheets.length > 0 ? (
-            periodTimesheets.map(ts => <CurrentWeekView key={ts.id} timesheet={ts} />)
+        <TabsContent value="current" className="mt-4">
+          {currentWeek ? (
+            <CurrentWeekView timesheet={currentWeek} />
           ) : (
             <Card className="border-border/50">
               <CardContent className="py-12 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="font-medium">No timesheets in this pay period</p>
+                <p className="font-medium">No timesheet for current week</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Clock in, add an entry, or change the pay period above.
+                  Clock in or add an entry to start your timesheet
                 </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
         <TabsContent value="history" className="mt-4">
-          <HistoryView timesheets={historyTimesheets} />
+          <HistoryView timesheets={history} />
         </TabsContent>
         <TabsContent value="summary" className="mt-4">
-          <SummaryView timesheets={historyTimesheets} stats={stats} />
+          <SummaryView timesheets={history} stats={stats} />
         </TabsContent>
       </Tabs>
 
@@ -599,6 +565,15 @@ function AddTimesheetEntryDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const [payFrequency, setPayFrequency] = useState<PayFrequency>('fortnightly');
+  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
+  const period = useMemo(
+    () => getPayPeriodRange(anchorDate, payFrequency),
+    [anchorDate, payFrequency]
+  );
+  const goPrev = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, -1));
+  const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
+  const goToday = () => setAnchorDate(new Date());
   const [entries, setEntries] = useState<EntryDraft[]>([newEntry()]);
 
   const updateEntry = <K extends keyof EntryDraft>(id: string, field: K, value: EntryDraft[K]) => {
@@ -639,6 +614,25 @@ function AddTimesheetEntryDialog({
 
   const reset = () => setEntries([newEntry()]);
 
+  const fillPeriod = () => {
+    const days: EntryDraft[] = [];
+    const totalDays = Math.round((period.end.getTime() - period.start.getTime()) / 86400000) + 1;
+    for (let i = 0; i < totalDays; i++) {
+      const d = addDays(period.start, i);
+      // skip weekends by default to keep the list tidy
+      const dow = d.getDay();
+      if (dow === 0 || dow === 6) continue;
+      days.push(newEntry(format(d, 'yyyy-MM-dd')));
+    }
+    if (days.length === 0) {
+      toast.error('No weekdays in the selected pay period');
+      return;
+    }
+    setEntries(days);
+    toast.success(`Filled ${days.length} day${days.length === 1 ? '' : 's'} from ${period.label}`);
+  };
+
+
   const handleSave = () => {
     for (const e of entries) {
       if (!e.date || !e.clockIn || !e.clockOut) {
@@ -671,6 +665,26 @@ function AddTimesheetEntryDialog({
             Log hours for one or more days. Record break type and times for each entry. Submissions go to your manager for approval.
           </SheetDescription>
         </SheetHeader>
+
+        <div className="px-6 py-3 border-b bg-muted/20 space-y-2">
+          <PayPeriodSelector
+            frequency={payFrequency}
+            onFrequencyChange={setPayFrequency}
+            period={period}
+            onPrev={goPrev}
+            onNext={goNext}
+            onToday={goToday}
+          />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] text-muted-foreground">
+              Pre-fill an entry for each weekday in the selected pay period.
+            </p>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={fillPeriod}>
+              <Plus className="h-3 w-3 mr-1" /> Fill period
+            </Button>
+          </div>
+        </div>
+
 
         <ScrollArea className="flex-1 px-6">
           <div className="space-y-4 py-6">
