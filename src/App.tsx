@@ -25,6 +25,7 @@ import FormBuilder from "./pages/FormBuilder";
 import MyTasksDashboard from "./pages/MyTasksDashboard";
 import DatabaseDocumentation from "./pages/DatabaseDocumentation";
 import SRSDocumentation from "./pages/SRSDocumentation";
+import RequirementsTraceabilityMatrix from "./pages/RequirementsTraceabilityMatrix";
 import AgencyIntegrationApiDocs from "./pages/AgencyIntegrationApiDocs";
 import LocationManagement from "./pages/LocationManagement";
 import ReportsPage from "./pages/ReportsPage";
@@ -62,6 +63,7 @@ const App = () => {
                   <Route path="/my-tasks" element={<MyTasksDashboard />} />
                   <Route path="/docs/database" element={<DatabaseDocumentation />} />
                   <Route path="/docs/srs" element={<SRSDocumentation />} />
+                  <Route path="/docs/rtm" element={<RequirementsTraceabilityMatrix />} />
                   <Route path="/docs/agency-api" element={<AgencyIntegrationApiDocs />} />
                   <Route path="/locations" element={<LocationManagement />} />
                   <Route path="/reports" element={<ReportsPage />} />

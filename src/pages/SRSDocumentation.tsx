@@ -276,6 +276,14 @@ const SRSDocumentation = () => {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => navigate('/docs/rtm')}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Traceability Matrix
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   const activeModule = modules.find(m => m.id === activeTab);
                   if (activeModule) exportSRSToPdf(activeModule.data);
