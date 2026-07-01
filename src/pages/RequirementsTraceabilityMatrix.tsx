@@ -33,6 +33,7 @@ const RequirementsTraceabilityMatrix: React.FC = () => {
   const [search, setSearch] = useState('');
   const [coverageFilter, setCoverageFilter] = useState<'all' | 'covered' | 'partial' | 'gap'>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [drilldown, setDrilldown] = useState<{ row: RtmRow; module: RtmModule } | null>(null);
 
   const current = modules.find(m => m.id === activeModule) ?? modules[0];
   const currentSummary = summary.find(s => s.moduleId === activeModule);
