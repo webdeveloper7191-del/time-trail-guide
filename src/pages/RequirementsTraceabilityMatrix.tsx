@@ -225,9 +225,19 @@ const RequirementsTraceabilityMatrix: React.FC = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant={coverageVariant(r.coverage)} className="text-[10px] uppercase">
-                                {r.coverage}
-                              </Badge>
+                              <button
+                                type="button"
+                                onClick={() => setDrilldown({ row: r, module: m })}
+                                className="inline-flex focus:outline-none focus:ring-2 focus:ring-ring rounded-md"
+                                title="View trace details"
+                              >
+                                <Badge
+                                  variant={coverageVariant(r.coverage)}
+                                  className="text-[10px] uppercase cursor-pointer hover:opacity-80"
+                                >
+                                  {r.coverage}
+                                </Badge>
+                              </button>
                             </TableCell>
                             <TableCell className="text-[11px]">
                               {r.userStories.length
@@ -284,6 +294,11 @@ const RequirementsTraceabilityMatrix: React.FC = () => {
           ))}
         </Tabs>
       </div>
+
+      <CoverageDrilldown
+        data={drilldown}
+        onClose={() => setDrilldown(null)}
+      />
     </div>
   );
 };
