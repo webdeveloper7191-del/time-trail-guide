@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { buildRtm, summariseRtm, RtmRow, RtmModule } from '@/lib/rtmBuilder';
 import { exportRtmToPdf, exportRtmToCsv } from '@/lib/rtmExport';
+import { exportRtmToExcel } from '@/lib/rtmExcelExport';
 
 const coverageVariant = (c: RtmRow['coverage']) =>
   c === 'covered' ? 'default' : c === 'partial' ? 'secondary' : 'destructive';
@@ -82,6 +83,9 @@ const RequirementsTraceabilityMatrix: React.FC = () => {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => exportRtmToCsv(modules)}>
               <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => exportRtmToExcel(modules)}>
+              <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
             </Button>
             <Button size="sm" onClick={() => exportRtmToPdf(modules)}>
               <Download className="h-4 w-4 mr-2" /> Download PDF
