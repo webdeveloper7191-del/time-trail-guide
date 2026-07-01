@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, FileText, Filter, Search, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Filter, Search, FileSpreadsheet, CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { buildRtm, summariseRtm, RtmRow } from '@/lib/rtmBuilder';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { buildRtm, summariseRtm, RtmRow, RtmModule } from '@/lib/rtmBuilder';
 import { exportRtmToPdf, exportRtmToCsv } from '@/lib/rtmExport';
 
 const coverageVariant = (c: RtmRow['coverage']) =>
