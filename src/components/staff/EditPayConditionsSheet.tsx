@@ -919,8 +919,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 </ResolvedField>
               </AccordionContent>
             </AccordionItem>
+            )}
 
-            {/* SECTION 4 — Loadings & allowances */}
+            {/* SECTION 4 — Loadings & allowances (not applicable to contractors) */}
+            {employmentType !== 'contractor' && (
             <AccordionItem value="s4" className="border rounded-lg px-4">
               <AccordionTrigger className="hover:no-underline py-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
