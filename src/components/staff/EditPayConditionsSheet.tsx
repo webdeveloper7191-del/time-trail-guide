@@ -163,6 +163,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     payCondition?.effectiveTo ? new Date(payCondition.effectiveTo) : undefined
   );
   const [position, setPosition] = useState(payCondition?.position || '');
+  const [customPositions, setCustomPositions] = useState<string[]>([]);
   const [employmentType, setEmploymentType] = useState(payCondition?.employmentType || 'full_time');
   const [fte, setFte] = useState<number>(1);
   const [guaranteedMinHours, setGuaranteedMinHours] = useState<number>(payCondition?.contractedHours || 0);
