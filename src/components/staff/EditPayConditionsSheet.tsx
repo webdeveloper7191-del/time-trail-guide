@@ -706,32 +706,33 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   )}
                 </div>
                 {isAwardBased ? (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
-                    <Select value={classification} onValueChange={setClassification}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
-                        <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
-                        <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
-                        <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
-                        <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
-                        <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {isAwardBased && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Stream / Sector<FieldInfo text="Award stream or sector that governs the classification structure (e.g. SCHADS Social & Community stream)." /></Label>
-                    <Select value={stream} onValueChange={setStream}>
-                      <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
-                      <SelectContent>
-                        {streamOptions.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
+                      <Select value={classification} onValueChange={setClassification}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
+                          <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
+                          <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
+                          <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
+                          <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
+                          <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Stream / Sector<FieldInfo text="Award stream or sector that governs the classification structure (e.g. SCHADS Social & Community stream)." /></Label>
+                      <Select value={stream} onValueChange={setStream}>
+                        <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
+                        <SelectContent>
+                          {streamOptions.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 ) : (
                   <div className="rounded-md bg-muted/40 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
                     <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
