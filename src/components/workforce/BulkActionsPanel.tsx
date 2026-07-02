@@ -203,25 +203,43 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
     requireAck: false,
   });
 
-  // Pay conditions
+  // Pay conditions — matches EditPayConditionsSheet 4-section structure
+  const [customPositions, setCustomPositions] = useState<string[]>([]);
   const [pay, setPay] = useState({
-    employmentType: 'permanent_full_time',
-    basis: 'hourly',
-    baseRate: '',
-    salaryAnnual: '',
+    // Section 1 — Employment basis
+    position: '',
+    employmentType: 'full_time',
+    fte: '1',
+    guaranteedMinHours: '',
+    casualLoading: '25',
+    abn: '',
+    payPeriod: 'fortnightly',
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    // Section 2 — Instrument & classification
+    instrumentType: 'modern_award',
     award: '',
     classification: '',
+    stream: '',
+    rateSource: 'award_resolved',
+    baseRate: '',
+    salaryAnnual: '',
+    superRate: '11.5',
+    // Section 3 — Ordinary hours & overtime
+    ordinaryHoursPerDay: '8',
+    ordinaryHoursPerWeek: '38',
+    otAfterHoursPerDay: '8',
+    otAfterHoursPerWeek: '38',
+    otRate1: '1.5',
+    otRate2: '2.0',
+    // Section 4 — Loadings
     saturdayLoading: '1.25',
     sundayLoading: '1.75',
     publicHolidayLoading: '2.50',
     eveningLoading: '1.15',
-    otAfterHoursPerDay: '8',
-    otRate1: '1.5',
-    otRate2: '2.0',
-    otAfterHoursPerWeek: '38',
-    superRate: '11.5',
-    effectiveDate: new Date().toISOString().slice(0, 10),
   });
+  // Per-field opt-in flags — only ticked fields get written to staff records
+  const [payFlags, setPayFlags] = useState<Record<string, boolean>>({});
+  const togglePayFlag = (k: string) => setPayFlags(p => ({ ...p, [k]: !p[k] }));
   const [allowances, setAllowances] = useState<{ name: string; amount: string; unit: string }[]>([
     { name: 'Meal Allowance', amount: '15.00', unit: 'per_shift' },
   ]);
