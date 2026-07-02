@@ -274,13 +274,11 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
   // Employment details
   const [employment, setEmployment] = useState<{
     updateStatus: boolean; status: EmploymentStatus;
-    updateStream: boolean; stream: string;
     updateStart: boolean; startDate: string;
     endDate: string;
     updateComment: boolean; comment: string;
   }>({
     updateStatus: false, status: 'active',
-    updateStream: false, stream: '',
     updateStart: false, startDate: '',
     endDate: '',
     updateComment: false, comment: '',
