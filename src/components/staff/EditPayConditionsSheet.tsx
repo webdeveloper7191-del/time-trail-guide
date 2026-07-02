@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SelectWithCreate } from '@/components/ui/select-with-create';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DollarSign,
   Calendar as CalendarIcon,
@@ -40,7 +41,7 @@ interface EditPayConditionsSheetProps {
 }
 
 type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award';
-type RateSource = 'award_resolved' | 'manual';
+type RateSource = 'award_resolved' | 'manual_hourly' | 'annualised_salary';
 
 interface OverrideField<T> {
   override: boolean;
@@ -195,9 +196,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [rateSource, setRateSource] = useState<RateSource>('award_resolved');
   const [manualHourlyRate, setManualHourlyRate] = useState<number>(payCondition?.hourlyRate || 0);
   const [annualSalary, setAnnualSalary] = useState<number>(payCondition?.annualSalary || 0);
-  const [paidAsSalary, setPaidAsSalary] = useState<boolean>(payCondition?.payRateType === 'salary');
   const [payPeriod, setPayPeriod] = useState(payCondition?.payPeriod || 'fortnightly');
   const [superRate, setSuperRate] = useState<number>(11.5);
+  const [casualLoading, setCasualLoading] = useState<number>(25);
+  const [abn, setAbn] = useState<string>('');
 
   const awardDefaults = useMemo(
     () => resolveAwardDefaults(industryAward, classification),
@@ -291,8 +293,16 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
+  const derivedHourlyFromSalary =
+    annualSalary && ordinaryPerWeek.value
+      ? annualSalary / (ordinaryPerWeek.value * 52)
+      : 0;
   const effectiveHourlyRate =
-    rateSource === 'manual' ? manualHourlyRate : resolvedBaseRate;
+    rateSource === 'manual_hourly'
+      ? manualHourlyRate
+      : rateSource === 'annualised_salary'
+      ? derivedHourlyFromSalary
+      : resolvedBaseRate;
 
   // ── Field-level validation against award limits (BOOT test) ───────────────
   // Rules:
@@ -400,9 +410,14 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       effectiveTo: effectiveTo?.toISOString(),
       position,
       employmentType: employmentType as PayCondition['employmentType'],
-      payRateType: paidAsSalary ? 'salary' : rateSource === 'award_resolved' ? 'award' : 'hourly',
+      payRateType:
+        rateSource === 'annualised_salary'
+          ? 'salary'
+          : rateSource === 'award_resolved'
+          ? 'award'
+          : 'hourly',
       hourlyRate: effectiveHourlyRate,
-      annualSalary: paidAsSalary ? annualSalary : undefined,
+      annualSalary: rateSource === 'annualised_salary' ? annualSalary : undefined,
       industryAward,
       classification,
       payPeriod: payPeriod as PayCondition['payPeriod'],
@@ -472,30 +487,70 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">FTE<FieldInfo text="Full Time Equivalent. 1.0 = full time. 0.5 = 50% of ordinary hours." /></Label>
-                    <Input
-                      type="number" step="0.05" min={0} max={1}
-                      value={fte}
-                      onChange={(e) => setFte(parseFloat(e.target.value) || 0)}
-                    />
+                {/* Employment type context banner */}
+                {employmentType === 'casual' && (
+                  <div className="rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-2.5 text-[11px] text-amber-900 dark:text-amber-200 flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Casual employees receive a casual loading in lieu of paid leave. No guaranteed minimum weekly hours apply.
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">
-                      Guaranteed min hours / week
-                      {employmentType === 'part_time' && (
-                        <span className="ml-1 text-[10px] text-amber-600">required</span>
-                      )}
-                    </Label>
-                    <Input
-                      type="number" step="0.5"
-                      value={guaranteedMinHours}
-                      onChange={(e) => setGuaranteedMinHours(parseFloat(e.target.value) || 0)}
-                    />
+                )}
+                {employmentType === 'part_time' && (
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-2.5 text-[11px] text-blue-900 dark:text-blue-200 flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Part-time employees require agreed guaranteed hours per week. Additional hours may attract overtime.
                   </div>
+                )}
+                {employmentType === 'contractor' && (
+                  <div className="rounded-md bg-muted/40 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Contractors are engaged under a commercial arrangement — no award, overtime, loadings or leave apply.
+                  </div>
+                )}
+
+                <div className={cn('grid gap-4', employmentType === 'contractor' ? 'grid-cols-2' : 'grid-cols-3')}>
+                  {employmentType !== 'contractor' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">FTE<FieldInfo text="Full Time Equivalent. 1.0 = full time. 0.5 = 50% of ordinary hours." /></Label>
+                      <Input
+                        type="number" step="0.05" min={0} max={1}
+                        value={fte}
+                        onChange={(e) => setFte(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  {(employmentType === 'part_time' || employmentType === 'full_time') && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">
+                        Guaranteed min hours / week
+                        {employmentType === 'part_time' && (
+                          <span className="ml-1 text-[10px] text-amber-600">required</span>
+                        )}
+                      </Label>
+                      <Input
+                        type="number" step="0.5"
+                        value={guaranteedMinHours}
+                        onChange={(e) => setGuaranteedMinHours(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  {employmentType === 'casual' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Casual loading %<FieldInfo text="Loading paid in lieu of leave entitlements. Typically 25% under most modern awards." /></Label>
+                      <Input
+                        type="number" step="0.5"
+                        value={casualLoading}
+                        onChange={(e) => setCasualLoading(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  {employmentType === 'contractor' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">ABN<FieldInfo text="Australian Business Number for the contracting entity." /></Label>
+                      <Input value={abn} onChange={(e) => setAbn(e.target.value)} placeholder="11 222 333 444" />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Pay period<FieldInfo text="How often the employee is paid. This is usually fixed for the business." /></Label>
+                    <Label className="text-xs">Pay period<FieldInfo text="How often the employee is paid." /></Label>
                     <Select value={payPeriod} onValueChange={(v) => setPayPeriod(v as any)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -593,79 +648,103 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
 
                 <div className="space-y-3">
                   <Label className="text-xs">Rate source</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRateSource('award_resolved')}
-                      className={cn(
-                        'text-left border rounded-md p-3 text-xs',
-                        rateSource === 'award_resolved' ? 'border-primary bg-primary/5' : 'border-border'
-                      )}
-                    >
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <Lock className="h-3 w-3" /> Award-resolved
-                      </div>
-                      <p className="text-muted-foreground mt-1">
-                        Uses ${resolvedBaseRate.toFixed(2)}/hr from {classification || 'classification'}.
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRateSource('manual')}
-                      className={cn(
-                        'text-left border rounded-md p-3 text-xs',
-                        rateSource === 'manual' ? 'border-primary bg-primary/5' : 'border-border'
-                      )}
-                    >
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <PencilLine className="h-3 w-3" /> Manual / over-award
-                      </div>
-                      <p className="text-muted-foreground mt-1">Set the base rate directly (BOOT test applies).</p>
-                    </button>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { id: 'award_resolved', icon: Lock, title: 'Award-resolved', desc: `Uses $${resolvedBaseRate.toFixed(2)}/hr from ${classification || 'classification'}.` },
+                      { id: 'manual_hourly', icon: PencilLine, title: 'Custom hourly rate', desc: 'Set the ordinary-time rate directly (BOOT applies).' },
+                      { id: 'annualised_salary', icon: DollarSign, title: 'Annualised salary', desc: 'Salary is divided across ordinary hours to derive an hourly equivalent.' },
+                    ] as const).map((opt) => {
+                      const Icon = opt.icon;
+                      const active = rateSource === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setRateSource(opt.id)}
+                          className={cn(
+                            'text-left border rounded-md p-3 text-xs transition-colors',
+                            active ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+                          )}
+                        >
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <Icon className="h-3 w-3" /> {opt.title}
+                          </div>
+                          <p className="text-muted-foreground mt-1 leading-snug">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Base hourly rate ($)<FieldInfo text="The ordinary-time rate before penalties, loadings or allowances." /></Label>
-                      {rateSource === 'award_resolved' ? (
+                  {/* Rate inputs — layout adapts to selected rate source */}
+                  {rateSource === 'award_resolved' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Base hourly rate ($)<FieldInfo text="Resolved from the award classification." /></Label>
                         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
                           ${resolvedBaseRate.toFixed(2)}
                         </div>
-                      ) : (
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Superannuation %<FieldInfo text="Employer contribution rate." /></Label>
+                        <Input type="number" step="0.5" value={superRate} onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {rateSource === 'manual_hourly' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Custom hourly rate ($)<FieldInfo text="Must be equal to or greater than the award rate for BOOT compliance." /></Label>
                         <Input
                           type="number" step="0.01"
                           value={manualHourlyRate}
                           onChange={(e) => setManualHourlyRate(parseFloat(e.target.value) || 0)}
                         />
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">Paid as salary</Label>
-                        <Switch checked={paidAsSalary} onCheckedChange={setPaidAsSalary} className="scale-75 -mr-1" />
+                        {manualHourlyRate > 0 && manualHourlyRate < resolvedBaseRate && (
+                          <p className="text-[11px] text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Below award rate of ${resolvedBaseRate.toFixed(2)}/hr (BOOT fail).
+                          </p>
+                        )}
                       </div>
-                      <Input
-                        type="number"
-                        placeholder="Annual salary"
-                        disabled={!paidAsSalary}
-                        value={annualSalary || ''}
-                        onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
-                      />
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Superannuation %</Label>
+                        <Input type="number" step="0.5" value={superRate} onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)} />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Superannuation %<FieldInfo text="Mandatory employer contribution rate. Must meet or exceed the legal minimum." /></Label>
-                      <Input
-                        type="number" step="0.5"
-                        value={superRate}
-                        onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)}
-                      />
+                  )}
+
+                  {rateSource === 'annualised_salary' && (
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Annualised salary ($)<FieldInfo text="Total annual base salary, exclusive of super." /></Label>
+                        <Input
+                          type="number"
+                          value={annualSalary || ''}
+                          onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Derived hourly equivalent</Label>
+                        <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
+                          ${derivedHourlyFromSalary.toFixed(2)}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Salary ÷ ({ordinaryPerWeek.value} hrs × 52 wks)
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Superannuation %</Label>
+                        <Input type="number" step="0.5" value={superRate} onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)} />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
 
-            {/* SECTION 3 — Ordinary hours & overtime */}
+            {/* SECTION 3 — Ordinary hours & overtime (not applicable to contractors) */}
+            {employmentType !== 'contractor' && (
             <AccordionItem value="s3" className="border rounded-lg px-4">
               <AccordionTrigger className="hover:no-underline py-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
@@ -840,8 +919,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 </ResolvedField>
               </AccordionContent>
             </AccordionItem>
+            )}
 
-            {/* SECTION 4 — Loadings & allowances */}
+            {/* SECTION 4 — Loadings & allowances (not applicable to contractors) */}
+            {employmentType !== 'contractor' && (
             <AccordionItem value="s4" className="border rounded-lg px-4">
               <AccordionTrigger className="hover:no-underline py-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
@@ -909,37 +990,85 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Award allowances applicable to this employee</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Award allowances applicable to this employee</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground">
+                        {selectedAllowances.length} selected
+                      </span>
+                      {selectedAllowances.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAllowances([])}
+                          className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAllowances(availableAwardAllowances.map((a) => a.id))}
+                        className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                      >
+                        Select all
+                      </button>
+                    </div>
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Select the allowances that should be automatically applied when timesheets are processed.
+                    Tick every allowance that applies. All ticked allowances are automatically added when timesheets are processed.
                   </p>
-                  <div className="space-y-1.5">
+
+                  {selectedAllowances.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {selectedAllowances.map((id) => {
+                        const a = availableAwardAllowances.find((x) => x.id === id);
+                        if (!a) return null;
+                        return (
+                          <Badge key={id} variant="secondary" className="gap-1 h-6 pr-1">
+                            {a.label}
+                            <button
+                              type="button"
+                              onClick={() => toggleAllowance(id)}
+                              className="ml-0.5 rounded hover:bg-muted p-0.5"
+                              aria-label={`Remove ${a.label}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="border rounded-md divide-y">
                     {availableAwardAllowances.map((a) => {
                       const on = selectedAllowances.includes(a.id);
                       return (
-                        <button
+                        <label
                           key={a.id}
-                          type="button"
-                          onClick={() => toggleAllowance(a.id)}
                           className={cn(
-                            'w-full flex items-center justify-between border rounded-md px-3 py-2 text-sm text-left',
-                            on ? 'border-primary bg-primary/5' : 'border-border'
+                            'flex items-center gap-3 px-3 py-2 text-sm cursor-pointer hover:bg-muted/30',
+                            on && 'bg-primary/5'
                           )}
                         >
-                          <div>
+                          <Checkbox
+                            checked={on}
+                            onCheckedChange={() => toggleAllowance(a.id)}
+                          />
+                          <div className="flex-1">
                             <div className="font-medium">{a.label}</div>
                             <div className="text-[11px] text-muted-foreground">
                               ${a.amount.toFixed(2)} {a.unit}
                             </div>
                           </div>
-                          <Switch checked={on} onCheckedChange={() => toggleAllowance(a.id)} className="scale-75" />
-                        </button>
+                        </label>
                       );
                     })}
                   </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
+            )}
           </Accordion>
         </div>
 
