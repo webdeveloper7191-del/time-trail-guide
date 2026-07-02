@@ -61,6 +61,14 @@ export const bulkActionConfig: Record<BulkActionKey, Config> = {
     helper: 'Existing pay conditions are not overwritten — only the role tag is updated.',
     ctaLabel: 'Apply role',
   },
+  'set-employment-details': {
+    title: 'Set Employment Details',
+    icon: Briefcase,
+    explanation:
+      'Update core employment metadata for the selected team members — status, stream/sector, start/end dates, and an internal comment. Use this to activate onboarded staff, terminate leavers, or align staff to an award stream in bulk.',
+    helper: 'End Date is required when Status is set to Terminated. Blank fields are ignored (existing values are preserved).',
+    ctaLabel: 'Apply changes',
+  },
   'set-stress-profile': {
     title: 'Set Stress Profile',
     icon: Activity,
