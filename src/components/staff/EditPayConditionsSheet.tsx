@@ -443,7 +443,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
               <AccordionContent className="pb-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Position</Label>
+                    <Label className="text-xs">Position<FieldInfo text="The employee's job title. Creates or selects from the positions master." /></Label>
                     <SelectWithCreate
                       value={position}
                       onValueChange={setPosition}
@@ -461,7 +461,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Employment type</Label>
+                    <Label className="text-xs">Employment type<FieldInfo text="Full-time, part-time, casual or contractor. Determines leave entitlements and overtime rules." /></Label>
                     <Select value={employmentType} onValueChange={(v) => setEmploymentType(v as any)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -474,7 +474,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">FTE</Label>
+                    <Label className="text-xs">FTE<FieldInfo text="Full Time Equivalent. 1.0 = full time. 0.5 = 50% of ordinary hours." /></Label>
                     <Input
                       type="number" step="0.05" min={0} max={1}
                       value={fte}
@@ -495,7 +495,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Pay period</Label>
+                    <Label className="text-xs">Pay period<FieldInfo text="How often the employee is paid. This is usually fixed for the business." /></Label>
                     <Select value={payPeriod} onValueChange={(v) => setPayPeriod(v as any)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -508,7 +508,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Effective from</Label>
+                    <Label className="text-xs">Effective from<FieldInfo text="Date this pay condition set becomes active." /></Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start font-normal">
@@ -522,7 +522,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     </Popover>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Effective to (optional)</Label>
+                    <Label className="text-xs">Effective to (optional)<FieldInfo text="Optional end date. Leave blank for an ongoing condition." /></Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start font-normal">
@@ -550,7 +550,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
               <AccordionContent className="pb-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Instrument type</Label>
+                    <Label className="text-xs">Instrument type<FieldInfo text="Legal pay instrument: Modern Award, Enterprise Agreement (EBA), IFA, or over-award." /></Label>
                     <Select value={instrumentType} onValueChange={(v) => setInstrumentType(v as InstrumentType)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -575,7 +575,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Classification</Label>
+                  <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
                   <Select value={classification} onValueChange={setClassification}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
@@ -626,7 +626,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Base hourly rate ($)</Label>
+                      <Label className="text-xs">Base hourly rate ($)<FieldInfo text="The ordinary-time rate before penalties, loadings or allowances." /></Label>
                       {rateSource === 'award_resolved' ? (
                         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
                           ${resolvedBaseRate.toFixed(2)}
@@ -653,7 +653,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Superannuation %</Label>
+                      <Label className="text-xs">Superannuation %<FieldInfo text="Mandatory employer contribution rate. Must meet or exceed the legal minimum." /></Label>
                       <Input
                         type="number" step="0.5"
                         value={superRate}
@@ -686,7 +686,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={ordinaryPerWeek.value}
                     unit="hrs"
                     override={ordinaryPerWeek.override}
-                    onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}
+                    onToggleOverride={(v) =
+                    info="Total standard hours before overtime applies. Award defaults prevent paying less than the legal minimum."> setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}
                     error={validation.errors.ordinaryPerWeek}
                     warning={validation.warnings.ordinaryPerWeek}
                   >
@@ -703,7 +704,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={ordinaryPerDay.value}
                     unit="hrs"
                     override={ordinaryPerDay.override}
-                    onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}
+                    onToggleOverride={(v) =
+                    info="Daily threshold for ordinary time. Exceeding this triggers daily overtime penalties."> setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}
                     error={validation.errors.ordinaryPerDay}
                   >
                     <Input
@@ -717,7 +719,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={rosterCycle.value}
                     unit="weeks"
                     override={rosterCycle.override}
-                    onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}
+                    onToggleOverride={(v) =
+                    info="How many weeks the repeating roster pattern covers (e.g., 1 = weekly, 2 = fortnightly)."> setRosterCycle({ ...rosterCycle, override: v })}
                     error={validation.errors.rosterCycle}
                   >
                     <Input
@@ -733,7 +736,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Span of hours — start"
                     value={spanStart.value}
                     override={spanStart.override}
-                    onToggleOverride={(v) => setSpanStart({ ...spanStart, override: v })}
+                    onToggleOverride={(v) =
+                    info="Earliest ordinary time start. Work before this may attract early-morning penalties."> setSpanStart({ ...spanStart, override: v })}
                     error={validation.errors.span}
                     warning={validation.warnings.spanStart}
                   >
@@ -747,7 +751,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Span of hours — end"
                     value={spanEnd.value}
                     override={spanEnd.override}
-                    onToggleOverride={(v) => setSpanEnd({ ...spanEnd, override: v })}
+                    onToggleOverride={(v) =
+                    info="Latest ordinary time finish. Work after this may attract evening or night penalties."> setSpanEnd({ ...spanEnd, override: v })}
                     warning={validation.warnings.spanEnd}
                   >
                     <Input
@@ -767,7 +772,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={otAfterDaily.value}
                     unit="hrs"
                     override={otAfterDaily.override}
-                    onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}
+                    onToggleOverride={(v) =
+                    info="Number of hours worked in a single day before overtime multipliers begin."> setOtAfterDaily({ ...otAfterDaily, override: v })}
                     error={validation.errors.otAfterDaily}
                     warning={validation.warnings.otAfterDaily}
                   >
@@ -782,7 +788,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={otAfterWeekly.value}
                     unit="hrs"
                     override={otAfterWeekly.override}
-                    onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}
+                    onToggleOverride={(v) =
+                    info="Total weekly hours before overtime applies across the whole roster cycle."> setOtAfterWeekly({ ...otAfterWeekly, override: v })}
                     error={validation.errors.otAfterWeekly}
                   >
                     <Input
@@ -795,7 +802,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="First 2 hours OT"
                     value={`${otFirst2h.value}%`}
                     override={otFirst2h.override}
-                    onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}
+                    onToggleOverride={(v) =
+                    info="Multiplier applied to the first 2 hours of overtime in a day or shift."> setOtFirst2h({ ...otFirst2h, override: v })}
                     error={validation.errors.otFirst2h}
                   >
                     <Input
@@ -808,7 +816,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="After 2 hours OT"
                     value={`${otAfter2h.value}%`}
                     override={otAfter2h.override}
-                    onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}
+                    onToggleOverride={(v) =
+                    info="Multiplier applied after the first 2 hours of overtime (usually higher)."> setOtAfter2h({ ...otAfter2h, override: v })}
                     error={validation.errors.otAfter2h}
                   >
                     <Input
@@ -824,7 +833,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   label="Overtime × penalty interaction"
                   value={interaction.value === 'higher_of' ? 'Higher of (do not stack)' : 'Stack (multiplicative)'}
                   override={interaction.override}
-                  onToggleOverride={(v) => setInteraction({ ...interaction, override: v })}
+                  onToggleOverride={(v) =
+                    info="Choose whether weekend/PH penalties stack with overtime rates, or only the higher rate applies."> setInteraction({ ...interaction, override: v })}
                   hint="Controls whether overtime multipliers and weekend/PH penalties compound or the higher rate wins."
                 >
                   <Select
@@ -855,7 +865,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Saturday loading"
                     value={`${saturdayLoading.value}%`}
                     override={saturdayLoading.override}
-                    onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}
+                    onToggleOverride={(v) =
+                    info="Percentage added to the base rate for hours worked on Saturday."> setSaturdayLoading({ ...saturdayLoading, override: v })}
                     error={validation.errors.saturdayLoading}
                   >
                     <Input
@@ -868,7 +879,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Sunday loading"
                     value={`${sundayLoading.value}%`}
                     override={sundayLoading.override}
-                    onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}
+                    onToggleOverride={(v) =
+                    info="Percentage added to the base rate for hours worked on Sunday."> setSundayLoading({ ...sundayLoading, override: v })}
                     error={validation.errors.sundayLoading}
                   >
                     <Input
@@ -881,7 +893,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Public holiday loading"
                     value={`${phLoading.value}%`}
                     override={phLoading.override}
-                    onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}
+                    onToggleOverride={(v) =
+                    info="Percentage added to the base rate for hours worked on a public holiday."> setPhLoading({ ...phLoading, override: v })}
                     error={validation.errors.phLoading}
                   >
                     <Input
@@ -894,7 +907,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Evening loading"
                     value={`${eveningLoading.value}%`}
                     override={eveningLoading.override}
-                    onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}
+                    onToggleOverride={(v) =
+                    info="Percentage added to the base rate for hours worked during the evening period."> setEveningLoading({ ...eveningLoading, override: v })}
                     error={validation.errors.eveningLoading}
                   >
                     <Input
