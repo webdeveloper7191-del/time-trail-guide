@@ -675,23 +675,23 @@ function AddTimesheetEntryDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="px-6 py-3 border-b bg-muted/20 space-y-2">
-          <PayPeriodSelector
-            frequency={payFrequency}
-            period={period}
-            onPrev={goPrev}
-            onNext={goNext}
-            onToday={goToday}
-          />
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] text-muted-foreground">
-              Pre-fill entries from your recorded clock in / clock out data for this pay period.
-            </p>
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={fillPeriod}>
-              <Plus className="h-3 w-3 mr-1" /> Fill from clock in / out data
+        <div className="px-6 py-4 border-b bg-gradient-to-b from-muted/40 to-transparent space-y-3">
+          <PayPeriodDisplay frequency={payFrequency} period={period} />
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border/70 bg-background/60 px-3 py-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+                <Clock className="h-3.5 w-3.5" />
+              </div>
+              <p className="text-[11px] leading-tight text-muted-foreground truncate">
+                Pre-fill entries from your recorded clock in / out data.
+              </p>
+            </div>
+            <Button variant="default" size="sm" className="h-7 text-xs shrink-0" onClick={fillPeriod}>
+              <Plus className="h-3 w-3 mr-1" /> Fill from clock data
             </Button>
           </div>
         </div>
+
 
 
         <ScrollArea className="flex-1 px-6">
