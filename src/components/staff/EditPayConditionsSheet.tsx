@@ -83,6 +83,19 @@ function resolveAwardDefaults(award: string | undefined, classification: string 
 const READONLY_INPUT_CLS =
   'bg-muted/40 border-dashed text-muted-foreground cursor-not-allowed';
 
+function FieldInfo({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Info className="h-3 w-3 text-muted-foreground cursor-help inline-block ml-1" />
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[260px] text-xs">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ResolvedField({
   label,
   value,
@@ -93,6 +106,7 @@ function ResolvedField({
   hint,
   error,
   warning,
+  info,
 }: {
   label: string;
   value: string | number;
@@ -103,11 +117,15 @@ function ResolvedField({
   hint?: string;
   error?: string | null;
   warning?: string | null;
+  info?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium">{label}</Label>
+        <Label className="text-xs font-medium flex items-center">
+          {label}
+          {info ? <FieldInfo text={info} /> : null}
+        </Label>
         <div className="flex items-center gap-1.5">
           {override ? (
             <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
