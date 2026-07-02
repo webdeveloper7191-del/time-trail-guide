@@ -383,9 +383,89 @@ export function BulkActionsPanel({ open, action, selectedCount, selectedIds = []
     setLocationIds(prev => prev.includes(loc) ? prev.filter(x => x !== loc) : [...prev, loc]);
   };
 
+  const applyMutations = () => {
+    const targets = mockStaff.filter(s => selectedIds.includes(s.id));
+    if (targets.length === 0) return 0;
+
+    if (action === 'add-locations') {
+      const toAdd = Object.keys(locationAreas).length > 0 ? Object.keys(locationAreas) : locationIds;
+      targets.forEach(s => {
+        const merged = Array.from(new Set([...(s.locations || []), ...toAdd]));
+        s.locations = merged;
+      });
+      return targets.length;
+    }
+
+    if (action === 'set-role' && role) {
+      targets.forEach(s => { s.position = role; });
+      return targets.length;
+    }
+
+    if (action === 'set-employment-details') {
+      targets.forEach(s => {
+        if (employment.updateStatus) s.status = employment.status as any;
+        if (employment.updateStart && employment.startDate) s.employmentStartDate = employment.startDate;
+        if (employment.updateStatus && employment.status === 'terminated' && employment.endDate) {
+          (s as any).employmentEndDate = employment.endDate;
+        }
+        if (employment.updateComment && employment.comment) {
+          const stamp = new Date().toISOString().slice(0, 10);
+          const prev = (s as any).internalComment || '';
+          (s as any).internalComment = `${prev}\n[${stamp}] ${employment.comment}`.trim();
+        }
+      });
+      return targets.length;
+    }
+
+    if (action === 'set-pay-rates') {
+      targets.forEach(s => {
+        const pc: any = s.currentPayCondition || {};
+        if (payFlags.position && pay.position) pc.position = pay.position;
+        if (payFlags.employmentType && pay.employmentType) pc.employmentType = pay.employmentType;
+        if (payFlags.award && pay.award) pc.industryAward = pay.award;
+        if (payFlags.classification && pay.classification) pc.classification = pay.classification;
+        if (payFlags.baseRate && pay.baseRate) pc.hourlyRate = Number(pay.baseRate);
+        if (payFlags.salaryAnnual && pay.salaryAnnual) pc.annualSalary = Number(pay.salaryAnnual);
+        pc.effectiveFrom = pay.effectiveDate;
+        s.currentPayCondition = pc;
+      });
+      return targets.length;
+    }
+
+    if (action === 'export') {
+      const rows = [
+        ['Employee ID','First Name','Last Name','Email','Position','Status','Employment Type','Locations','Hourly Rate'],
+        ...targets.map(s => [
+          s.employeeId, s.firstName, s.lastName, s.email, s.position, s.status,
+          s.currentPayCondition?.employmentType ?? '',
+          (s.locations || []).join('; '),
+          s.currentPayCondition?.hourlyRate ?? '',
+        ]),
+      ];
+      const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `staff-export-${new Date().toISOString().slice(0,10)}.${exportFormat === 'xlsx' ? 'csv' : 'csv'}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      return targets.length;
+    }
+
+    return 0;
+  };
+
   const handleConfirm = () => {
+    const n = applyMutations();
     onConfirm(action);
-    toast.success(`${cfg.title} applied to ${selectedCount} team member${selectedCount === 1 ? '' : 's'}`);
+    if (action === 'export') {
+      toast.success(`Exported ${n || selectedCount} team member${(n || selectedCount) === 1 ? '' : 's'} to CSV`);
+    } else if (action === 'send-email') {
+      toast.success(`Email queued to ${selectedCount} recipient${selectedCount === 1 ? '' : 's'}`);
+    } else {
+      toast.success(`${cfg.title} applied to ${n || selectedCount} team member${(n || selectedCount) === 1 ? '' : 's'}`);
+    }
     onClose();
   };
 
