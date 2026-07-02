@@ -696,12 +696,24 @@ function AddTimesheetEntryDialog({
 
         <ScrollArea className="flex-1 px-6">
           <div className="space-y-4 py-6">
-            {entries.map((entry, idx) => (
-              <div key={entry.id} className="rounded-lg border bg-muted/30 p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Day {idx + 1}
-                  </span>
+            {entries.map((entry, idx) => {
+              const entryDate = entry.date ? parseISO(entry.date) : null;
+              const periodDays: Date[] = [];
+              const totalDaysInPeriod = Math.round((period.end.getTime() - period.start.getTime()) / 86400000) + 1;
+              for (let i = 0; i < totalDaysInPeriod; i++) periodDays.push(addDays(period.start, i));
+              const minDate = format(period.start, 'yyyy-MM-dd');
+              const maxDate = format(period.end, 'yyyy-MM-dd');
+              return (
+              <div key={entry.id} className="rounded-xl border bg-card shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary text-[11px] font-bold">
+                      {idx + 1}
+                    </span>
+                    <span className="text-sm font-semibold tracking-tight">
+                      {entryDate ? format(entryDate, 'EEEE, MMM d') : `Day ${idx + 1}`}
+                    </span>
+                  </div>
                   {entries.length > 1 && (
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeDay(entry.id)}>
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -709,21 +721,54 @@ function AddTimesheetEntryDialog({
                   )}
                 </div>
 
+                <div className="p-4 space-y-4">
                 <div className="grid gap-2">
-                  <label className="text-xs font-medium text-muted-foreground">Date</label>
-                  <Input type="date" value={entry.date} onChange={(e) => updateEntry(entry.id, 'date', e.target.value)} />
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date · within pay period</label>
+                  <div className="flex gap-1 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+                    {periodDays.map((d) => {
+                      const iso = format(d, 'yyyy-MM-dd');
+                      const active = entry.date === iso;
+                      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                      return (
+                        <button
+                          key={iso}
+                          type="button"
+                          onClick={() => updateEntry(entry.id, 'date', iso)}
+                          className={cn(
+                            'shrink-0 flex flex-col items-center justify-center rounded-md border w-11 h-12 text-[10px] font-medium transition',
+                            active
+                              ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                              : 'bg-background hover:bg-muted border-border/60',
+                            !active && isWeekend && 'text-muted-foreground/70',
+                          )}
+                        >
+                          <span className="uppercase tracking-wider text-[9px] opacity-80">{format(d, 'EEE')}</span>
+                          <span className="text-sm font-bold leading-tight">{format(d, 'd')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Input
+                    type="date"
+                    min={minDate}
+                    max={maxDate}
+                    value={entry.date}
+                    onChange={(e) => updateEntry(entry.id, 'date', e.target.value)}
+                    className="h-8 text-xs"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-2">
-                    <label className="text-xs font-medium text-muted-foreground">Clock in</label>
+                  <div className="grid gap-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Clock in</label>
                     <Input type="time" value={entry.clockIn} onChange={(e) => updateEntry(entry.id, 'clockIn', e.target.value)} />
                   </div>
-                  <div className="grid gap-2">
-                    <label className="text-xs font-medium text-muted-foreground">Clock out</label>
+                  <div className="grid gap-1.5">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Clock out</label>
                     <Input type="time" value={entry.clockOut} onChange={(e) => updateEntry(entry.id, 'clockOut', e.target.value)} />
                   </div>
                 </div>
+
 
                 <Separator />
 
