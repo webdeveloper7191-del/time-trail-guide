@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import {
   DollarSign,
   Calendar as CalendarIcon,
@@ -23,10 +24,12 @@ import {
   Lock,
   PencilLine,
   Info,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { mockPositions } from '@/data/mockPositions';
 
 interface EditPayConditionsSheetProps {
   open: boolean;
@@ -87,6 +90,8 @@ function ResolvedField({
   onToggleOverride,
   children,
   hint,
+  error,
+  warning,
 }: {
   label: string;
   value: string | number;
@@ -95,6 +100,8 @@ function ResolvedField({
   onToggleOverride: (v: boolean) => void;
   children: React.ReactNode;
   hint?: string;
+  error?: string | null;
+  warning?: string | null;
 }) {
   return (
     <div className="space-y-1.5">
@@ -118,17 +125,32 @@ function ResolvedField({
         </div>
       </div>
       {override ? (
-        children
+        <div className={cn(error && '[&_input]:border-destructive [&_button]:border-destructive')}>
+          {children}
+        </div>
       ) : (
         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
           {value}
           {unit ? <span className="ml-1 text-xs">{unit}</span> : null}
         </div>
       )}
-      {hint ? <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p> : null}
+      {error ? (
+        <p className="text-[11px] text-destructive leading-snug flex items-start gap-1">
+          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          {error}
+        </p>
+      ) : warning ? (
+        <p className="text-[11px] text-amber-600 leading-snug flex items-start gap-1">
+          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          {warning}
+        </p>
+      ) : hint ? (
+        <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p>
+      ) : null}
     </div>
   );
 }
+
 
 export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: EditPayConditionsSheetProps) {
   const payCondition = staff.currentPayCondition;
@@ -141,6 +163,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     payCondition?.effectiveTo ? new Date(payCondition.effectiveTo) : undefined
   );
   const [position, setPosition] = useState(payCondition?.position || '');
+  const [customPositions, setCustomPositions] = useState<string[]>([]);
   const [employmentType, setEmploymentType] = useState(payCondition?.employmentType || 'full_time');
   const [fte, setFte] = useState<number>(1);
   const [guaranteedMinHours, setGuaranteedMinHours] = useState<number>(payCondition?.contractedHours || 0);
@@ -252,7 +275,106 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const effectiveHourlyRate =
     rateSource === 'manual' ? manualHourlyRate : resolvedBaseRate;
 
+  // ── Field-level validation against award limits (BOOT test) ───────────────
+  // Rules:
+  //  • Ordinary hours thresholds may only be LOWERED vs. award (more generous to employee).
+  //  • Overtime kick-in thresholds may only be LOWERED (OT starts earlier, not later).
+  //  • Overtime rates and loadings may only be RAISED (never pay less than award).
+  //  • Hard bounds prevent nonsensical values.
+  const validation = useMemo(() => {
+    const errors: Record<string, string | null> = {};
+    const warnings: Record<string, string | null> = {};
+
+    // Ordinary hours / week
+    if (ordinaryPerWeek.override) {
+      if (ordinaryPerWeek.value < 1 || ordinaryPerWeek.value > 60)
+        errors.ordinaryPerWeek = 'Must be between 1 and 60 hours.';
+      else if (ordinaryPerWeek.value > awardDefaults.ordinaryHoursPerWeek)
+        errors.ordinaryPerWeek = `Cannot exceed award limit of ${awardDefaults.ordinaryHoursPerWeek} hrs/wk (BOOT fail).`;
+      else if (ordinaryPerWeek.value < awardDefaults.ordinaryHoursPerWeek - 8)
+        warnings.ordinaryPerWeek = `Significantly below award (${awardDefaults.ordinaryHoursPerWeek} hrs). Confirm this matches the contract.`;
+    }
+    // Ordinary hours / day
+    if (ordinaryPerDay.override) {
+      if (ordinaryPerDay.value < 1 || ordinaryPerDay.value > 16)
+        errors.ordinaryPerDay = 'Must be between 1 and 16 hours.';
+      else if (ordinaryPerDay.value > awardDefaults.ordinaryHoursPerDay)
+        errors.ordinaryPerDay = `Cannot exceed award limit of ${awardDefaults.ordinaryHoursPerDay} hrs/day.`;
+    }
+    // Roster cycle
+    if (rosterCycle.override && (rosterCycle.value < 1 || rosterCycle.value > 8))
+      errors.rosterCycle = 'Roster cycle must be 1–8 weeks.';
+    // Span times
+    if ((spanStart.override || spanEnd.override) && spanStart.value >= spanEnd.value)
+      errors.span = 'Span end must be after span start.';
+    if (spanStart.override && spanStart.value > awardDefaults.spanOfHoursStart)
+      warnings.spanStart = `Later than award span start (${awardDefaults.spanOfHoursStart}). Ordinary-time reduced.`;
+    if (spanEnd.override && spanEnd.value < awardDefaults.spanOfHoursEnd)
+      warnings.spanEnd = `Earlier than award span end (${awardDefaults.spanOfHoursEnd}). Ordinary-time reduced.`;
+    // OT after daily
+    if (otAfterDaily.override) {
+      if (otAfterDaily.value < 1 || otAfterDaily.value > 16)
+        errors.otAfterDaily = 'Must be between 1 and 16 hours.';
+      else if (otAfterDaily.value > awardDefaults.otAfterDaily)
+        errors.otAfterDaily = `OT must start at or before ${awardDefaults.otAfterDaily} hrs (award limit).`;
+      else if (otAfterDaily.value < ordinaryPerDay.value)
+        warnings.otAfterDaily = 'OT threshold is below ordinary hours/day — every day would incur overtime.';
+    }
+    // OT after weekly
+    if (otAfterWeekly.override) {
+      if (otAfterWeekly.value < 1 || otAfterWeekly.value > 80)
+        errors.otAfterWeekly = 'Must be between 1 and 80 hours.';
+      else if (otAfterWeekly.value > awardDefaults.otAfterWeekly)
+        errors.otAfterWeekly = `Cannot exceed award weekly OT threshold of ${awardDefaults.otAfterWeekly} hrs.`;
+      else if (otAfterWeekly.value < ordinaryPerWeek.value)
+        errors.otAfterWeekly = 'Weekly OT threshold cannot be below ordinary hours/week.';
+    }
+    // OT rates — must be >= award
+    if (otFirst2h.override) {
+      if (otFirst2h.value < 100 || otFirst2h.value > 400)
+        errors.otFirst2h = 'Rate must be between 100% and 400%.';
+      else if (otFirst2h.value < awardDefaults.otFirst2h)
+        errors.otFirst2h = `Cannot pay less than award rate of ${awardDefaults.otFirst2h}%.`;
+    }
+    if (otAfter2h.override) {
+      if (otAfter2h.value < 100 || otAfter2h.value > 400)
+        errors.otAfter2h = 'Rate must be between 100% and 400%.';
+      else if (otAfter2h.value < awardDefaults.otAfter2h)
+        errors.otAfter2h = `Cannot pay less than award rate of ${awardDefaults.otAfter2h}%.`;
+    }
+    // Loadings — must be >= award
+    const loadingCheck = (
+      key: string,
+      field: OverrideField<number>,
+      awardVal: number,
+      label: string
+    ) => {
+      if (!field.override) return;
+      if (field.value < 0 || field.value > 500) errors[key] = 'Must be between 0% and 500%.';
+      else if (field.value < awardVal)
+        errors[key] = `${label} cannot be less than award loading of ${awardVal}%.`;
+    };
+    loadingCheck('saturdayLoading', saturdayLoading, awardDefaults.saturdayLoading, 'Saturday loading');
+    loadingCheck('sundayLoading', sundayLoading, awardDefaults.sundayLoading, 'Sunday loading');
+    loadingCheck('phLoading', phLoading, awardDefaults.publicHolidayLoading, 'Public holiday loading');
+    loadingCheck('eveningLoading', eveningLoading, awardDefaults.eveningLoading, 'Evening loading');
+
+    return { errors, warnings, hasErrors: Object.values(errors).some(Boolean) };
+  }, [
+    awardDefaults, ordinaryPerWeek, ordinaryPerDay, rosterCycle, spanStart, spanEnd,
+    otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h,
+    saturdayLoading, sundayLoading, phLoading, eveningLoading,
+  ]);
+
   const handleSave = () => {
+    if (!position.trim()) {
+      toast.error('Select a position before saving.');
+      return;
+    }
+    if (validation.hasErrors) {
+      toast.error('Please fix the highlighted validation errors before saving.');
+      return;
+    }
     const updatedCondition: PayCondition = {
       id: payCondition?.id || `pay-${Date.now()}`,
       effectiveFrom: effectiveFrom.toISOString(),
@@ -303,7 +425,21 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Position</Label>
-                    <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Educator" />
+                    <SelectWithCreate
+                      value={position}
+                      onValueChange={setPosition}
+                      options={[
+                        ...mockPositions.map((p) => ({ value: p.title, label: p.title })),
+                        ...customPositions.map((p) => ({ value: p, label: p })),
+                      ]}
+                      onCreateNew={(newPos) => {
+                        setCustomPositions((prev) => [...prev, newPos]);
+                        setPosition(newPos);
+                        toast.success(`Position "${newPos}" added to master`);
+                      }}
+                      placeholder="Select position"
+                      createLabel="Create new position"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Employment type</Label>
@@ -545,6 +681,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={ordinaryPerWeek.override}
                     onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}
+                    error={validation.errors.ordinaryPerWeek}
+                    warning={validation.warnings.ordinaryPerWeek}
                   >
                     <Input
                       type="number" step="0.5"
@@ -560,6 +698,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={ordinaryPerDay.override}
                     onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}
+                    error={validation.errors.ordinaryPerDay}
                   >
                     <Input
                       type="number" step="0.25"
@@ -573,6 +712,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="weeks"
                     override={rosterCycle.override}
                     onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}
+                    error={validation.errors.rosterCycle}
                   >
                     <Input
                       type="number" min={1}
@@ -588,6 +728,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={spanStart.value}
                     override={spanStart.override}
                     onToggleOverride={(v) => setSpanStart({ ...spanStart, override: v })}
+                    error={validation.errors.span}
+                    warning={validation.warnings.spanStart}
                   >
                     <Input
                       type="time"
@@ -600,6 +742,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={spanEnd.value}
                     override={spanEnd.override}
                     onToggleOverride={(v) => setSpanEnd({ ...spanEnd, override: v })}
+                    warning={validation.warnings.spanEnd}
                   >
                     <Input
                       type="time"
@@ -608,6 +751,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     />
                   </ResolvedField>
                 </div>
+
 
                 <Separator />
                 <div className="text-xs font-medium text-muted-foreground">Overtime thresholds</div>
@@ -618,6 +762,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={otAfterDaily.override}
                     onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}
+                    error={validation.errors.otAfterDaily}
+                    warning={validation.warnings.otAfterDaily}
                   >
                     <Input
                       type="number" step="0.25"
@@ -631,6 +777,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={otAfterWeekly.override}
                     onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}
+                    error={validation.errors.otAfterWeekly}
                   >
                     <Input
                       type="number" step="0.5"
@@ -643,6 +790,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${otFirst2h.value}%`}
                     override={otFirst2h.override}
                     onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}
+                    error={validation.errors.otFirst2h}
                   >
                     <Input
                       type="number"
@@ -655,6 +803,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${otAfter2h.value}%`}
                     override={otAfter2h.override}
                     onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}
+                    error={validation.errors.otAfter2h}
                   >
                     <Input
                       type="number"
@@ -663,6 +812,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     />
                   </ResolvedField>
                 </div>
+
 
                 <ResolvedField
                   label="Overtime × penalty interaction"
@@ -700,6 +850,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${saturdayLoading.value}%`}
                     override={saturdayLoading.override}
                     onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}
+                    error={validation.errors.saturdayLoading}
                   >
                     <Input
                       type="number"
@@ -712,6 +863,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${sundayLoading.value}%`}
                     override={sundayLoading.override}
                     onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}
+                    error={validation.errors.sundayLoading}
                   >
                     <Input
                       type="number"
@@ -724,6 +876,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${phLoading.value}%`}
                     override={phLoading.override}
                     onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}
+                    error={validation.errors.phLoading}
                   >
                     <Input
                       type="number"
@@ -736,6 +889,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${eveningLoading.value}%`}
                     override={eveningLoading.override}
                     onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}
+                    error={validation.errors.eveningLoading}
                   >
                     <Input
                       type="number"
@@ -743,6 +897,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       onChange={(e) => setEveningLoading({ override: true, value: parseFloat(e.target.value) || 0 })}
                     />
                   </ResolvedField>
+
                 </div>
 
                 <Separator />
@@ -785,19 +940,29 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
         {/* Footer */}
         <div className="sticky bottom-0 bg-background border-t px-6 py-3 flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            Effective hourly rate: <span className="font-semibold text-foreground">${effectiveHourlyRate.toFixed(2)}</span>
-            <span className="mx-2">·</span>
-            Ordinary hrs/wk: <span className="font-semibold text-foreground">{ordinaryPerWeek.value}</span>
+            {validation.hasErrors ? (
+              <span className="text-destructive flex items-center gap-1 font-medium">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {Object.values(validation.errors).filter(Boolean).length} validation issue(s) to fix
+              </span>
+            ) : (
+              <>
+                Effective hourly rate: <span className="font-semibold text-foreground">${effectiveHourlyRate.toFixed(2)}</span>
+                <span className="mx-2">·</span>
+                Ordinary hrs/wk: <span className="font-semibold text-foreground">{ordinaryPerWeek.value}</span>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               <X className="h-4 w-4 mr-2" />Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={validation.hasErrors}>
               <Save className="h-4 w-4 mr-2" />Save changes
             </Button>
           </div>
         </div>
+
       </SheetContent>
     </Sheet>
   );
