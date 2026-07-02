@@ -743,7 +743,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
               </AccordionContent>
             </AccordionItem>
 
-            {/* SECTION 3 — Ordinary hours & overtime */}
+            {/* SECTION 3 — Ordinary hours & overtime (not applicable to contractors) */}
+            {employmentType !== 'contractor' && (
             <AccordionItem value="s3" className="border rounded-lg px-4">
               <AccordionTrigger className="hover:no-underline py-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
