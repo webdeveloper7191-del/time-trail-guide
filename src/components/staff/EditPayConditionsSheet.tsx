@@ -556,32 +556,19 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Classification</Label>
-                    <Select value={classification} onValueChange={setClassification}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
-                        <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
-                        <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
-                        <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
-                        <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
-                        <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Pay point</Label>
-                    <Select value={payPoint} onValueChange={setPayPoint}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4].map((p) => (
-                          <SelectItem key={p} value={String(p)}>Pay point {p}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Classification</Label>
+                  <Select value={classification} onValueChange={setClassification}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
+                      <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
+                      <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
+                      <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
+                      <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
+                      <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Separator />
