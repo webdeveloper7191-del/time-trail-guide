@@ -262,11 +262,12 @@ interface BulkActionsPanelProps {
   open: boolean;
   action: BulkActionKey | null;
   selectedCount: number;
+  selectedIds?: string[];
   onClose: () => void;
   onConfirm: (action: BulkActionKey) => void;
 }
 
-export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfirm }: BulkActionsPanelProps) {
+export function BulkActionsPanel({ open, action, selectedCount, selectedIds = [], onClose, onConfirm }: BulkActionsPanelProps) {
   // Simple shared state
   const [locationAreas, setLocationAreas] = useState<Record<string, string[]>>({});
   const [locationIds, setLocationIds] = useState<string[]>([]);
