@@ -440,7 +440,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
 
     return { errors, warnings, hasErrors: Object.values(errors).some(Boolean) };
   }, [
-    awardDefaults, ordinaryPerWeek, ordinaryPerDay, rosterCycle, spanStart, spanEnd,
+    awardDefaults, ordinaryPerWeek, ordinaryPerDay, rosterCycle,
     otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h,
     saturdayLoading, sundayLoading, phLoading, eveningLoading,
   ]);
