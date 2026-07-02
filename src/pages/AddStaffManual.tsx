@@ -125,7 +125,65 @@ export default function AddStaffManual() {
   const handleSave = async () => {
     if (!isValid) return;
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 600));
+
+    const employmentTypeMap: Record<string, EmploymentType> = {
+      'Full Time': 'full_time',
+      'Part Time': 'part_time',
+      'Casual': 'casual',
+      'Contractor': 'contractor',
+    };
+    const payRateMap: Record<string, PayRateType> = {
+      'Hourly Rate': 'hourly',
+      'Annual Salary': 'salary',
+      'Award Rate': 'award',
+      'No award': 'hourly',
+    };
+    const genderMap: Record<string, Gender> = {
+      'Male': 'male',
+      'Female': 'female',
+      'Other': 'other',
+      'Prefer not to say': 'prefer_not_to_say',
+    };
+
+    const newId = `staff-${Date.now()}`;
+    const primary = form.primaryLocation || form.workLocations[0] || '';
+    const newStaff: StaffMember = {
+      id: newId,
+      firstName: form.firstName,
+      middleName: form.middleName,
+      lastName: form.lastName,
+      preferredName: form.preferredName || `${form.firstName} ${form.lastName}`,
+      email: form.email,
+      mobilePhone: form.mobilePhone,
+      workPhone: form.workPhone,
+      gender: (genderMap[form.gender] ?? 'prefer_not_to_say') as Gender,
+      dateOfBirth: form.dateOfBirth,
+      employeeId: form.employeeId,
+      employmentStartDate: form.employmentStartDate || new Date().toISOString().slice(0, 10),
+      status: 'active',
+      department: form.department,
+      position: form.position,
+      locations: form.workLocations,
+      address: { line1: '', suburb: '', state: '', postcode: '', country: 'Australia' },
+      bankDetails: { accountName: `${form.firstName} ${form.lastName}`, bsb: '', accountNumber: '' },
+      currentPayCondition: {
+        id: `pay-${newId}`,
+        effectiveFrom: new Date().toISOString().slice(0, 10),
+        position: form.position,
+        payRateType: payRateMap[form.payRateType] ?? 'hourly',
+        hourlyRate: Number(form.hourlyRate) || Number(form.overrideHourlyRate) || 0,
+        annualSalary: Number(form.annualSalary) || undefined,
+        industryAward: form.awardName || undefined,
+        employmentType: employmentTypeMap[form.employmentType] ?? 'full_time',
+        classification: form.awardClassification || undefined,
+        payPeriod: 'weekly',
+        contractedHoursPerWeek: 38,
+      } as StaffMember['currentPayCondition'],
+      payConditionHistory: [],
+    } as unknown as StaffMember;
+
+    mockStaff.unshift(newStaff);
     setSaving(false);
     toast.success(`${form.firstName} ${form.lastName} has been added and login credentials issued`);
     navigate('/workforce');
