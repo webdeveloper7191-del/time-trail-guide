@@ -757,15 +757,29 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   {rateSource === 'manual_hourly' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Custom hourly rate ($)<FieldInfo text="Must be equal to or greater than the award rate for BOOT compliance." /></Label>
-                        <Input
-                          type="number" step="0.01" min={0} required
-                          value={manualHourlyRate || ''}
-                          placeholder="e.g. 32.50"
-                          aria-invalid={!!rateErrors.manualHourlyRate}
-                          className={cn(rateErrors.manualHourlyRate && 'border-destructive focus-visible:ring-destructive')}
-                          onChange={(e) => setManualHourlyRate(parseFloat(e.target.value) || 0)}
-                        />
+                        <Label className="text-xs">Custom hourly rate<FieldInfo text="Must be equal to or greater than the award rate for BOOT compliance." /></Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            required
+                            value={formatHourlyDisplay(manualHourlyRate, hourlyFocused)}
+                            placeholder="0.00"
+                            aria-invalid={!!rateErrors.manualHourlyRate}
+                            className={cn('pl-6 pr-14 tabular-nums', rateErrors.manualHourlyRate && 'border-destructive focus-visible:ring-destructive')}
+                            onFocus={() => setHourlyFocused(true)}
+                            onBlur={() => {
+                              setHourlyFocused(false);
+                              setManualHourlyRate((v) => Math.round(v * 100) / 100);
+                            }}
+                            onChange={(e) => {
+                              const parsed = parseCurrencyInput(e.target.value, 2);
+                              if (parsed !== null) setManualHourlyRate(parsed);
+                            }}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">/ hr</span>
+                        </div>
                         {rateErrors.manualHourlyRate ? (
                           <p className="text-[11px] text-destructive flex items-start gap-1">
                             <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
@@ -788,15 +802,29 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   {rateSource === 'annualised_salary' && (
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Annualised salary ($)<FieldInfo text="Total annual base salary, exclusive of super." /></Label>
-                        <Input
-                          type="number" step="1" min={0} required
-                          value={annualSalary || ''}
-                          placeholder="e.g. 75000"
-                          aria-invalid={!!rateErrors.annualSalary}
-                          className={cn(rateErrors.annualSalary && 'border-destructive focus-visible:ring-destructive')}
-                          onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
-                        />
+                        <Label className="text-xs">Annualised salary<FieldInfo text="Total annual base salary, exclusive of super. Whole dollars only." /></Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            required
+                            value={formatSalaryDisplay(annualSalary, salaryFocused)}
+                            placeholder="0"
+                            aria-invalid={!!rateErrors.annualSalary}
+                            className={cn('pl-6 pr-14 tabular-nums', rateErrors.annualSalary && 'border-destructive focus-visible:ring-destructive')}
+                            onFocus={() => setSalaryFocused(true)}
+                            onBlur={() => {
+                              setSalaryFocused(false);
+                              setAnnualSalary((v) => Math.round(v));
+                            }}
+                            onChange={(e) => {
+                              const parsed = parseCurrencyInput(e.target.value, 0);
+                              if (parsed !== null) setAnnualSalary(parsed);
+                            }}
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">/ yr</span>
+                        </div>
                         {rateErrors.annualSalary && (
                           <p className="text-[11px] text-destructive flex items-start gap-1">
                             <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
