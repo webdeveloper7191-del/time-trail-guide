@@ -60,6 +60,8 @@ import { toast } from 'sonner';
 import { StaffImportModal } from '@/components/workforce/StaffImportModal';
 import { StaffImportResult } from '@/lib/etl/staffETL';
 import { AddStaffOptionsDialog } from '@/components/workforce/AddStaffOptionsDialog';
+import { BulkActionsPanel, bulkActionConfig, BulkActionKey } from '@/components/workforce/BulkActionsPanel';
+import { ChevronDown } from 'lucide-react';
 
 export default function StaffList() {
   const navigate = useNavigate();
