@@ -170,6 +170,94 @@ const LOCATION_AREAS: Record<string, string[]> = {
   'Fitzroy': ['Toddler', 'Preschool', 'Outdoor Area'],
 };
 
+// Inline info-icon tooltip used next to field labels across every bulk-action panel.
+export function InfoHint({ text }: { text: string }) {
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center justify-center text-muted-foreground/70 hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+          aria-label="More information"
+          onClick={(e) => e.preventDefault()}
+        >
+          <Info className="h-3.5 w-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// LabelWithHint — thin wrapper to standardise label + info icon spacing.
+export function LabelWithHint({ children, hint, htmlFor, className }: {
+  children: React.ReactNode; hint?: string; htmlFor?: string; className?: string;
+}) {
+  return (
+    <div className={cn('flex items-center gap-1.5 mb-1.5', className)}>
+      <Label htmlFor={htmlFor} className="mb-0">{children}</Label>
+      {hint && <InfoHint text={hint} />}
+    </div>
+  );
+}
+
+// Central dictionary of field hints — keyed by field name used across sections.
+const HINTS: Record<string, string> = {
+  role: 'The primary role determines award classification, default pay rate and shift-matching eligibility. Pay conditions are not overwritten here.',
+  status: 'Active = rosterable; Pending Onboarding = invited but not yet completed profile; Terminated requires an End Date; Inactive = temporarily excluded from rosters.',
+  endDate: 'Last working day. The system stops rostering, accruing leave and calculating pay from this date.',
+  startDate: 'First day of employment. Used for tenure, leave accruals and award progression calculations.',
+  comment: 'Free-text internal note visible only to admins and managers. Appended with a timestamp — never overwrites existing comments.',
+  maxConsecutiveDays: 'Solver stops assigning shifts once a staff member reaches this many working days in a row.',
+  minRestHours: 'Minimum uninterrupted rest between the end of one shift and the start of the next.',
+  maxHoursPerDay: 'Hard cap on scheduled hours in any single calendar day, including overtime.',
+  maxHoursPerWeek: 'Hard cap on scheduled hours in a rolling 7-day window, including overtime.',
+  maxNightShiftsPerWeek: 'Limit night shifts (typically starting after 6pm) per staff member per week to reduce fatigue.',
+  fatigueScoreCap: 'Composite score (0-100) combining consecutive days, night shifts and rest gaps. Higher = more fatigued.',
+  allowSplitShifts: 'When on, staff can be scheduled to two shifts in the same day separated by an unpaid gap.',
+  subject: 'Shown in the recipient inbox and the portal notification header.',
+  body: 'Supports merge tags such as {{first_name}}, {{location}} and {{next_shift}} which are substituted per recipient.',
+  priority: 'High = also triggers a push notification; Low = portal only, no email.',
+  ccPayroll: 'Sends a blind copy of every message to the Payroll inbox for record-keeping.',
+  requireAck: 'Recipients must tap "Acknowledge" in the portal before the message clears from their inbox.',
+  position: 'Job title used for rostering, reporting and default award classification.',
+  employmentType: 'Full time, part time, casual (with loading), fixed term or contractor. Drives which fields below apply.',
+  fte: '1.0 = full time (typically 38 hrs). 0.5 = 50% of ordinary hours. Used to pro-rate leave accruals.',
+  guaranteedMinHours: 'Minimum hours per week the employer commits to. Used for part-time balancing and under-utilisation reporting.',
+  casualLoading: 'Percentage loading on top of the base rate in lieu of leave entitlements. Award default is 25%.',
+  abn: 'Contractor ABN — validated against the ABR before pay runs are processed.',
+  payPeriod: 'Cadence used for pay calculation, timesheet close and leave accrual increments.',
+  effectiveDate: 'Date the new pay conditions take effect. Retro adjustments are calculated automatically.',
+  instrumentType: 'Modern Award = base default; EBA = enterprise agreement that overrides the award; IFA = individual variation; Over-award = award + top-up; Custom / Salary bypass the award entirely.',
+  award: 'The Fair Work award code (e.g. MA000120). Drives classification lists and default penalty rates.',
+  classification: 'Level within the award that sets the base hourly rate and progression rules.',
+  stream: 'Award sub-stream (e.g. SCHADS Social & Community, Health Professionals). Filters valid classifications.',
+  rateSource: 'How the base rate is derived: pulled from award, entered manually, or divided from an annual salary.',
+  baseRate: 'Ordinary-time hourly rate, exclusive of loadings and allowances.',
+  salaryAnnual: 'Annual gross salary. Divided by ordinary hours per year to produce an implicit hourly rate.',
+  superRate: 'Superannuation guarantee percentage applied to ordinary time earnings.',
+  ordinaryHoursPerWeek: 'Threshold above which time is treated as overtime for the week.',
+  ordinaryHoursPerDay: 'Threshold above which time is treated as overtime for a single day.',
+  otAfterHoursPerDay: 'Number of hours worked in a day before overtime kicks in.',
+  otAfterHoursPerWeek: 'Cumulative weekly hours before overtime kicks in.',
+  otRate1: 'First-tier overtime multiplier (typically 1.5x for the first 2-3 hours).',
+  otRate2: 'Second-tier overtime multiplier (typically 2.0x thereafter, and all Sunday OT).',
+  saturdayLoading: 'Multiplier applied to ordinary hours worked on Saturdays.',
+  sundayLoading: 'Multiplier applied to ordinary hours worked on Sundays.',
+  publicHolidayLoading: 'Multiplier applied to ordinary hours worked on gazetted public holidays.',
+  eveningLoading: 'Multiplier applied to hours worked in the award-defined evening/afternoon window.',
+  allowances: 'Recurring allowances added on top of the hourly rate — meal, laundry, first-aid, tool, etc.',
+  leaveAsAt: 'Opening balances entered below are treated as the balance on this date. Accruals restart from here forward.',
+  weekly: 'Guaranteed weekly hours the employer commits to pay, regardless of actual roster.',
+  contractType: 'Full time, part time, casual (with minimum) or fixed term. Drives leave accruals and notice periods.',
+  min: 'Lower band used to flag under-utilisation in reporting.',
+  max: 'Upper band used to flag over-utilisation and trigger overtime warnings.',
+  averagingPeriodWeeks: 'Rolling window over which contracted hours are averaged for compliance (e.g. 4 weeks for annualised hours).',
+  exportFormat: 'CSV is best for import into other systems. Excel keeps formatting, formulas and multi-tab layouts.',
+};
+
 interface BulkActionsPanelProps {
   open: boolean;
   action: BulkActionKey | null;
