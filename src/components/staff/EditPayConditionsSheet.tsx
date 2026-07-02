@@ -226,6 +226,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [instrumentType, setInstrumentType] = useState<InstrumentType>('modern_award');
   const [industryAward, setIndustryAward] = useState(payCondition?.industryAward || '');
   const [classification, setClassification] = useState(payCondition?.classification || '');
+  const [stream, setStream] = useState<string>((payCondition as any)?.stream || '');
   
   const [rateSource, setRateSource] = useState<RateSource>('award_resolved');
   const [manualHourlyRate, setManualHourlyRate] = useState<number>(payCondition?.hourlyRate || 0);
