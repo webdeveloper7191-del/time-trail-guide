@@ -84,6 +84,42 @@ function resolveAwardDefaults(award: string | undefined, classification: string 
 const READONLY_INPUT_CLS =
   'bg-muted/40 border-dashed text-muted-foreground cursor-not-allowed';
 
+// ── Currency input mask helpers ─────────────────────────────────────────────
+function parseCurrencyInput(raw: string, maxDecimals: 0 | 2): number | null {
+  if (raw == null) return 0;
+  let s = String(raw).replace(/[^0-9.]/g, '');
+  const firstDot = s.indexOf('.');
+  if (firstDot !== -1) {
+    s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, '');
+  }
+  if (maxDecimals === 0) {
+    s = s.replace(/\./g, '');
+  } else if (firstDot !== -1) {
+    const [int, dec = ''] = s.split('.');
+    s = int + '.' + dec.slice(0, maxDecimals);
+  }
+  if (s === '' || s === '.') return 0;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatHourlyDisplay(value: number, focused: boolean): string {
+  if (!value) return '';
+  if (focused) return String(value);
+  return value.toLocaleString('en-AU', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatSalaryDisplay(value: number, focused: boolean): string {
+  if (!value) return '';
+  const rounded = Math.round(value);
+  if (focused) return String(rounded);
+  return rounded.toLocaleString('en-AU', { maximumFractionDigits: 0 });
+}
+
+
 function FieldInfo({ text }: { text: string }) {
   return (
     <Tooltip>
