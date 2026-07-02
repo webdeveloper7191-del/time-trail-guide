@@ -432,11 +432,10 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
       </Collapsible>
 
       {/* Sheet Panels */}
-      <UnifiedPayChangeSheet
+      <EditPayConditionsSheet
         open={payChangeSheetOpen}
         onOpenChange={setPayChangeSheetOpen}
         staff={staff}
-        initialMode={payChangeMode}
       />
       <PayConditionsHistorySheet
         open={historySheetOpen}
