@@ -101,6 +101,7 @@ export interface StaffMember {
   employmentStartDate: string;
   employmentEndDate?: string;
   status: EmploymentStatus;
+  stream?: string;
   department?: string;
   position: string;
   locations: string[];
