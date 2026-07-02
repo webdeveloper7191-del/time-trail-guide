@@ -690,6 +690,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
               <label className="flex items-center gap-2 text-xs font-medium">
                 <Checkbox checked={!!payFlags[k]} onCheckedChange={() => togglePayFlag(k)} />
                 <span className={payFlags[k] ? '' : 'text-muted-foreground'}>{label}</span>
+                {HINTS[k] && <InfoHint text={HINTS[k]} />}
               </label>
               <div className={payFlags[k] ? '' : 'opacity-50 pointer-events-none'}>{children}</div>
               {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
