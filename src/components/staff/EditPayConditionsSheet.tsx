@@ -410,9 +410,14 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       effectiveTo: effectiveTo?.toISOString(),
       position,
       employmentType: employmentType as PayCondition['employmentType'],
-      payRateType: paidAsSalary ? 'salary' : rateSource === 'award_resolved' ? 'award' : 'hourly',
+      payRateType:
+        rateSource === 'annualised_salary'
+          ? 'salary'
+          : rateSource === 'award_resolved'
+          ? 'award'
+          : 'hourly',
       hourlyRate: effectiveHourlyRate,
-      annualSalary: paidAsSalary ? annualSalary : undefined,
+      annualSalary: rateSource === 'annualised_salary' ? annualSalary : undefined,
       industryAward,
       classification,
       payPeriod: payPeriod as PayCondition['payPeriod'],
