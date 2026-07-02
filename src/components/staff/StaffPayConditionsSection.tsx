@@ -34,6 +34,7 @@ import { StaffAwardRuleSection } from './StaffAwardRuleSection';
 import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
 import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
+import { EditPayConditionsSheet } from './EditPayConditionsSheet';
 import { InlineAvailabilityTable } from './InlineAvailabilityTable';
 
 interface StaffPayConditionsSectionProps {
@@ -431,11 +432,10 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
       </Collapsible>
 
       {/* Sheet Panels */}
-      <UnifiedPayChangeSheet
+      <EditPayConditionsSheet
         open={payChangeSheetOpen}
         onOpenChange={setPayChangeSheetOpen}
         staff={staff}
-        initialMode={payChangeMode}
       />
       <PayConditionsHistorySheet
         open={historySheetOpen}
