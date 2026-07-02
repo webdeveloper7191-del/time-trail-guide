@@ -1,4 +1,4 @@
-import { StaffMember, genderLabels, employmentStatusLabels, streamOptions } from '@/types/staff';
+import { StaffMember, genderLabels, employmentStatusLabels } from '@/types/staff';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
