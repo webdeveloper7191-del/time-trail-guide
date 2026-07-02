@@ -41,7 +41,7 @@ interface EditPayConditionsSheetProps {
 }
 
 type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award';
-type RateSource = 'award_resolved' | 'manual';
+type RateSource = 'award_resolved' | 'manual_hourly' | 'annualised_salary';
 
 interface OverrideField<T> {
   override: boolean;
