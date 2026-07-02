@@ -176,15 +176,17 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
       ]}
     >
       <div className="space-y-4">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription className="text-sm leading-relaxed">
-            {cfg.explanation}
-            {cfg.helper && (
-              <span className="mt-2 block text-xs text-muted-foreground">{cfg.helper}</span>
-            )}
-          </AlertDescription>
-        </Alert>
+        <div className="rounded-md border border-border bg-muted/40 p-3">
+          <div className="flex gap-2">
+            <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+            <div className="text-sm leading-relaxed">
+              {cfg.explanation}
+              {cfg.helper && (
+                <span className="mt-2 block text-xs text-muted-foreground">{cfg.helper}</span>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{selectedCount} selected</Badge>
