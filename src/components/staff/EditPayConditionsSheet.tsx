@@ -608,74 +608,97 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
 
                 <div className="space-y-3">
                   <Label className="text-xs">Rate source</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setRateSource('award_resolved')}
-                      className={cn(
-                        'text-left border rounded-md p-3 text-xs',
-                        rateSource === 'award_resolved' ? 'border-primary bg-primary/5' : 'border-border'
-                      )}
-                    >
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <Lock className="h-3 w-3" /> Award-resolved
-                      </div>
-                      <p className="text-muted-foreground mt-1">
-                        Uses ${resolvedBaseRate.toFixed(2)}/hr from {classification || 'classification'}.
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRateSource('manual')}
-                      className={cn(
-                        'text-left border rounded-md p-3 text-xs',
-                        rateSource === 'manual' ? 'border-primary bg-primary/5' : 'border-border'
-                      )}
-                    >
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <PencilLine className="h-3 w-3" /> Manual / over-award
-                      </div>
-                      <p className="text-muted-foreground mt-1">Set the base rate directly (BOOT test applies).</p>
-                    </button>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { id: 'award_resolved', icon: Lock, title: 'Award-resolved', desc: `Uses $${resolvedBaseRate.toFixed(2)}/hr from ${classification || 'classification'}.` },
+                      { id: 'manual_hourly', icon: PencilLine, title: 'Custom hourly rate', desc: 'Set the ordinary-time rate directly (BOOT applies).' },
+                      { id: 'annualised_salary', icon: DollarSign, title: 'Annualised salary', desc: 'Salary is divided across ordinary hours to derive an hourly equivalent.' },
+                    ] as const).map((opt) => {
+                      const Icon = opt.icon;
+                      const active = rateSource === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setRateSource(opt.id)}
+                          className={cn(
+                            'text-left border rounded-md p-3 text-xs transition-colors',
+                            active ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+                          )}
+                        >
+                          <div className="flex items-center gap-1.5 font-medium">
+                            <Icon className="h-3 w-3" /> {opt.title}
+                          </div>
+                          <p className="text-muted-foreground mt-1 leading-snug">{opt.desc}</p>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Base hourly rate ($)<FieldInfo text="The ordinary-time rate before penalties, loadings or allowances." /></Label>
-                      {rateSource === 'award_resolved' ? (
+                  {/* Rate inputs — layout adapts to selected rate source */}
+                  {rateSource === 'award_resolved' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Base hourly rate ($)<FieldInfo text="Resolved from the award classification." /></Label>
                         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
                           ${resolvedBaseRate.toFixed(2)}
                         </div>
-                      ) : (
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Superannuation %<FieldInfo text="Employer contribution rate." /></Label>
+                        <Input type="number" step="0.5" value={superRate} onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {rateSource === 'manual_hourly' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Custom hourly rate ($)<FieldInfo text="Must be equal to or greater than the award rate for BOOT compliance." /></Label>
                         <Input
                           type="number" step="0.01"
                           value={manualHourlyRate}
                           onChange={(e) => setManualHourlyRate(parseFloat(e.target.value) || 0)}
                         />
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">Paid as salary</Label>
-                        <Switch checked={paidAsSalary} onCheckedChange={setPaidAsSalary} className="scale-75 -mr-1" />
+                        {manualHourlyRate > 0 && manualHourlyRate < resolvedBaseRate && (
+                          <p className="text-[11px] text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Below award rate of ${resolvedBaseRate.toFixed(2)}/hr (BOOT fail).
+                          </p>
+                        )}
                       </div>
-                      <Input
-                        type="number"
-                        placeholder="Annual salary"
-                        disabled={!paidAsSalary}
-                        value={annualSalary || ''}
-                        onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
-                      />
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Superannuation %</Label>
+                        <Input type="number" step="0.5" value={superRate} onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)} />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Superannuation %<FieldInfo text="Mandatory employer contribution rate. Must meet or exceed the legal minimum." /></Label>
-                      <Input
-                        type="number" step="0.5"
-                        value={superRate}
-                        onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)}
-                      />
+                  )}
+
+                  {rateSource === 'annualised_salary' && (
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Annualised salary ($)<FieldInfo text="Total annual base salary, exclusive of super." /></Label>
+                        <Input
+                          type="number"
+                          value={annualSalary || ''}
+                          onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Derived hourly equivalent</Label>
+                        <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
+                          ${derivedHourlyFromSalary.toFixed(2)}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Salary ÷ ({ordinaryPerWeek.value} hrs × 52 wks)
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Superannuation %</Label>
+                        <Input type="number" step="0.5" value={superRate} onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)} />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
