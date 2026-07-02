@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ChevronRight, Eye, EyeOff, Copy, RefreshCw, CheckCircle2, ArrowLeft, Shield, Info } from 'lucide-react';
-import { departments, locations, mockAwardRules } from '@/data/mockStaffData';
+import { departments, locations, mockAwardRules, mockStaff } from '@/data/mockStaffData';
+import type { StaffMember, EmploymentType, PayRateType, Gender } from '@/types/staff';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
