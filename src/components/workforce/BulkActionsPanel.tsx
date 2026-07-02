@@ -366,7 +366,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
                     <div key={loc}>
                       <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/40">
                         <Checkbox
-                          checked={state === 'all' ? true : state === 'some' ? 'indeterminate' : false}
+                          checked={state === 'all' ? true : state === 'some' ? ('indeterminate' as unknown as boolean) : false}
                           onCheckedChange={() => toggleLoc(loc)}
                         />
                         <div className="flex-1 flex items-center justify-between">
