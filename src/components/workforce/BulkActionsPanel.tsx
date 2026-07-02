@@ -460,22 +460,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
               )}
             </div>
 
-            {/* Stream */}
-            <div className="rounded border border-border p-3 space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                <Checkbox checked={employment.updateStream}
-                  onCheckedChange={v => setEmployment({ ...employment, updateStream: !!v })} />
-                Stream / Sector
-              </label>
-              <Select value={employment.stream} disabled={!employment.updateStream}
-                onValueChange={v => setEmployment({ ...employment, stream: v })}>
-                <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
-                <SelectContent>
-                  {streamOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Drives award grouping and classification defaults (e.g. SCHADS, Nurses, Aged Care).</p>
-            </div>
+            {/* Stream/Sector moved to Pay Conditions (Section 2 — Instrument & classification) */}
 
             {/* Start date */}
             <div className="rounded border border-border p-3 space-y-2">
