@@ -293,6 +293,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
+  const isAwardBased =
+    instrumentType !== 'custom_hourly' && instrumentType !== 'annualised_salary';
+
   const derivedHourlyFromSalary =
     annualSalary && ordinaryPerWeek.value
       ? annualSalary / (ordinaryPerWeek.value * 52)
@@ -303,6 +306,32 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       : rateSource === 'annualised_salary'
       ? derivedHourlyFromSalary
       : resolvedBaseRate;
+
+  // Rate-source specific validation
+  const rateErrors = useMemo(() => {
+    const e: { manualHourlyRate?: string; annualSalary?: string } = {};
+    if (rateSource === 'manual_hourly') {
+      if (!manualHourlyRate || manualHourlyRate <= 0)
+        e.manualHourlyRate = 'Custom hourly rate is required and must be greater than 0.';
+      else if (!Number.isFinite(manualHourlyRate))
+        e.manualHourlyRate = 'Enter a valid number (e.g. 32.50).';
+      else if (manualHourlyRate > 1000)
+        e.manualHourlyRate = 'Hourly rate looks unrealistic (max $1000/hr).';
+      else if (!/^\d+(\.\d{1,2})?$/.test(String(manualHourlyRate)))
+        e.manualHourlyRate = 'Use up to 2 decimal places (e.g. 32.50).';
+    }
+    if (rateSource === 'annualised_salary') {
+      if (!annualSalary || annualSalary <= 0)
+        e.annualSalary = 'Annualised salary is required and must be greater than 0.';
+      else if (annualSalary < 20000)
+        e.annualSalary = 'Salary must be at least $20,000 (below minimum wage otherwise).';
+      else if (annualSalary > 2_000_000)
+        e.annualSalary = 'Salary exceeds allowed maximum of $2,000,000.';
+      else if (!Number.isInteger(annualSalary))
+        e.annualSalary = 'Enter a whole dollar amount (no cents).';
+    }
+    return e;
+  }, [rateSource, manualHourlyRate, annualSalary]);
 
   // ── Field-level validation against award limits (BOOT test) ───────────────
   // Rules:
@@ -402,6 +431,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     }
     if (validation.hasErrors) {
       toast.error('Please fix the highlighted validation errors before saving.');
+      return;
+    }
+    if (Object.keys(rateErrors).length > 0) {
+      toast.error(Object.values(rateErrors)[0] as string);
       return;
     }
     const updatedCondition: PayCondition = {
@@ -611,9 +644,17 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       onValueChange={(v) => {
                         const next = v as InstrumentType;
                         setInstrumentType(next);
-                        if (next === 'custom_hourly') setRateSource('manual_hourly');
-                        else if (next === 'annualised_salary') setRateSource('annualised_salary');
-                        else setRateSource('award_resolved');
+                        if (next === 'custom_hourly') {
+                          setRateSource('manual_hourly');
+                          setIndustryAward('');
+                          setClassification('');
+                        } else if (next === 'annualised_salary') {
+                          setRateSource('annualised_salary');
+                          setIndustryAward('');
+                          setClassification('');
+                        } else {
+                          setRateSource('award_resolved');
+                        }
                       }}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -627,33 +668,44 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       </SelectContent>
                     </Select>
                   </div>
+                  {isAwardBased && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Industry award / instrument</Label>
+                      <Select value={industryAward} onValueChange={setIndustryAward}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Children's Services Award 2010">Children's Services Award 2010</SelectItem>
+                          <SelectItem value="Educational Services Award">Educational Services Award</SelectItem>
+                          <SelectItem value="Social and Community Services">Social and Community Services</SelectItem>
+                          <SelectItem value="None">None / Not applicable</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                {isAwardBased ? (
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Industry award / instrument</Label>
-                    <Select value={industryAward} onValueChange={setIndustryAward}>
+                    <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
+                    <Select value={classification} onValueChange={setClassification}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Children's Services Award 2010">Children's Services Award 2010</SelectItem>
-                        <SelectItem value="Educational Services Award">Educational Services Award</SelectItem>
-                        <SelectItem value="Social and Community Services">Social and Community Services</SelectItem>
-                        <SelectItem value="None">None / Not applicable</SelectItem>
+                        <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
+                        <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
+                        <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
+                        <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
+                        <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
+                        <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
-                  <Select value={classification} onValueChange={setClassification}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
-                      <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
-                      <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
-                      <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
-                      <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
-                      <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                ) : (
+                  <div className="rounded-md bg-muted/40 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    {instrumentType === 'custom_hourly'
+                      ? 'Award and classification are not applicable when using a custom hourly rate. BOOT compliance remains the employer\'s responsibility.'
+                      : 'Award and classification are not applicable for annualised salary arrangements. Ensure the salary satisfies BOOT across the full roster pattern.'}
+                  </div>
+                )}
 
                 <Separator />
 
@@ -707,16 +759,24 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       <div className="space-y-1.5">
                         <Label className="text-xs">Custom hourly rate ($)<FieldInfo text="Must be equal to or greater than the award rate for BOOT compliance." /></Label>
                         <Input
-                          type="number" step="0.01"
-                          value={manualHourlyRate}
+                          type="number" step="0.01" min={0} required
+                          value={manualHourlyRate || ''}
+                          placeholder="e.g. 32.50"
+                          aria-invalid={!!rateErrors.manualHourlyRate}
+                          className={cn(rateErrors.manualHourlyRate && 'border-destructive focus-visible:ring-destructive')}
                           onChange={(e) => setManualHourlyRate(parseFloat(e.target.value) || 0)}
                         />
-                        {manualHourlyRate > 0 && manualHourlyRate < resolvedBaseRate && (
+                        {rateErrors.manualHourlyRate ? (
+                          <p className="text-[11px] text-destructive flex items-start gap-1">
+                            <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            {rateErrors.manualHourlyRate}
+                          </p>
+                        ) : manualHourlyRate > 0 && isAwardBased && manualHourlyRate < resolvedBaseRate ? (
                           <p className="text-[11px] text-destructive flex items-center gap-1">
                             <AlertTriangle className="h-3 w-3" />
                             Below award rate of ${resolvedBaseRate.toFixed(2)}/hr (BOOT fail).
                           </p>
-                        )}
+                        ) : null}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Superannuation %</Label>
@@ -730,10 +790,19 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       <div className="space-y-1.5">
                         <Label className="text-xs">Annualised salary ($)<FieldInfo text="Total annual base salary, exclusive of super." /></Label>
                         <Input
-                          type="number"
+                          type="number" step="1" min={0} required
                           value={annualSalary || ''}
+                          placeholder="e.g. 75000"
+                          aria-invalid={!!rateErrors.annualSalary}
+                          className={cn(rateErrors.annualSalary && 'border-destructive focus-visible:ring-destructive')}
                           onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
                         />
+                        {rateErrors.annualSalary && (
+                          <p className="text-[11px] text-destructive flex items-start gap-1">
+                            <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            {rateErrors.annualSalary}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Derived hourly equivalent</Label>
