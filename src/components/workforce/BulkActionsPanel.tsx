@@ -153,6 +153,15 @@ const DAYS: { key: string; label: string }[] = [
 
 const AREAS = ['Room A', 'Room B', 'Room C', 'Kitchen', 'Outdoor Area', 'Reception'];
 
+// Location -> areas tree (mock — replace with tenant data)
+const LOCATION_AREAS: Record<string, string[]> = {
+  'Melbourne CBD': ['Nursery', 'Toddler', 'Preschool', 'Kitchen'],
+  'South Yarra': ['Room A', 'Room B', 'Outdoor Area'],
+  'Prahran': ['Nursery', 'Kindy', 'Reception'],
+  'Richmond': ['Room A', 'Room B', 'Room C', 'Kitchen'],
+  'Fitzroy': ['Toddler', 'Preschool', 'Outdoor Area'],
+};
+
 interface BulkActionsPanelProps {
   open: boolean;
   action: BulkActionKey | null;
@@ -163,6 +172,7 @@ interface BulkActionsPanelProps {
 
 export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfirm }: BulkActionsPanelProps) {
   // Simple shared state
+  const [locationAreas, setLocationAreas] = useState<Record<string, string[]>>({});
   const [locationIds, setLocationIds] = useState<string[]>([]);
   const [role, setRole] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
@@ -300,18 +310,99 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
           <Badge variant="secondary">{selectedCount} selected</Badge>
         </div>
 
-        {action === 'add-locations' && (
-          <FormSection title="Locations">
-            <div className="grid grid-cols-2 gap-2">
-              {locations.map(l => (
-                <label key={l} className="flex items-center gap-2 rounded border border-border p-2 cursor-pointer hover:bg-muted/40">
-                  <Checkbox checked={locationIds.includes(l)} onCheckedChange={() => toggleLocation(l)} />
-                  <span className="text-sm">{l}</span>
-                </label>
-              ))}
-            </div>
-          </FormSection>
-        )}
+        {action === 'add-locations' && (() => {
+          const allLocs = Object.keys(LOCATION_AREAS);
+          const totalAreas = allLocs.reduce((n, l) => n + LOCATION_AREAS[l].length, 0);
+          const selectedAreas = Object.values(locationAreas).reduce((n, arr) => n + arr.length, 0);
+          const allSelected = selectedAreas === totalAreas;
+
+          const toggleAll = () => {
+            if (allSelected) setLocationAreas({});
+            else setLocationAreas(Object.fromEntries(allLocs.map(l => [l, [...LOCATION_AREAS[l]]])));
+          };
+          const toggleLoc = (loc: string) => {
+            setLocationAreas(prev => {
+              const next = { ...prev };
+              const all = LOCATION_AREAS[loc];
+              const cur = prev[loc] || [];
+              if (cur.length === all.length) delete next[loc];
+              else next[loc] = [...all];
+              return next;
+            });
+          };
+          const toggleArea = (loc: string, area: string) => {
+            setLocationAreas(prev => {
+              const cur = prev[loc] || [];
+              const next = { ...prev };
+              if (cur.includes(area)) {
+                const filtered = cur.filter(a => a !== area);
+                if (filtered.length === 0) delete next[loc];
+                else next[loc] = filtered;
+              } else {
+                next[loc] = [...cur, area];
+              }
+              return next;
+            });
+          };
+
+          return (
+            <FormSection title="Locations & Areas">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs text-muted-foreground">
+                  Select whole locations, or expand to pick specific areas.
+                </p>
+                <Button size="sm" variant="outline" onClick={toggleAll}>
+                  {allSelected ? 'Clear all' : 'Select all'}
+                </Button>
+              </div>
+
+              <div className="rounded border border-border divide-y divide-border">
+                {allLocs.map(loc => {
+                  const areas = LOCATION_AREAS[loc];
+                  const sel = locationAreas[loc] || [];
+                  const state: 'none' | 'some' | 'all' =
+                    sel.length === 0 ? 'none' : sel.length === areas.length ? 'all' : 'some';
+                  return (
+                    <div key={loc}>
+                      <label className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/40">
+                        <Checkbox
+                          checked={state === 'all' ? true : state === 'some' ? ('indeterminate' as unknown as boolean) : false}
+                          onCheckedChange={() => toggleLoc(loc)}
+                        />
+                        <div className="flex-1 flex items-center justify-between">
+                          <span className="text-sm font-medium">{loc}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {sel.length}/{areas.length} areas
+                          </span>
+                        </div>
+                      </label>
+                      <div className="pl-10 pr-3 pb-2 space-y-1">
+                        {areas.map(area => (
+                          <label
+                            key={area}
+                            className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/40 cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={sel.includes(area)}
+                              onCheckedChange={() => toggleArea(loc, area)}
+                            />
+                            <span className="text-sm text-muted-foreground">{area}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-3 text-xs text-muted-foreground">
+                {selectedAreas} area{selectedAreas === 1 ? '' : 's'} across{' '}
+                {Object.keys(locationAreas).length} location
+                {Object.keys(locationAreas).length === 1 ? '' : 's'} selected.
+              </div>
+            </FormSection>
+          );
+        })()}
 
         {action === 'set-employment-details' && (
           <FormSection title="Employment details to update">
