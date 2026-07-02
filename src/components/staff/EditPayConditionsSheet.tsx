@@ -644,9 +644,17 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       onValueChange={(v) => {
                         const next = v as InstrumentType;
                         setInstrumentType(next);
-                        if (next === 'custom_hourly') setRateSource('manual_hourly');
-                        else if (next === 'annualised_salary') setRateSource('annualised_salary');
-                        else setRateSource('award_resolved');
+                        if (next === 'custom_hourly') {
+                          setRateSource('manual_hourly');
+                          setIndustryAward('');
+                          setClassification('');
+                        } else if (next === 'annualised_salary') {
+                          setRateSource('annualised_salary');
+                          setIndustryAward('');
+                          setClassification('');
+                        } else {
+                          setRateSource('award_resolved');
+                        }
                       }}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -660,33 +668,44 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       </SelectContent>
                     </Select>
                   </div>
+                  {isAwardBased && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Industry award / instrument</Label>
+                      <Select value={industryAward} onValueChange={setIndustryAward}>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Children's Services Award 2010">Children's Services Award 2010</SelectItem>
+                          <SelectItem value="Educational Services Award">Educational Services Award</SelectItem>
+                          <SelectItem value="Social and Community Services">Social and Community Services</SelectItem>
+                          <SelectItem value="None">None / Not applicable</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                {isAwardBased ? (
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Industry award / instrument</Label>
-                    <Select value={industryAward} onValueChange={setIndustryAward}>
+                    <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
+                    <Select value={classification} onValueChange={setClassification}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Children's Services Award 2010">Children's Services Award 2010</SelectItem>
-                        <SelectItem value="Educational Services Award">Educational Services Award</SelectItem>
-                        <SelectItem value="Social and Community Services">Social and Community Services</SelectItem>
-                        <SelectItem value="None">None / Not applicable</SelectItem>
+                        <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
+                        <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
+                        <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
+                        <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
+                        <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
+                        <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Classification<FieldInfo text="Award classification level that sets the base pay rate and progression rules." /></Label>
-                  <Select value={classification} onValueChange={setClassification}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
-                      <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
-                      <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
-                      <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
-                      <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
-                      <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                ) : (
+                  <div className="rounded-md bg-muted/40 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    {instrumentType === 'custom_hourly'
+                      ? 'Award and classification are not applicable when using a custom hourly rate. BOOT compliance remains the employer\'s responsibility.'
+                      : 'Award and classification are not applicable for annualised salary arrangements. Ensure the salary satisfies BOOT across the full roster pattern.'}
+                  </div>
+                )}
 
                 <Separator />
 
