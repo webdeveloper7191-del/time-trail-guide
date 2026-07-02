@@ -74,6 +74,8 @@ export default function StaffList() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [activeTab, setActiveTab] = useState('directory');
+  const [bulkAction, setBulkAction] = useState<BulkActionKey | null>(null);
+
 
   const handleAddStaffOption = (option: 'onboarding' | 'csv' | 'manual') => {
     switch (option) {
