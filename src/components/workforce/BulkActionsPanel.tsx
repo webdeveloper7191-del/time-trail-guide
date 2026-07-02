@@ -14,11 +14,12 @@ import {
 } from '@/components/ui/select';
 import {
   MapPin, UserCog, Activity, Mail, DollarSign, CalendarDays,
-  Archive, Clock, Send, FileClock, Download, Info, Plus, Trash2, LucideIcon,
+  Archive, Clock, Send, FileClock, Download, Info, Plus, Trash2, LucideIcon, Briefcase,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { locations, departments } from '@/data/mockStaffData';
 import { leaveTypeLabels, LeaveType } from '@/types/leaveAccrual';
+import { employmentStatusLabels, streamOptions, EmploymentStatus } from '@/types/staff';
 
 export type BulkActionKey =
   | 'add-locations'
