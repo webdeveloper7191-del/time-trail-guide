@@ -275,7 +275,106 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const effectiveHourlyRate =
     rateSource === 'manual' ? manualHourlyRate : resolvedBaseRate;
 
+  // ── Field-level validation against award limits (BOOT test) ───────────────
+  // Rules:
+  //  • Ordinary hours thresholds may only be LOWERED vs. award (more generous to employee).
+  //  • Overtime kick-in thresholds may only be LOWERED (OT starts earlier, not later).
+  //  • Overtime rates and loadings may only be RAISED (never pay less than award).
+  //  • Hard bounds prevent nonsensical values.
+  const validation = useMemo(() => {
+    const errors: Record<string, string | null> = {};
+    const warnings: Record<string, string | null> = {};
+
+    // Ordinary hours / week
+    if (ordinaryPerWeek.override) {
+      if (ordinaryPerWeek.value < 1 || ordinaryPerWeek.value > 60)
+        errors.ordinaryPerWeek = 'Must be between 1 and 60 hours.';
+      else if (ordinaryPerWeek.value > awardDefaults.ordinaryHoursPerWeek)
+        errors.ordinaryPerWeek = `Cannot exceed award limit of ${awardDefaults.ordinaryHoursPerWeek} hrs/wk (BOOT fail).`;
+      else if (ordinaryPerWeek.value < awardDefaults.ordinaryHoursPerWeek - 8)
+        warnings.ordinaryPerWeek = `Significantly below award (${awardDefaults.ordinaryHoursPerWeek} hrs). Confirm this matches the contract.`;
+    }
+    // Ordinary hours / day
+    if (ordinaryPerDay.override) {
+      if (ordinaryPerDay.value < 1 || ordinaryPerDay.value > 16)
+        errors.ordinaryPerDay = 'Must be between 1 and 16 hours.';
+      else if (ordinaryPerDay.value > awardDefaults.ordinaryHoursPerDay)
+        errors.ordinaryPerDay = `Cannot exceed award limit of ${awardDefaults.ordinaryHoursPerDay} hrs/day.`;
+    }
+    // Roster cycle
+    if (rosterCycle.override && (rosterCycle.value < 1 || rosterCycle.value > 8))
+      errors.rosterCycle = 'Roster cycle must be 1–8 weeks.';
+    // Span times
+    if ((spanStart.override || spanEnd.override) && spanStart.value >= spanEnd.value)
+      errors.span = 'Span end must be after span start.';
+    if (spanStart.override && spanStart.value > awardDefaults.spanOfHoursStart)
+      warnings.spanStart = `Later than award span start (${awardDefaults.spanOfHoursStart}). Ordinary-time reduced.`;
+    if (spanEnd.override && spanEnd.value < awardDefaults.spanOfHoursEnd)
+      warnings.spanEnd = `Earlier than award span end (${awardDefaults.spanOfHoursEnd}). Ordinary-time reduced.`;
+    // OT after daily
+    if (otAfterDaily.override) {
+      if (otAfterDaily.value < 1 || otAfterDaily.value > 16)
+        errors.otAfterDaily = 'Must be between 1 and 16 hours.';
+      else if (otAfterDaily.value > awardDefaults.otAfterDaily)
+        errors.otAfterDaily = `OT must start at or before ${awardDefaults.otAfterDaily} hrs (award limit).`;
+      else if (otAfterDaily.value < ordinaryPerDay.value)
+        warnings.otAfterDaily = 'OT threshold is below ordinary hours/day — every day would incur overtime.';
+    }
+    // OT after weekly
+    if (otAfterWeekly.override) {
+      if (otAfterWeekly.value < 1 || otAfterWeekly.value > 80)
+        errors.otAfterWeekly = 'Must be between 1 and 80 hours.';
+      else if (otAfterWeekly.value > awardDefaults.otAfterWeekly)
+        errors.otAfterWeekly = `Cannot exceed award weekly OT threshold of ${awardDefaults.otAfterWeekly} hrs.`;
+      else if (otAfterWeekly.value < ordinaryPerWeek.value)
+        errors.otAfterWeekly = 'Weekly OT threshold cannot be below ordinary hours/week.';
+    }
+    // OT rates — must be >= award
+    if (otFirst2h.override) {
+      if (otFirst2h.value < 100 || otFirst2h.value > 400)
+        errors.otFirst2h = 'Rate must be between 100% and 400%.';
+      else if (otFirst2h.value < awardDefaults.otFirst2h)
+        errors.otFirst2h = `Cannot pay less than award rate of ${awardDefaults.otFirst2h}%.`;
+    }
+    if (otAfter2h.override) {
+      if (otAfter2h.value < 100 || otAfter2h.value > 400)
+        errors.otAfter2h = 'Rate must be between 100% and 400%.';
+      else if (otAfter2h.value < awardDefaults.otAfter2h)
+        errors.otAfter2h = `Cannot pay less than award rate of ${awardDefaults.otAfter2h}%.`;
+    }
+    // Loadings — must be >= award
+    const loadingCheck = (
+      key: string,
+      field: OverrideField<number>,
+      awardVal: number,
+      label: string
+    ) => {
+      if (!field.override) return;
+      if (field.value < 0 || field.value > 500) errors[key] = 'Must be between 0% and 500%.';
+      else if (field.value < awardVal)
+        errors[key] = `${label} cannot be less than award loading of ${awardVal}%.`;
+    };
+    loadingCheck('saturdayLoading', saturdayLoading, awardDefaults.saturdayLoading, 'Saturday loading');
+    loadingCheck('sundayLoading', sundayLoading, awardDefaults.sundayLoading, 'Sunday loading');
+    loadingCheck('phLoading', phLoading, awardDefaults.publicHolidayLoading, 'Public holiday loading');
+    loadingCheck('eveningLoading', eveningLoading, awardDefaults.eveningLoading, 'Evening loading');
+
+    return { errors, warnings, hasErrors: Object.values(errors).some(Boolean) };
+  }, [
+    awardDefaults, ordinaryPerWeek, ordinaryPerDay, rosterCycle, spanStart, spanEnd,
+    otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h,
+    saturdayLoading, sundayLoading, phLoading, eveningLoading,
+  ]);
+
   const handleSave = () => {
+    if (!position.trim()) {
+      toast.error('Select a position before saving.');
+      return;
+    }
+    if (validation.hasErrors) {
+      toast.error('Please fix the highlighted validation errors before saving.');
+      return;
+    }
     const updatedCondition: PayCondition = {
       id: payCondition?.id || `pay-${Date.now()}`,
       effectiveFrom: effectiveFrom.toISOString(),
