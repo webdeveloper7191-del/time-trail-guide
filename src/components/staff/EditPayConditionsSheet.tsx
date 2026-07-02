@@ -759,16 +759,24 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       <div className="space-y-1.5">
                         <Label className="text-xs">Custom hourly rate ($)<FieldInfo text="Must be equal to or greater than the award rate for BOOT compliance." /></Label>
                         <Input
-                          type="number" step="0.01"
-                          value={manualHourlyRate}
+                          type="number" step="0.01" min={0} required
+                          value={manualHourlyRate || ''}
+                          placeholder="e.g. 32.50"
+                          aria-invalid={!!rateErrors.manualHourlyRate}
+                          className={cn(rateErrors.manualHourlyRate && 'border-destructive focus-visible:ring-destructive')}
                           onChange={(e) => setManualHourlyRate(parseFloat(e.target.value) || 0)}
                         />
-                        {manualHourlyRate > 0 && manualHourlyRate < resolvedBaseRate && (
+                        {rateErrors.manualHourlyRate ? (
+                          <p className="text-[11px] text-destructive flex items-start gap-1">
+                            <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            {rateErrors.manualHourlyRate}
+                          </p>
+                        ) : manualHourlyRate > 0 && isAwardBased && manualHourlyRate < resolvedBaseRate ? (
                           <p className="text-[11px] text-destructive flex items-center gap-1">
                             <AlertTriangle className="h-3 w-3" />
                             Below award rate of ${resolvedBaseRate.toFixed(2)}/hr (BOOT fail).
                           </p>
-                        )}
+                        ) : null}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Superannuation %</Label>
