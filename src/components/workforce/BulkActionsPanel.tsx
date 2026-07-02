@@ -24,7 +24,7 @@ import {
   FileBadge, Percent, Lock, PencilLine,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { locations, departments } from '@/data/mockStaffData';
+import { locations, departments, mockStaff } from '@/data/mockStaffData';
 import { mockPositions } from '@/data/mockPositions';
 import { leaveTypeLabels, LeaveType } from '@/types/leaveAccrual';
 import { employmentStatusLabels, streamOptions, employmentTypeLabels, EmploymentStatus } from '@/types/staff';
