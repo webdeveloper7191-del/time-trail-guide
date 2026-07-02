@@ -940,19 +940,29 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
         {/* Footer */}
         <div className="sticky bottom-0 bg-background border-t px-6 py-3 flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
-            Effective hourly rate: <span className="font-semibold text-foreground">${effectiveHourlyRate.toFixed(2)}</span>
-            <span className="mx-2">·</span>
-            Ordinary hrs/wk: <span className="font-semibold text-foreground">{ordinaryPerWeek.value}</span>
+            {validation.hasErrors ? (
+              <span className="text-destructive flex items-center gap-1 font-medium">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {Object.values(validation.errors).filter(Boolean).length} validation issue(s) to fix
+              </span>
+            ) : (
+              <>
+                Effective hourly rate: <span className="font-semibold text-foreground">${effectiveHourlyRate.toFixed(2)}</span>
+                <span className="mx-2">·</span>
+                Ordinary hrs/wk: <span className="font-semibold text-foreground">{ordinaryPerWeek.value}</span>
+              </>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               <X className="h-4 w-4 mr-2" />Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={validation.hasErrors}>
               <Save className="h-4 w-4 mr-2" />Save changes
             </Button>
           </div>
         </div>
+
       </SheetContent>
     </Sheet>
   );
