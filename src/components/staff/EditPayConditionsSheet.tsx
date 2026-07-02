@@ -1068,6 +1068,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 </div>
               </AccordionContent>
             </AccordionItem>
+            )}
           </Accordion>
         </div>
 
