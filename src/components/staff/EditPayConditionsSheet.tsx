@@ -390,13 +390,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     // Roster cycle
     if (rosterCycle.override && (rosterCycle.value < 1 || rosterCycle.value > 8))
       errors.rosterCycle = 'Roster cycle must be 1–8 weeks.';
-    // Span times
-    if ((spanStart.override || spanEnd.override) && spanStart.value >= spanEnd.value)
-      errors.span = 'Span end must be after span start.';
-    if (spanStart.override && spanStart.value > awardDefaults.spanOfHoursStart)
-      warnings.spanStart = `Later than award span start (${awardDefaults.spanOfHoursStart}). Ordinary-time reduced.`;
-    if (spanEnd.override && spanEnd.value < awardDefaults.spanOfHoursEnd)
-      warnings.spanEnd = `Earlier than award span end (${awardDefaults.spanOfHoursEnd}). Ordinary-time reduced.`;
     // OT after daily
     if (otAfterDaily.override) {
       if (otAfterDaily.value < 1 || otAfterDaily.value > 16)
