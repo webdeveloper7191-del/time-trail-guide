@@ -646,36 +646,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Effective from<FieldInfo text="Date this pay condition set becomes active." /></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {format(effectiveFrom, 'PPP')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={effectiveFrom} onSelect={(d) => d && setEffectiveFrom(d)} initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Effective to (optional)<FieldInfo text="Optional end date. Leave blank for an ongoing condition." /></Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {effectiveTo ? format(effectiveTo, 'PPP') : 'No end date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={effectiveTo} onSelect={setEffectiveTo} initialFocus />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
               </AccordionContent>
             </AccordionItem>
 
