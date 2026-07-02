@@ -196,9 +196,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [rateSource, setRateSource] = useState<RateSource>('award_resolved');
   const [manualHourlyRate, setManualHourlyRate] = useState<number>(payCondition?.hourlyRate || 0);
   const [annualSalary, setAnnualSalary] = useState<number>(payCondition?.annualSalary || 0);
-  const [paidAsSalary, setPaidAsSalary] = useState<boolean>(payCondition?.payRateType === 'salary');
   const [payPeriod, setPayPeriod] = useState(payCondition?.payPeriod || 'fortnightly');
   const [superRate, setSuperRate] = useState<number>(11.5);
+  const [casualLoading, setCasualLoading] = useState<number>(25);
+  const [abn, setAbn] = useState<string>('');
 
   const awardDefaults = useMemo(
     () => resolveAwardDefaults(industryAward, classification),
