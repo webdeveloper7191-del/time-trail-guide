@@ -936,35 +936,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   </ResolvedField>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <ResolvedField
-                    label="Span of hours — start"
-                    value={spanStart.value}
-                    override={spanStart.override}
-                    onToggleOverride={(v) => setSpanStart({ ...spanStart, override: v })}                    info="Earliest ordinary time start. Work before this may attract early-morning penalties."
-                    error={validation.errors.span}
-                    warning={validation.warnings.spanStart}
-                  >
-                    <Input
-                      type="time"
-                      value={spanStart.value}
-                      onChange={(e) => setSpanStart({ override: true, value: e.target.value })}
-                    />
-                  </ResolvedField>
-                  <ResolvedField
-                    label="Span of hours — end"
-                    value={spanEnd.value}
-                    override={spanEnd.override}
-                    onToggleOverride={(v) => setSpanEnd({ ...spanEnd, override: v })}                    info="Latest ordinary time finish. Work after this may attract evening or night penalties."
-                    warning={validation.warnings.spanEnd}
-                  >
-                    <Input
-                      type="time"
-                      value={spanEnd.value}
-                      onChange={(e) => setSpanEnd({ override: true, value: e.target.value })}
-                    />
-                  </ResolvedField>
-                </div>
 
 
                 <Separator />
