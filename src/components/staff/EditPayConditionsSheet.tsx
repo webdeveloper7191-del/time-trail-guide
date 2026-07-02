@@ -762,6 +762,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={otAfterDaily.override}
                     onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}
+                    error={validation.errors.otAfterDaily}
+                    warning={validation.warnings.otAfterDaily}
                   >
                     <Input
                       type="number" step="0.25"
@@ -775,6 +777,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={otAfterWeekly.override}
                     onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}
+                    error={validation.errors.otAfterWeekly}
                   >
                     <Input
                       type="number" step="0.5"
@@ -787,6 +790,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${otFirst2h.value}%`}
                     override={otFirst2h.override}
                     onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}
+                    error={validation.errors.otFirst2h}
                   >
                     <Input
                       type="number"
@@ -799,6 +803,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${otAfter2h.value}%`}
                     override={otAfter2h.override}
                     onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}
+                    error={validation.errors.otAfter2h}
                   >
                     <Input
                       type="number"
@@ -807,6 +812,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     />
                   </ResolvedField>
                 </div>
+
 
                 <ResolvedField
                   label="Overtime × penalty interaction"
