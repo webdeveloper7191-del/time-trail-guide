@@ -528,6 +528,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
                 <Checkbox checked={employment.updateStatus}
                   onCheckedChange={v => setEmployment({ ...employment, updateStatus: !!v })} />
                 Employment Status
+                <InfoHint text={HINTS.status} />
               </label>
               <Select value={employment.status} disabled={!employment.updateStatus}
                 onValueChange={v => setEmployment({ ...employment, status: v as EmploymentStatus })}>
@@ -556,6 +557,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
                 <Checkbox checked={employment.updateStart}
                   onCheckedChange={v => setEmployment({ ...employment, updateStart: !!v })} />
                 Employment Start Date
+                <InfoHint text={HINTS.startDate} />
               </label>
               <Input type="date" value={employment.startDate} disabled={!employment.updateStart}
                 onChange={e => setEmployment({ ...employment, startDate: e.target.value })} />
@@ -568,6 +570,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
                 <Checkbox checked={employment.updateComment}
                   onCheckedChange={v => setEmployment({ ...employment, updateComment: !!v })} />
                 Internal Comment / Note
+                <InfoHint text={HINTS.comment} />
               </label>
               <Textarea rows={4} value={employment.comment} disabled={!employment.updateComment}
                 onChange={e => setEmployment({ ...employment, comment: e.target.value })}
@@ -629,7 +632,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
             </div>
             <div className="flex items-center justify-between rounded border border-border p-3 mt-2">
               <div>
-                <p className="text-sm font-medium">Allow split shifts</p>
+                <p className="text-sm font-medium flex items-center gap-1.5">Allow split shifts <InfoHint text={HINTS.allowSplitShifts} /></p>
                 <p className="text-xs text-muted-foreground">Multiple shifts in the same day with a gap.</p>
               </div>
               <Switch checked={stress.allowSplitShifts}
@@ -667,10 +670,12 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={email.ccPayroll} onCheckedChange={v => setEmail({ ...email, ccPayroll: !!v })} />
                   CC Payroll inbox
+                  <InfoHint text={HINTS.ccPayroll} />
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={email.requireAck} onCheckedChange={v => setEmail({ ...email, requireAck: !!v })} />
                   Require read acknowledgement
+                  <InfoHint text={HINTS.requireAck} />
                 </label>
               </div>
             </div>
