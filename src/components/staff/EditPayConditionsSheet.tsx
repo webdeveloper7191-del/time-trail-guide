@@ -90,6 +90,8 @@ function ResolvedField({
   onToggleOverride,
   children,
   hint,
+  error,
+  warning,
 }: {
   label: string;
   value: string | number;
@@ -98,6 +100,8 @@ function ResolvedField({
   onToggleOverride: (v: boolean) => void;
   children: React.ReactNode;
   hint?: string;
+  error?: string | null;
+  warning?: string | null;
 }) {
   return (
     <div className="space-y-1.5">
@@ -121,17 +125,32 @@ function ResolvedField({
         </div>
       </div>
       {override ? (
-        children
+        <div className={cn(error && '[&_input]:border-destructive [&_button]:border-destructive')}>
+          {children}
+        </div>
       ) : (
         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
           {value}
           {unit ? <span className="ml-1 text-xs">{unit}</span> : null}
         </div>
       )}
-      {hint ? <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p> : null}
+      {error ? (
+        <p className="text-[11px] text-destructive leading-snug flex items-start gap-1">
+          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          {error}
+        </p>
+      ) : warning ? (
+        <p className="text-[11px] text-amber-600 leading-snug flex items-start gap-1">
+          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+          {warning}
+        </p>
+      ) : hint ? (
+        <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p>
+      ) : null}
     </div>
   );
 }
+
 
 export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: EditPayConditionsSheetProps) {
   const payCondition = staff.currentPayCondition;
