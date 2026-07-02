@@ -122,30 +122,84 @@ export function StaffPersonalSection({ staff }: StaffPersonalSectionProps) {
                 </div>
               </div>
 
+            </div>
+          </div>
+
+          {/* Employment Details */}
+          <div className="card-material-elevated p-6">
+            <h3 className="section-header mb-5">Employment Details</h3>
+            <div className="space-y-5">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Staff ID</Label>
+                  <Input value={staff.employeeId || staff.id} readOnly className="bg-muted/20 border-border/50 h-10 font-mono text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employment Status *</Label>
+                  <Select value={staff.status}>
+                    <SelectTrigger className="bg-muted/20 border-border/50 h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(employmentStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Stream / Sector</Label>
+                  <Select value={staff.stream}>
+                    <SelectTrigger className="bg-muted/20 border-border/50 h-10">
+                      <SelectValue placeholder="Select stream" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {streamOptions.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employment Start Date</Label>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employment Start Date *</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      value={format(new Date(staff.employmentStartDate), 'dd-MM-yyyy')} 
-                      readOnly 
-                      className="bg-muted/20 border-border/50 pl-10 h-10" 
+                    <Input
+                      value={staff.employmentStartDate ? format(new Date(staff.employmentStartDate), 'dd-MM-yyyy') : ''}
+                      readOnly
+                      className="bg-muted/20 border-border/50 pl-10 h-10"
                     />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employment End Date</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      value={staff.employmentEndDate ? format(new Date(staff.employmentEndDate), 'dd-MM-yyyy') : ''} 
-                      placeholder="Employment end date"
-                      readOnly 
-                      className="bg-muted/20 border-border/50 pl-10 h-10" 
-                    />
+                {staff.status === 'terminated' && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employment End Date *</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={staff.employmentEndDate ? format(new Date(staff.employmentEndDate), 'dd-MM-yyyy') : ''}
+                        placeholder="Required for terminated staff"
+                        readOnly
+                        className="bg-muted/20 border-border/50 pl-10 h-10"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Internal Comment / Note</Label>
+                <Textarea
+                  value={staff.notes || ''}
+                  placeholder="Add internal notes about this staff member (not visible to the employee)"
+                  readOnly
+                  rows={4}
+                  className="bg-muted/20 border-border/50 resize-none"
+                />
+                <p className="text-xs text-muted-foreground">Visible only to admins and managers.</p>
               </div>
             </div>
           </div>
