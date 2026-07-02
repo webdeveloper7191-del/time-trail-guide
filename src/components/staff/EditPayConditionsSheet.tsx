@@ -803,6 +803,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                             {rateErrors.annualSalary}
                           </p>
                         )}
+                      </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Derived hourly equivalent</Label>
                         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
