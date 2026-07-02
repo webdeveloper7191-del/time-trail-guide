@@ -850,6 +850,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${saturdayLoading.value}%`}
                     override={saturdayLoading.override}
                     onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}
+                    error={validation.errors.saturdayLoading}
                   >
                     <Input
                       type="number"
@@ -862,6 +863,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${sundayLoading.value}%`}
                     override={sundayLoading.override}
                     onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}
+                    error={validation.errors.sundayLoading}
                   >
                     <Input
                       type="number"
@@ -874,6 +876,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${phLoading.value}%`}
                     override={phLoading.override}
                     onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}
+                    error={validation.errors.phLoading}
                   >
                     <Input
                       type="number"
@@ -886,6 +889,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={`${eveningLoading.value}%`}
                     override={eveningLoading.override}
                     onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}
+                    error={validation.errors.eveningLoading}
                   >
                     <Input
                       type="number"
@@ -893,6 +897,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       onChange={(e) => setEveningLoading({ override: true, value: parseFloat(e.target.value) || 0 })}
                     />
                   </ResolvedField>
+
                 </div>
 
                 <Separator />
