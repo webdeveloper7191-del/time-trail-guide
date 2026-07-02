@@ -17,6 +17,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion';
 import { SelectWithCreate } from '@/components/ui/select-with-create';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   MapPin, UserCog, Activity, Mail, DollarSign, CalendarDays,
   Archive, Clock, Send, FileClock, Download, Info, Plus, Trash2, LucideIcon, Briefcase,
