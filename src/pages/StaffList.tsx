@@ -406,6 +406,7 @@ export default function StaffList() {
             open={bulkAction !== null}
             action={bulkAction}
             selectedCount={selectedStaff.size}
+            selectedIds={Array.from(selectedStaff)}
             onClose={() => setBulkAction(null)}
             onConfirm={() => setSelectedStaff(new Set())}
           />
