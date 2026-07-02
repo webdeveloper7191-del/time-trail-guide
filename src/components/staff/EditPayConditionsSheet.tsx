@@ -326,7 +326,21 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Position</Label>
-                    <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Educator" />
+                    <SelectWithCreate
+                      value={position}
+                      onValueChange={setPosition}
+                      options={[
+                        ...mockPositions.map((p) => ({ value: p.title, label: p.title })),
+                        ...customPositions.map((p) => ({ value: p, label: p })),
+                      ]}
+                      onCreateNew={(newPos) => {
+                        setCustomPositions((prev) => [...prev, newPos]);
+                        setPosition(newPos);
+                        toast.success(`Position "${newPos}" added to master`);
+                      }}
+                      placeholder="Select position"
+                      createLabel="Create new position"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Employment type</Label>
