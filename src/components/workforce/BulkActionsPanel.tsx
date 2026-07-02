@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Label } from '@/components/ui/label';
@@ -13,13 +14,19 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from '@/components/ui/accordion';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
+import {
   MapPin, UserCog, Activity, Mail, DollarSign, CalendarDays,
   Archive, Clock, Send, FileClock, Download, Info, Plus, Trash2, LucideIcon, Briefcase,
+  FileBadge, Percent, Lock, PencilLine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { locations, departments } from '@/data/mockStaffData';
+import { mockPositions } from '@/data/mockPositions';
 import { leaveTypeLabels, LeaveType } from '@/types/leaveAccrual';
-import { employmentStatusLabels, streamOptions, EmploymentStatus } from '@/types/staff';
+import { employmentStatusLabels, streamOptions, employmentTypeLabels, EmploymentStatus } from '@/types/staff';
 
 export type BulkActionKey =
   | 'add-locations'
@@ -65,7 +72,7 @@ export const bulkActionConfig: Record<BulkActionKey, Config> = {
     title: 'Set Employment Details',
     icon: Briefcase,
     explanation:
-      'Update core employment metadata for the selected team members — status, stream/sector, start/end dates, and an internal comment. Use this to activate onboarded staff, terminate leavers, or align staff to an award stream in bulk.',
+      'Update core employment metadata for the selected team members — status, start/end dates, and an internal comment. Use this to activate onboarded staff, terminate leavers or apply a common start date in bulk.',
     helper: 'End Date is required when Status is set to Terminated. Blank fields are ignored (existing values are preserved).',
     ctaLabel: 'Apply changes',
   },
@@ -197,25 +204,43 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
     requireAck: false,
   });
 
-  // Pay conditions
+  // Pay conditions — matches EditPayConditionsSheet 4-section structure
+  const [customPositions, setCustomPositions] = useState<string[]>([]);
   const [pay, setPay] = useState({
-    employmentType: 'permanent_full_time',
-    basis: 'hourly',
-    baseRate: '',
-    salaryAnnual: '',
+    // Section 1 — Employment basis
+    position: '',
+    employmentType: 'full_time',
+    fte: '1',
+    guaranteedMinHours: '',
+    casualLoading: '25',
+    abn: '',
+    payPeriod: 'fortnightly',
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    // Section 2 — Instrument & classification
+    instrumentType: 'modern_award',
     award: '',
     classification: '',
+    stream: '',
+    rateSource: 'award_resolved',
+    baseRate: '',
+    salaryAnnual: '',
+    superRate: '11.5',
+    // Section 3 — Ordinary hours & overtime
+    ordinaryHoursPerDay: '8',
+    ordinaryHoursPerWeek: '38',
+    otAfterHoursPerDay: '8',
+    otAfterHoursPerWeek: '38',
+    otRate1: '1.5',
+    otRate2: '2.0',
+    // Section 4 — Loadings
     saturdayLoading: '1.25',
     sundayLoading: '1.75',
     publicHolidayLoading: '2.50',
     eveningLoading: '1.15',
-    otAfterHoursPerDay: '8',
-    otRate1: '1.5',
-    otRate2: '2.0',
-    otAfterHoursPerWeek: '38',
-    superRate: '11.5',
-    effectiveDate: new Date().toISOString().slice(0, 10),
   });
+  // Per-field opt-in flags — only ticked fields get written to staff records
+  const [payFlags, setPayFlags] = useState<Record<string, boolean>>({});
+  const togglePayFlag = (k: string) => setPayFlags(p => ({ ...p, [k]: !p[k] }));
   const [allowances, setAllowances] = useState<{ name: string; amount: string; unit: string }[]>([
     { name: 'Meal Allowance', amount: '15.00', unit: 'per_shift' },
   ]);
@@ -250,13 +275,11 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
   // Employment details
   const [employment, setEmployment] = useState<{
     updateStatus: boolean; status: EmploymentStatus;
-    updateStream: boolean; stream: string;
     updateStart: boolean; startDate: string;
     endDate: string;
     updateComment: boolean; comment: string;
   }>({
     updateStatus: false, status: 'active',
-    updateStream: false, stream: '',
     updateStart: false, startDate: '',
     endDate: '',
     updateComment: false, comment: '',
@@ -436,22 +459,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
               )}
             </div>
 
-            {/* Stream */}
-            <div className="rounded border border-border p-3 space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                <Checkbox checked={employment.updateStream}
-                  onCheckedChange={v => setEmployment({ ...employment, updateStream: !!v })} />
-                Stream / Sector
-              </label>
-              <Select value={employment.stream} disabled={!employment.updateStream}
-                onValueChange={v => setEmployment({ ...employment, stream: v })}>
-                <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
-                <SelectContent>
-                  {streamOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Drives award grouping and classification defaults (e.g. SCHADS, Nurses, Aged Care).</p>
-            </div>
+            {/* Stream/Sector moved to Pay Conditions (Section 2 — Instrument & classification) */}
 
             {/* Start date */}
             <div className="rounded border border-border p-3 space-y-2">
@@ -580,160 +588,329 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
           </FormSection>
         )}
 
-        {action === 'set-pay-rates' && (
-          <>
-            <FormSection title="Employment & base pay">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Employment type</Label>
-                  <Select value={pay.employmentType} onValueChange={v => setPay({ ...pay, employmentType: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="permanent_full_time">Permanent — Full time</SelectItem>
-                      <SelectItem value="permanent_part_time">Permanent — Part time</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                      <SelectItem value="fixed_term">Fixed term</SelectItem>
-                      <SelectItem value="agency">Agency</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Pay basis</Label>
-                  <Select value={pay.basis} onValueChange={v => setPay({ ...pay, basis: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hourly">Hourly</SelectItem>
-                      <SelectItem value="salary">Annual salary</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {pay.basis === 'hourly' ? (
-                  <div>
-                    <Label>Base hourly rate ($)</Label>
-                    <Input type="number" step="0.01" value={pay.baseRate}
-                      onChange={e => setPay({ ...pay, baseRate: e.target.value })} placeholder="e.g. 32.50" />
-                  </div>
-                ) : (
-                  <div>
-                    <Label>Annual salary ($)</Label>
-                    <Input type="number" step="0.01" value={pay.salaryAnnual}
-                      onChange={e => setPay({ ...pay, salaryAnnual: e.target.value })} placeholder="e.g. 78000" />
-                  </div>
+        {action === 'set-pay-rates' && (() => {
+          const isAwardBased = pay.instrumentType === 'modern_award' || pay.instrumentType === 'eba'
+            || pay.instrumentType === 'ifa' || pay.instrumentType === 'over_award';
+          const anyFlag = Object.values(payFlags).some(Boolean);
+
+          // Field wrapper — opt-in checkbox drives whether change is applied in bulk
+          const Field = ({ k, label, hint, children, span = 1 }: {
+            k: string; label: string; hint?: string; children: React.ReactNode; span?: 1 | 2;
+          }) => (
+            <div className={cn('space-y-1.5', span === 2 && 'col-span-2')}>
+              <label className="flex items-center gap-2 text-xs font-medium">
+                <Checkbox checked={!!payFlags[k]} onCheckedChange={() => togglePayFlag(k)} />
+                <span className={payFlags[k] ? '' : 'text-muted-foreground'}>{label}</span>
+              </label>
+              <div className={payFlags[k] ? '' : 'opacity-50 pointer-events-none'}>{children}</div>
+              {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+            </div>
+          );
+
+          return (
+            <>
+              <div className="rounded-md bg-muted/30 border border-border/60 p-2.5 text-[11px] text-muted-foreground flex gap-2">
+                <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                Tick only the fields you want to overwrite. Unticked fields are preserved on every selected team member.
+                {!anyFlag && <span className="text-amber-600 font-medium">No fields selected yet.</span>}
+              </div>
+
+              <Accordion type="multiple" defaultValue={['s1', 's2']} className="space-y-2">
+
+                {/* SECTION 1 — Employment basis */}
+                <AccordionItem value="s1" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      1. Employment basis
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field k="position" label="Position">
+                        <SelectWithCreate
+                          value={pay.position}
+                          onValueChange={(v) => setPay({ ...pay, position: v })}
+                          options={[
+                            ...mockPositions.map((p) => ({ value: p.title, label: p.title })),
+                            ...customPositions.map((p) => ({ value: p, label: p })),
+                          ]}
+                          onCreateNew={(np) => { setCustomPositions((prev) => [...prev, np]); setPay({ ...pay, position: np }); }}
+                          placeholder="Select position"
+                          createLabel="Create new position"
+                        />
+                      </Field>
+                      <Field k="employmentType" label="Employment type">
+                        <Select value={pay.employmentType} onValueChange={(v) => setPay({ ...pay, employmentType: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(employmentTypeLabels).map(([k, l]) => (
+                              <SelectItem key={k} value={k}>{l}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      {pay.employmentType !== 'contractor' && (
+                        <Field k="fte" label="FTE" hint="1.0 = full time. 0.5 = 50% of ordinary hours.">
+                          <Input type="number" step="0.05" min={0} max={1} value={pay.fte}
+                            onChange={(e) => setPay({ ...pay, fte: e.target.value })} />
+                        </Field>
+                      )}
+                      {(pay.employmentType === 'part_time' || pay.employmentType === 'full_time') && (
+                        <Field k="guaranteedMinHours" label="Guaranteed min hours / week">
+                          <Input type="number" step="0.5" value={pay.guaranteedMinHours}
+                            onChange={(e) => setPay({ ...pay, guaranteedMinHours: e.target.value })} />
+                        </Field>
+                      )}
+                      {pay.employmentType === 'casual' && (
+                        <Field k="casualLoading" label="Casual loading %">
+                          <Input type="number" step="0.5" value={pay.casualLoading}
+                            onChange={(e) => setPay({ ...pay, casualLoading: e.target.value })} />
+                        </Field>
+                      )}
+                      {pay.employmentType === 'contractor' && (
+                        <Field k="abn" label="ABN">
+                          <Input value={pay.abn} onChange={(e) => setPay({ ...pay, abn: e.target.value })} placeholder="11 222 333 444" />
+                        </Field>
+                      )}
+                      <Field k="payPeriod" label="Pay period">
+                        <Select value={pay.payPeriod} onValueChange={(v) => setPay({ ...pay, payPeriod: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      <Field k="effectiveDate" label="Effective from">
+                        <Input type="date" value={pay.effectiveDate}
+                          onChange={(e) => setPay({ ...pay, effectiveDate: e.target.value })} />
+                      </Field>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* SECTION 2 — Industrial instrument & classification */}
+                <AccordionItem value="s2" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <FileBadge className="h-4 w-4 text-muted-foreground" />
+                      2. Industrial instrument & classification
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field k="instrumentType" label="Instrument type">
+                        <Select value={pay.instrumentType} onValueChange={(v) => setPay({ ...pay, instrumentType: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="modern_award">Modern Award</SelectItem>
+                            <SelectItem value="eba">Enterprise Agreement (EBA)</SelectItem>
+                            <SelectItem value="ifa">Individual Flexibility Agreement</SelectItem>
+                            <SelectItem value="over_award">Over-award</SelectItem>
+                            <SelectItem value="custom_hourly">Custom hourly rate</SelectItem>
+                            <SelectItem value="annualised_salary">Annualised salary</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      {isAwardBased && (
+                        <Field k="award" label="Industry award">
+                          <Input value={pay.award} onChange={(e) => setPay({ ...pay, award: e.target.value })} placeholder="e.g. MA000120" />
+                        </Field>
+                      )}
+                      {isAwardBased && (
+                        <Field k="classification" label="Classification">
+                          <Select value={pay.classification} onValueChange={(v) => setPay({ ...pay, classification: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
+                              <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
+                              <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
+                              <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
+                              <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
+                              <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                      {isAwardBased && (
+                        <Field k="stream" label="Stream / Sector" hint="Drives award grouping and classification defaults.">
+                          <Select value={pay.stream} onValueChange={(v) => setPay({ ...pay, stream: v })}>
+                            <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
+                            <SelectContent>
+                              {streamOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+                      )}
+                    </div>
+
+                    <Separator />
+
+                    <Field k="rateSource" label="Rate source" span={2}>
+                      <div className="grid grid-cols-3 gap-2">
+                        {([
+                          { id: 'award_resolved', icon: Lock, title: 'Award-resolved', desc: 'Uses rate from classification.' },
+                          { id: 'manual_hourly', icon: PencilLine, title: 'Custom hourly', desc: 'Set ordinary-time rate directly.' },
+                          { id: 'annualised_salary', icon: DollarSign, title: 'Annualised salary', desc: 'Salary divided across ordinary hours.' },
+                        ] as const).map((opt) => {
+                          const IconC = opt.icon;
+                          const on = pay.rateSource === opt.id;
+                          return (
+                            <button key={opt.id} type="button"
+                              onClick={() => setPay({ ...pay, rateSource: opt.id })}
+                              className={cn('text-left rounded-md border p-2.5 transition-colors',
+                                on ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40')}>
+                              <div className="flex items-center gap-1.5 text-xs font-medium mb-1">
+                                <IconC className="h-3.5 w-3.5" />{opt.title}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-tight">{opt.desc}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {pay.rateSource === 'manual_hourly' && (
+                        <Field k="baseRate" label="Base hourly rate ($)">
+                          <Input type="number" step="0.01" value={pay.baseRate}
+                            onChange={(e) => setPay({ ...pay, baseRate: e.target.value })} placeholder="e.g. 32.50" />
+                        </Field>
+                      )}
+                      {pay.rateSource === 'annualised_salary' && (
+                        <Field k="salaryAnnual" label="Annual salary ($)">
+                          <Input type="number" step="0.01" value={pay.salaryAnnual}
+                            onChange={(e) => setPay({ ...pay, salaryAnnual: e.target.value })} placeholder="e.g. 78000" />
+                        </Field>
+                      )}
+                      <Field k="superRate" label="Superannuation %">
+                        <Input type="number" step="0.1" value={pay.superRate}
+                          onChange={(e) => setPay({ ...pay, superRate: e.target.value })} />
+                      </Field>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* SECTION 3 — Ordinary hours & overtime */}
+                {pay.employmentType !== 'contractor' && (
+                  <AccordionItem value="s3" className="border rounded-lg px-4">
+                    <AccordionTrigger className="hover:no-underline py-3">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        3. Ordinary hours & overtime
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field k="ordinaryHoursPerWeek" label="Ordinary hours / week">
+                          <Input type="number" step="0.5" value={pay.ordinaryHoursPerWeek}
+                            onChange={(e) => setPay({ ...pay, ordinaryHoursPerWeek: e.target.value })} />
+                        </Field>
+                        <Field k="ordinaryHoursPerDay" label="Ordinary hours / day">
+                          <Input type="number" step="0.5" value={pay.ordinaryHoursPerDay}
+                            onChange={(e) => setPay({ ...pay, ordinaryHoursPerDay: e.target.value })} />
+                        </Field>
+                        <Field k="otAfterHoursPerDay" label="OT after hrs / day">
+                          <Input type="number" step="0.5" value={pay.otAfterHoursPerDay}
+                            onChange={(e) => setPay({ ...pay, otAfterHoursPerDay: e.target.value })} />
+                        </Field>
+                        <Field k="otAfterHoursPerWeek" label="OT after hrs / week">
+                          <Input type="number" step="0.5" value={pay.otAfterHoursPerWeek}
+                            onChange={(e) => setPay({ ...pay, otAfterHoursPerWeek: e.target.value })} />
+                        </Field>
+                        <Field k="otRate1" label="First tier OT multiplier">
+                          <Input type="number" step="0.01" value={pay.otRate1}
+                            onChange={(e) => setPay({ ...pay, otRate1: e.target.value })} />
+                        </Field>
+                        <Field k="otRate2" label="Second tier OT multiplier">
+                          <Input type="number" step="0.01" value={pay.otRate2}
+                            onChange={(e) => setPay({ ...pay, otRate2: e.target.value })} />
+                        </Field>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 )}
-                <div>
-                  <Label>Superannuation %</Label>
-                  <Input type="number" step="0.1" value={pay.superRate}
-                    onChange={e => setPay({ ...pay, superRate: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Award</Label>
-                  <Input value={pay.award} onChange={e => setPay({ ...pay, award: e.target.value })}
-                    placeholder="e.g. MA000120" />
-                </div>
-                <div>
-                  <Label>Classification / level</Label>
-                  <Input value={pay.classification} onChange={e => setPay({ ...pay, classification: e.target.value })}
-                    placeholder="e.g. Level 3.2" />
-                </div>
-                <div>
-                  <Label>Effective from</Label>
-                  <Input type="date" value={pay.effectiveDate}
-                    onChange={e => setPay({ ...pay, effectiveDate: e.target.value })} />
-                </div>
-              </div>
-            </FormSection>
 
-            <FormSection title="Penalty loadings (multiplier)">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Saturday</Label>
-                  <Input type="number" step="0.01" value={pay.saturdayLoading}
-                    onChange={e => setPay({ ...pay, saturdayLoading: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Sunday</Label>
-                  <Input type="number" step="0.01" value={pay.sundayLoading}
-                    onChange={e => setPay({ ...pay, sundayLoading: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Public holiday</Label>
-                  <Input type="number" step="0.01" value={pay.publicHolidayLoading}
-                    onChange={e => setPay({ ...pay, publicHolidayLoading: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Evening / afternoon</Label>
-                  <Input type="number" step="0.01" value={pay.eveningLoading}
-                    onChange={e => setPay({ ...pay, eveningLoading: e.target.value })} />
-                </div>
-              </div>
-            </FormSection>
+                {/* SECTION 4 — Loadings & allowances */}
+                {pay.employmentType !== 'contractor' && (
+                  <AccordionItem value="s4" className="border rounded-lg px-4">
+                    <AccordionTrigger className="hover:no-underline py-3">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Percent className="h-4 w-4 text-muted-foreground" />
+                        4. Loadings & allowances
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Field k="saturdayLoading" label="Saturday multiplier">
+                          <Input type="number" step="0.01" value={pay.saturdayLoading}
+                            onChange={(e) => setPay({ ...pay, saturdayLoading: e.target.value })} />
+                        </Field>
+                        <Field k="sundayLoading" label="Sunday multiplier">
+                          <Input type="number" step="0.01" value={pay.sundayLoading}
+                            onChange={(e) => setPay({ ...pay, sundayLoading: e.target.value })} />
+                        </Field>
+                        <Field k="publicHolidayLoading" label="Public holiday multiplier">
+                          <Input type="number" step="0.01" value={pay.publicHolidayLoading}
+                            onChange={(e) => setPay({ ...pay, publicHolidayLoading: e.target.value })} />
+                        </Field>
+                        <Field k="eveningLoading" label="Evening / afternoon multiplier">
+                          <Input type="number" step="0.01" value={pay.eveningLoading}
+                            onChange={(e) => setPay({ ...pay, eveningLoading: e.target.value })} />
+                        </Field>
+                      </div>
 
-            <FormSection title="Overtime">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>OT after hrs / day</Label>
-                  <Input type="number" step="0.5" value={pay.otAfterHoursPerDay}
-                    onChange={e => setPay({ ...pay, otAfterHoursPerDay: e.target.value })} />
-                </div>
-                <div>
-                  <Label>OT after hrs / week</Label>
-                  <Input type="number" step="0.5" value={pay.otAfterHoursPerWeek}
-                    onChange={e => setPay({ ...pay, otAfterHoursPerWeek: e.target.value })} />
-                </div>
-                <div>
-                  <Label>First tier multiplier</Label>
-                  <Input type="number" step="0.01" value={pay.otRate1}
-                    onChange={e => setPay({ ...pay, otRate1: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Second tier multiplier</Label>
-                  <Input type="number" step="0.01" value={pay.otRate2}
-                    onChange={e => setPay({ ...pay, otRate2: e.target.value })} />
-                </div>
-              </div>
-            </FormSection>
+                      <Separator />
 
-            <FormSection title="Allowances">
-              <div className="space-y-2">
-                {allowances.map((a, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_120px_140px_36px] gap-2 items-end">
-                    <div>
-                      {idx === 0 && <Label>Name</Label>}
-                      <Input value={a.name}
-                        onChange={e => setAllowances(allowances.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
-                    </div>
-                    <div>
-                      {idx === 0 && <Label>Amount ($)</Label>}
-                      <Input type="number" step="0.01" value={a.amount}
-                        onChange={e => setAllowances(allowances.map((x, i) => i === idx ? { ...x, amount: e.target.value } : x))} />
-                    </div>
-                    <div>
-                      {idx === 0 && <Label>Unit</Label>}
-                      <Select value={a.unit}
-                        onValueChange={v => setAllowances(allowances.map((x, i) => i === idx ? { ...x, unit: v } : x))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="per_hour">per hour</SelectItem>
-                          <SelectItem value="per_shift">per shift</SelectItem>
-                          <SelectItem value="per_day">per day</SelectItem>
-                          <SelectItem value="per_week">per week</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button size="icon" variant="ghost"
-                      onClick={() => setAllowances(allowances.filter((_, i) => i !== idx))}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm"
-                  onClick={() => setAllowances([...allowances, { name: '', amount: '', unit: 'per_shift' }])}>
-                  <Plus className="h-4 w-4 mr-1" /> Add allowance
-                </Button>
-              </div>
-            </FormSection>
-          </>
-        )}
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-xs font-medium">
+                          <Checkbox checked={!!payFlags.allowances} onCheckedChange={() => togglePayFlag('allowances')} />
+                          <span className={payFlags.allowances ? '' : 'text-muted-foreground'}>Allowances</span>
+                        </label>
+                        <div className={payFlags.allowances ? 'space-y-2' : 'space-y-2 opacity-50 pointer-events-none'}>
+                          {allowances.map((a, idx) => (
+                            <div key={idx} className="grid grid-cols-[1fr_120px_140px_36px] gap-2 items-end">
+                              <div>{idx === 0 && <Label className="text-xs">Name</Label>}
+                                <Input value={a.name}
+                                  onChange={(e) => setAllowances(allowances.map((x, i) => i === idx ? { ...x, name: e.target.value } : x))} />
+                              </div>
+                              <div>{idx === 0 && <Label className="text-xs">Amount ($)</Label>}
+                                <Input type="number" step="0.01" value={a.amount}
+                                  onChange={(e) => setAllowances(allowances.map((x, i) => i === idx ? { ...x, amount: e.target.value } : x))} />
+                              </div>
+                              <div>{idx === 0 && <Label className="text-xs">Unit</Label>}
+                                <Select value={a.unit}
+                                  onValueChange={(v) => setAllowances(allowances.map((x, i) => i === idx ? { ...x, unit: v } : x))}>
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="per_hour">per hour</SelectItem>
+                                    <SelectItem value="per_shift">per shift</SelectItem>
+                                    <SelectItem value="per_day">per day</SelectItem>
+                                    <SelectItem value="per_week">per week</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Button size="icon" variant="ghost"
+                                onClick={() => setAllowances(allowances.filter((_, i) => i !== idx))}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button variant="outline" size="sm"
+                            onClick={() => setAllowances([...allowances, { name: '', amount: '', unit: 'per_shift' }])}>
+                            <Plus className="h-4 w-4 mr-1" /> Add allowance
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+            </>
+          );
+        })()}
 
         {action === 'set-leave-balance' && (
           <FormSection title="Opening balances">
