@@ -172,6 +172,7 @@ interface BulkActionsPanelProps {
 
 export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfirm }: BulkActionsPanelProps) {
   // Simple shared state
+  const [locationAreas, setLocationAreas] = useState<Record<string, string[]>>({});
   const [locationIds, setLocationIds] = useState<string[]>([]);
   const [role, setRole] = useState('');
   const [exportFormat, setExportFormat] = useState('csv');
