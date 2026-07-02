@@ -356,32 +356,43 @@ export default function StaffList() {
           {selectedStaff.size > 0 && (
             <Card className="border-primary bg-primary/5">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3">
                     <Badge variant="default" className="px-3 py-1">
                       {selectedStaff.size} selected
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      Select action to apply to selected staff
+                      Choose a bulk action to apply
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('email')}>
-                      <Send className="h-4 w-4 mr-2" />
-                      Send Email
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('export')}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleBulkAction('deactivate')}>
-                      <UserMinus className="h-4 w-4 mr-2" />
-                      Deactivate
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleBulkAction('delete')}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm">
+                          Bulk actions
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        {(Object.keys(bulkActionConfig) as BulkActionKey[]).map((key, idx) => {
+                          const cfg = bulkActionConfig[key];
+                          const Icon = cfg.icon;
+                          const needsSeparator = key === 'archive' || key === 'export';
+                          return (
+                            <div key={key}>
+                              {needsSeparator && idx > 0 && <DropdownMenuSeparator />}
+                              <DropdownMenuItem
+                                onClick={() => setBulkAction(key)}
+                                className={cfg.destructive ? 'text-destructive focus:text-destructive' : ''}
+                              >
+                                <Icon className="h-4 w-4 mr-2" />
+                                {cfg.title}
+                              </DropdownMenuItem>
+                            </div>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button variant="ghost" size="sm" onClick={() => setSelectedStaff(new Set())}>
                       Clear
                     </Button>
@@ -390,6 +401,15 @@ export default function StaffList() {
               </CardContent>
             </Card>
           )}
+
+          <BulkActionsPanel
+            open={bulkAction !== null}
+            action={bulkAction}
+            selectedCount={selectedStaff.size}
+            onClose={() => setBulkAction(null)}
+            onConfirm={() => setSelectedStaff(new Set())}
+          />
+
 
           {/* Staff Table */}
           <Card>
