@@ -323,50 +323,53 @@ function shiftPayPeriod(anchor: Date, frequency: PayFrequency, direction: 1 | -1
   return direction > 0 ? addWeeks(anchor, 2) : subWeeks(anchor, 2);
 }
 
-function PayPeriodSelector({
+function PayPeriodDisplay({
   frequency,
   period,
-  onPrev,
-  onNext,
-  onToday,
 }: {
   frequency: PayFrequency;
   period: PayPeriodRange;
-  onPrev: () => void;
-  onNext: () => void;
-  onToday: () => void;
 }) {
+  const startLabel = format(period.start, 'EEE, MMM d');
+  const endLabel = format(period.end, 'EEE, MMM d, yyyy');
+  const totalDays = Math.round((period.end.getTime() - period.start.getTime()) / 86400000) + 1;
+
   return (
-    <Card className="border-border/50">
-      <CardContent className="p-3 flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 mr-2">
-          <Calendar className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pay period</span>
-        </div>
-        <Badge variant="secondary" className="h-7 px-2.5 text-xs font-medium">
-          {PAY_FREQUENCY_LABEL[frequency]}
-        </Badge>
-        <div className="flex items-center gap-1 ml-1">
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onPrev} aria-label="Previous period">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="px-3 h-8 inline-flex items-center rounded-md border border-border/60 bg-muted/30 text-sm font-medium min-w-[200px] justify-center">
-            {period.label}
+    <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
+      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+      <div className="relative flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary ring-1 ring-primary/20">
+            <Calendar className="h-5 w-5" />
           </div>
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={onNext} aria-label="Next period">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary/80">
+                Current pay period
+              </span>
+              <Badge variant="secondary" className="h-5 px-2 text-[10px] font-medium">
+                {PAY_FREQUENCY_LABEL[frequency]}
+              </Badge>
+            </div>
+            <div className="text-sm font-semibold tracking-tight leading-tight">
+              {startLabel} <span className="text-muted-foreground font-normal">→</span> {endLabel}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {totalDays} days · Fixed by your organisation · Locked
+            </div>
+          </div>
         </div>
-        <Button variant="ghost" size="sm" className="h-8 text-xs ml-1" onClick={onToday}>
-          Today
-        </Button>
-        <span className="text-[11px] text-muted-foreground ml-auto">
-          Set by your organisation
-        </span>
-      </CardContent>
-    </Card>
+        <div className="hidden sm:flex flex-col items-end gap-0.5">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Ends</span>
+          <span className="text-lg font-bold tracking-tight tabular-nums">
+            {format(period.end, 'd MMM')}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
+
 
 // ============================================================
 // My Timesheets — full view with clock in/out, add entry, tabs
