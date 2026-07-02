@@ -153,6 +153,15 @@ const DAYS: { key: string; label: string }[] = [
 
 const AREAS = ['Room A', 'Room B', 'Room C', 'Kitchen', 'Outdoor Area', 'Reception'];
 
+// Location -> areas tree (mock — replace with tenant data)
+const LOCATION_AREAS: Record<string, string[]> = {
+  'Melbourne CBD': ['Nursery', 'Toddler', 'Preschool', 'Kitchen'],
+  'South Yarra': ['Room A', 'Room B', 'Outdoor Area'],
+  'Prahran': ['Nursery', 'Kindy', 'Reception'],
+  'Richmond': ['Room A', 'Room B', 'Room C', 'Kitchen'],
+  'Fitzroy': ['Toddler', 'Preschool', 'Outdoor Area'],
+};
+
 interface BulkActionsPanelProps {
   open: boolean;
   action: BulkActionKey | null;
