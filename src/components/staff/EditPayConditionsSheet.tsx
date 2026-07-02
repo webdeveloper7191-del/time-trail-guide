@@ -790,11 +790,19 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       <div className="space-y-1.5">
                         <Label className="text-xs">Annualised salary ($)<FieldInfo text="Total annual base salary, exclusive of super." /></Label>
                         <Input
-                          type="number"
+                          type="number" step="1" min={0} required
                           value={annualSalary || ''}
+                          placeholder="e.g. 75000"
+                          aria-invalid={!!rateErrors.annualSalary}
+                          className={cn(rateErrors.annualSalary && 'border-destructive focus-visible:ring-destructive')}
                           onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
                         />
-                      </div>
+                        {rateErrors.annualSalary && (
+                          <p className="text-[11px] text-destructive flex items-start gap-1">
+                            <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            {rateErrors.annualSalary}
+                          </p>
+                        )}
                       <div className="space-y-1.5">
                         <Label className="text-xs">Derived hourly equivalent</Label>
                         <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
