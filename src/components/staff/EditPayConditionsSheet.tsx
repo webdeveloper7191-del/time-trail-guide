@@ -433,6 +433,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       toast.error('Please fix the highlighted validation errors before saving.');
       return;
     }
+    if (Object.keys(rateErrors).length > 0) {
+      toast.error(Object.values(rateErrors)[0] as string);
+      return;
+    }
     const updatedCondition: PayCondition = {
       id: payCondition?.id || `pay-${Date.now()}`,
       effectiveFrom: effectiveFrom.toISOString(),
