@@ -576,14 +576,12 @@ function AddTimesheetEntryDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const payFrequency = BUSINESS_PAY_CONFIG.frequency;
-  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
+  const anchorDate = new Date();
   const period = useMemo(
     () => getPayPeriodRange(anchorDate, payFrequency),
-    [anchorDate, payFrequency]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [payFrequency]
   );
-  const goPrev = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, -1));
-  const goNext = () => setAnchorDate(d => shiftPayPeriod(d, payFrequency, 1));
-  const goToday = () => setAnchorDate(new Date());
   const [entries, setEntries] = useState<EntryDraft[]>([newEntry()]);
   const [exceptionEntryId, setExceptionEntryId] = useState<string | null>(null);
 
