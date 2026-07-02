@@ -487,30 +487,70 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">FTE<FieldInfo text="Full Time Equivalent. 1.0 = full time. 0.5 = 50% of ordinary hours." /></Label>
-                    <Input
-                      type="number" step="0.05" min={0} max={1}
-                      value={fte}
-                      onChange={(e) => setFte(parseFloat(e.target.value) || 0)}
-                    />
+                {/* Employment type context banner */}
+                {employmentType === 'casual' && (
+                  <div className="rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-2.5 text-[11px] text-amber-900 dark:text-amber-200 flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Casual employees receive a casual loading in lieu of paid leave. No guaranteed minimum weekly hours apply.
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">
-                      Guaranteed min hours / week
-                      {employmentType === 'part_time' && (
-                        <span className="ml-1 text-[10px] text-amber-600">required</span>
-                      )}
-                    </Label>
-                    <Input
-                      type="number" step="0.5"
-                      value={guaranteedMinHours}
-                      onChange={(e) => setGuaranteedMinHours(parseFloat(e.target.value) || 0)}
-                    />
+                )}
+                {employmentType === 'part_time' && (
+                  <div className="rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-2.5 text-[11px] text-blue-900 dark:text-blue-200 flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Part-time employees require agreed guaranteed hours per week. Additional hours may attract overtime.
                   </div>
+                )}
+                {employmentType === 'contractor' && (
+                  <div className="rounded-md bg-muted/40 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    Contractors are engaged under a commercial arrangement — no award, overtime, loadings or leave apply.
+                  </div>
+                )}
+
+                <div className={cn('grid gap-4', employmentType === 'contractor' ? 'grid-cols-2' : 'grid-cols-3')}>
+                  {employmentType !== 'contractor' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">FTE<FieldInfo text="Full Time Equivalent. 1.0 = full time. 0.5 = 50% of ordinary hours." /></Label>
+                      <Input
+                        type="number" step="0.05" min={0} max={1}
+                        value={fte}
+                        onChange={(e) => setFte(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  {(employmentType === 'part_time' || employmentType === 'full_time') && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">
+                        Guaranteed min hours / week
+                        {employmentType === 'part_time' && (
+                          <span className="ml-1 text-[10px] text-amber-600">required</span>
+                        )}
+                      </Label>
+                      <Input
+                        type="number" step="0.5"
+                        value={guaranteedMinHours}
+                        onChange={(e) => setGuaranteedMinHours(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  {employmentType === 'casual' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Casual loading %<FieldInfo text="Loading paid in lieu of leave entitlements. Typically 25% under most modern awards." /></Label>
+                      <Input
+                        type="number" step="0.5"
+                        value={casualLoading}
+                        onChange={(e) => setCasualLoading(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  )}
+                  {employmentType === 'contractor' && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">ABN<FieldInfo text="Australian Business Number for the contracting entity." /></Label>
+                      <Input value={abn} onChange={(e) => setAbn(e.target.value)} placeholder="11 222 333 444" />
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Pay period<FieldInfo text="How often the employee is paid. This is usually fixed for the business." /></Label>
+                    <Label className="text-xs">Pay period<FieldInfo text="How often the employee is paid." /></Label>
                     <Select value={payPeriod} onValueChange={(v) => setPayPeriod(v as any)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
