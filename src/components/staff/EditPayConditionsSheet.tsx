@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
 import {
   DollarSign,
   Calendar as CalendarIcon,
@@ -23,10 +24,12 @@ import {
   Lock,
   PencilLine,
   Info,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { mockPositions } from '@/data/mockPositions';
 
 interface EditPayConditionsSheetProps {
   open: boolean;
