@@ -34,6 +34,7 @@ import { StaffAwardRuleSection } from './StaffAwardRuleSection';
 import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
 import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
+import { EditPayConditionsSheet } from './EditPayConditionsSheet';
 import { InlineAvailabilityTable } from './InlineAvailabilityTable';
 
 interface StaffPayConditionsSectionProps {
