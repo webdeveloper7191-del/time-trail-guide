@@ -40,7 +40,7 @@ interface EditPayConditionsSheetProps {
   onSave?: (condition: PayCondition) => void;
 }
 
-type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award';
+type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award' | 'custom_hourly' | 'annualised_salary';
 type RateSource = 'award_resolved' | 'manual_hourly' | 'annualised_salary';
 
 interface OverrideField<T> {
