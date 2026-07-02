@@ -24,6 +24,7 @@ import { employmentStatusLabels, streamOptions, EmploymentStatus } from '@/types
 export type BulkActionKey =
   | 'add-locations'
   | 'set-role'
+  | 'set-employment-details'
   | 'set-stress-profile'
   | 'send-email'
   | 'set-pay-rates'
