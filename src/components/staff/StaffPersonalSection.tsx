@@ -129,7 +129,7 @@ export function StaffPersonalSection({ staff }: StaffPersonalSectionProps) {
           <div className="card-material-elevated p-6">
             <h3 className="section-header mb-5">Employment Details</h3>
             <div className="space-y-5">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Staff ID</Label>
                   <Input value={staff.employeeId || staff.id} readOnly className="bg-muted/20 border-border/50 h-10 font-mono text-sm" />
@@ -143,19 +143,6 @@ export function StaffPersonalSection({ staff }: StaffPersonalSectionProps) {
                     <SelectContent>
                       {Object.entries(employmentStatusLabels).map(([k, v]) => (
                         <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Stream / Sector</Label>
-                  <Select value={staff.stream}>
-                    <SelectTrigger className="bg-muted/20 border-border/50 h-10">
-                      <SelectValue placeholder="Select stream" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {streamOptions.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
