@@ -540,7 +540,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
               </Select>
               {employment.updateStatus && employment.status === 'terminated' && (
                 <div>
-                  <Label>Employment End Date *</Label>
+                  <LabelWithHint hint={HINTS.endDate}>Employment End Date *</LabelWithHint>
                   <Input type="date" value={employment.endDate}
                     onChange={e => setEmployment({ ...employment, endDate: e.target.value })} />
                   <p className="text-xs text-muted-foreground mt-1">Required when terminating staff. Applied to every selected team member.</p>
@@ -583,7 +583,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
 
         {action === 'set-role' && (
           <FormSection title="Role">
-            <Label>Role / Department</Label>
+            <LabelWithHint hint={HINTS.role}>Role / Department</LabelWithHint>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
               <SelectContent>
@@ -597,32 +597,32 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
           <FormSection title="Fatigue & workload thresholds">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Max consecutive days</Label>
+                <LabelWithHint hint={HINTS.maxConsecutiveDays}>Max consecutive days</LabelWithHint>
                 <Input type="number" value={stress.maxConsecutiveDays}
                   onChange={e => setStress({ ...stress, maxConsecutiveDays: +e.target.value })} />
               </div>
               <div>
-                <Label>Min rest between shifts (hrs)</Label>
+                <LabelWithHint hint={HINTS.minRestHours}>Min rest between shifts (hrs)</LabelWithHint>
                 <Input type="number" value={stress.minRestHours}
                   onChange={e => setStress({ ...stress, minRestHours: +e.target.value })} />
               </div>
               <div>
-                <Label>Max hours per day</Label>
+                <LabelWithHint hint={HINTS.maxHoursPerDay}>Max hours per day</LabelWithHint>
                 <Input type="number" value={stress.maxHoursPerDay}
                   onChange={e => setStress({ ...stress, maxHoursPerDay: +e.target.value })} />
               </div>
               <div>
-                <Label>Max hours per week</Label>
+                <LabelWithHint hint={HINTS.maxHoursPerWeek}>Max hours per week</LabelWithHint>
                 <Input type="number" value={stress.maxHoursPerWeek}
                   onChange={e => setStress({ ...stress, maxHoursPerWeek: +e.target.value })} />
               </div>
               <div>
-                <Label>Max night shifts / week</Label>
+                <LabelWithHint hint={HINTS.maxNightShiftsPerWeek}>Max night shifts / week</LabelWithHint>
                 <Input type="number" value={stress.maxNightShiftsPerWeek}
                   onChange={e => setStress({ ...stress, maxNightShiftsPerWeek: +e.target.value })} />
               </div>
               <div>
-                <Label>Fatigue score cap (0-100)</Label>
+                <LabelWithHint hint={HINTS.fatigueScoreCap}>Fatigue score cap (0-100)</LabelWithHint>
                 <Input type="number" value={stress.fatigueScoreCap}
                   onChange={e => setStress({ ...stress, fatigueScoreCap: +e.target.value })} />
               </div>
@@ -641,19 +641,19 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
         {action === 'send-email' && (
           <FormSection title="Email">
             <div>
-              <Label>Subject</Label>
+              <LabelWithHint hint={HINTS.subject}>Subject</LabelWithHint>
               <Input value={email.subject} onChange={e => setEmail({ ...email, subject: e.target.value })}
                 placeholder="e.g. Roster changes for next week" />
             </div>
             <div>
-              <Label>Message body</Label>
+              <LabelWithHint hint={HINTS.body}>Message body</LabelWithHint>
               <Textarea rows={7} value={email.body}
                 onChange={e => setEmail({ ...email, body: e.target.value })}
                 placeholder="Write your message. Merge tags {{first_name}}, {{location}} are supported." />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Priority</Label>
+                <LabelWithHint hint={HINTS.priority}>Priority</LabelWithHint>
                 <Select value={email.priority} onValueChange={v => setEmail({ ...email, priority: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1005,7 +1005,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
         {action === 'set-leave-balance' && (
           <FormSection title="Opening balances">
             <div>
-              <Label>Balances as at</Label>
+              <LabelWithHint hint={HINTS.leaveAsAt}>Balances as at</LabelWithHint>
               <Input type="date" value={leaveAsAt} onChange={e => setLeaveAsAt(e.target.value)} className="max-w-[220px]" />
               <p className="text-xs text-muted-foreground mt-1">Balances entered below are the opening figures on this date. Accruals from this date forward will be added by the leave engine.</p>
             </div>
@@ -1059,12 +1059,12 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
           <FormSection title="Weekly contracted hours">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Contracted hours / week</Label>
+                <LabelWithHint hint={HINTS.weekly}>Contracted hours / week</LabelWithHint>
                 <Input type="number" step="0.5" value={contract.weekly}
                   onChange={e => setContract({ ...contract, weekly: e.target.value })} placeholder="e.g. 38" />
               </div>
               <div>
-                <Label>Contract type</Label>
+                <LabelWithHint hint={HINTS.contractType}>Contract type</LabelWithHint>
                 <Select value={contract.contractType} onValueChange={v => setContract({ ...contract, contractType: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1076,22 +1076,22 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
                 </Select>
               </div>
               <div>
-                <Label>Minimum / week</Label>
+                <LabelWithHint hint={HINTS.min}>Minimum / week</LabelWithHint>
                 <Input type="number" step="0.5" value={contract.min}
                   onChange={e => setContract({ ...contract, min: e.target.value })} />
               </div>
               <div>
-                <Label>Maximum / week</Label>
+                <LabelWithHint hint={HINTS.max}>Maximum / week</LabelWithHint>
                 <Input type="number" step="0.5" value={contract.max}
                   onChange={e => setContract({ ...contract, max: e.target.value })} />
               </div>
               <div>
-                <Label>Averaging period (weeks)</Label>
+                <LabelWithHint hint={HINTS.averagingPeriodWeeks}>Averaging period (weeks)</LabelWithHint>
                 <Input type="number" value={contract.averagingPeriodWeeks}
                   onChange={e => setContract({ ...contract, averagingPeriodWeeks: e.target.value })} />
               </div>
               <div>
-                <Label>Effective from</Label>
+                <LabelWithHint hint={HINTS.effectiveDate}>Effective from</LabelWithHint>
                 <Input type="date" value={contract.effectiveDate}
                   onChange={e => setContract({ ...contract, effectiveDate: e.target.value })} />
               </div>
@@ -1101,7 +1101,7 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
 
         {action === 'export' && (
           <FormSection title="Export options">
-            <Label>Format</Label>
+            <LabelWithHint hint={HINTS.exportFormat}>Format</LabelWithHint>
             <Select value={exportFormat} onValueChange={setExportFormat}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
