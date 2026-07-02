@@ -12,6 +12,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SelectWithCreate } from '@/components/ui/select-with-create';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
   DollarSign,
   Calendar as CalendarIcon,
@@ -172,7 +173,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [instrumentType, setInstrumentType] = useState<InstrumentType>('modern_award');
   const [industryAward, setIndustryAward] = useState(payCondition?.industryAward || '');
   const [classification, setClassification] = useState(payCondition?.classification || '');
-  const [payPoint, setPayPoint] = useState('1');
+  
   const [rateSource, setRateSource] = useState<RateSource>('award_resolved');
   const [manualHourlyRate, setManualHourlyRate] = useState<number>(payCondition?.hourlyRate || 0);
   const [annualSalary, setAnnualSalary] = useState<number>(payCondition?.annualSalary || 0);
