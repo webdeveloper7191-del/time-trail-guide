@@ -293,6 +293,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
+  const isAwardBased =
+    instrumentType !== 'custom_hourly' && instrumentType !== 'annualised_salary';
+
   const derivedHourlyFromSalary =
     annualSalary && ordinaryPerWeek.value
       ? annualSalary / (ordinaryPerWeek.value * 52)
@@ -303,6 +306,32 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       : rateSource === 'annualised_salary'
       ? derivedHourlyFromSalary
       : resolvedBaseRate;
+
+  // Rate-source specific validation
+  const rateErrors = useMemo(() => {
+    const e: { manualHourlyRate?: string; annualSalary?: string } = {};
+    if (rateSource === 'manual_hourly') {
+      if (!manualHourlyRate || manualHourlyRate <= 0)
+        e.manualHourlyRate = 'Custom hourly rate is required and must be greater than 0.';
+      else if (!Number.isFinite(manualHourlyRate))
+        e.manualHourlyRate = 'Enter a valid number (e.g. 32.50).';
+      else if (manualHourlyRate > 1000)
+        e.manualHourlyRate = 'Hourly rate looks unrealistic (max $1000/hr).';
+      else if (!/^\d+(\.\d{1,2})?$/.test(String(manualHourlyRate)))
+        e.manualHourlyRate = 'Use up to 2 decimal places (e.g. 32.50).';
+    }
+    if (rateSource === 'annualised_salary') {
+      if (!annualSalary || annualSalary <= 0)
+        e.annualSalary = 'Annualised salary is required and must be greater than 0.';
+      else if (annualSalary < 20000)
+        e.annualSalary = 'Salary must be at least $20,000 (below minimum wage otherwise).';
+      else if (annualSalary > 2_000_000)
+        e.annualSalary = 'Salary exceeds allowed maximum of $2,000,000.';
+      else if (!Number.isInteger(annualSalary))
+        e.annualSalary = 'Enter a whole dollar amount (no cents).';
+    }
+    return e;
+  }, [rateSource, manualHourlyRate, annualSalary]);
 
   // ── Field-level validation against award limits (BOOT test) ───────────────
   // Rules:
