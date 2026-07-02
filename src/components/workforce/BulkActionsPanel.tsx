@@ -313,6 +313,86 @@ export function BulkActionsPanel({ open, action, selectedCount, onClose, onConfi
           </FormSection>
         )}
 
+        {action === 'set-employment-details' && (
+          <FormSection title="Employment details to update">
+            <p className="text-xs text-muted-foreground mb-2">
+              Tick each field you want to overwrite. Unticked fields are left untouched on every selected team member.
+            </p>
+
+            {/* Status */}
+            <div className="rounded border border-border p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox checked={employment.updateStatus}
+                  onCheckedChange={v => setEmployment({ ...employment, updateStatus: !!v })} />
+                Employment Status
+              </label>
+              <Select value={employment.status} disabled={!employment.updateStatus}
+                onValueChange={v => setEmployment({ ...employment, status: v as EmploymentStatus })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(employmentStatusLabels).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {employment.updateStatus && employment.status === 'terminated' && (
+                <div>
+                  <Label>Employment End Date *</Label>
+                  <Input type="date" value={employment.endDate}
+                    onChange={e => setEmployment({ ...employment, endDate: e.target.value })} />
+                  <p className="text-xs text-muted-foreground mt-1">Required when terminating staff. Applied to every selected team member.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Stream */}
+            <div className="rounded border border-border p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox checked={employment.updateStream}
+                  onCheckedChange={v => setEmployment({ ...employment, updateStream: !!v })} />
+                Stream / Sector
+              </label>
+              <Select value={employment.stream} disabled={!employment.updateStream}
+                onValueChange={v => setEmployment({ ...employment, stream: v })}>
+                <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
+                <SelectContent>
+                  {streamOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Drives award grouping and classification defaults (e.g. SCHADS, Nurses, Aged Care).</p>
+            </div>
+
+            {/* Start date */}
+            <div className="rounded border border-border p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox checked={employment.updateStart}
+                  onCheckedChange={v => setEmployment({ ...employment, updateStart: !!v })} />
+                Employment Start Date
+              </label>
+              <Input type="date" value={employment.startDate} disabled={!employment.updateStart}
+                onChange={e => setEmployment({ ...employment, startDate: e.target.value })} />
+              <p className="text-xs text-muted-foreground">Use for backdating migrated records or aligning cohorts to a common start date.</p>
+            </div>
+
+            {/* Internal comment */}
+            <div className="rounded border border-border p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox checked={employment.updateComment}
+                  onCheckedChange={v => setEmployment({ ...employment, updateComment: !!v })} />
+                Internal Comment / Note
+              </label>
+              <Textarea rows={4} value={employment.comment} disabled={!employment.updateComment}
+                onChange={e => setEmployment({ ...employment, comment: e.target.value })}
+                placeholder="Appended to each staff profile (admin/manager view only)." />
+              <p className="text-xs text-muted-foreground">Appended to the existing note with a timestamp — existing comments are not overwritten.</p>
+            </div>
+
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-900 dark:text-amber-200">
+              Bulk changes are written with a single audit entry per staff member and can be reverted from the Audit Log within 24 hours.
+            </div>
+          </FormSection>
+        )}
+
         {action === 'set-role' && (
           <FormSection title="Role">
             <Label>Role / Department</Label>
