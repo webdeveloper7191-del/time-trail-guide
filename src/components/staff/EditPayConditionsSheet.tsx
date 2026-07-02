@@ -987,31 +987,78 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label className="text-xs">Award allowances applicable to this employee</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Award allowances applicable to this employee</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground">
+                        {selectedAllowances.length} selected
+                      </span>
+                      {selectedAllowances.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAllowances([])}
+                          className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                        >
+                          Clear
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAllowances(availableAwardAllowances.map((a) => a.id))}
+                        className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                      >
+                        Select all
+                      </button>
+                    </div>
+                  </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Select the allowances that should be automatically applied when timesheets are processed.
+                    Tick every allowance that applies. All ticked allowances are automatically added when timesheets are processed.
                   </p>
-                  <div className="space-y-1.5">
+
+                  {selectedAllowances.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {selectedAllowances.map((id) => {
+                        const a = availableAwardAllowances.find((x) => x.id === id);
+                        if (!a) return null;
+                        return (
+                          <Badge key={id} variant="secondary" className="gap-1 h-6 pr-1">
+                            {a.label}
+                            <button
+                              type="button"
+                              onClick={() => toggleAllowance(id)}
+                              className="ml-0.5 rounded hover:bg-muted p-0.5"
+                              aria-label={`Remove ${a.label}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="border rounded-md divide-y">
                     {availableAwardAllowances.map((a) => {
                       const on = selectedAllowances.includes(a.id);
                       return (
-                        <button
+                        <label
                           key={a.id}
-                          type="button"
-                          onClick={() => toggleAllowance(a.id)}
                           className={cn(
-                            'w-full flex items-center justify-between border rounded-md px-3 py-2 text-sm text-left',
-                            on ? 'border-primary bg-primary/5' : 'border-border'
+                            'flex items-center gap-3 px-3 py-2 text-sm cursor-pointer hover:bg-muted/30',
+                            on && 'bg-primary/5'
                           )}
                         >
-                          <div>
+                          <Checkbox
+                            checked={on}
+                            onCheckedChange={() => toggleAllowance(a.id)}
+                          />
+                          <div className="flex-1">
                             <div className="font-medium">{a.label}</div>
                             <div className="text-[11px] text-muted-foreground">
                               ${a.amount.toFixed(2)} {a.unit}
                             </div>
                           </div>
-                          <Switch checked={on} onCheckedChange={() => toggleAllowance(a.id)} className="scale-75" />
-                        </button>
+                        </label>
                       );
                     })}
                   </div>
