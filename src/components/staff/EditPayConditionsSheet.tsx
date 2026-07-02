@@ -60,8 +60,6 @@ function resolveAwardDefaults(award: string | undefined, classification: string 
     ordinaryHoursPerWeek: 38,
     ordinaryHoursPerDay: 7.6,
     rosterCycleWeeks: 1,
-    spanOfHoursStart: '06:00',
-    spanOfHoursEnd: '18:30',
     minEngagementHours: 2,
     saturdayLoading: 25,
     sundayLoading: 50,
@@ -270,14 +268,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     override: false,
     value: awardDefaults.rosterCycleWeeks,
   });
-  const [spanStart, setSpanStart] = useState<OverrideField<string>>({
-    override: false,
-    value: awardDefaults.spanOfHoursStart,
-  });
-  const [spanEnd, setSpanEnd] = useState<OverrideField<string>>({
-    override: false,
-    value: awardDefaults.spanOfHoursEnd,
-  });
   const [otAfterDaily, setOtAfterDaily] = useState<OverrideField<number>>({
     override: false,
     value: awardDefaults.otAfterDaily,
@@ -400,13 +390,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     // Roster cycle
     if (rosterCycle.override && (rosterCycle.value < 1 || rosterCycle.value > 8))
       errors.rosterCycle = 'Roster cycle must be 1–8 weeks.';
-    // Span times
-    if ((spanStart.override || spanEnd.override) && spanStart.value >= spanEnd.value)
-      errors.span = 'Span end must be after span start.';
-    if (spanStart.override && spanStart.value > awardDefaults.spanOfHoursStart)
-      warnings.spanStart = `Later than award span start (${awardDefaults.spanOfHoursStart}). Ordinary-time reduced.`;
-    if (spanEnd.override && spanEnd.value < awardDefaults.spanOfHoursEnd)
-      warnings.spanEnd = `Earlier than award span end (${awardDefaults.spanOfHoursEnd}). Ordinary-time reduced.`;
     // OT after daily
     if (otAfterDaily.override) {
       if (otAfterDaily.value < 1 || otAfterDaily.value > 16)
@@ -457,7 +440,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
 
     return { errors, warnings, hasErrors: Object.values(errors).some(Boolean) };
   }, [
-    awardDefaults, ordinaryPerWeek, ordinaryPerDay, rosterCycle, spanStart, spanEnd,
+    awardDefaults, ordinaryPerWeek, ordinaryPerDay, rosterCycle,
     otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h,
     saturdayLoading, sundayLoading, phLoading, eveningLoading,
   ]);
@@ -953,35 +936,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   </ResolvedField>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <ResolvedField
-                    label="Span of hours — start"
-                    value={spanStart.value}
-                    override={spanStart.override}
-                    onToggleOverride={(v) => setSpanStart({ ...spanStart, override: v })}                    info="Earliest ordinary time start. Work before this may attract early-morning penalties."
-                    error={validation.errors.span}
-                    warning={validation.warnings.spanStart}
-                  >
-                    <Input
-                      type="time"
-                      value={spanStart.value}
-                      onChange={(e) => setSpanStart({ override: true, value: e.target.value })}
-                    />
-                  </ResolvedField>
-                  <ResolvedField
-                    label="Span of hours — end"
-                    value={spanEnd.value}
-                    override={spanEnd.override}
-                    onToggleOverride={(v) => setSpanEnd({ ...spanEnd, override: v })}                    info="Latest ordinary time finish. Work after this may attract evening or night penalties."
-                    warning={validation.warnings.spanEnd}
-                  >
-                    <Input
-                      type="time"
-                      value={spanEnd.value}
-                      onChange={(e) => setSpanEnd({ override: true, value: e.target.value })}
-                    />
-                  </ResolvedField>
-                </div>
 
 
                 <Separator />
