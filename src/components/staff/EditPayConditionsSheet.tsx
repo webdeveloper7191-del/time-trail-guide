@@ -293,8 +293,16 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
+  const derivedHourlyFromSalary =
+    annualSalary && ordinaryPerWeek.value
+      ? annualSalary / (ordinaryPerWeek.value * 52)
+      : 0;
   const effectiveHourlyRate =
-    rateSource === 'manual' ? manualHourlyRate : resolvedBaseRate;
+    rateSource === 'manual_hourly'
+      ? manualHourlyRate
+      : rateSource === 'annualised_salary'
+      ? derivedHourlyFromSalary
+      : resolvedBaseRate;
 
   // ── Field-level validation against award limits (BOOT test) ───────────────
   // Rules:
