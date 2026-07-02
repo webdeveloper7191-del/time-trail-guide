@@ -720,6 +720,18 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+                {isAwardBased && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Stream / Sector<FieldInfo text="Award stream or sector that governs the classification structure (e.g. SCHADS Social & Community stream)." /></Label>
+                    <Select value={stream} onValueChange={setStream}>
+                      <SelectTrigger><SelectValue placeholder="Select stream" /></SelectTrigger>
+                      <SelectContent>
+                        {streamOptions.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                 ) : (
                   <div className="rounded-md bg-muted/40 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
                     <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
