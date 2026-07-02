@@ -859,8 +859,11 @@ function AddTimesheetEntryDialog({
                     Raise exception (clock in / out incorrect or missing)
                   </Button>
                 )}
+                </div>
               </div>
-            ))}
+              );
+            })}
+
 
             <Button variant="outline" className="w-full" onClick={addDay}>
               <Plus className="h-4 w-4 mr-1.5" /> Add another day
