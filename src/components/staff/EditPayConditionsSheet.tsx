@@ -60,8 +60,6 @@ function resolveAwardDefaults(award: string | undefined, classification: string 
     ordinaryHoursPerWeek: 38,
     ordinaryHoursPerDay: 7.6,
     rosterCycleWeeks: 1,
-    spanOfHoursStart: '06:00',
-    spanOfHoursEnd: '18:30',
     minEngagementHours: 2,
     saturdayLoading: 25,
     sundayLoading: 50,
