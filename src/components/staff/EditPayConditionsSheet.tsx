@@ -40,7 +40,7 @@ interface EditPayConditionsSheetProps {
   onSave?: (condition: PayCondition) => void;
 }
 
-type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award';
+type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award' | 'custom_hourly' | 'annualised_salary';
 type RateSource = 'award_resolved' | 'manual_hourly' | 'annualised_salary';
 
 interface OverrideField<T> {
@@ -606,13 +606,24 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Instrument type<FieldInfo text="Legal pay instrument: Modern Award, Enterprise Agreement (EBA), IFA, or over-award." /></Label>
-                    <Select value={instrumentType} onValueChange={(v) => setInstrumentType(v as InstrumentType)}>
+                    <Select
+                      value={instrumentType}
+                      onValueChange={(v) => {
+                        const next = v as InstrumentType;
+                        setInstrumentType(next);
+                        if (next === 'custom_hourly') setRateSource('manual_hourly');
+                        else if (next === 'annualised_salary') setRateSource('annualised_salary');
+                        else setRateSource('award_resolved');
+                      }}
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="modern_award">Modern Award</SelectItem>
                         <SelectItem value="eba">Enterprise Agreement (EBA)</SelectItem>
                         <SelectItem value="ifa">Individual Flexibility Arrangement (IFA)</SelectItem>
                         <SelectItem value="over_award">Over-award / Common law</SelectItem>
+                        <SelectItem value="custom_hourly">Custom hourly rate</SelectItem>
+                        <SelectItem value="annualised_salary">Annualised salary</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
