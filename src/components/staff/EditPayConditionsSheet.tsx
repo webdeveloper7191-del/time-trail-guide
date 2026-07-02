@@ -268,14 +268,6 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     override: false,
     value: awardDefaults.rosterCycleWeeks,
   });
-  const [spanStart, setSpanStart] = useState<OverrideField<string>>({
-    override: false,
-    value: awardDefaults.spanOfHoursStart,
-  });
-  const [spanEnd, setSpanEnd] = useState<OverrideField<string>>({
-    override: false,
-    value: awardDefaults.spanOfHoursEnd,
-  });
   const [otAfterDaily, setOtAfterDaily] = useState<OverrideField<number>>({
     override: false,
     value: awardDefaults.otAfterDaily,
