@@ -13,13 +13,19 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from '@/components/ui/accordion';
+import { SelectWithCreate } from '@/components/ui/select-with-create';
+import {
   MapPin, UserCog, Activity, Mail, DollarSign, CalendarDays,
   Archive, Clock, Send, FileClock, Download, Info, Plus, Trash2, LucideIcon, Briefcase,
+  FileBadge, Percent, Lock, PencilLine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { locations, departments } from '@/data/mockStaffData';
+import { mockPositions } from '@/data/mockPositions';
 import { leaveTypeLabels, LeaveType } from '@/types/leaveAccrual';
-import { employmentStatusLabels, streamOptions, EmploymentStatus } from '@/types/staff';
+import { employmentStatusLabels, streamOptions, employmentTypeLabels, EmploymentStatus } from '@/types/staff';
 
 export type BulkActionKey =
   | 'add-locations'
