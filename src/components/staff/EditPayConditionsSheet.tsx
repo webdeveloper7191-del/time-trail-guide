@@ -681,6 +681,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={ordinaryPerWeek.override}
                     onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}
+                    error={validation.errors.ordinaryPerWeek}
+                    warning={validation.warnings.ordinaryPerWeek}
                   >
                     <Input
                       type="number" step="0.5"
@@ -696,6 +698,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="hrs"
                     override={ordinaryPerDay.override}
                     onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}
+                    error={validation.errors.ordinaryPerDay}
                   >
                     <Input
                       type="number" step="0.25"
@@ -709,6 +712,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     unit="weeks"
                     override={rosterCycle.override}
                     onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}
+                    error={validation.errors.rosterCycle}
                   >
                     <Input
                       type="number" min={1}
@@ -724,6 +728,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={spanStart.value}
                     override={spanStart.override}
                     onToggleOverride={(v) => setSpanStart({ ...spanStart, override: v })}
+                    error={validation.errors.span}
+                    warning={validation.warnings.spanStart}
                   >
                     <Input
                       type="time"
@@ -736,6 +742,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={spanEnd.value}
                     override={spanEnd.override}
                     onToggleOverride={(v) => setSpanEnd({ ...spanEnd, override: v })}
+                    warning={validation.warnings.spanEnd}
                   >
                     <Input
                       type="time"
@@ -744,6 +751,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     />
                   </ResolvedField>
                 </div>
+
 
                 <Separator />
                 <div className="text-xs font-medium text-muted-foreground">Overtime thresholds</div>
