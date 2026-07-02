@@ -1,15 +1,29 @@
-import { useState } from 'react';
-import { StaffMember, PayCondition, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
+import { useMemo, useState } from 'react';
+import { StaffMember, PayCondition, employmentTypeLabels } from '@/types/staff';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DollarSign, Calendar as CalendarIcon, Save, X } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  DollarSign,
+  Calendar as CalendarIcon,
+  Save,
+  X,
+  Briefcase,
+  FileBadge,
+  Clock,
+  Percent,
+  Lock,
+  PencilLine,
+  Info,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -21,267 +35,768 @@ interface EditPayConditionsSheetProps {
   onSave?: (condition: PayCondition) => void;
 }
 
+type InstrumentType = 'modern_award' | 'eba' | 'ifa' | 'over_award';
+type RateSource = 'award_resolved' | 'manual';
+
+interface OverrideField<T> {
+  override: boolean;
+  value: T;
+}
+
+/**
+ * Resolves the "award default" for a field based on the selected award/classification.
+ * In production this would call the Awards engine. For now we simulate typical values
+ * for the Children's Services Award family so the UI clearly shows read-only defaults
+ * vs. manual overrides.
+ */
+function resolveAwardDefaults(award: string | undefined, classification: string | undefined) {
+  // Baseline defaults (Children's Services Award-like)
+  const base = {
+    ordinaryHoursPerWeek: 38,
+    ordinaryHoursPerDay: 7.6,
+    rosterCycleWeeks: 1,
+    spanOfHoursStart: '06:00',
+    spanOfHoursEnd: '18:30',
+    minEngagementHours: 2,
+    saturdayLoading: 25,
+    sundayLoading: 50,
+    publicHolidayLoading: 150,
+    eveningLoading: 15,
+    otAfterDaily: 7.6,
+    otAfterWeekly: 38,
+    otFirst2h: 150,
+    otAfter2h: 200,
+    otSaturday: 150,
+    otSunday: 200,
+    interaction: 'higher_of' as 'higher_of' | 'stack',
+  };
+  if (!award || award === 'None') {
+    return { ...base, ordinaryHoursPerWeek: 38, otFirst2h: 150, otAfter2h: 150 };
+  }
+  return base;
+}
+
+const READONLY_INPUT_CLS =
+  'bg-muted/40 border-dashed text-muted-foreground cursor-not-allowed';
+
+function ResolvedField({
+  label,
+  value,
+  unit,
+  override,
+  onToggleOverride,
+  children,
+  hint,
+}: {
+  label: string;
+  value: string | number;
+  unit?: string;
+  override: boolean;
+  onToggleOverride: (v: boolean) => void;
+  children: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-medium">{label}</Label>
+        <div className="flex items-center gap-1.5">
+          {override ? (
+            <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
+              <PencilLine className="h-2.5 w-2.5" /> Override
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-1">
+              <Lock className="h-2.5 w-2.5" /> From award
+            </Badge>
+          )}
+          <Switch
+            checked={override}
+            onCheckedChange={onToggleOverride}
+            className="scale-75 -mr-1"
+          />
+        </div>
+      </div>
+      {override ? (
+        children
+      ) : (
+        <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
+          {value}
+          {unit ? <span className="ml-1 text-xs">{unit}</span> : null}
+        </div>
+      )}
+      {hint ? <p className="text-[11px] text-muted-foreground leading-snug">{hint}</p> : null}
+    </div>
+  );
+}
+
 export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: EditPayConditionsSheetProps) {
   const payCondition = staff.currentPayCondition;
-  
-  const [formData, setFormData] = useState({
-    position: payCondition?.position || '',
-    employmentType: payCondition?.employmentType || 'full_time',
-    payRateType: payCondition?.payRateType || 'hourly',
-    hourlyRate: payCondition?.hourlyRate || 0,
-    annualSalary: payCondition?.annualSalary || 0,
-    contractedHours: payCondition?.contractedHours || 38,
-    payPeriod: payCondition?.payPeriod || 'fortnightly',
-    industryAward: payCondition?.industryAward || '',
-    classification: payCondition?.classification || '',
-    effectiveFrom: payCondition?.effectiveFrom ? new Date(payCondition.effectiveFrom) : new Date(),
-    effectiveTo: payCondition?.effectiveTo ? new Date(payCondition.effectiveTo) : undefined,
+
+  // Section 1 — Employment basis
+  const [effectiveFrom, setEffectiveFrom] = useState<Date>(
+    payCondition?.effectiveFrom ? new Date(payCondition.effectiveFrom) : new Date()
+  );
+  const [effectiveTo, setEffectiveTo] = useState<Date | undefined>(
+    payCondition?.effectiveTo ? new Date(payCondition.effectiveTo) : undefined
+  );
+  const [position, setPosition] = useState(payCondition?.position || '');
+  const [employmentType, setEmploymentType] = useState(payCondition?.employmentType || 'full_time');
+  const [fte, setFte] = useState<number>(1);
+  const [guaranteedMinHours, setGuaranteedMinHours] = useState<number>(payCondition?.contractedHours || 0);
+
+  // Section 2 — Industrial instrument & classification
+  const [instrumentType, setInstrumentType] = useState<InstrumentType>('modern_award');
+  const [industryAward, setIndustryAward] = useState(payCondition?.industryAward || '');
+  const [classification, setClassification] = useState(payCondition?.classification || '');
+  const [payPoint, setPayPoint] = useState('1');
+  const [rateSource, setRateSource] = useState<RateSource>('award_resolved');
+  const [manualHourlyRate, setManualHourlyRate] = useState<number>(payCondition?.hourlyRate || 0);
+  const [annualSalary, setAnnualSalary] = useState<number>(payCondition?.annualSalary || 0);
+  const [paidAsSalary, setPaidAsSalary] = useState<boolean>(payCondition?.payRateType === 'salary');
+  const [payPeriod, setPayPeriod] = useState(payCondition?.payPeriod || 'fortnightly');
+  const [superRate, setSuperRate] = useState<number>(11.5);
+
+  const awardDefaults = useMemo(
+    () => resolveAwardDefaults(industryAward, classification),
+    [industryAward, classification]
+  );
+
+  // Award-resolved base rate — simulated per classification
+  const resolvedBaseRate = useMemo(() => {
+    const map: Record<string, number> = {
+      'Level 3.1': 26.14,
+      'Level 3.2': 26.9,
+      'Level 4.1': 29.42,
+      'Level 4.2': 30.55,
+      'Level 5.1': 34.8,
+      'Level 5.2': 36.2,
+    };
+    return map[classification] || 26.14;
+  }, [classification]);
+
+  // Section 3 — Ordinary hours & overtime (per-field overrides)
+  const [ordinaryPerWeek, setOrdinaryPerWeek] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.ordinaryHoursPerWeek,
   });
+  const [ordinaryPerDay, setOrdinaryPerDay] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.ordinaryHoursPerDay,
+  });
+  const [rosterCycle, setRosterCycle] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.rosterCycleWeeks,
+  });
+  const [spanStart, setSpanStart] = useState<OverrideField<string>>({
+    override: false,
+    value: awardDefaults.spanOfHoursStart,
+  });
+  const [spanEnd, setSpanEnd] = useState<OverrideField<string>>({
+    override: false,
+    value: awardDefaults.spanOfHoursEnd,
+  });
+  const [otAfterDaily, setOtAfterDaily] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.otAfterDaily,
+  });
+  const [otAfterWeekly, setOtAfterWeekly] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.otAfterWeekly,
+  });
+  const [otFirst2h, setOtFirst2h] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.otFirst2h,
+  });
+  const [otAfter2h, setOtAfter2h] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.otAfter2h,
+  });
+  const [interaction, setInteraction] = useState<OverrideField<'higher_of' | 'stack'>>({
+    override: false,
+    value: awardDefaults.interaction,
+  });
+
+  // Section 4 — Loadings & allowances (award-resolved with overrides)
+  const [saturdayLoading, setSaturdayLoading] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.saturdayLoading,
+  });
+  const [sundayLoading, setSundayLoading] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.sundayLoading,
+  });
+  const [phLoading, setPhLoading] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.publicHolidayLoading,
+  });
+  const [eveningLoading, setEveningLoading] = useState<OverrideField<number>>({
+    override: false,
+    value: awardDefaults.eveningLoading,
+  });
+  const [selectedAllowances, setSelectedAllowances] = useState<string[]>([]);
+
+  const availableAwardAllowances = [
+    { id: 'first_aid', label: 'First Aid allowance', amount: 15.5, unit: 'per week' },
+    { id: 'lead_educator', label: 'Lead educator allowance', amount: 0.55, unit: 'per hour' },
+    { id: 'vehicle', label: 'Vehicle allowance', amount: 0.99, unit: 'per km' },
+    { id: 'meal', label: 'Meal allowance', amount: 17.7, unit: 'per occasion' },
+    { id: 'uniform', label: 'Uniform / laundry', amount: 6.25, unit: 'per week' },
+  ];
+
+  const toggleAllowance = (id: string) =>
+    setSelectedAllowances((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
+  const effectiveHourlyRate =
+    rateSource === 'manual' ? manualHourlyRate : resolvedBaseRate;
 
   const handleSave = () => {
     const updatedCondition: PayCondition = {
       id: payCondition?.id || `pay-${Date.now()}`,
-      ...formData,
-      effectiveFrom: formData.effectiveFrom.toISOString(),
-      effectiveTo: formData.effectiveTo?.toISOString(),
+      effectiveFrom: effectiveFrom.toISOString(),
+      effectiveTo: effectiveTo?.toISOString(),
+      position,
+      employmentType: employmentType as PayCondition['employmentType'],
+      payRateType: paidAsSalary ? 'salary' : rateSource === 'award_resolved' ? 'award' : 'hourly',
+      hourlyRate: effectiveHourlyRate,
+      annualSalary: paidAsSalary ? annualSalary : undefined,
+      industryAward,
+      classification,
+      payPeriod: payPeriod as PayCondition['payPeriod'],
+      contractedHours: ordinaryPerWeek.value,
     };
     onSave?.(updatedCondition);
-    toast.success('Pay conditions updated successfully');
+    toast.success('Pay conditions updated');
     onOpenChange(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="pb-6 border-b">
-          <SheetTitle className="flex items-center gap-2 text-xl">
+      <SheetContent className="w-full sm:max-w-3xl overflow-y-auto p-0">
+        <SheetHeader className="px-6 py-5 border-b bg-muted/20">
+          <SheetTitle className="flex items-center gap-2 text-lg tracking-tight">
             <DollarSign className="h-5 w-5 text-primary" />
-            Edit Pay Conditions
+            Edit pay conditions
           </SheetTitle>
           <SheetDescription>
-            Update pay conditions for {staff.firstName} {staff.lastName}
+            {staff.firstName} {staff.lastName} · Fields marked{' '}
+            <span className="inline-flex items-center gap-1 mx-0.5">
+              <Lock className="h-3 w-3" /> From award
+            </span>{' '}
+            are resolved from the industrial instrument. Toggle any field to override.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="py-6 space-y-6">
-          {/* Effective Period */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                Effective Period
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Effective From</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.effectiveFrom && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.effectiveFrom ? format(formData.effectiveFrom, "PPP") : "Select date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.effectiveFrom}
-                        onSelect={(date) => date && setFormData({ ...formData, effectiveFrom: date })}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+        <div className="px-6 py-4">
+          <Accordion type="multiple" defaultValue={['s1', 's2', 's3', 's4']} className="space-y-3">
+            {/* SECTION 1 — Employment basis */}
+            <AccordionItem value="s1" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline py-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  1. Employment basis
                 </div>
-                <div className="space-y-2">
-                  <Label>Effective To (Optional)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.effectiveTo && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.effectiveTo ? format(formData.effectiveTo, "PPP") : "No end date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={formData.effectiveTo}
-                        onSelect={(date) => setFormData({ ...formData, effectiveTo: date })}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Position</Label>
+                    <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Educator" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Employment type</Label>
+                    <Select value={employmentType} onValueChange={(v) => setEmploymentType(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(employmentTypeLabels).map(([k, l]) => (
+                          <SelectItem key={k} value={k}>{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">FTE</Label>
+                    <Input
+                      type="number" step="0.05" min={0} max={1}
+                      value={fte}
+                      onChange={(e) => setFte(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      Guaranteed min hours / week
+                      {employmentType === 'part_time' && (
+                        <span className="ml-1 text-[10px] text-amber-600">required</span>
+                      )}
+                    </Label>
+                    <Input
+                      type="number" step="0.5"
+                      value={guaranteedMinHours}
+                      onChange={(e) => setGuaranteedMinHours(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pay period</Label>
+                    <Select value={payPeriod} onValueChange={(v) => setPayPeriod(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Effective from</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {format(effectiveFrom, 'PPP')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={effectiveFrom} onSelect={(d) => d && setEffectiveFrom(d)} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Effective to (optional)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {effectiveTo ? format(effectiveTo, 'PPP') : 'No end date'}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={effectiveTo} onSelect={setEffectiveTo} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Employment Details */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Employment Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Position</Label>
-                  <Input
-                    value={formData.position}
-                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    placeholder="e.g. Early Childhood Educator"
-                  />
+            {/* SECTION 2 — Industrial instrument & classification */}
+            <AccordionItem value="s2" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline py-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <FileBadge className="h-4 w-4 text-muted-foreground" />
+                  2. Industrial instrument & classification
                 </div>
-                <div className="space-y-2">
-                  <Label>Employment Type</Label>
-                  <Select
-                    value={formData.employmentType}
-                    onValueChange={(v) => setFormData({ ...formData, employmentType: v as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(employmentTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Instrument type</Label>
+                    <Select value={instrumentType} onValueChange={(v) => setInstrumentType(v as InstrumentType)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="modern_award">Modern Award</SelectItem>
+                        <SelectItem value="eba">Enterprise Agreement (EBA)</SelectItem>
+                        <SelectItem value="ifa">Individual Flexibility Arrangement (IFA)</SelectItem>
+                        <SelectItem value="over_award">Over-award / Common law</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Industry award / instrument</Label>
+                    <Select value={industryAward} onValueChange={setIndustryAward}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Children's Services Award 2010">Children's Services Award 2010</SelectItem>
+                        <SelectItem value="Educational Services Award">Educational Services Award</SelectItem>
+                        <SelectItem value="Social and Community Services">Social and Community Services</SelectItem>
+                        <SelectItem value="None">None / Not applicable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Industry Award</Label>
-                  <Select
-                    value={formData.industryAward}
-                    onValueChange={(v) => setFormData({ ...formData, industryAward: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select award" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Children's Services Award 2010">Children's Services Award 2010</SelectItem>
-                      <SelectItem value="Educational Services Award">Educational Services Award</SelectItem>
-                      <SelectItem value="Social and Community Services">Social and Community Services</SelectItem>
-                      <SelectItem value="None">None / Not Applicable</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Classification</Label>
+                    <Select value={classification} onValueChange={setClassification}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
+                        <SelectItem value="Level 3.2">Level 3.2 - Cert III (Experienced)</SelectItem>
+                        <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
+                        <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
+                        <SelectItem value="Level 5.1">Level 5.1 - ECT</SelectItem>
+                        <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pay point</Label>
+                    <Select value={payPoint} onValueChange={setPayPoint}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4].map((p) => (
+                          <SelectItem key={p} value={String(p)}>Pay point {p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Classification</Label>
-                  <Select
-                    value={formData.classification}
-                    onValueChange={(v) => setFormData({ ...formData, classification: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select classification" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Level 3.1">Level 3.1 - Certificate III</SelectItem>
-                      <SelectItem value="Level 3.2">Level 3.2 - Certificate III (Experienced)</SelectItem>
-                      <SelectItem value="Level 4.1">Level 4.1 - Diploma</SelectItem>
-                      <SelectItem value="Level 4.2">Level 4.2 - Diploma (Experienced)</SelectItem>
-                      <SelectItem value="Level 5.1">Level 5.1 - Early Childhood Teacher</SelectItem>
-                      <SelectItem value="Level 5.2">Level 5.2 - ECT (Experienced)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Pay Rate */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Pay Rate</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Pay Rate Type</Label>
-                  <Select
-                    value={formData.payRateType}
-                    onValueChange={(v) => setFormData({ ...formData, payRateType: v as any })}
+                <Separator />
+
+                <div className="space-y-3">
+                  <Label className="text-xs">Rate source</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRateSource('award_resolved')}
+                      className={cn(
+                        'text-left border rounded-md p-3 text-xs',
+                        rateSource === 'award_resolved' ? 'border-primary bg-primary/5' : 'border-border'
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <Lock className="h-3 w-3" /> Award-resolved
+                      </div>
+                      <p className="text-muted-foreground mt-1">
+                        Uses ${resolvedBaseRate.toFixed(2)}/hr from {classification || 'classification'}.
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRateSource('manual')}
+                      className={cn(
+                        'text-left border rounded-md p-3 text-xs',
+                        rateSource === 'manual' ? 'border-primary bg-primary/5' : 'border-border'
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <PencilLine className="h-3 w-3" /> Manual / over-award
+                      </div>
+                      <p className="text-muted-foreground mt-1">Set the base rate directly (BOOT test applies).</p>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Base hourly rate ($)</Label>
+                      {rateSource === 'award_resolved' ? (
+                        <div className={cn('flex items-center h-9 rounded-md border px-3 text-sm', READONLY_INPUT_CLS)}>
+                          ${resolvedBaseRate.toFixed(2)}
+                        </div>
+                      ) : (
+                        <Input
+                          type="number" step="0.01"
+                          value={manualHourlyRate}
+                          onChange={(e) => setManualHourlyRate(parseFloat(e.target.value) || 0)}
+                        />
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Paid as salary</Label>
+                        <Switch checked={paidAsSalary} onCheckedChange={setPaidAsSalary} className="scale-75 -mr-1" />
+                      </div>
+                      <Input
+                        type="number"
+                        placeholder="Annual salary"
+                        disabled={!paidAsSalary}
+                        value={annualSalary || ''}
+                        onChange={(e) => setAnnualSalary(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Superannuation %</Label>
+                      <Input
+                        type="number" step="0.5"
+                        value={superRate}
+                        onChange={(e) => setSuperRate(parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* SECTION 3 — Ordinary hours & overtime */}
+            <AccordionItem value="s3" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline py-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  3. Ordinary hours & overtime
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 space-y-4">
+                <div className="rounded-md bg-muted/30 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
+                  <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  Award-resolved values reflect {industryAward || 'the selected award'}. Overrides require a
+                  documented reason and are BOOT-tested at save time.
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <ResolvedField
+                    label="Ordinary hours / week"
+                    value={ordinaryPerWeek.value}
+                    unit="hrs"
+                    override={ordinaryPerWeek.override}
+                    onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <Input
+                      type="number" step="0.5"
+                      value={ordinaryPerWeek.value}
+                      onChange={(e) =>
+                        setOrdinaryPerWeek({ override: true, value: parseFloat(e.target.value) || 0 })
+                      }
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="Ordinary hours / day"
+                    value={ordinaryPerDay.value}
+                    unit="hrs"
+                    override={ordinaryPerDay.override}
+                    onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}
+                  >
+                    <Input
+                      type="number" step="0.25"
+                      value={ordinaryPerDay.value}
+                      onChange={(e) => setOrdinaryPerDay({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="Roster cycle"
+                    value={rosterCycle.value}
+                    unit="weeks"
+                    override={rosterCycle.override}
+                    onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}
+                  >
+                    <Input
+                      type="number" min={1}
+                      value={rosterCycle.value}
+                      onChange={(e) => setRosterCycle({ override: true, value: parseInt(e.target.value) || 1 })}
+                    />
+                  </ResolvedField>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <ResolvedField
+                    label="Span of hours — start"
+                    value={spanStart.value}
+                    override={spanStart.override}
+                    onToggleOverride={(v) => setSpanStart({ ...spanStart, override: v })}
+                  >
+                    <Input
+                      type="time"
+                      value={spanStart.value}
+                      onChange={(e) => setSpanStart({ override: true, value: e.target.value })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="Span of hours — end"
+                    value={spanEnd.value}
+                    override={spanEnd.override}
+                    onToggleOverride={(v) => setSpanEnd({ ...spanEnd, override: v })}
+                  >
+                    <Input
+                      type="time"
+                      value={spanEnd.value}
+                      onChange={(e) => setSpanEnd({ override: true, value: e.target.value })}
+                    />
+                  </ResolvedField>
+                </div>
+
+                <Separator />
+                <div className="text-xs font-medium text-muted-foreground">Overtime thresholds</div>
+                <div className="grid grid-cols-2 gap-4">
+                  <ResolvedField
+                    label="OT after (daily)"
+                    value={otAfterDaily.value}
+                    unit="hrs"
+                    override={otAfterDaily.override}
+                    onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}
+                  >
+                    <Input
+                      type="number" step="0.25"
+                      value={otAfterDaily.value}
+                      onChange={(e) => setOtAfterDaily({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="OT after (weekly)"
+                    value={otAfterWeekly.value}
+                    unit="hrs"
+                    override={otAfterWeekly.override}
+                    onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}
+                  >
+                    <Input
+                      type="number" step="0.5"
+                      value={otAfterWeekly.value}
+                      onChange={(e) => setOtAfterWeekly({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="First 2 hours OT"
+                    value={`${otFirst2h.value}%`}
+                    override={otFirst2h.override}
+                    onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}
+                  >
+                    <Input
+                      type="number"
+                      value={otFirst2h.value}
+                      onChange={(e) => setOtFirst2h({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="After 2 hours OT"
+                    value={`${otAfter2h.value}%`}
+                    override={otAfter2h.override}
+                    onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}
+                  >
+                    <Input
+                      type="number"
+                      value={otAfter2h.value}
+                      onChange={(e) => setOtAfter2h({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                </div>
+
+                <ResolvedField
+                  label="Overtime × penalty interaction"
+                  value={interaction.value === 'higher_of' ? 'Higher of (do not stack)' : 'Stack (multiplicative)'}
+                  override={interaction.override}
+                  onToggleOverride={(v) => setInteraction({ ...interaction, override: v })}
+                  hint="Controls whether overtime multipliers and weekend/PH penalties compound or the higher rate wins."
+                >
+                  <Select
+                    value={interaction.value}
+                    onValueChange={(v) => setInteraction({ override: true, value: v as any })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Object.entries(payRateTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
+                      <SelectItem value="higher_of">Higher of (do not stack)</SelectItem>
+                      <SelectItem value="stack">Stack (multiplicative)</SelectItem>
                     </SelectContent>
                   </Select>
+                </ResolvedField>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* SECTION 4 — Loadings & allowances */}
+            <AccordionItem value="s4" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline py-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Percent className="h-4 w-4 text-muted-foreground" />
+                  4. Loadings & allowances
                 </div>
-                <div className="space-y-2">
-                  <Label>Pay Period</Label>
-                  <Select
-                    value={formData.payPeriod}
-                    onValueChange={(v) => setFormData({ ...formData, payPeriod: v as any })}
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <ResolvedField
+                    label="Saturday loading"
+                    value={`${saturdayLoading.value}%`}
+                    override={saturdayLoading.override}
+                    onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Input
+                      type="number"
+                      value={saturdayLoading.value}
+                      onChange={(e) => setSaturdayLoading({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="Sunday loading"
+                    value={`${sundayLoading.value}%`}
+                    override={sundayLoading.override}
+                    onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}
+                  >
+                    <Input
+                      type="number"
+                      value={sundayLoading.value}
+                      onChange={(e) => setSundayLoading({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="Public holiday loading"
+                    value={`${phLoading.value}%`}
+                    override={phLoading.override}
+                    onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}
+                  >
+                    <Input
+                      type="number"
+                      value={phLoading.value}
+                      onChange={(e) => setPhLoading({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
+                  <ResolvedField
+                    label="Evening loading"
+                    value={`${eveningLoading.value}%`}
+                    override={eveningLoading.override}
+                    onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}
+                  >
+                    <Input
+                      type="number"
+                      value={eveningLoading.value}
+                      onChange={(e) => setEveningLoading({ override: true, value: parseFloat(e.target.value) || 0 })}
+                    />
+                  </ResolvedField>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+
+                <Separator />
+
                 <div className="space-y-2">
-                  <Label>Hourly Rate ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.hourlyRate}
-                    onChange={(e) => setFormData({ ...formData, hourlyRate: parseFloat(e.target.value) || 0 })}
-                  />
+                  <Label className="text-xs">Award allowances applicable to this employee</Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Select the allowances that should be automatically applied when timesheets are processed.
+                  </p>
+                  <div className="space-y-1.5">
+                    {availableAwardAllowances.map((a) => {
+                      const on = selectedAllowances.includes(a.id);
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => toggleAllowance(a.id)}
+                          className={cn(
+                            'w-full flex items-center justify-between border rounded-md px-3 py-2 text-sm text-left',
+                            on ? 'border-primary bg-primary/5' : 'border-border'
+                          )}
+                        >
+                          <div>
+                            <div className="font-medium">{a.label}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              ${a.amount.toFixed(2)} {a.unit}
+                            </div>
+                          </div>
+                          <Switch checked={on} onCheckedChange={() => toggleAllowance(a.id)} className="scale-75" />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Annual Salary ($) (if applicable)</Label>
-                  <Input
-                    type="number"
-                    value={formData.annualSalary}
-                    onChange={(e) => setFormData({ ...formData, annualSalary: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Contracted Hours (per week)</Label>
-                <Input
-                  type="number"
-                  value={formData.contractedHours}
-                  onChange={(e) => setFormData({ ...formData, contractedHours: parseFloat(e.target.value) || 0 })}
-                />
-              </div>
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
 
-        {/* Footer Actions */}
-        <div className="border-t pt-4 flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-          <Button className="flex-1" onClick={handleSave}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Changes
-          </Button>
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-background border-t px-6 py-3 flex items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            Effective hourly rate: <span className="font-semibold text-foreground">${effectiveHourlyRate.toFixed(2)}</span>
+            <span className="mx-2">·</span>
+            Ordinary hrs/wk: <span className="font-semibold text-foreground">{ordinaryPerWeek.value}</span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4 mr-2" />Cancel
+            </Button>
+            <Button onClick={handleSave}>
+              <Save className="h-4 w-4 mr-2" />Save changes
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
