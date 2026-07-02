@@ -174,3 +174,19 @@ export const genderLabels: Record<Gender, string> = {
   other: 'Other',
   prefer_not_to_say: 'Prefer not to say',
 };
+
+export const streamOptions: string[] = [
+  'SCHADS - Social & Community Services',
+  'SCHADS - Home Care',
+  'SCHADS - Disability Services',
+  'SCHADS - Crisis Accommodation',
+  'Health Professionals & Support Services',
+  'Nurses Award',
+  'Aged Care Award',
+  'Children\'s Services Award',
+  'Educational Services (Teachers)',
+  'Hospitality Industry (General)',
+  'General Retail Industry',
+  'Clerks - Private Sector',
+  'Other',
+];
