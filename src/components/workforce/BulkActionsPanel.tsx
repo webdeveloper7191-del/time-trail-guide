@@ -28,6 +28,8 @@ import { locations, departments, mockStaff } from '@/data/mockStaffData';
 import { mockPositions } from '@/data/mockPositions';
 import { leaveTypeLabels, LeaveType } from '@/types/leaveAccrual';
 import { employmentStatusLabels, streamOptions, employmentTypeLabels, EmploymentStatus } from '@/types/staff';
+import { EmailBlockEditor } from './EmailBlockEditor';
+import { CcRecipientsField } from './CcRecipientsField';
 
 export type BulkActionKey =
   | 'add-locations'
