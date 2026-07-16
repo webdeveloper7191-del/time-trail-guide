@@ -28,6 +28,8 @@ import { locations, departments, mockStaff } from '@/data/mockStaffData';
 import { mockPositions } from '@/data/mockPositions';
 import { leaveTypeLabels, LeaveType } from '@/types/leaveAccrual';
 import { employmentStatusLabels, streamOptions, employmentTypeLabels, EmploymentStatus } from '@/types/staff';
+import { EmailBlockEditor } from './EmailBlockEditor';
+import { CcRecipientsField } from './CcRecipientsField';
 
 export type BulkActionKey =
   | 'add-locations'
@@ -290,7 +292,7 @@ export function BulkActionsPanel({ open, action, selectedCount, selectedIds = []
     subject: '',
     body: '',
     priority: 'normal',
-    ccPayroll: false,
+    cc: [] as string[],
     requireAck: false,
   });
 
@@ -730,10 +732,12 @@ export function BulkActionsPanel({ open, action, selectedCount, selectedIds = []
                 placeholder="e.g. Roster changes for next week" />
             </div>
             <div>
-              <LabelWithHint hint={HINTS.body}>Message body</LabelWithHint>
-              <Textarea rows={7} value={email.body}
-                onChange={e => setEmail({ ...email, body: e.target.value })}
-                placeholder="Write your message. Merge tags {{first_name}}, {{location}} are supported." />
+              <LabelWithHint hint="Add colleagues or external email addresses to CC on this message. Type to search users or enter any email and press Enter.">CC recipients</LabelWithHint>
+              <CcRecipientsField values={email.cc} onChange={cc => setEmail({ ...email, cc })} />
+            </div>
+            <div>
+              <LabelWithHint hint={HINTS.body}>Message</LabelWithHint>
+              <EmailBlockEditor value={email.body} onChange={html => setEmail(prev => (prev.body === html ? prev : { ...prev, body: html }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -748,11 +752,6 @@ export function BulkActionsPanel({ open, action, selectedCount, selectedIds = []
                 </Select>
               </div>
               <div className="flex flex-col justify-end gap-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={email.ccPayroll} onCheckedChange={v => setEmail({ ...email, ccPayroll: !!v })} />
-                  CC Payroll inbox
-                  <InfoHint text={HINTS.ccPayroll} />
-                </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={email.requireAck} onCheckedChange={v => setEmail({ ...email, requireAck: !!v })} />
                   Require read acknowledgement
