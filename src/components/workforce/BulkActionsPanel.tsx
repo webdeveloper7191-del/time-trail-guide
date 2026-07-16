@@ -290,7 +290,7 @@ export function BulkActionsPanel({ open, action, selectedCount, selectedIds = []
     subject: '',
     body: '',
     priority: 'normal',
-    ccPayroll: false,
+    cc: [] as string[],
     requireAck: false,
   });
 
