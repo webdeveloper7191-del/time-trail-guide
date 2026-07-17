@@ -169,7 +169,7 @@ export function EmailBlockEditor({ onChange }: Props) {
       </div>
 
       {view === 'edit' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] min-h-[420px]">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] min-h-[420px]">
           {/* Canvas */}
           <div className="p-4 bg-muted/20 overflow-auto max-h-[520px]">
             <div className="max-w-[600px] mx-auto bg-background rounded-md border shadow-sm">
