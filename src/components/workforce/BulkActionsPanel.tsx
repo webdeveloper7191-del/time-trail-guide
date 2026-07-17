@@ -478,7 +478,13 @@ export function BulkActionsPanel({ open, action, selectedCount, selectedIds = []
       title={cfg.title}
       description={`Applies to ${selectedCount} selected team member${selectedCount === 1 ? '' : 's'}.`}
       icon={Icon}
-      size={action === 'set-pay-rates' || action === 'set-working-hours' || action === 'set-leave-balance' ? 'lg' : 'md'}
+      size={
+        action === 'send-email'
+          ? '3xl'
+          : action === 'set-pay-rates' || action === 'set-working-hours' || action === 'set-leave-balance'
+            ? 'lg'
+            : 'md'
+      }
       actions={[
         { label: 'Cancel', variant: 'secondary', onClick: onClose },
         {
