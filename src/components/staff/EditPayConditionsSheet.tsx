@@ -264,6 +264,15 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [fte, setFte] = useState<number>(1);
   const [guaranteedMinHours, setGuaranteedMinHours] = useState<number>(payCondition?.contractedHours || 0);
 
+  // Shift-worker classification (drives NES 5th-week annual leave, 7-day span, night penalties)
+  const [isShiftWorker, setIsShiftWorker] = useState<boolean>(!!payCondition?.isShiftWorker);
+  const [isRotatingShiftWorker, setIsRotatingShiftWorker] = useState<boolean>(!!payCondition?.isRotatingShiftWorker);
+  const [shiftPattern, setShiftPattern] = useState<NonNullable<PayCondition['shiftPattern']>>(
+    payCondition?.shiftPattern || 'two_shift'
+  );
+  const [rotationCycleWeeks, setRotationCycleWeeks] = useState<number>(payCondition?.rotationCycleWeeks || 4);
+  const [averageNightsPerCycle, setAverageNightsPerCycle] = useState<number>(payCondition?.averageNightsPerCycle || 0);
+
   // Section 2 — Industrial instrument & classification
   const [instrumentType, setInstrumentType] = useState<InstrumentType>('modern_award');
   const [industryAward, setIndustryAward] = useState(payCondition?.industryAward || '');
