@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { DerivedAvailabilityCard } from './DerivedAvailabilityCard';
 
 interface StaffAvailabilitySectionProps {
   staff: StaffMember;
