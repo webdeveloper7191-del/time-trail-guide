@@ -603,7 +603,15 @@ export function ShiftDetailPanel({
                   )}
                 </div>
               )}
+
+              {assignedStaff && (
+                <StaffAvailabilityWarnings
+                  staff={assignedStaff}
+                  shiftDate={editedShift.date}
+                />
+              )}
             </FormSection>
+
 
             {/* Leave/Absence Alert */}
             {(staffApprovedLeave || staffPendingLeave) && (
