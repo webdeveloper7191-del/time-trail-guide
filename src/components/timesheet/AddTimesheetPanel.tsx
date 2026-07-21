@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,6 +132,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
   const [breakRules] = useBreakRules();
   const [prepopulateBreaks, setPrepopulateBreaks] = useState(true);
+  const [hasHydratedInitialBreaks, setHasHydratedInitialBreaks] = useState(false);
 
   // Compute a break window from a rule, anchored to the midpoint of the shift.
   const windowFromRule = (clockIn: string, clockOut: string, durationMin: number, offsetMin = 0) => {
@@ -202,6 +203,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     return out;
   };
 
+  useEffect(() => {
+    if (!open || !prepopulateBreaks || hasHydratedInitialBreaks) return;
+    setEntries(prev => prev.map(e => {
+      if (e.leaveType) return e;
+      return { ...e, breaks: buildDefaultBreaks(e.clockIn, e.clockOut) };
+    }));
+    setHasHydratedInitialBreaks(true);
+  }, [open, prepopulateBreaks, hasHydratedInitialBreaks, breakRules]);
+
   const applyPrepopulatedBreaks = (checked: boolean) => {
     setPrepopulateBreaks(checked);
     setEntries(prev => prev.map(e => {
@@ -257,11 +267,18 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     setLocationId('');
     setWeekStartDate('');
     setEntries([emptyEntry()]);
+    setHasHydratedInitialBreaks(false);
     setNotes('');
   };
 
   const addEntry = () => {
-    setEntries(prev => [...prev, prepopulateBreaks ? emptyEntry() : { ...emptyEntry(), breaks: [] }]);
+    setEntries(prev => {
+      const next = emptyEntry();
+      return [
+        ...prev,
+        prepopulateBreaks ? { ...next, breaks: buildDefaultBreaks(next.clockIn, next.clockOut) } : { ...next, breaks: [] },
+      ];
+    });
   };
 
   const removeEntry = (index: number) => {
