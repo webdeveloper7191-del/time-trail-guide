@@ -36,6 +36,7 @@ import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
 import { EditPayConditionsSheet } from './EditPayConditionsSheet';
 import { InlineAvailabilityTable } from './InlineAvailabilityTable';
+import { DerivedAvailabilityCard } from './DerivedAvailabilityCard';
 
 interface StaffPayConditionsSectionProps {
   staff: StaffMember;
@@ -283,6 +284,8 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
                   // TODO: Integrate with API to save changes
                 }}
               />
+              <Separator />
+              <DerivedAvailabilityCard staff={staff} />
             </div>
           </CollapsibleContent>
         </div>
