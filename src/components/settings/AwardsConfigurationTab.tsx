@@ -754,6 +754,11 @@ export function AwardsConfigurationTab() {
           <EnterpriseAgreementPanel />
         </TabsContent>
 
+        <TabsContent value="leave-accruals" className="mt-0">
+          <LeaveAccrualsAwardSection />
+        </TabsContent>
+
+
         <TabsContent value="comparison" className="mt-0">
           <AwardComparisonPanel />
         </TabsContent>
