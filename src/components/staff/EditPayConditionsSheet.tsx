@@ -1235,3 +1235,141 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     </Sheet>
   );
 }
+
+// ---------- Inline RDO / ADO / TOIL editor ----------
+
+const LEAVE_META: Record<LeaveKind, { label: string; hue: string; blurb: string }> = {
+  RDO:  { label: 'RDO', hue: 'bg-blue-50 text-blue-700 border-blue-200',       blurb: 'Rostered Day Off — fixed cyclical day funded by longer ordinary weeks.' },
+  ADO:  { label: 'ADO', hue: 'bg-emerald-50 text-emerald-700 border-emerald-200', blurb: 'Accrued Day Off — banked per ordinary hour, taken as full-day blocks.' },
+  TOIL: { label: 'TOIL', hue: 'bg-violet-50 text-violet-700 border-violet-200', blurb: 'Time Off In Lieu — overtime converted to leave instead of paid out.' },
+};
+
+function StaffLeaveAccrualEditor({ staffId, staffName }: { staffId: string; staffName: string }) {
+  const snap = useSyncExternalStore(subscribeLeave, getLeaveSnapshot, getLeaveSnapshot);
+  const cfg = snap.staff.find(s => s.staffId === staffId);
+  const optedIn = cfg?.optedIn  ?? { RDO: false, ADO: false, TOIL: false };
+  const balance = cfg?.balanceHours ?? { RDO: 0, ADO: 0, TOIL: 0 };
+
+  const toggle = (k: LeaveKind, v: boolean) => {
+    LeaveStore.updateStaffConfig(staffId, { staffName, optedIn: { ...optedIn, [k]: v } });
+  };
+  const setAnchor = (d?: string) => LeaveStore.updateStaffConfig(staffId, { staffName, rdoAnchorDate: d });
+
+  const [adjKind, setAdjKind] = useState<LeaveKind>('TOIL');
+  const [adjHours, setAdjHours] = useState<string>('');
+  const [adjNote, setAdjNote]   = useState<string>('');
+  const applyAdjustment = () => {
+    const n = Number(adjHours);
+    if (!n || Number.isNaN(n)) { toast.error('Enter a non-zero hour value (use – for deductions)'); return; }
+    LeaveStore.postLedger({
+      staffId, kind: adjKind, type: 'adjustment', hours: n,
+      occurredOn: new Date().toISOString().slice(0, 10),
+      note: adjNote || `Manual adjustment via pay conditions`,
+    });
+    setAdjHours(''); setAdjNote('');
+    toast.success(`${n >= 0 ? 'Credited' : 'Debited'} ${Math.abs(n).toFixed(2)}h ${adjKind}`);
+  };
+
+  const staffLedger = snap.ledger.filter(e => e.staffId === staffId).slice(-6).reverse();
+
+  return (
+    <div className="space-y-4">
+      <div className="text-xs text-muted-foreground">
+        Opt this employee into each leave scheme and see live balances. Award-level rules (cycle length, accrual
+        rates, TOIL expiry) are configured centrally in <span className="font-medium text-foreground">Settings → Awards → RDO / ADO / TOIL</span>.
+      </div>
+
+      {/* Opt-in cards */}
+      <div className="grid gap-3 md:grid-cols-3">
+        {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
+          <div key={k} className="border rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className={LEAVE_META[k].hue}>{LEAVE_META[k].label}</Badge>
+              <Switch checked={optedIn[k]} onCheckedChange={(v) => toggle(k, v)} />
+            </div>
+            <div className="text-[11px] text-muted-foreground leading-relaxed">{LEAVE_META[k].blurb}</div>
+            <div className="flex items-center justify-between text-xs pt-1 border-t">
+              <span className="text-muted-foreground">Current balance</span>
+              <span className="font-mono font-semibold">{balance[k].toFixed(2)} h</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* RDO anchor */}
+      {optedIn.RDO && (
+        <div className="flex items-center gap-3 rounded-lg border p-3">
+          <div className="flex-1">
+            <Label className="text-xs">RDO anchor date</Label>
+            <div className="text-[11px] text-muted-foreground">First scheduled RDO — the roster will roll the cycle from here.</div>
+          </div>
+          <Input
+            type="date"
+            className="h-9 w-44"
+            value={cfg?.rdoAnchorDate ?? ''}
+            onChange={(e) => setAnchor(e.target.value || undefined)}
+          />
+        </div>
+      )}
+
+      {/* Manual adjustment */}
+      <div className="rounded-lg border p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <PencilLine className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-sm font-medium">Manual balance adjustment</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-[120px_120px_1fr_auto] gap-2">
+          <Select value={adjKind} onValueChange={(v) => setAdjKind(v as LeaveKind)}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="RDO">RDO</SelectItem>
+              <SelectItem value="ADO">ADO</SelectItem>
+              <SelectItem value="TOIL">TOIL</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input type="number" step="0.25" placeholder="± hours" value={adjHours} onChange={(e) => setAdjHours(e.target.value)} className="h-9" />
+          <Input placeholder="Reason / note (optional)" value={adjNote} onChange={(e) => setAdjNote(e.target.value)} className="h-9" />
+          <Button size="sm" onClick={applyAdjustment}>Post</Button>
+        </div>
+        <div className="text-[11px] text-muted-foreground">Use a negative number to debit (e.g. –4 for 4 hours consumed).</div>
+      </div>
+
+      {/* Recent activity */}
+      <div className="rounded-lg border">
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+          <ScrollText className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-medium">Recent ledger activity</span>
+          <span className="text-[10px] text-muted-foreground ml-auto">Last 6 entries</span>
+        </div>
+        {staffLedger.length === 0 ? (
+          <div className="text-xs text-muted-foreground text-center py-4">No ledger entries yet.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="h-8 text-[11px]">Date</TableHead>
+                <TableHead className="h-8 text-[11px]">Kind</TableHead>
+                <TableHead className="h-8 text-[11px]">Type</TableHead>
+                <TableHead className="h-8 text-[11px] text-right">Hours</TableHead>
+                <TableHead className="h-8 text-[11px]">Note</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {staffLedger.map(e => (
+                <TableRow key={e.id}>
+                  <TableCell className="py-1.5 text-xs">{e.occurredOn}</TableCell>
+                  <TableCell className="py-1.5"><Badge variant="outline" className={LEAVE_META[e.kind].hue}>{e.kind}</Badge></TableCell>
+                  <TableCell className="py-1.5 text-xs capitalize">{e.type}</TableCell>
+                  <TableCell className={`py-1.5 text-right font-mono text-xs ${e.hours >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                    {e.hours > 0 ? '+' : ''}{e.hours.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="py-1.5 text-xs text-muted-foreground truncate max-w-[200px]">{e.note}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    </div>
+  );
+}
