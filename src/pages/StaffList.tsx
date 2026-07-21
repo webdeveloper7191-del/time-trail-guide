@@ -583,6 +583,10 @@ export default function StaffList() {
             <TabsContent value="onboarding-questions">
               <OnboardingQuestions />
             </TabsContent>
+
+            <TabsContent value="leave-accruals">
+              <LeaveAccrualsWorkforceSection />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
