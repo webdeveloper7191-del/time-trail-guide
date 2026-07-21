@@ -231,15 +231,17 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
       }
 
       const grossHours = calculateHours(entry.clockIn, entry.clockOut);
-      const breakMinutes = calculateHours(entry.breakStart, entry.breakEnd) * 60;
-      const netHours = Math.max(0, grossHours - breakMinutes / 60);
-      const breaks: BreakEntry[] = entry.breakStart && entry.breakEnd ? [{
-        id: `brk-${i}`,
-        startTime: entry.breakStart,
-        endTime: entry.breakEnd,
-        duration: breakMinutes,
-        type: 'lunch' as const,
-      }] : [];
+      const unpaidBreakMinutes = calculateHours(entry.breakStart, entry.breakEnd) * 60;
+      const paidBreakMinutes = calculateHours(entry.paidBreakStart, entry.paidBreakEnd) * 60;
+      const netHours = Math.max(0, grossHours - unpaidBreakMinutes / 60); // paid break NOT deducted
+      const breaks: BreakEntry[] = [];
+      if (entry.breakStart && entry.breakEnd) {
+        breaks.push({ id: `brk-u-${i}`, startTime: entry.breakStart, endTime: entry.breakEnd, duration: unpaidBreakMinutes, type: 'lunch' as const });
+      }
+      if (entry.paidBreakStart && entry.paidBreakEnd) {
+        breaks.push({ id: `brk-p-${i}`, startTime: entry.paidBreakStart, endTime: entry.paidBreakEnd, duration: paidBreakMinutes, type: 'short' as const });
+      }
+      const breakMinutes = unpaidBreakMinutes + paidBreakMinutes;
 
       let exception: TimesheetException | undefined;
       if (entry.exceptionReason && entry.exceptionNote?.trim()) {
