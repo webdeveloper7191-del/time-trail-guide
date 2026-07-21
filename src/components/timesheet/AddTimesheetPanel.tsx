@@ -270,17 +270,23 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
       }
 
       const grossHours = calculateHours(entry.clockIn, entry.clockOut);
-      const unpaidBreakMinutes = calculateHours(entry.breakStart, entry.breakEnd) * 60;
-      const paidBreakMinutes = calculateHours(entry.paidBreakStart, entry.paidBreakEnd) * 60;
+      const validBreaks = entry.breaks.filter(b => b.start && b.end);
+      const unpaidBreakMinutes = validBreaks
+        .filter(b => !b.paid)
+        .reduce((s, b) => s + calculateHours(b.start, b.end) * 60, 0);
+      const paidBreakMinutes = validBreaks
+        .filter(b => b.paid)
+        .reduce((s, b) => s + calculateHours(b.start, b.end) * 60, 0);
       const netHours = Math.max(0, grossHours - unpaidBreakMinutes / 60); // paid break NOT deducted
-      const breaks: BreakEntry[] = [];
-      if (entry.breakStart && entry.breakEnd) {
-        breaks.push({ id: `brk-u-${i}`, startTime: entry.breakStart, endTime: entry.breakEnd, duration: unpaidBreakMinutes, type: 'lunch' as const });
-      }
-      if (entry.paidBreakStart && entry.paidBreakEnd) {
-        breaks.push({ id: `brk-p-${i}`, startTime: entry.paidBreakStart, endTime: entry.paidBreakEnd, duration: paidBreakMinutes, type: 'short' as const });
-      }
+      const breaks: BreakEntry[] = validBreaks.map((b, bi) => ({
+        id: `brk-${i}-${bi}`,
+        startTime: b.start,
+        endTime: b.end,
+        duration: calculateHours(b.start, b.end) * 60,
+        type: b.paid ? ('short' as const) : ('lunch' as const),
+      }));
       const breakMinutes = unpaidBreakMinutes + paidBreakMinutes;
+
 
       let exception: TimesheetException | undefined;
       if (entry.exceptionReason && entry.exceptionNote?.trim()) {
