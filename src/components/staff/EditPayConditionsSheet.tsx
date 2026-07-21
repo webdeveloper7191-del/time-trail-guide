@@ -1383,21 +1383,156 @@ function StaffLeaveAccrualEditor({ staffId, staffName }: { staffId: string; staf
         ))}
       </div>
 
-      {/* RDO anchor */}
+      {/* Golden rule callout */}
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 leading-relaxed">
+        <span className="font-semibold">System rule:</span> RDO and ADO never accrue from overtime. TOIL never
+        accrues from ordinary hours. Balances are kept separate because accrual, approval, payout and
+        compliance rules differ per scheme.
+      </div>
+
+      {/* Per-scheme configuration */}
       {optedIn.RDO && (
-        <div className="flex items-center gap-3 rounded-lg border p-3">
-          <div className="flex-1">
-            <Label className="text-xs">RDO anchor date</Label>
-            <div className="text-[11px] text-muted-foreground">First scheduled RDO — the roster will roll the cycle from here.</div>
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={LEAVE_META.RDO.hue}>RDO</Badge>
+            <span className="text-sm font-medium">Rostered Day Off arrangement</span>
           </div>
-          <Input
-            type="date"
-            className="h-9 w-44"
-            value={cfg?.rdoAnchorDate ?? ''}
-            onChange={(e) => setAnchor(e.target.value || undefined)}
-          />
+          <div className="text-[11px] text-muted-foreground">
+            Example: 38-hr week worked as 40 hrs; the extra 2 hrs/week fund one RDO every 4 weeks.
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div>
+              <Label className="text-[11px]">Anchor date</Label>
+              <Input type="date" className="h-9"
+                value={cfg?.rdoAnchorDate ?? ''}
+                onChange={(e) => setAnchor(e.target.value || undefined)} />
+            </div>
+            <div>
+              <Label className="text-[11px]">Preferred day</Label>
+              <Select
+                value={cfg?.rdoSettings?.dayOfWeek ?? ''}
+                onValueChange={(v) => LeaveStore.updateStaffConfig(staffId, { staffName, rdoSettings: { ...cfg?.rdoSettings, dayOfWeek: v as 'mon'|'tue'|'wed'|'thu'|'fri'|'sat'|'sun' } })}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  {['mon','tue','wed','thu','fri','sat','sun'].map(d => (
+                    <SelectItem key={d} value={d}>{d.toUpperCase()}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-[11px]">Cycle (weeks)</Label>
+              <Input type="number" min={1} max={12} className="h-9"
+                value={cfg?.rdoSettings?.cycleWeeks ?? ''}
+                placeholder="4"
+                onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, rdoSettings: { ...cfg?.rdoSettings, cycleWeeks: Number(e.target.value) || undefined } })} />
+            </div>
+            <div>
+              <Label className="text-[11px]">Extra mins / day</Label>
+              <Input type="number" min={0} className="h-9"
+                value={cfg?.rdoSettings?.extraMinutesPerDay ?? ''}
+                placeholder="24"
+                onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, rdoSettings: { ...cfg?.rdoSettings, extraMinutesPerDay: Number(e.target.value) || undefined } })} />
+            </div>
+          </div>
         </div>
       )}
+
+      {optedIn.ADO && (
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={LEAVE_META.ADO.hue}>ADO</Badge>
+            <span className="text-sm font-medium">Accrued Day Off — progressive banking</span>
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            Example: 7h 36m ordinary + 24 extra ordinary mins/day accrue until enough hours fund a paid day off.
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div>
+              <Label className="text-[11px]">Extra ordinary mins / day</Label>
+              <Input type="number" min={0} className="h-9"
+                value={cfg?.adoSettings?.extraMinutesPerDay ?? ''}
+                placeholder="24"
+                onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, adoSettings: { ...cfg?.adoSettings, extraMinutesPerDay: Number(e.target.value) || undefined } })} />
+            </div>
+            <div>
+              <Label className="text-[11px]">Hours per day off</Label>
+              <Input type="number" step="0.1" min={0} className="h-9"
+                value={cfg?.adoSettings?.targetHoursPerDayOff ?? ''}
+                placeholder="7.6"
+                onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, adoSettings: { ...cfg?.adoSettings, targetHoursPerDayOff: Number(e.target.value) || undefined } })} />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label className="text-[11px]">Auto-schedule day off</Label>
+                <div className="text-[10px] text-muted-foreground">Book once threshold hit.</div>
+              </div>
+              <Switch
+                checked={!!cfg?.adoSettings?.autoScheduleDayOff}
+                onCheckedChange={(v) => LeaveStore.updateStaffConfig(staffId, { staffName, adoSettings: { ...cfg?.adoSettings, autoScheduleDayOff: v } })} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {optedIn.TOIL && (
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={LEAVE_META.TOIL.hue}>TOIL</Badge>
+            <span className="text-sm font-medium">Time Off In Lieu — overtime conversion</span>
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            Example: 2 hrs of eligible OT convert to either 2 hrs TOIL (time-for-time) or 3 hrs (penalty-equivalent @ 150%).
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div>
+              <Label className="text-[11px]">Conversion</Label>
+              <Select
+                value={cfg?.toilSettings?.conversion ?? 'time_for_time'}
+                onValueChange={(v) => LeaveStore.updateStaffConfig(staffId, { staffName, toilSettings: { ...cfg?.toilSettings, conversion: v as 'time_for_time' | 'penalty_equivalent' } })}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="time_for_time">Time-for-time</SelectItem>
+                  <SelectItem value="penalty_equivalent">Penalty-equivalent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {cfg?.toilSettings?.conversion === 'penalty_equivalent' && (
+              <div>
+                <Label className="text-[11px]">Multiplier</Label>
+                <Input type="number" step="0.1" min={1} className="h-9"
+                  value={cfg?.toilSettings?.penaltyMultiplier ?? ''}
+                  placeholder="1.5"
+                  onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, toilSettings: { ...cfg?.toilSettings, penaltyMultiplier: Number(e.target.value) || undefined } })} />
+              </div>
+            )}
+            <div>
+              <Label className="text-[11px]">Max balance (hrs)</Label>
+              <Input type="number" min={0} className="h-9"
+                value={cfg?.toilSettings?.maxBalanceHours ?? ''}
+                placeholder="40"
+                onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, toilSettings: { ...cfg?.toilSettings, maxBalanceHours: Number(e.target.value) || undefined } })} />
+            </div>
+            <div>
+              <Label className="text-[11px]">Expiry (days)</Label>
+              <Input type="number" min={0} className="h-9"
+                value={cfg?.toilSettings?.expiryDays ?? ''}
+                placeholder="90"
+                onChange={(e) => LeaveStore.updateStaffConfig(staffId, { staffName, toilSettings: { ...cfg?.toilSettings, expiryDays: Number(e.target.value) || undefined } })} />
+            </div>
+            <div className="flex items-end gap-2 md:col-span-2">
+              <div className="flex-1">
+                <Label className="text-[11px]">Pre-approval required</Label>
+                <div className="text-[10px] text-muted-foreground">Manager must approve before OT converts.</div>
+              </div>
+              <Switch
+                checked={!!cfg?.toilSettings?.requiresPreApproval}
+                onCheckedChange={(v) => LeaveStore.updateStaffConfig(staffId, { staffName, toilSettings: { ...cfg?.toilSettings, requiresPreApproval: v } })} />
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Manual adjustment */}
       <div className="rounded-lg border p-3 space-y-2">
