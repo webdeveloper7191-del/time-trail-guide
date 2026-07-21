@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2, Save, CalendarIcon, Info } from 'lucide-react';
+import { Plus, Trash2, Save, CalendarIcon, Info, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { locations } from '@/data/mockStaffData';
 import { format, differenceInWeeks, startOfWeek, addWeeks } from 'date-fns';
@@ -116,6 +116,7 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
   const addHours = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
     updateDay(week, dayKey, {
       isAvailable: true,
+      isRdo: false,
       startTime: '09:00',
       endTime: '17:00',
       breakMinutes: 30,
@@ -126,10 +127,22 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
   const removeHours = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
     updateDay(week, dayKey, {
       isAvailable: false,
+      isRdo: false,
       startTime: undefined,
       endTime: undefined,
       breakMinutes: undefined,
       area: undefined
+    });
+  };
+
+  const markRdo = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
+    updateDay(week, dayKey, {
+      isAvailable: false,
+      isRdo: true,
+      startTime: undefined,
+      endTime: undefined,
+      breakMinutes: undefined,
+      area: undefined,
     });
   };
 
@@ -174,13 +187,16 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
       {daysOfWeek.map((day) => {
         const dayData = weekData.find(a => a.dayOfWeek === day.key);
         const isAvailable = dayData?.isAvailable;
+        const isRdo = !!dayData?.isRdo;
         
         return (
           <div 
             key={day.key} 
             className={cn(
               "grid grid-cols-[100px_1fr_1fr_80px_80px_1fr_50px] gap-0 border-t items-center transition-colors",
-              isAvailable ? "bg-green-50/30 dark:bg-green-950/10" : "bg-muted/10"
+              isAvailable && "bg-green-50/30 dark:bg-green-950/10",
+              isRdo && "bg-rose-50/40 dark:bg-rose-950/10",
+              !isAvailable && !isRdo && "bg-muted/10"
             )}
           >
             {/* Day Label */}
@@ -188,7 +204,7 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "w-2 h-2 rounded-full",
-                  isAvailable ? "bg-green-500" : "bg-muted-foreground/30"
+                  isAvailable ? "bg-green-500" : isRdo ? "bg-rose-500" : "bg-muted-foreground/30"
                 )} />
                 <span className="font-medium text-sm">{day.label}</span>
               </div>
@@ -271,10 +287,30 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                   </Button>
                 </div>
               </>
+            ) : isRdo ? (
+              <>
+                <div className="col-span-5 px-3 py-2">
+                  <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900 gap-1">
+                    <Moon className="h-3 w-3" />
+                    RDO — Rostered Day Off (hard block)
+                  </Badge>
+                </div>
+                <div className="px-2 py-2 text-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => removeHours(week, day.key)}
+                    title="Clear RDO"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
             ) : (
               <>
-                {/* Add Hours Button */}
-                <div className="col-span-5 px-3 py-2">
+                {/* Add Hours / Mark RDO */}
+                <div className="col-span-5 px-3 py-2 flex items-center gap-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -283,6 +319,16 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                   >
                     <Plus className="h-3 w-3 mr-1" />
                     Add Hours
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                    onClick={() => markRdo(week, day.key)}
+                    title="Mark this weekday as a Rostered Day Off"
+                  >
+                    <Moon className="h-3 w-3 mr-1" />
+                    Mark as RDO
                   </Button>
                 </div>
                 <div className="px-2 py-2"></div>
