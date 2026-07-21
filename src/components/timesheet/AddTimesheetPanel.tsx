@@ -82,14 +82,14 @@ const offsetTime = (value: string | undefined, offsetMinutes: number) => {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 };
 
-function AppRecordedTime({ value, edited }: { value?: string; edited?: boolean }) {
+function AppRecordedTime({ value, rounded }: { value?: string; rounded?: boolean }) {
   if (!value) return null;
   return (
     <span className="inline-flex min-w-0 items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] leading-none text-muted-foreground">
       <Smartphone className="h-2.5 w-2.5 shrink-0" />
       <span className="shrink-0">App</span>
       <span className="truncate font-medium text-foreground">{formatTime12h(value)}</span>
-      {edited && <span className="shrink-0 text-[hsl(var(--warning))]">Edited</span>}
+      {rounded && <span className="shrink-0 text-[hsl(var(--warning))]">Rounded</span>}
     </span>
   );
 }
@@ -643,7 +643,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         </div>
                         <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                           <Input type="time" className="h-8 min-w-0 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
-                          <AppRecordedTime value={entry.sourceClockIn} edited={!!entry.clockIn && entry.clockIn !== entry.sourceClockIn} />
+                          <AppRecordedTime value={entry.sourceClockIn} rounded={!!entry.clockIn && entry.clockIn !== entry.sourceClockIn} />
                         </div>
                       </div>
                       <div className="min-w-0 space-y-1">
@@ -663,7 +663,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         </div>
                         <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                           <Input type="time" className="h-8 min-w-0 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
-                          <AppRecordedTime value={entry.sourceClockOut} edited={!!entry.clockOut && entry.clockOut !== entry.sourceClockOut} />
+                          <AppRecordedTime value={entry.sourceClockOut} rounded={!!entry.clockOut && entry.clockOut !== entry.sourceClockOut} />
                         </div>
                       </div>
                     </div>
@@ -711,7 +711,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                                   <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                                     <Input type="time" className="h-8 min-w-0 text-xs"
                                       value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
-                                    <AppRecordedTime value={b.sourceStart} edited={!!b.start && b.start !== b.sourceStart} />
+                                    <AppRecordedTime value={b.sourceStart} rounded={!!b.start && b.start !== b.sourceStart} />
                                   </div>
                                 </div>
                                 <div className="min-w-0 space-y-1">
@@ -719,7 +719,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                                   <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                                     <Input type="time" className="h-8 min-w-0 text-xs"
                                       value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
-                                    <AppRecordedTime value={b.sourceEnd} edited={!!b.end && b.end !== b.sourceEnd} />
+                                    <AppRecordedTime value={b.sourceEnd} rounded={!!b.end && b.end !== b.sourceEnd} />
                                   </div>
                                 </div>
                                 <button type="button"
