@@ -530,37 +530,75 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Break Start</Label>
-                          <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
+                          <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            Unpaid Break <span className="text-[9px] text-muted-foreground/70">(deducted)</span>
+                          </Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
+                            <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
+                          </div>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Break End</Label>
-                          <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
+                          <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            Paid Break <span className="text-[9px] text-muted-foreground/70">(not deducted)</span>
+                          </Label>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Input type="time" className="h-8 text-xs" value={entry.paidBreakStart} onChange={e => updateEntry(i, 'paidBreakStart', e.target.value)} />
+                            <Input type="time" className="h-8 text-xs" value={entry.paidBreakEnd} onChange={e => updateEntry(i, 'paidBreakEnd', e.target.value)} />
+                          </div>
                         </div>
                       </div>
-                      {entry.clockIn && entry.clockOut && (!entry.breakStart || !entry.breakEnd) && (
-                        <div className="flex items-start gap-2 p-2 rounded-md border border-amber-500/40 bg-amber-500/5">
-                          <Coffee className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-medium text-amber-700">
-                              No break recorded for shift {formatTime12h(entry.clockIn)} – {formatTime12h(entry.clockOut)}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                              Break clocking data is missing for this day.
-                            </p>
+                      {(() => {
+                        if (!entry.clockIn || !entry.clockOut) return null;
+                        const rules = applicableRules(entry.clockIn, entry.clockOut);
+                        const missing = rules.filter(r => {
+                          if (r.type === 'unpaid') return !entry.breakStart || !entry.breakEnd;
+                          return !entry.paidBreakStart || !entry.paidBreakEnd;
+                        });
+                        if (missing.length === 0) return null;
+                        const hrs = shiftHours(entry.clockIn, entry.clockOut);
+                        return (
+                          <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                            <Coffee className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <p className="text-[11px] font-medium text-amber-700">
+                                Missing break data — shift {formatTime12h(entry.clockIn)} – {formatTime12h(entry.clockOut)} ({hrs.toFixed(2)}h worked)
+                              </p>
+                              <ul className="space-y-0.5">
+                                {missing.map(r => (
+                                  <li key={r.id} className="text-[11px] text-amber-800/90 flex items-center gap-1.5">
+                                    <span className="inline-block w-1 h-1 rounded-full bg-amber-600" />
+                                    <span className="font-medium">{r.name}</span>
+                                    <span className="text-muted-foreground">
+                                      · expected {r.breakDurationMinutes} min {r.type} {r.isMandatory ? '· mandatory' : '· optional'}
+                                      {' '}(triggered ≥ {r.minWorkHoursRequired}h)
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                              <p className="text-[10px] text-muted-foreground">
+                                No matching break was clocked between {formatTime12h(entry.clockIn)} and {formatTime12h(entry.clockOut)}.
+                              </p>
+                            </div>
+                            <Button
+                              type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-500/10"
+                              onClick={() => {
+                                const d = defaultBreakFor(entry.clockIn, entry.clockOut);
+                                if (d.unpaid.start && (!entry.breakStart || !entry.breakEnd)) {
+                                  updateEntry(i, 'breakStart', d.unpaid.start);
+                                  updateEntry(i, 'breakEnd', d.unpaid.end);
+                                }
+                                if (d.paid.start && (!entry.paidBreakStart || !entry.paidBreakEnd)) {
+                                  updateEntry(i, 'paidBreakStart', d.paid.start);
+                                  updateEntry(i, 'paidBreakEnd', d.paid.end);
+                                }
+                              }}
+                            >
+                              Use defaults
+                            </Button>
                           </div>
-                          <Button
-                            type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-500/10"
-                            onClick={() => {
-                              const b = defaultBreakFor(entry.clockIn, entry.clockOut);
-                              updateEntry(i, 'breakStart', b.start);
-                              updateEntry(i, 'breakEnd', b.end);
-                            }}
-                          >
-                            Use default
-                          </Button>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </>
                   )}
 
