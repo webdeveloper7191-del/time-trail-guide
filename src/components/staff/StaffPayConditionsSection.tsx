@@ -284,6 +284,8 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
                   // TODO: Integrate with API to save changes
                 }}
               />
+              <Separator />
+              <DerivedAvailabilityCard staff={staff} />
             </div>
           </CollapsibleContent>
         </div>
