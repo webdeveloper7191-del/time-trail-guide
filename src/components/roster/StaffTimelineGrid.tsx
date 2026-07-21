@@ -2644,7 +2644,40 @@ function StaffShiftCard({
               </Tooltip>
             </TooltipProvider>
           )}
+          {/* RDO / ADO / TOIL leave tag badge */}
+          {(() => {
+            const raw = (shift as unknown as { leaveTag?: string }).leaveTag;
+            const norm = raw === 'RDO' || raw === 'RDO_LEAVE' ? 'RDO'
+              : raw === 'ADO' || raw === 'ADO_LEAVE' ? 'ADO'
+              : raw === 'TOIL' || raw === 'TOIL_LEAVE' ? 'TOIL'
+              : null;
+            if (!norm) return null;
+            const tone =
+              norm === 'RDO' ? 'bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-400'
+              : norm === 'ADO' ? 'bg-sky-500/15 text-sky-700 border-sky-500/40 dark:text-sky-400'
+              : 'bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-400';
+            const reason =
+              norm === 'RDO' ? 'Rostered Day Off — consumes RDO balance.'
+              : norm === 'ADO' ? 'Accrued Day Off — consumes ADO balance.'
+              : 'Time Off in Lieu — taken instead of overtime pay.';
+            return (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className={cn(
+                      'ml-0.5 rounded border px-1 py-0 text-[9px] font-semibold leading-none uppercase tracking-wide',
+                      tone,
+                    )}>
+                      {norm}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent><p className="text-xs">{reason}</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          })()}
         </div>
+
         {!isCompact && (
           <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
             <Clock className="h-2.5 w-2.5" />
