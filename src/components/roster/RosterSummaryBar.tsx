@@ -97,6 +97,15 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
       s.timeOff?.some(to => to.status === 'approved')
     ).length;
 
+    // Leave tag shifts (RDO/ADO/TOIL) — either explicitly tagged or derived leave consumption
+    const isLeaveTag = (s: Shift, tag: 'RDO' | 'ADO' | 'TOIL') => {
+      const t = (s as unknown as { leaveTag?: string }).leaveTag;
+      return t === tag || t === `${tag}_LEAVE`;
+    };
+    const rdoShifts = centreShifts.filter(s => isLeaveTag(s, 'RDO')).length;
+    const adoShifts = centreShifts.filter(s => isLeaveTag(s, 'ADO')).length;
+    const toilShifts = centreShifts.filter(s => isLeaveTag(s, 'TOIL')).length;
+
     return {
       empty: Math.max(0, empty),
       unpublished,
@@ -108,8 +117,12 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
       leaveApproved,
       leavePending,
       unavailable,
+      rdoShifts,
+      adoShifts,
+      toilShifts,
     };
   }, [shifts, openShifts, staff, dates, centreId]);
+
 
   const callbackSummary = useMemo(() => {
     const totalEvents = callbackEvents.length;
