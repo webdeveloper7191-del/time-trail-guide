@@ -561,49 +561,56 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                     )}
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">Date{isLeave ? ' *' : ''}</Label>
-                    <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
-                  </div>
+                  {!isLeave ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">Date</Label>
+                        <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                          <button
+                            type="button"
+                            className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                            onClick={() => {
+                              const wasSet = !!entry.clockIn;
+                              updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
+                              if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
+                            }}
+                          >
+                            {entry.clockIn ? 'Mark missing' : 'Set time'}
+                          </button>
+                        </div>
+                        <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                          <button
+                            type="button"
+                            className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                            onClick={() => {
+                              const wasSet = !!entry.clockOut;
+                              updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
+                              if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
+                            }}
+                          >
+                            {entry.clockOut ? 'Mark missing' : 'Set time'}
+                          </button>
+                        </div>
+                        <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Date *</Label>
+                      <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
+                    </div>
+                  )}
 
                   {!isLeave && (
                     <>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[10px] text-muted-foreground">Clock In</Label>
-                            <button
-                              type="button"
-                              className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                              onClick={() => {
-                                const wasSet = !!entry.clockIn;
-                                updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
-                                if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
-                              }}
-                            >
-                              {entry.clockIn ? 'Mark missing' : 'Set time'}
-                            </button>
-                          </div>
-                          <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
-                            <button
-                              type="button"
-                              className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                              onClick={() => {
-                                const wasSet = !!entry.clockOut;
-                                updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
-                                if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
-                              }}
-                            >
-                              {entry.clockOut ? 'Mark missing' : 'Set time'}
-                            </button>
-                          </div>
-                          <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
-                        </div>
-                      </div>
                       {/* Multiple breaks — paid + unpaid */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
