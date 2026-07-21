@@ -50,7 +50,9 @@ export const rosterApi = {
   // Staff
   async fetchStaff(centreId?: string): Promise<ApiResponse<StaffMember[]>> {
     const { mockStaff } = await import('@/data/mockRosterData');
-    let staff = [...mockStaff];
+    const { mockStaff: workforceStaff } = await import('@/data/mockStaffData');
+    const { mergeStaff } = await import('@/lib/staffBridge');
+    let staff = mergeStaff([...mockStaff], workforceStaff);
     if (centreId) {
       staff = staff.filter(s => s.preferredCentres.includes(centreId));
     }
@@ -59,7 +61,10 @@ export const rosterApi = {
 
   async searchStaff(query: string): Promise<ApiResponse<StaffMember[]>> {
     const { mockStaff } = await import('@/data/mockRosterData');
-    return mockSearchCall(mockStaff, query, ['name']);
+    const { mockStaff: workforceStaff } = await import('@/data/mockStaffData');
+    const { mergeStaff } = await import('@/lib/staffBridge');
+    const merged = mergeStaff([...mockStaff], workforceStaff);
+    return mockSearchCall(merged, query, ['name']);
   },
 
   async updateStaffMember(id: string, updates: Partial<StaffMember>): Promise<ApiResponse<StaffMember>> {
