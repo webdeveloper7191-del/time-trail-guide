@@ -207,8 +207,8 @@ export function LeaveRequestModal({
                               kind,
                               type: 'consumption',
                               hours: -hours,
-                              reason: `${kind} leave approved (${request.startDate} → ${request.endDate})`,
-                              date: request.startDate,
+                              note: `${kind} leave approved (${request.startDate} → ${request.endDate})`,
+                              occurredOn: request.startDate,
                             });
                             toast.success(`${hours}h ${kind} deducted from balance`);
                           }
