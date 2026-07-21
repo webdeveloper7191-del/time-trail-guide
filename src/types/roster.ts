@@ -26,7 +26,7 @@ export interface TimeOff {
   staffId: string;
   startDate: string;
   endDate: string;
-  type: 'annual_leave' | 'sick_leave' | 'personal_leave' | 'unpaid_leave';
+  type: 'annual_leave' | 'sick_leave' | 'personal_leave' | 'unpaid_leave' | 'rdo_leave' | 'ado_leave' | 'toil_leave';
   status: 'approved' | 'pending' | 'rejected';
   notes?: string;
 }
