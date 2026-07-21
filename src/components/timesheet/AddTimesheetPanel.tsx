@@ -573,33 +573,61 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            Unpaid Break <span className="text-[9px] text-muted-foreground/70">(deducted)</span>
-                          </Label>
-                          <div className="grid grid-cols-2 gap-1">
-                            <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
-                            <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
+                      {/* Multiple breaks — paid + unpaid */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">Breaks</Label>
+                          <div className="flex items-center gap-1">
+                            <Button type="button" variant="outline" size="sm" className="h-6 text-[10px] px-2"
+                              onClick={() => addBreak(i, false)}>
+                              <Plus className="h-2.5 w-2.5 mr-0.5" /> Unpaid
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" className="h-6 text-[10px] px-2"
+                              onClick={() => addBreak(i, true)}>
+                              <Plus className="h-2.5 w-2.5 mr-0.5" /> Paid
+                            </Button>
                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            Paid Break <span className="text-[9px] text-muted-foreground/70">(not deducted)</span>
-                          </Label>
-                          <div className="grid grid-cols-2 gap-1">
-                            <Input type="time" className="h-8 text-xs" value={entry.paidBreakStart} onChange={e => updateEntry(i, 'paidBreakStart', e.target.value)} />
-                            <Input type="time" className="h-8 text-xs" value={entry.paidBreakEnd} onChange={e => updateEntry(i, 'paidBreakEnd', e.target.value)} />
+                        {entry.breaks.length === 0 ? (
+                          <p className="text-[11px] text-muted-foreground italic px-1">No breaks recorded for this shift.</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {entry.breaks.map(b => (
+                              <div key={b.id} className={`grid grid-cols-[1fr_auto_auto_auto] gap-1.5 items-center p-1.5 rounded border ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-300/60 bg-muted/20'}`}>
+                                <Input
+                                  className="h-7 text-[11px]"
+                                  placeholder={b.paid ? 'Rest Break' : 'Break'}
+                                  value={b.label ?? ''}
+                                  onChange={e => updateBreak(i, b.id, { label: e.target.value })}
+                                />
+                                <Input type="time" className="h-7 text-[11px] w-24"
+                                  value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
+                                <Input type="time" className="h-7 text-[11px] w-24"
+                                  value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
+                                <div className="flex items-center gap-0.5">
+                                  <button type="button"
+                                    className={`text-[10px] px-1.5 h-6 rounded border ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-slate-300 text-muted-foreground hover:bg-muted'}`}
+                                    onClick={() => updateBreak(i, b.id, { paid: !b.paid })}
+                                    title={b.paid ? 'Paid — not deducted' : 'Unpaid — deducted'}
+                                  >
+                                    {b.paid ? 'Paid' : 'Unpaid'}
+                                  </button>
+                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6"
+                                    onClick={() => removeBreak(i, b.id)}>
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>
+                        )}
                       </div>
                       {(() => {
                         if (!entry.clockIn || !entry.clockOut) return null;
                         const rules = applicableRules(entry.clockIn, entry.clockOut);
-                        const missing = rules.filter(r => {
-                          if (r.type === 'unpaid') return !entry.breakStart || !entry.breakEnd;
-                          return !entry.paidBreakStart || !entry.paidBreakEnd;
-                        });
+                        const hasUnpaid = entry.breaks.some(b => !b.paid && b.start && b.end);
+                        const hasPaid = entry.breaks.some(b => b.paid && b.start && b.end);
+                        const missing = rules.filter(r => (r.type === 'unpaid' ? !hasUnpaid : !hasPaid));
                         if (missing.length === 0) return null;
                         const hrs = shiftHours(entry.clockIn, entry.clockOut);
                         return (
@@ -621,28 +649,18 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                                   </li>
                                 ))}
                               </ul>
-                              <p className="text-[10px] text-muted-foreground">
-                                No matching break was clocked between {formatTime12h(entry.clockIn)} and {formatTime12h(entry.clockOut)}.
-                              </p>
                             </div>
                             <Button
                               type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-500/10"
                               onClick={() => {
-                                const d = defaultBreakFor(entry.clockIn, entry.clockOut);
-                                if (d.unpaid.start && (!entry.breakStart || !entry.breakEnd)) {
-                                  updateEntry(i, 'breakStart', d.unpaid.start);
-                                  updateEntry(i, 'breakEnd', d.unpaid.end);
-                                }
-                                if (d.paid.start && (!entry.paidBreakStart || !entry.paidBreakEnd)) {
-                                  updateEntry(i, 'paidBreakStart', d.paid.start);
-                                  updateEntry(i, 'paidBreakEnd', d.paid.end);
-                                }
+                                missing.forEach(r => addBreak(i, r.type === 'paid'));
                               }}
                             >
-                              Use defaults
+                              Add defaults
                             </Button>
                           </div>
                         );
+
                       })()}
                     </>
                   )}
