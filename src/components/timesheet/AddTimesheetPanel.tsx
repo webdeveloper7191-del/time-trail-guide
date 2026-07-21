@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff, Coffee } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff, Coffee, Smartphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
