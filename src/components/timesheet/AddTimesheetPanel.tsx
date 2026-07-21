@@ -51,6 +51,9 @@ interface BreakForm {
   end: string;
   paid: boolean;
   label?: string;
+  /** Original break window recorded by the mobile/kiosk app (source of truth). */
+  sourceStart?: string;
+  sourceEnd?: string;
 }
 
 interface EntryForm {
@@ -63,6 +66,9 @@ interface EntryForm {
   exceptionNote?: string;
   leaveType?: LeaveKindOption | '';
   leaveHours?: number;
+  /** Original clock times recorded by the mobile/kiosk app (source of truth). */
+  sourceClockIn?: string;
+  sourceClockOut?: string;
 }
 
 let breakIdCounter = 0;
@@ -72,7 +78,19 @@ const emptyEntry = (): EntryForm => ({
   date: '',
   clockIn: '09:00',
   clockOut: '17:00',
-  breaks: [{ id: nextBreakId(), start: '12:00', end: '12:30', paid: false, label: 'Lunch Break' }],
+  // Simulated app-recorded punches — differ slightly from the rounded schedule
+  // so users can compare recorded vs edited values.
+  sourceClockIn: '08:57',
+  sourceClockOut: '17:04',
+  breaks: [{
+    id: nextBreakId(),
+    start: '12:00',
+    end: '12:30',
+    paid: false,
+    label: 'Lunch Break',
+    sourceStart: '12:03',
+    sourceEnd: '12:36',
+  }],
   notes: '',
   exceptionReason: '',
   exceptionNote: '',
