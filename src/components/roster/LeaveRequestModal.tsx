@@ -23,6 +23,14 @@ import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/Pr
 import { leaveRequestSchema, LeaveRequestFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LeaveStore, type LeaveKind } from '@/lib/leaveAccrualEngine';
+import { differenceInCalendarDays, parseISO } from 'date-fns';
+
+const LEAVE_TYPE_TO_KIND: Partial<Record<TimeOff['type'], LeaveKind>> = {
+  rdo_leave: 'RDO',
+  ado_leave: 'ADO',
+  toil_leave: 'TOIL',
+};
 
 interface LeaveRequest extends TimeOff {
   staffName: string;
@@ -189,7 +197,23 @@ export function LeaveRequestModal({
                         key={request.id} 
                         request={request}
                         statusColors={statusColors}
-                        onApprove={() => onApprove(request.id)}
+                        onApprove={() => {
+                          const kind = LEAVE_TYPE_TO_KIND[request.type];
+                          if (kind) {
+                            const days = Math.max(1, differenceInCalendarDays(parseISO(request.endDate), parseISO(request.startDate)) + 1);
+                            const hours = days * 8;
+                            LeaveStore.postLedger({
+                              staffId: request.staffId,
+                              kind,
+                              type: 'consumption',
+                              hours: -hours,
+                              note: `${kind} leave approved (${request.startDate} → ${request.endDate})`,
+                              occurredOn: request.startDate,
+                            });
+                            toast.success(`${hours}h ${kind} deducted from balance`);
+                          }
+                          onApprove(request.id);
+                        }}
                         onReject={() => onReject(request.id)}
                         showActions
                       />

@@ -181,6 +181,9 @@ function getLeaveLabel(type: TimeOff['type']): string {
     sick_leave: 'Sick Leave',
     personal_leave: 'Personal Leave',
     unpaid_leave: 'Unpaid Leave',
+    rdo_leave: 'RDO Leave',
+    ado_leave: 'ADO Leave',
+    toil_leave: 'TOIL Leave',
   };
   return labels[type] || 'On Leave';
 }

@@ -26,7 +26,7 @@ export interface TimeOff {
   staffId: string;
   startDate: string;
   endDate: string;
-  type: 'annual_leave' | 'sick_leave' | 'personal_leave' | 'unpaid_leave';
+  type: 'annual_leave' | 'sick_leave' | 'personal_leave' | 'unpaid_leave' | 'rdo_leave' | 'ado_leave' | 'toil_leave';
   status: 'approved' | 'pending' | 'rejected';
   notes?: string;
 }
@@ -469,6 +469,9 @@ export const timeOffTypeLabels: Record<TimeOff['type'], string> = {
   sick_leave: 'Sick Leave',
   personal_leave: 'Personal Leave',
   unpaid_leave: 'Unpaid Leave',
+  rdo_leave: 'RDO Leave',
+  ado_leave: 'ADO Leave',
+  toil_leave: 'TOIL Leave',
 };
 
 export const shiftTypeLabels: Record<ShiftSpecialType, string> = {
