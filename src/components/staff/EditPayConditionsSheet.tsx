@@ -1183,6 +1183,29 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
               </AccordionContent>
             </AccordionItem>
             )}
+
+            {/* Section 5 · Leave Accrual Arrangements (RDO / ADO / TOIL) */}
+            <AccordionItem value="s5" className="border rounded-lg px-4">
+              <AccordionTrigger className="hover:no-underline py-3">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">5. Leave Accrual Arrangements</span>
+                  <Badge variant="outline" className="ml-2 text-[10px]">RDO · ADO · TOIL</Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4">
+                <div className="text-sm text-muted-foreground mb-3">
+                  Configure how this employee accrues rostered, accrued, and lieu days. Full ledger and
+                  award-level rules live in the dedicated hub.
+                </div>
+                <a
+                  href="/leave-accruals"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                >
+                  Open RDO / ADO / TOIL hub →
+                </a>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
 
