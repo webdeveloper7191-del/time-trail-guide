@@ -467,6 +467,26 @@ export default function TimesheetAdmin() {
         onClose={() => setIsImportModalOpen(false)}
         onImport={(imported) => setTimesheets(prev => [...imported, ...prev])}
       />
+      <Dialog open={!!otPrompt} onOpenChange={(o) => !o && setOtPrompt(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Overtime detected — pay or bank as TOIL?</DialogTitle>
+            <DialogDescription>
+              {otPrompt?.ts.employee.name} recorded{' '}
+              <strong>{otPrompt?.ts.overtimeHours.toFixed(2)}h</strong> of overtime.
+              Choose whether to pay it out via payroll or bank it as Time Off In Lieu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-xs text-muted-foreground rounded-md bg-muted/40 p-3">
+            Banking as TOIL adds hours to the staff member's TOIL balance
+            (converted at the award's TOIL rate) instead of paying the overtime.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => confirmOtChoice(false)}>Pay out</Button>
+            <Button onClick={() => confirmOtChoice(true)}>Bank as TOIL</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
