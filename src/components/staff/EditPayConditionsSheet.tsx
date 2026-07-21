@@ -793,22 +793,12 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       { id: 'award_resolved', icon: Lock, title: 'Award-resolved', desc: `Uses $${resolvedBaseRate.toFixed(2)}/hr from ${classification || 'classification'}.` },
                       { id: 'manual_hourly', icon: PencilLine, title: 'Custom hourly rate', desc: 'Set the ordinary-time rate directly (BOOT applies).' },
                       { id: 'annualised_salary', icon: DollarSign, title: 'Annualised salary', desc: 'Salary is divided across ordinary hours to derive an hourly equivalent.' },
-    ] as const).map((opt) => {
-    return acc;
-  }, {} as any);
-
-  // Section-level "Customize" toggles — when off, override switches are hidden and
-  // all values render read-only from the award/location resolution.
-  const [customize, setCustomize] = useState<{ s3: boolean; s4: boolean }>({ s3: false, s4: false });
-  const overrideCount = (keys: OverrideField<any>[]) => keys.filter((k) => k.override).length;
-  const s3Overrides = overrideCount([ordinaryPerWeek, ordinaryPerDay, rosterCycle, otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h, interaction]);
-  const s4Overrides = overrideCount([saturdayLoading, sundayLoading, phLoading, eveningLoading]);
-
-
+                    ] as const).map((opt) => {
                       const Icon = opt.icon;
                       const active = rateSource === opt.id;
                       return (
                         <button
+
                           key={opt.id}
                           type="button"
                           onClick={() => setRateSource(opt.id)}
