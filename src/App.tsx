@@ -30,6 +30,7 @@ import AgencyIntegrationApiDocs from "./pages/AgencyIntegrationApiDocs";
 import LocationManagement from "./pages/LocationManagement";
 import ReportsPage from "./pages/ReportsPage";
 import LeaveAccrualsHub from "./pages/LeaveAccrualsHub";
+import LeaveHub from "./pages/LeaveHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
