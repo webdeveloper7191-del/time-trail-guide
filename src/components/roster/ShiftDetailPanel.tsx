@@ -47,6 +47,7 @@ import { format, parseISO, isWithinInterval } from 'date-fns';
 import { DemandHistogram } from './DemandHistogram';
 import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
+import { ManualAllowancesEditor } from './ManualAllowancesEditor';
 import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { useShiftCost } from '@/hooks/useShiftCost';
@@ -1145,8 +1146,13 @@ export function ShiftDetailPanel({
               </>
             )}
 
+            {/* Manual Allowances */}
+            <FormSection title="Manual Allowances" tooltip="Add one-off allowances to this shift (paid on top of auto-eligible)">
+              <ManualAllowancesEditor shift={editedShift} onChange={setEditedShift} />
+            </FormSection>
+
             {/* Allowance Eligibility */}
-            <FormSection title="Allowance Eligibility" tooltip="View eligible allowances for this shift">
+            <FormSection title="Auto-Eligible Allowances" tooltip="Allowances automatically detected from award rules & shift attributes">
               <AllowanceEligibilityPanel 
                 shift={editedShift}
                 staff={assignedStaff}
