@@ -543,12 +543,12 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
             Edit pay conditions
           </SheetTitle>
           <SheetDescription>
-            {staff.firstName} {staff.lastName} · Fields marked{' '}
-            <span className="inline-flex items-center gap-1 mx-0.5">
-              <Lock className="h-3 w-3" /> From award
-            </span>{' '}
-            are resolved from the industrial instrument. Toggle any field to override.
+            {staff.firstName} {staff.lastName} · Values resolve in this order:{' '}
+            <span className="font-medium text-foreground">Award → Location policy → Staff override</span>.
+            Hover the <Info className="inline h-3 w-3 -mt-0.5" /> beside each section title to see how that
+            section resolves.
           </SheetDescription>
+
         </SheetHeader>
 
         <div className="px-6 py-4">
