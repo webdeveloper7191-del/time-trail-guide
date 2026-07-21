@@ -1194,18 +1194,10 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-4">
-                <div className="text-sm text-muted-foreground mb-3">
-                  Configure how this employee accrues rostered, accrued, and lieu days. Full ledger and
-                  award-level rules live in the dedicated hub.
-                </div>
-                <a
-                  href="/leave-accruals"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                >
-                  Open RDO / ADO / TOIL hub →
-                </a>
+                <StaffLeaveAccrualEditor staffId={staff.id} staffName={`${staff.firstName} ${staff.lastName}`} />
               </AccordionContent>
             </AccordionItem>
+
           </Accordion>
         </div>
 
