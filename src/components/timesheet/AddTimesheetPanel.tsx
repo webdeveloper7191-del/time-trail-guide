@@ -328,12 +328,22 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add
                 </Button>
               </div>
-              {entries.map((entry, i) => (
-                <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-3">
+              {entries.map((entry, i) => {
+                const isLeave = !!entry.leaveType;
+                return (
+                <div key={i} className={`p-3 rounded-lg border space-y-3 ${isLeave ? 'bg-indigo-500/5 border-indigo-500/30' : 'bg-muted/30'}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted-foreground">Entry {i + 1}</span>
                     <div className="flex items-center gap-2">
-                      {entry.clockIn && entry.clockOut && (
+                      <span className="text-xs font-semibold text-muted-foreground">Entry {i + 1}</span>
+                      {isLeave && (
+                        <Badge variant="outline" className="text-[10px] h-4 border-indigo-500/50 text-indigo-700">
+                          <CalendarOff className="h-2.5 w-2.5 mr-1" />
+                          {LEAVE_OPTIONS.find(o => o.value === entry.leaveType)?.label}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isLeave && entry.clockIn && entry.clockOut && (
                         <span className="text-xs text-muted-foreground">
                           {formatTime12h(entry.clockIn)} – {formatTime12h(entry.clockOut)}
                         </span>
@@ -345,6 +355,46 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                       )}
                     </div>
                   </div>
+
+                  {/* Day Type toggle: Worked vs Leave */}
+                  <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground">Day Type</Label>
+                      <Select
+                        value={entry.leaveType || 'worked'}
+                        onValueChange={(v) => {
+                          if (v === 'worked') {
+                            updateEntry(i, 'leaveType', '');
+                          } else {
+                            updateEntry(i, 'leaveType', v as LeaveKindOption);
+                            // Clear exception since it's a leave day
+                            updateEntry(i, 'exceptionReason', '');
+                            updateEntry(i, 'exceptionNote', '');
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="worked">Worked shift</SelectItem>
+                          {LEAVE_OPTIONS.map(o => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {isLeave && (
+                      <div className="space-y-1 w-24">
+                        <Label className="text-[10px] text-muted-foreground">Hours</Label>
+                        <Input
+                          type="number" min={0} max={24} step={0.5}
+                          className="h-8 text-xs"
+                          value={entry.leaveHours ?? 8}
+                          onChange={e => updateEntry(i, 'leaveHours', Number(e.target.value))}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label className="text-[10px] text-muted-foreground">Date</Label>
