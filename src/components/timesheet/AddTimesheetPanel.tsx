@@ -627,6 +627,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           </button>
                         </div>
                         <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
+                        {entry.sourceClockOut && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Smartphone className="h-2.5 w-2.5" />
+                            App: <span className="font-medium text-foreground">{formatTime12h(entry.sourceClockOut)}</span>
+                            {entry.clockOut && entry.clockOut !== entry.sourceClockOut && (
+                              <span className="text-amber-600">· edited</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
