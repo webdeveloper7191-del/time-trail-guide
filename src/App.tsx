@@ -70,6 +70,7 @@ const App = () => {
                   <Route path="/locations" element={<LocationManagement />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/leave-accruals" element={<LeaveAccrualsHub />} />
+                  <Route path="/leave" element={<LeaveHub />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
