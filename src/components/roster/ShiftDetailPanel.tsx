@@ -57,6 +57,7 @@ import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/roster
 import { useRecurringPatterns } from '@/hooks/useRecurringPatterns';
 import { recurrencePatternLabels } from '@/types/advancedRoster';
 import { applyShiftLeaveEffect } from '@/lib/leaveAccrualEngine';
+import { StaffAvailabilityWarnings } from './StaffAvailabilityWarnings';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
