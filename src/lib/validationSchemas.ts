@@ -98,7 +98,7 @@ export const leaveRequestSchema = z.object({
   staffId: requiredString('Staff'),
   startDate: requiredString('Start date'),
   endDate: requiredString('End date'),
-  type: z.enum(['annual_leave', 'sick_leave', 'personal_leave', 'unpaid_leave']),
+  type: z.enum(['annual_leave', 'sick_leave', 'personal_leave', 'unpaid_leave', 'rdo_leave', 'ado_leave', 'toil_leave']),
   notes: z.string().max(500).optional(),
 }).refine(
   (data) => new Date(data.endDate) >= new Date(data.startDate),
