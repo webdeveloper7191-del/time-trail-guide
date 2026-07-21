@@ -227,7 +227,21 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   };
 
   const updateEntry = <K extends keyof EntryForm>(index: number, field: K, value: EntryForm[K]) => {
-    setEntries(prev => prev.map((e, i) => i === index ? { ...e, [field]: value } : e));
+    setEntries(prev => prev.map((e, i) => {
+      if (i !== index) return e;
+      const next = { ...e, [field]: value };
+      // When clock times change and prepopulate is on, refresh the default break set.
+      if (prepopulateBreaks && !next.leaveType && (field === 'clockIn' || field === 'clockOut')) {
+        const wasDefault =
+          e.breaks.length === 0 ||
+          JSON.stringify(e.breaks.map(b => ({ s: b.start, e: b.end, p: b.paid }))) ===
+            JSON.stringify(buildDefaultBreaks(e.clockIn, e.clockOut).map(b => ({ s: b.start, e: b.end, p: b.paid })));
+        if (wasDefault) {
+          next.breaks = buildDefaultBreaks(next.clockIn, next.clockOut);
+        }
+      }
+      return next;
+    }));
   };
 
   const calculateHours = (clockIn: string, clockOut: string): number => {
