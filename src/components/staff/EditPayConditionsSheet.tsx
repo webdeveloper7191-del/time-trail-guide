@@ -708,6 +708,87 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     </Select>
                   </div>
                 </div>
+
+                {/* Shift worker classification */}
+                {employmentType !== 'contractor' && (
+                  <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-medium flex items-center">
+                          Shift worker
+                          <FieldInfo text="Under Fair Work NES s.87, a shift worker is regularly rostered over 7 days including Sundays and public holidays. Grants a 5th week of annual leave, 7-day span of ordinary hours, and eligibility for shift penalties (early morning, afternoon, night, permanent night)." />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">Adds 5th week annual leave (NES) · 7-day ordinary span · shift penalties apply</div>
+                      </div>
+                      <Switch
+                        checked={isShiftWorker}
+                        onCheckedChange={(v) => {
+                          setIsShiftWorker(v);
+                          if (!v) setIsRotatingShiftWorker(false);
+                        }}
+                      />
+                    </div>
+
+                    {isShiftWorker && (
+                      <>
+                        <div className="flex items-center justify-between gap-3 pt-2 border-t">
+                          <div className="space-y-0.5">
+                            <div className="text-xs font-medium flex items-center">
+                              Rotating shift worker
+                              <FieldInfo text="Employee rotates across two or more shifts (day/afternoon/night) on a repeating cycle. Enables rotating-shift loadings, restricts consecutive-night limits, and lets the roster engine spread nights fairly across the cycle." />
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">Enables rotating loading · consecutive-night caps · cycle-based fairness</div>
+                          </div>
+                          <Switch
+                            checked={isRotatingShiftWorker}
+                            onCheckedChange={setIsRotatingShiftWorker}
+                          />
+                        </div>
+
+                        {isRotatingShiftWorker && (
+                          <div className="grid grid-cols-3 gap-3 pt-2 border-t">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Rotation pattern<FieldInfo text="Which pattern this employee rotates through. Drives which penalty rates apply and which nights the roster engine may allocate." /></Label>
+                              <Select value={shiftPattern} onValueChange={(v) => setShiftPattern(v as any)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="two_shift">Two-shift (day / afternoon)</SelectItem>
+                                  <SelectItem value="three_shift">Three-shift (day / afternoon / night)</SelectItem>
+                                  <SelectItem value="seven_day">7-day continuous</SelectItem>
+                                  <SelectItem value="fixed_nights">Permanent night</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Rotation cycle (weeks)<FieldInfo text="Length of the repeating roster cycle. Fairness scoring balances night and weekend allocations across this window." /></Label>
+                              <Input
+                                type="number" min={1} max={12} step={1}
+                                value={rotationCycleWeeks}
+                                onChange={(e) => setRotationCycleWeeks(parseInt(e.target.value) || 1)}
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs">Avg nights / cycle<FieldInfo text="Target average night shifts per cycle. The auto-scheduler uses this as the fairness target for this employee." /></Label>
+                              <Input
+                                type="number" min={0} step={0.5}
+                                value={averageNightsPerCycle}
+                                onChange={(e) => setAverageNightsPerCycle(parseFloat(e.target.value) || 0)}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900 px-3 py-2 text-[11px] text-blue-900 dark:text-blue-200 flex gap-2">
+                          <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                          <span>
+                            Annual leave accrual will use the <span className="font-medium">shift-worker rate (5 weeks / year)</span> instead of the standard 4 weeks. Saturday/Sunday penalties are replaced by shift-based penalties resolved from the award in Section 4.
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
 
