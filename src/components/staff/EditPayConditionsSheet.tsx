@@ -135,6 +135,24 @@ function FieldInfo({ text }: { text: string }) {
   );
 }
 
+function SectionHeaderInfo({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-muted cursor-help"
+        >
+          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="max-w-[320px] text-xs leading-relaxed">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ResolvedField({
   label,
   value,
@@ -146,6 +164,7 @@ function ResolvedField({
   error,
   warning,
   info,
+  customizeMode = true,
 }: {
   label: string;
   value: string | number;
@@ -157,7 +176,9 @@ function ResolvedField({
   error?: string | null;
   warning?: string | null;
   info?: string;
+  customizeMode?: boolean;
 }) {
+  const showOverrideEditor = customizeMode && override;
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -165,24 +186,30 @@ function ResolvedField({
           {label}
           {info ? <FieldInfo text={info} /> : null}
         </Label>
-        <div className="flex items-center gap-1.5">
-          {override ? (
-            <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
-              <PencilLine className="h-2.5 w-2.5" /> Override
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-1">
-              <Lock className="h-2.5 w-2.5" /> From award
-            </Badge>
-          )}
-          <Switch
-            checked={override}
-            onCheckedChange={onToggleOverride}
-            className="scale-75 -mr-1"
-          />
-        </div>
+        {customizeMode ? (
+          <div className="flex items-center gap-1.5">
+            {override ? (
+              <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
+                <PencilLine className="h-2.5 w-2.5" /> Override
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-1">
+                <Lock className="h-2.5 w-2.5" /> From award
+              </Badge>
+            )}
+            <Switch
+              checked={override}
+              onCheckedChange={onToggleOverride}
+              className="scale-75 -mr-1"
+            />
+          </div>
+        ) : override ? (
+          <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
+            <PencilLine className="h-2.5 w-2.5" /> Override
+          </Badge>
+        ) : null}
       </div>
-      {override ? (
+      {showOverrideEditor ? (
         <div className={cn(error && '[&_input]:border-destructive [&_button]:border-destructive')}>
           {children}
         </div>
@@ -208,6 +235,17 @@ function ResolvedField({
     </div>
   );
 }
+
+// Precedence explainer text used in section header tooltips
+const PRECEDENCE = {
+  s1: 'Employment basis is set per employee — not resolved from the award. It determines which downstream rules apply (leave entitlements, overtime, guaranteed hours).',
+  s2: 'The industrial instrument selects the rule set. Rates flow: Award/EBA classification → optional Location policy → Staff override (custom hourly or annualised salary). Non-award rates must pass the Better Off Overall Test (BOOT).',
+  s3: 'Ordinary hours and overtime thresholds resolve from the award by default. Location policies can tighten them; per-staff overrides only apply when Customize is on and must be more generous than the award (BOOT).',
+  s4: 'Loadings and allowances resolve from the award. Location policies may add allowances (e.g. site-specific). Per-staff overrides may only raise loadings above the award minimum.',
+  s5: 'RDO / ADO / TOIL rules (cycle length, accrual rates, TOIL expiry) are set centrally in Settings → Awards. This panel only opts this employee in and shows their live balance.',
+};
+
+
 
 
 export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: EditPayConditionsSheetProps) {
@@ -320,6 +358,15 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     { id: 'meal', label: 'Meal allowance', amount: 17.7, unit: 'per occasion' },
     { id: 'uniform', label: 'Uniform / laundry', amount: 6.25, unit: 'per week' },
   ];
+
+  // Section-level "Customize" toggles — when off, override switches are hidden
+  // and all values render read-only from the award/location resolution.
+  const [customize, setCustomize] = useState<{ s3: boolean; s4: boolean }>({ s3: false, s4: false });
+  const countOverrides = (fields: OverrideField<any>[]) => fields.filter((f) => f.override).length;
+  const s3OverrideCount = countOverrides([ordinaryPerWeek, ordinaryPerDay, rosterCycle, otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h, interaction]);
+  const s4OverrideCount = countOverrides([saturdayLoading, sundayLoading, phLoading, eveningLoading]);
+
+
 
   const toggleAllowance = (id: string) =>
     setSelectedAllowances((prev) =>
@@ -496,12 +543,12 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
             Edit pay conditions
           </SheetTitle>
           <SheetDescription>
-            {staff.firstName} {staff.lastName} · Fields marked{' '}
-            <span className="inline-flex items-center gap-1 mx-0.5">
-              <Lock className="h-3 w-3" /> From award
-            </span>{' '}
-            are resolved from the industrial instrument. Toggle any field to override.
+            {staff.firstName} {staff.lastName} · Values resolve in this order:{' '}
+            <span className="font-medium text-foreground">Award → Location policy → Staff override</span>.
+            Hover the <Info className="inline h-3 w-3 -mt-0.5" /> beside each section title to see how that
+            section resolves.
           </SheetDescription>
+
         </SheetHeader>
 
         <div className="px-6 py-4">
@@ -542,7 +589,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Briefcase className="h-4 w-4 text-muted-foreground" />
                   1. Employment basis
+                  <SectionHeaderInfo text={PRECEDENCE.s1} />
                 </div>
+
               </AccordionTrigger>
               <AccordionContent className="pb-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -659,7 +708,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <FileBadge className="h-4 w-4 text-muted-foreground" />
                   2. Industrial instrument & classification
+                  <SectionHeaderInfo text={PRECEDENCE.s2} />
                 </div>
+
               </AccordionTrigger>
               <AccordionContent className="pb-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -761,6 +812,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       return (
                         <button
                           key={opt.id}
+
                           type="button"
                           onClick={() => setRateSource(opt.id)}
                           className={cn(
@@ -897,14 +949,30 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   3. Ordinary hours & overtime
+                  <SectionHeaderInfo text={PRECEDENCE.s3} />
+                  {s3OverrideCount > 0 && (
+                    <Badge variant="outline" className="ml-1 text-[10px] h-5 gap-1">
+                      <PencilLine className="h-2.5 w-2.5" /> {s3OverrideCount} override{s3OverrideCount === 1 ? '' : 's'}
+                    </Badge>
+                  )}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-4 space-y-4">
-                <div className="rounded-md bg-muted/30 border border-dashed p-2.5 text-[11px] text-muted-foreground flex gap-2">
-                  <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  Award-resolved values reflect {industryAward || 'the selected award'}. Overrides require a
-                  documented reason and are BOOT-tested at save time.
+                <div className="flex items-center justify-between rounded-md bg-muted/30 border border-dashed p-2.5 text-[11px] text-muted-foreground gap-3">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <span>
+                      Values shown are award defaults from {industryAward || 'the selected award'}. Turn on
+                      <span className="font-medium text-foreground"> Customize</span> to override any field
+                      (BOOT-tested at save).
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                    <span className="text-[11px] font-medium text-foreground">Customize</span>
+                    <Switch checked={customize.s3} onCheckedChange={(v) => setCustomize((c) => ({ ...c, s3: v }))} className="scale-75" />
+                  </label>
                 </div>
+
 
                 <div className="grid grid-cols-3 gap-4">
                   <ResolvedField
@@ -912,7 +980,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={ordinaryPerWeek.value}
                     unit="hrs"
                     override={ordinaryPerWeek.override}
-                    onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}                    info="Total standard hours before overtime applies. Award defaults prevent paying less than the legal minimum."
+                    onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}                    customizeMode={customize.s3} info="Total standard hours before overtime applies. Award defaults prevent paying less than the legal minimum."
                     error={validation.errors.ordinaryPerWeek}
                     warning={validation.warnings.ordinaryPerWeek}
                   >
@@ -929,7 +997,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={ordinaryPerDay.value}
                     unit="hrs"
                     override={ordinaryPerDay.override}
-                    onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}                    info="Daily threshold for ordinary time. Exceeding this triggers daily overtime penalties."
+                    onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}                    customizeMode={customize.s3} info="Daily threshold for ordinary time. Exceeding this triggers daily overtime penalties."
                     error={validation.errors.ordinaryPerDay}
                   >
                     <Input
@@ -943,7 +1011,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={rosterCycle.value}
                     unit="weeks"
                     override={rosterCycle.override}
-                    onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}                    info="How many weeks the repeating roster pattern covers (e.g., 1 = weekly, 2 = fortnightly)."
+                    onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}                    customizeMode={customize.s3} info="How many weeks the repeating roster pattern covers (e.g., 1 = weekly, 2 = fortnightly)."
                     error={validation.errors.rosterCycle}
                   >
                     <Input
@@ -964,7 +1032,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={otAfterDaily.value}
                     unit="hrs"
                     override={otAfterDaily.override}
-                    onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}                    info="Number of hours worked in a single day before overtime multipliers begin."
+                    onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}                    customizeMode={customize.s3} info="Number of hours worked in a single day before overtime multipliers begin."
                     error={validation.errors.otAfterDaily}
                     warning={validation.warnings.otAfterDaily}
                   >
@@ -979,7 +1047,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={otAfterWeekly.value}
                     unit="hrs"
                     override={otAfterWeekly.override}
-                    onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}                    info="Total weekly hours before overtime applies across the whole roster cycle."
+                    onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}                    customizeMode={customize.s3} info="Total weekly hours before overtime applies across the whole roster cycle."
                     error={validation.errors.otAfterWeekly}
                   >
                     <Input
@@ -992,7 +1060,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="First 2 hours OT"
                     value={`${otFirst2h.value}%`}
                     override={otFirst2h.override}
-                    onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}                    info="Multiplier applied to the first 2 hours of overtime in a day or shift."
+                    onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}                    customizeMode={customize.s3} info="Multiplier applied to the first 2 hours of overtime in a day or shift."
                     error={validation.errors.otFirst2h}
                   >
                     <Input
@@ -1005,7 +1073,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="After 2 hours OT"
                     value={`${otAfter2h.value}%`}
                     override={otAfter2h.override}
-                    onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}                    info="Multiplier applied after the first 2 hours of overtime (usually higher)."
+                    onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}                    customizeMode={customize.s3} info="Multiplier applied after the first 2 hours of overtime (usually higher)."
                     error={validation.errors.otAfter2h}
                   >
                     <Input
@@ -1021,7 +1089,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   label="Overtime × penalty interaction"
                   value={interaction.value === 'higher_of' ? 'Higher of (do not stack)' : 'Stack (multiplicative)'}
                   override={interaction.override}
-                  onToggleOverride={(v) => setInteraction({ ...interaction, override: v })}                  info="Choose whether weekend/PH penalties stack with overtime rates, or only the higher rate applies."
+                  onToggleOverride={(v) => setInteraction({ ...interaction, override: v })}                  customizeMode={customize.s3} info="Choose whether weekend/PH penalties stack with overtime rates, or only the higher rate applies."
                   hint="Controls whether overtime multipliers and weekend/PH penalties compound or the higher rate wins."
                 >
                   <Select
@@ -1046,15 +1114,32 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Percent className="h-4 w-4 text-muted-foreground" />
                   4. Loadings & allowances
+                  <SectionHeaderInfo text={PRECEDENCE.s4} />
+                  {s4OverrideCount > 0 && (
+                    <Badge variant="outline" className="ml-1 text-[10px] h-5 gap-1">
+                      <PencilLine className="h-2.5 w-2.5" /> {s4OverrideCount} override{s4OverrideCount === 1 ? '' : 's'}
+                    </Badge>
+                  )}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-4 space-y-4">
+                <div className="flex items-center justify-between rounded-md bg-muted/30 border border-dashed p-2.5 text-[11px] text-muted-foreground gap-3">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <span>Loadings shown are award defaults. Turn on <span className="font-medium text-foreground">Customize</span> to raise a rate above award (never below — BOOT).</span>
+                  </div>
+                  <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                    <span className="text-[11px] font-medium text-foreground">Customize</span>
+                    <Switch checked={customize.s4} onCheckedChange={(v) => setCustomize((c) => ({ ...c, s4: v }))} className="scale-75" />
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
+
                   <ResolvedField
                     label="Saturday loading"
                     value={`${saturdayLoading.value}%`}
                     override={saturdayLoading.override}
-                    onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}                    info="Percentage added to the base rate for hours worked on Saturday."
+                    onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked on Saturday."
                     error={validation.errors.saturdayLoading}
                   >
                     <Input
@@ -1067,7 +1152,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Sunday loading"
                     value={`${sundayLoading.value}%`}
                     override={sundayLoading.override}
-                    onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}                    info="Percentage added to the base rate for hours worked on Sunday."
+                    onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked on Sunday."
                     error={validation.errors.sundayLoading}
                   >
                     <Input
@@ -1080,7 +1165,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Public holiday loading"
                     value={`${phLoading.value}%`}
                     override={phLoading.override}
-                    onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}                    info="Percentage added to the base rate for hours worked on a public holiday."
+                    onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked on a public holiday."
                     error={validation.errors.phLoading}
                   >
                     <Input
@@ -1093,7 +1178,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Evening loading"
                     value={`${eveningLoading.value}%`}
                     override={eveningLoading.override}
-                    onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}                    info="Percentage added to the base rate for hours worked during the evening period."
+                    onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked during the evening period."
                     error={validation.errors.eveningLoading}
                   >
                     <Input
@@ -1195,7 +1280,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">5. Leave Accrual Arrangements</span>
                   <Badge variant="outline" className="ml-2 text-[10px]">RDO · ADO · TOIL</Badge>
+                  <SectionHeaderInfo text={PRECEDENCE.s5} />
                 </div>
+
               </AccordionTrigger>
               <AccordionContent className="pb-4">
                 <StaffLeaveAccrualEditor staffId={staff.id} staffName={`${staff.firstName} ${staff.lastName}`} />
