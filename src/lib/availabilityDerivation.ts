@@ -133,24 +133,41 @@ export function deriveAvailability(
 
   const blocks: DerivedAvailabilityBlock[] = [];
 
-  // Weekday-declared RDOs (from Weekly Availability table) — hard block, recurring
-  const declaredRdoDays = (staff.weeklyAvailability ?? [])
-    .filter(w => w.isRdo)
-    .map(w => w.dayOfWeek);
-  if (declaredRdoDays.length > 0) {
+  // Weekday-declared RDOs (from Weekly Availability table) — hard block, recurring.
+  // Respects multi-week availability cycles: an RDO tagged { week: 2 } only fires
+  // on cycle week 2, anchored by staff.availabilityCycleAnchor.
+  const declaredRdoEntries = (staff.weeklyAvailability ?? []).filter(w => w.isRdo);
+  if (declaredRdoEntries.length > 0) {
+    const patternWeeks: Record<string, number> = {
+      same_every_week: 1,
+      alternate_weekly: 2,
+      three_week_cycle: 3,
+      four_week_cycle: 4,
+    };
+    const cycleLen = patternWeeks[staff.availabilityPattern] ?? 1;
     const base = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const anchor = staff.availabilityCycleAnchor
+      ? startOfWeek(new Date(staff.availabilityCycleAnchor), { weekStartsOn: 1 })
+      : base;
     const dowIdx: Record<string, number> = {
       monday: 0, tuesday: 1, wednesday: 2, thursday: 3, friday: 4, saturday: 5, sunday: 6,
     };
+    // Weeks elapsed from anchor to "base" (today's Monday) modulo cycle
+    const anchorOffset = Math.round((base.getTime() - anchor.getTime()) / (7 * 24 * 60 * 60 * 1000));
     for (let w = 0; w < weeksAhead; w++) {
-      declaredRdoDays.forEach(dow => {
-        const date = addDays(base, w * 7 + (dowIdx[dow] ?? 0));
+      const cycleWeek = (((anchorOffset + w) % cycleLen) + cycleLen) % cycleLen + 1; // 1-based
+      declaredRdoEntries.forEach(entry => {
+        // Untagged entries apply every week; tagged entries only on matching cycle week
+        if (entry.week && entry.week !== cycleWeek) return;
+        const date = addDays(base, w * 7 + (dowIdx[entry.dayOfWeek] ?? 0));
         blocks.push({
           date: format(date, 'yyyy-MM-dd'),
           kind: 'rdo_scheduled',
           severity: 'hard',
-          label: `RDO — ${dow.charAt(0).toUpperCase() + dow.slice(1)} declared unavailable`,
-          detail: 'Recurring Rostered Day Off set in Weekly Availability',
+          label: `RDO — ${entry.dayOfWeek.charAt(0).toUpperCase() + entry.dayOfWeek.slice(1)}${cycleLen > 1 ? ` (Wk ${cycleWeek}/${cycleLen})` : ''}`,
+          detail: cycleLen > 1
+            ? `Recurring RDO on Week ${cycleWeek} of the ${cycleLen}-week cycle`
+            : 'Recurring Rostered Day Off set in Weekly Availability',
         });
       });
     }
