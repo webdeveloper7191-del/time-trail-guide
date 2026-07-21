@@ -312,6 +312,19 @@ export interface Shift {
   // Leave accrual tag (RDO/ADO/TOIL) — drives ledger effect when saved.
   // 'AUTO' derives from context; 'NONE' opts out; '*_LEAVE' consumes balance.
   leaveTag?: 'AUTO' | 'NONE' | 'RDO' | 'ADO' | 'TOIL' | 'RDO_LEAVE' | 'ADO_LEAVE' | 'TOIL_LEAVE';
+
+  // Manually added allowances for this shift (in addition to auto-eligible)
+  manualAllowances?: ManualAllowance[];
+}
+
+export interface ManualAllowance {
+  id: string;
+  code: string;          // e.g. FIRST_AID, VEHICLE, custom
+  label: string;         // Display label
+  rate: number;          // $ per unit
+  units: number;         // Hours / km / days / occurrences
+  unit: string;          // 'hr' | 'km' | 'day' | 'occurrence' | ...
+  reason?: string;       // Optional justification
 }
 
 export interface OpenShift {
