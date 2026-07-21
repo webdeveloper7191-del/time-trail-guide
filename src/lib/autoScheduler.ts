@@ -256,12 +256,13 @@ export function scoreStaffForShift(
   
   // --- AVAILABILITY SCORE ---
   let availScore = 0;
-  if (isStaffAvailable(staff, shift.date, shift.startTime, shift.endTime)) {
+  const availCheck = isStaffAvailable(staff, shift.date, shift.startTime, shift.endTime);
+  if (availCheck.ok) {
     availScore = 100;
   } else {
     availScore = 0;
     isEligible = false;
-    issues.push('Not available');
+    issues.push(availCheck.reason ?? 'Not available');
   }
   
   if (hasShiftOverlap(staff.id, shift.date, shift.startTime, shift.endTime, existingShifts, assignedShifts)) {
