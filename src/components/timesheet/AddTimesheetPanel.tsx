@@ -9,13 +9,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff, Coffee } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { format, addDays, parseISO } from 'date-fns';
 import { formatTime12h } from '@/lib/timeFormat';
 import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
 import { LeaveStore } from '@/lib/leaveAccrualEngine';
+import { useBreakRules } from '@/lib/breakRulesStore';
 
 type LeaveKindOption =
   | 'annual_leave'
@@ -81,6 +83,39 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   const [entries, setEntries] = useState<EntryForm[]>([emptyEntry()]);
   const [notes, setNotes] = useState('');
   const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
+  const [breakRules] = useBreakRules();
+  const [prepopulateBreaks, setPrepopulateBreaks] = useState(true);
+
+  // Derive a sensible default break window from configured break rules,
+  // anchored to the midpoint of the shift. Falls back to 30 min at noon.
+  const defaultBreakFor = (clockIn: string, clockOut: string) => {
+    const rule = breakRules.find(r => r.isMandatory) ?? breakRules[0];
+    const duration = rule?.breakDurationMinutes ?? 30;
+    if (!clockIn || !clockOut) return { start: '12:00', end: '12:30' };
+    const [ih, im] = clockIn.split(':').map(Number);
+    const [oh, om] = clockOut.split(':').map(Number);
+    const startMin = ih * 60 + im;
+    const endMin = oh * 60 + om;
+    if (endMin <= startMin) return { start: '12:00', end: '12:30' };
+    const midpoint = Math.round((startMin + endMin) / 2 - duration / 2);
+    const bs = Math.max(startMin, midpoint);
+    const be = bs + duration;
+    const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    return { start: fmt(bs), end: fmt(be) };
+  };
+
+  const applyPrepopulatedBreaks = (checked: boolean) => {
+    setPrepopulateBreaks(checked);
+    setEntries(prev => prev.map(e => {
+      if (e.leaveType) return e;
+      if (checked) {
+        if (e.breakStart && e.breakEnd) return e; // don't overwrite user edits
+        const b = defaultBreakFor(e.clockIn, e.clockOut);
+        return { ...e, breakStart: b.start, breakEnd: b.end };
+      }
+      return { ...e, breakStart: '', breakEnd: '' };
+    }));
+  };
 
   const resetForm = () => {
     setEmployeeName('');
@@ -94,7 +129,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   };
 
   const addEntry = () => {
-    setEntries(prev => [...prev, emptyEntry()]);
+    setEntries(prev => [...prev, prepopulateBreaks ? emptyEntry() : { ...emptyEntry(), breakStart: '', breakEnd: '' }]);
   };
 
   const removeEntry = (index: number) => {
@@ -328,6 +363,25 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add
                 </Button>
               </div>
+
+              {/* Prepopulate breaks toggle — applies across all worked entries, still editable per entry */}
+              <label className="flex items-start gap-2.5 p-2.5 rounded-md border bg-muted/20 cursor-pointer">
+                <Checkbox
+                  checked={prepopulateBreaks}
+                  onCheckedChange={(v) => applyPrepopulatedBreaks(!!v)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Coffee className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium">Prepopulate breaks for all entries</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Auto-fills a default break based on your configured break rules. You can still edit each entry's break times below.
+                  </p>
+                </div>
+              </label>
+
               {entries.map((entry, i) => {
                 const isLeave = !!entry.leaveType;
                 return (
@@ -448,8 +502,32 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
                         </div>
                       </div>
+                      {entry.clockIn && entry.clockOut && (!entry.breakStart || !entry.breakEnd) && (
+                        <div className="flex items-start gap-2 p-2 rounded-md border border-amber-500/40 bg-amber-500/5">
+                          <Coffee className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium text-amber-700">
+                              No break recorded for shift {formatTime12h(entry.clockIn)} – {formatTime12h(entry.clockOut)}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              Break clocking data is missing for this day.
+                            </p>
+                          </div>
+                          <Button
+                            type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-500/10"
+                            onClick={() => {
+                              const b = defaultBreakFor(entry.clockIn, entry.clockOut);
+                              updateEntry(i, 'breakStart', b.start);
+                              updateEntry(i, 'breakEnd', b.end);
+                            }}
+                          >
+                            Use default
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
+
 
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground">Notes</Label>
