@@ -17,6 +17,7 @@ import {
   BarChart3,
   CalendarClock,
   CalendarCheck,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const navItems = [
   { icon: Briefcase, label: 'Recruitment', to: '/recruitment' },
   { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
+  { icon: Database, label: 'Master Data', to: '/settings/master-data' },
 ];
 
 export function AdminSidebar() {
