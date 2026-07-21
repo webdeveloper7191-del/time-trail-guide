@@ -259,9 +259,30 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
         { icon: <div className="flex gap-0.5"><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">M</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">T</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">W</Badge></div>, label: 'Availability Days', description: 'Staff available work days' },
       ],
     },
+    {
+      title: 'Leave Tags (RDO / ADO / TOIL)',
+      items: [
+        {
+          icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-rose-500/40 text-rose-700 dark:text-rose-400 bg-rose-500/15">RDO</Badge>,
+          label: 'Rostered Day Off',
+          description: 'Planned day off inside the roster cycle — consumes RDO balance.',
+        },
+        {
+          icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-sky-500/40 text-sky-700 dark:text-sky-400 bg-sky-500/15">ADO</Badge>,
+          label: 'Accrued Day Off',
+          description: 'Ordinary hours accrue into a paid day off — consumes ADO balance.',
+        },
+        {
+          icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/15">TOIL</Badge>,
+          label: 'Time Off in Lieu',
+          description: 'Time off taken instead of overtime payment — consumes TOIL balance.',
+        },
+      ],
+    },
   ];
 
   // Color Token Preview Categories
+
   const colorTokenCategories = [
     {
       title: 'Shift Status Tokens',
