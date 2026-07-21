@@ -1400,6 +1400,14 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 Effective hourly rate: <span className="font-semibold text-foreground">${effectiveHourlyRate.toFixed(2)}</span>
                 <span className="mx-2">·</span>
                 Ordinary hrs/wk: <span className="font-semibold text-foreground">{ordinaryPerWeek.value}</span>
+                {isShiftWorker && (
+                  <>
+                    <span className="mx-2">·</span>
+                    <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                      {isRotatingShiftWorker ? 'Rotating shift worker' : 'Shift worker'}
+                    </Badge>
+                  </>
+                )}
               </>
             )}
           </div>
