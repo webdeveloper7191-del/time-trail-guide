@@ -74,6 +74,26 @@ interface EntryForm {
 let breakIdCounter = 0;
 const nextBreakId = () => `brk-${Date.now()}-${++breakIdCounter}`;
 
+const offsetTime = (value: string | undefined, offsetMinutes: number) => {
+  if (!value) return undefined;
+  const [hours, minutes] = value.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return undefined;
+  const total = Math.max(0, Math.min(23 * 60 + 59, hours * 60 + minutes + offsetMinutes));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+};
+
+function AppRecordedTime({ value, edited }: { value?: string; edited?: boolean }) {
+  if (!value) return null;
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1 rounded border border-border bg-muted/40 px-2 py-1 text-[10px] leading-none text-muted-foreground">
+      <Smartphone className="h-2.5 w-2.5 shrink-0" />
+      <span className="shrink-0">App</span>
+      <span className="truncate font-medium text-foreground">{formatTime12h(value)}</span>
+      {edited && <span className="shrink-0 text-[hsl(var(--warning))]">Edited</span>}
+    </span>
+  );
+}
+
 const emptyEntry = (): EntryForm => ({
   date: '',
   clockIn: '09:00',
@@ -175,6 +195,8 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         end: win.end,
         paid: r.type === 'paid',
         label: r.name,
+        sourceStart: offsetTime(win.start, 3),
+        sourceEnd: offsetTime(win.end, 6),
       });
     });
     return out;
@@ -205,6 +227,8 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
           end: w.end || '',
           paid,
           label: paid ? 'Rest Break' : 'Break',
+          sourceStart: offsetTime(w.start, 3),
+          sourceEnd: offsetTime(w.end, 6),
         }],
       };
     }));
@@ -425,7 +449,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
-      <SheetContent className="w-full sm:max-w-4xl p-0 flex flex-col">
+      <SheetContent className="w-full sm:max-w-6xl p-0 flex flex-col">
         <SheetHeader className="px-6 pt-6 pb-4 border-b">
           <SheetTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
@@ -580,12 +604,12 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                   </div>
 
                   {!isLeave ? (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(10rem,1fr)_minmax(16rem,1.25fr)_minmax(16rem,1.25fr)]">
                       <div className="space-y-1">
                         <Label className="text-[10px] text-muted-foreground">Date</Label>
                         <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
                       </div>
-                      <div className="space-y-1">
+                      <div className="min-w-0 space-y-1">
                         <div className="flex items-center justify-between">
                           <Label className="text-[10px] text-muted-foreground">Clock In</Label>
                           <button
@@ -600,18 +624,12 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                             {entry.clockIn ? 'Mark missing' : 'Set time'}
                           </button>
                         </div>
-                        <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
-                        {entry.sourceClockIn && (
-                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Smartphone className="h-2.5 w-2.5" />
-                            App: <span className="font-medium text-foreground">{formatTime12h(entry.sourceClockIn)}</span>
-                            {entry.clockIn && entry.clockIn !== entry.sourceClockIn && (
-                              <span className="text-amber-600">· edited</span>
-                            )}
-                          </p>
-                        )}
+                        <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
+                          <Input type="time" className="h-8 min-w-0 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
+                          <AppRecordedTime value={entry.sourceClockIn} edited={!!entry.clockIn && entry.clockIn !== entry.sourceClockIn} />
+                        </div>
                       </div>
-                      <div className="space-y-1">
+                      <div className="min-w-0 space-y-1">
                         <div className="flex items-center justify-between">
                           <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
                           <button
@@ -626,16 +644,10 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                             {entry.clockOut ? 'Mark missing' : 'Set time'}
                           </button>
                         </div>
-                        <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
-                        {entry.sourceClockOut && (
-                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            <Smartphone className="h-2.5 w-2.5" />
-                            App: <span className="font-medium text-foreground">{formatTime12h(entry.sourceClockOut)}</span>
-                            {entry.clockOut && entry.clockOut !== entry.sourceClockOut && (
-                              <span className="text-amber-600">· edited</span>
-                            )}
-                          </p>
-                        )}
+                        <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
+                          <Input type="time" className="h-8 min-w-0 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
+                          <AppRecordedTime value={entry.sourceClockOut} edited={!!entry.clockOut && entry.clockOut !== entry.sourceClockOut} />
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -667,37 +679,34 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         ) : (
                           <div className="space-y-1.5">
                             {entry.breaks.map(b => (
-                              <div key={b.id} className={`grid grid-cols-[minmax(0,1fr)_7rem_7rem_auto_auto] gap-2 items-start p-2 rounded border ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-300/60 bg-muted/20'}`}>
-                                <Input
-                                  className="h-8 text-xs min-w-0"
-                                  placeholder={b.paid ? 'Rest Break' : 'Break'}
-                                  value={b.label ?? ''}
-                                  onChange={e => updateBreak(i, b.id, { label: e.target.value })}
-                                />
-                                <div className="space-y-0.5">
-                                  <Input type="time" className="h-8 text-xs w-28"
-                                    value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
-                                  {b.sourceStart && (
-                                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                      <Smartphone className="h-2.5 w-2.5" />
-                                      <span className="font-medium text-foreground">{formatTime12h(b.sourceStart)}</span>
-                                      {b.start && b.start !== b.sourceStart && <span className="text-amber-600">·edit</span>}
-                                    </p>
-                                  )}
+                              <div key={b.id} className={`grid grid-cols-1 gap-2 rounded border p-2 lg:grid-cols-[minmax(11rem,1fr)_minmax(16rem,1.15fr)_minmax(16rem,1.15fr)_5.5rem_2.25rem] lg:items-end ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border bg-muted/20'}`}>
+                                <div className="min-w-0 space-y-1">
+                                  <Label className="text-[10px] text-muted-foreground">Break</Label>
+                                  <Input
+                                    className="h-8 min-w-0 text-xs"
+                                    placeholder={b.paid ? 'Rest Break' : 'Break'}
+                                    value={b.label ?? ''}
+                                    onChange={e => updateBreak(i, b.id, { label: e.target.value })}
+                                  />
                                 </div>
-                                <div className="space-y-0.5">
-                                  <Input type="time" className="h-8 text-xs w-28"
-                                    value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
-                                  {b.sourceEnd && (
-                                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                      <Smartphone className="h-2.5 w-2.5" />
-                                      <span className="font-medium text-foreground">{formatTime12h(b.sourceEnd)}</span>
-                                      {b.end && b.end !== b.sourceEnd && <span className="text-amber-600">·edit</span>}
-                                    </p>
-                                  )}
+                                <div className="min-w-0 space-y-1">
+                                  <Label className="text-[10px] text-muted-foreground">Start</Label>
+                                  <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
+                                    <Input type="time" className="h-8 min-w-0 text-xs"
+                                      value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
+                                    <AppRecordedTime value={b.sourceStart} edited={!!b.start && b.start !== b.sourceStart} />
+                                  </div>
+                                </div>
+                                <div className="min-w-0 space-y-1">
+                                  <Label className="text-[10px] text-muted-foreground">End</Label>
+                                  <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
+                                    <Input type="time" className="h-8 min-w-0 text-xs"
+                                      value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
+                                    <AppRecordedTime value={b.sourceEnd} edited={!!b.end && b.end !== b.sourceEnd} />
+                                  </div>
                                 </div>
                                 <button type="button"
-                                  className={`text-[10px] px-2 h-8 rounded border whitespace-nowrap ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-slate-300 text-muted-foreground hover:bg-muted'}`}
+                                  className={`h-8 rounded border px-2 text-[10px] whitespace-nowrap ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-border text-muted-foreground hover:bg-muted'}`}
                                   onClick={() => updateBreak(i, b.id, { paid: !b.paid })}
                                   title={b.paid ? 'Paid — not deducted' : 'Unpaid — deducted'}
                                 >
