@@ -14,7 +14,26 @@
 import { Shift, StaffMember, Room, Centre, ShiftTemplate, DayAvailability } from '@/types/roster';
 import { DemandAnalyticsData } from '@/types/demandAnalytics';
 import { TimefoldConstraintConfiguration, defaultConstraintConfig } from '@/types/timefoldConstraintConfig';
+import { deriveAvailability, DerivedAvailabilitySummary } from '@/lib/availabilityDerivation';
+import type { StaffMember as WorkforceStaffMember } from '@/types/staff';
 import { format, parseISO, getDay, differenceInMinutes, addMinutes, parse } from 'date-fns';
+
+// Memoize derived-availability per StaffMember object across a scoring pass.
+const derivedAvailabilityCache = new WeakMap<StaffMember, DerivedAvailabilitySummary>();
+
+function getDerivedAvailability(staff: StaffMember): DerivedAvailabilitySummary | null {
+  // Only staff bridged from workforce carry the pay-condition / weekly-availability shape.
+  if (!staff.weeklyAvailability && !staff.currentPayCondition) return null;
+  const cached = derivedAvailabilityCache.get(staff);
+  if (cached) return cached;
+  try {
+    const summary = deriveAvailability(staff as unknown as WorkforceStaffMember);
+    derivedAvailabilityCache.set(staff, summary);
+    return summary;
+  } catch {
+    return null;
+  }
+}
 
 // ============= TYPES =============
 
@@ -127,28 +146,37 @@ function getStaffWeeklyHours(
   return (fromExisting + fromGenerated) / 60;
 }
 
-function isStaffAvailable(staff: StaffMember, date: string, startTime: string, endTime: string): boolean {
+function isStaffAvailable(staff: StaffMember, date: string, startTime: string, endTime: string): { ok: boolean; reason?: string } {
   const dayOfWeek = getDay(parseISO(date));
   const avail = staff.availability?.find(a => a.dayOfWeek === dayOfWeek);
-  
-  if (!avail || !avail.available) return false;
-  
+
+  if (!avail || !avail.available) return { ok: false, reason: 'Not available' };
+
   if (avail.startTime && avail.endTime) {
     const shiftStart = timeToMinutes(startTime);
     const shiftEnd = timeToMinutes(endTime);
     const availStart = timeToMinutes(avail.startTime);
     const availEnd = timeToMinutes(avail.endTime);
-    
-    if (shiftStart < availStart || shiftEnd > availEnd) return false;
+
+    if (shiftStart < availStart || shiftEnd > availEnd) return { ok: false, reason: 'Outside available hours' };
   }
-  
-  if (staff.timeOff?.some(to => 
+
+  if (staff.timeOff?.some(to =>
     to.status === 'approved' && to.startDate <= date && to.endDate >= date
   )) {
-    return false;
+    return { ok: false, reason: 'Approved time off' };
   }
-  
-  return true;
+
+  // Hard blocks derived from Pay Conditions / Leave Accruals (RDO, ADO, TOIL, declared unavailability)
+  const derived = getDerivedAvailability(staff);
+  if (derived) {
+    const hardHit = derived.blocks.find(
+      b => b.severity === 'hard' && b.date === date,
+    );
+    if (hardHit) return { ok: false, reason: hardHit.label };
+  }
+
+  return { ok: true };
 }
 
 function hasShiftOverlap(
@@ -228,12 +256,13 @@ export function scoreStaffForShift(
   
   // --- AVAILABILITY SCORE ---
   let availScore = 0;
-  if (isStaffAvailable(staff, shift.date, shift.startTime, shift.endTime)) {
+  const availCheck = isStaffAvailable(staff, shift.date, shift.startTime, shift.endTime);
+  if (availCheck.ok) {
     availScore = 100;
   } else {
     availScore = 0;
     isEligible = false;
-    issues.push('Not available');
+    issues.push(availCheck.reason ?? 'Not available');
   }
   
   if (hasShiftOverlap(staff.id, shift.date, shift.startTime, shift.endTime, existingShifts, assignedShifts)) {
@@ -321,6 +350,23 @@ export function scoreStaffForShift(
     if (prefs.preferEarlyShifts && shiftStartMins <= 9 * 60) preferenceScore += 10;
     if (prefs.preferLateShifts && shiftStartMins >= 12 * 60) preferenceScore += 10;
     preferenceScore = Math.min(100, preferenceScore);
+  }
+
+  // Rotation preferred window (from rotating-shift-worker pattern) — soft boost.
+  // deriveAvailability emits one 'rotation_preferred' block per Monday of the
+  // current cycle; a shift dated within the same ISO week gets the boost.
+  const derivedForPref = getDerivedAvailability(staff);
+  if (derivedForPref) {
+    const shiftDate = parseISO(shift.date);
+    const shiftMonday = new Date(shiftDate);
+    shiftMonday.setDate(shiftDate.getDate() - ((shiftDate.getDay() + 6) % 7));
+    const shiftWeekKey = format(shiftMonday, 'yyyy-MM-dd');
+    const rotationHit = derivedForPref.blocks.find(
+      b => b.kind === 'rotation_preferred' && b.date === shiftWeekKey,
+    );
+    if (rotationHit) {
+      preferenceScore = Math.min(100, preferenceScore + 15);
+    }
   }
   
   // --- WEIGHTED TOTAL ---
