@@ -88,6 +88,8 @@ export interface WeeklyAvailability {
   area?: string;
   /** Marks this weekday as a Rostered Day Off (hard scheduling block). */
   isRdo?: boolean;
+  /** Week position within a multi-week cycle (1-based). Undefined = applies to every week. */
+  week?: 1 | 2 | 3 | 4;
 }
 
 export interface StaffMember {
