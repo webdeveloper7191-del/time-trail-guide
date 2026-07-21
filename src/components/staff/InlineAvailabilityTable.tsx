@@ -354,7 +354,20 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="px-2 py-2 text-center">
+                <div className="px-2 py-2 flex items-center justify-center gap-1">
+                  {renderActionMenu(
+                    week,
+                    day.key,
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-primary hover:bg-primary/10"
+                      title="Row actions"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>,
+                    { hasData: true },
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -373,7 +386,20 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     RDO — Rostered Day Off (hard block, Week {week} of {cycleWeeks})
                   </Badge>
                 </div>
-                <div className="px-2 py-2 text-center">
+                <div className="px-2 py-2 flex items-center justify-center gap-1">
+                  {renderActionMenu(
+                    week,
+                    day.key,
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-primary hover:bg-primary/10"
+                      title="Row actions"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>,
+                    { hasData: true },
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -387,26 +413,23 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
               </>
             ) : (
               <>
-                <div className="col-span-5 px-3 py-2 flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => addHours(week, day.key)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Hours
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                    onClick={() => markRdo(week, day.key)}
-                    title={`Mark this weekday as an RDO in Week ${week}`}
-                  >
-                    <Moon className="h-3 w-3 mr-1" />
-                    Mark as RDO
-                  </Button>
+                <div className="px-2 py-2 flex items-center justify-center">
+                  {renderActionMenu(
+                    week,
+                    day.key,
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7 rounded-full text-primary border-primary/40 hover:bg-primary/10"
+                      title="Add shift or RDO"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>,
+                    { hasData: false },
+                  )}
+                </div>
+                <div className="col-span-4 px-3 py-2 text-xs text-muted-foreground">
+                  No availability set
                 </div>
                 <div className="px-2 py-2" />
               </>
