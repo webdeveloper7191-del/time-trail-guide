@@ -351,6 +351,23 @@ export function scoreStaffForShift(
     if (prefs.preferLateShifts && shiftStartMins >= 12 * 60) preferenceScore += 10;
     preferenceScore = Math.min(100, preferenceScore);
   }
+
+  // Rotation preferred window (from rotating-shift-worker pattern) — soft boost.
+  // deriveAvailability emits one 'rotation_preferred' block per Monday of the
+  // current cycle; a shift dated within the same ISO week gets the boost.
+  const derivedForPref = getDerivedAvailability(staff);
+  if (derivedForPref) {
+    const shiftDate = parseISO(shift.date);
+    const shiftMonday = new Date(shiftDate);
+    shiftMonday.setDate(shiftDate.getDate() - ((shiftDate.getDay() + 6) % 7));
+    const shiftWeekKey = format(shiftMonday, 'yyyy-MM-dd');
+    const rotationHit = derivedForPref.blocks.find(
+      b => b.kind === 'rotation_preferred' && b.date === shiftWeekKey,
+    );
+    if (rotationHit) {
+      preferenceScore = Math.min(100, preferenceScore + 15);
+    }
+  }
   
   // --- WEIGHTED TOTAL ---
   const totalWeight = weights.availability + weights.qualifications + weights.cost + weights.fairness + weights.preference;
