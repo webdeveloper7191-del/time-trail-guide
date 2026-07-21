@@ -15,6 +15,7 @@ import {
   MapPin,
   UserCircle,
   BarChart3,
+  CalendarClock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ const navItems = [
   { icon: Clock, label: 'Timesheet Admin', to: '/timesheet-admin' },
   { icon: Calendar, label: 'Roster', to: '/roster' },
   { icon: Users, label: 'Workforce', to: '/workforce' },
+  { icon: CalendarClock, label: 'RDO / ADO / TOIL', to: '/leave-accruals' },
   { icon: MapPin, label: 'Locations', to: '/locations' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },
   { icon: ClipboardList, label: 'Forms', to: '/forms' },
