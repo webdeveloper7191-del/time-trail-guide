@@ -708,7 +708,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <FileBadge className="h-4 w-4 text-muted-foreground" />
                   2. Industrial instrument & classification
+                  <SectionHeaderInfo text={PRECEDENCE.s2} />
                 </div>
+
               </AccordionTrigger>
               <AccordionContent className="pb-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
