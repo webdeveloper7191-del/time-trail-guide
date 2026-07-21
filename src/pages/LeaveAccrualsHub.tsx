@@ -17,8 +17,81 @@ import {
   type LeaveKind, type ShiftContext,
 } from '@/lib/leaveAccrualEngine';
 
-function useLeaveSnapshot() {
+export function useLeaveSnapshot() {
   return useSyncExternalStore(subscribeLeave, getLeaveSnapshot, getLeaveSnapshot);
+}
+
+/** Award-focused view: Layer 1 award rules + Layer 2 location policies. For embedding in Award Settings. */
+export function LeaveAccrualsAwardSection() {
+  const snap = useLeaveSnapshot();
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-3 md:grid-cols-3">
+        {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
+          <Card key={k} className="border">
+            <CardHeader className="pb-2">
+              <Badge variant="outline" className={`w-fit ${KIND_META[k].hue}`}>{KIND_META[k].label}</Badge>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">{KIND_META[k].blurb}</CardContent>
+          </Card>
+        ))}
+      </div>
+      <ConfigurationTab snap={snap} />
+    </div>
+  );
+}
+
+/** Workforce-focused view: Layer 3 staff opt-ins/balances + ledger. For embedding in Workforce. */
+export function LeaveAccrualsWorkforceSection() {
+  const snap = useLeaveSnapshot();
+  return (
+    <Tabs defaultValue="staff" className="w-full">
+      <TabsList>
+        <TabsTrigger value="staff"><CalendarClock className="h-4 w-4 mr-1.5" />Staff opt-ins & balances</TabsTrigger>
+        <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Ledger</TabsTrigger>
+        <TabsTrigger value="tagging"><ArrowLeftRight className="h-4 w-4 mr-1.5" />Roster tagging</TabsTrigger>
+      </TabsList>
+      <TabsContent value="staff" className="mt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Staff opt-ins & balances</CardTitle>
+            <CardDescription>Per-employee enrolment. Balances shown are live from the ledger.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Staff</TableHead>
+                  {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
+                    <TableHead key={k} className="text-center">{k}</TableHead>
+                  ))}
+                  <TableHead className="text-right">Balance (h)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {snap.staff.map(s => (
+                  <TableRow key={s.staffId}>
+                    <TableCell className="font-medium">{s.staffName}</TableCell>
+                    {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
+                      <TableCell key={k} className="text-center">
+                        <Switch checked={s.optedIn[k]}
+                          onCheckedChange={(c) => LeaveStore.updateStaffConfig(s.staffId, { optedIn: { ...s.optedIn, [k]: c } })} />
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-right text-xs text-muted-foreground">
+                      RDO {s.balanceHours.RDO.toFixed(1)} · ADO {s.balanceHours.ADO.toFixed(1)} · TOIL {s.balanceHours.TOIL.toFixed(1)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </TabsContent>
+      <TabsContent value="ledger" className="mt-4"><LedgerTab snap={snap} /></TabsContent>
+      <TabsContent value="tagging" className="mt-4"><RosterTaggingTab snap={snap} /></TabsContent>
+    </Tabs>
+  );
 }
 
 const KIND_META: Record<LeaveKind, { label: string; hue: string; blurb: string }> = {

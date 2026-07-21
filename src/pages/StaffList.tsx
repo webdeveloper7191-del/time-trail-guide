@@ -49,10 +49,12 @@ import {
   Send,
   History,
   HelpCircle,
+  CalendarClock,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import OnboardingHistory from '@/components/workforce/OnboardingHistory';
 import OnboardingQuestions from '@/components/workforce/OnboardingQuestions';
+import { LeaveAccrualsWorkforceSection } from '@/pages/LeaveAccrualsHub';
 import { mockStaff, departments, locations } from '@/data/mockStaffData';
 import { StaffMember, employmentStatusLabels, employmentTypeLabels, EmploymentStatus, EmploymentType } from '@/types/staff';
 import { cn } from '@/lib/utils';
@@ -226,6 +228,9 @@ export default function StaffList() {
               </TabsTrigger>
               <TabsTrigger value="onboarding-questions" className="gap-2">
                 <HelpCircle className="h-4 w-4" /> Onboarding Questions
+              </TabsTrigger>
+              <TabsTrigger value="leave-accruals" className="gap-2">
+                <CalendarClock className="h-4 w-4" /> RDO / ADO / TOIL
               </TabsTrigger>
             </TabsList>
 
@@ -577,6 +582,10 @@ export default function StaffList() {
 
             <TabsContent value="onboarding-questions">
               <OnboardingQuestions />
+            </TabsContent>
+
+            <TabsContent value="leave-accruals">
+              <LeaveAccrualsWorkforceSection />
             </TabsContent>
           </Tabs>
         </div>
