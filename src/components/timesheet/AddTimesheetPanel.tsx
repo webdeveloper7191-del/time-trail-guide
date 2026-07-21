@@ -131,9 +131,35 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     const paid = rules.find(r => r.type === 'paid' && r.isMandatory)
       ?? rules.find(r => r.type === 'paid');
     const unpaidWin = unpaid ? windowFromRule(clockIn, clockOut, unpaid.breakDurationMinutes) : { start: '', end: '' };
-    // Offset the paid break earlier so it doesn't collide with unpaid
     const paidWin = paid ? windowFromRule(clockIn, clockOut, paid.breakDurationMinutes, -Math.max(60, paid.breakDurationMinutes + 15)) : { start: '', end: '' };
     return { unpaid: unpaidWin, paid: paidWin };
+  };
+
+  // Build one break entry per applicable rule, staggering their windows so they don't overlap.
+  const buildDefaultBreaks = (clockIn: string, clockOut: string): BreakForm[] => {
+    const rules = applicableRules(clockIn, clockOut);
+    if (!clockIn || !clockOut || rules.length === 0) return [];
+    // Order: mandatory unpaid first (usually lunch), then other unpaid, then paid rest breaks.
+    const ordered = [...rules].sort((a, b) => {
+      const score = (r: typeof a) =>
+        (r.type === 'unpaid' ? 0 : 2) + (r.isMandatory ? 0 : 1);
+      return score(a) - score(b);
+    });
+    // Stagger offsets from midpoint so windows don't collide.
+    const offsets = [0, -90, 90, -180, 180, -270, 270];
+    const out: BreakForm[] = [];
+    ordered.forEach((r, idx) => {
+      const win = windowFromRule(clockIn, clockOut, r.breakDurationMinutes, offsets[idx] ?? 0);
+      if (!win.start) return;
+      out.push({
+        id: nextBreakId(),
+        start: win.start,
+        end: win.end,
+        paid: r.type === 'paid',
+        label: r.name,
+      });
+    });
+    return out;
   };
 
   const applyPrepopulatedBreaks = (checked: boolean) => {
@@ -141,20 +167,11 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     setEntries(prev => prev.map(e => {
       if (e.leaveType) return e;
       if (checked) {
-        // Only prepopulate if the user hasn't added any breaks yet
-        if (e.breaks.length > 0) return e;
+        // Replace with a full set of defaults from all applicable rules.
         return { ...e, breaks: buildDefaultBreaks(e.clockIn, e.clockOut) };
       }
       return { ...e, breaks: [] };
     }));
-  };
-
-  const buildDefaultBreaks = (clockIn: string, clockOut: string): BreakForm[] => {
-    const d = defaultBreakFor(clockIn, clockOut);
-    const out: BreakForm[] = [];
-    if (d.unpaid.start) out.push({ id: nextBreakId(), start: d.unpaid.start, end: d.unpaid.end, paid: false, label: 'Lunch Break' });
-    if (d.paid.start) out.push({ id: nextBreakId(), start: d.paid.start, end: d.paid.end, paid: true, label: 'Rest Break' });
-    return out;
   };
 
   const addBreak = (entryIndex: number, paid: boolean) => {
