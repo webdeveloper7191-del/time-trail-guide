@@ -219,6 +219,34 @@ export function ShiftDetailPanel({
   }, [editedShift, assignedStaff, calculateCost, getQuickEstimate]);
 
   const handleSave = () => {
+    // Post leave-accrual ledger effect (RDO/ADO/TOIL) if applicable
+    try {
+      const hoursBetween = (start: string, end: string, br: number) => {
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        let mins = (eh * 60 + em) - (sh * 60 + sm);
+        if (mins < 0) mins += 24 * 60;
+        return Math.max(0, (mins - (br || 0)) / 60);
+      };
+      const staffMember = staff.find(s => s.id === editedShift.staffId);
+      const scheduled = hoursBetween(editedShift.startTime, editedShift.endTime, editedShift.breakMinutes || 0);
+      const entry = applyShiftLeaveEffect({
+        staffId: editedShift.staffId,
+        staffName: staffMember?.name,
+        shiftId: editedShift.id,
+        date: editedShift.date,
+        scheduledHours: scheduled,
+        leaveTag: editedShift.leaveTag ?? 'AUTO',
+        locationId: centre?.id,
+      });
+      if (entry) {
+        toast.success(`${entry.kind} ${entry.type} posted`, {
+          description: `${entry.hours > 0 ? '+' : ''}${entry.hours.toFixed(2)}h • ${entry.note ?? ''}`,
+        });
+      }
+    } catch (e) {
+      console.warn('[leave] applyShiftLeaveEffect failed', e);
+    }
     onSave(editedShift);
     onClose();
   };
