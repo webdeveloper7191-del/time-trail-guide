@@ -502,8 +502,32 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
                         </div>
                       </div>
+                      {entry.clockIn && entry.clockOut && (!entry.breakStart || !entry.breakEnd) && (
+                        <div className="flex items-start gap-2 p-2 rounded-md border border-amber-500/40 bg-amber-500/5">
+                          <Coffee className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium text-amber-700">
+                              No break recorded for shift {formatTime12h(entry.clockIn)} – {formatTime12h(entry.clockOut)}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              Break clocking data is missing for this day.
+                            </p>
+                          </div>
+                          <Button
+                            type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-amber-700 hover:text-amber-800 hover:bg-amber-500/10"
+                            onClick={() => {
+                              const b = defaultBreakFor(entry.clockIn, entry.clockOut);
+                              updateEntry(i, 'breakStart', b.start);
+                              updateEntry(i, 'breakEnd', b.end);
+                            }}
+                          >
+                            Use default
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
+
 
                   <div className="space-y-1">
                     <Label className="text-[10px] text-muted-foreground">Notes</Label>
