@@ -86,6 +86,8 @@ export interface WeeklyAvailability {
   endTime?: string;
   breakMinutes?: number;
   area?: string;
+  /** Marks this weekday as a Rostered Day Off (hard scheduling block). */
+  isRdo?: boolean;
 }
 
 export interface StaffMember {
