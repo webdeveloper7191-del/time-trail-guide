@@ -112,7 +112,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     return Math.max(0, (outH * 60 + outM - inH * 60 - inM) / 60);
   };
 
-  const entryNeedsException = (e: EntryForm) => !e.clockIn || !e.clockOut;
+  const entryNeedsException = (e: EntryForm) => !e.leaveType && (!e.clockIn || !e.clockOut);
 
   const handleSubmit = () => {
     if (!employeeName || !employeeEmail || !department || !locationId || !weekStartDate) {
@@ -125,11 +125,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
       return;
     }
 
-    // Enforce exception when a clock time is missing
+    // Enforce exception when a clock time is missing (unless it's a leave day)
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
       if (entryNeedsException(e) && (!e.exceptionReason || !e.exceptionNote?.trim())) {
         toast.error(`Entry ${i + 1}: missing clock time requires an exception reason and note`);
+        return;
+      }
+      if (e.leaveType && !e.date) {
+        toast.error(`Entry ${i + 1}: leave day requires a date`);
         return;
       }
     }
@@ -139,6 +143,24 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     const employeeId = `E-${Date.now()}`;
 
     const clockEntries: ClockEntry[] = entries.map((entry, i) => {
+      // Leave day: zero worked hours, no breaks, prefix notes with leave tag
+      if (entry.leaveType) {
+        const leaveOpt = LEAVE_OPTIONS.find(o => o.value === entry.leaveType)!;
+        const leaveHours = Math.max(0, Number(entry.leaveHours) || 0);
+        return {
+          id: `entry-${i}`,
+          date: entry.date || weekStartDate,
+          clockIn: '',
+          clockOut: null,
+          breaks: [],
+          totalBreakMinutes: 0,
+          grossHours: 0,
+          netHours: 0,
+          overtime: 0,
+          notes: `[LEAVE - ${leaveOpt.label.toUpperCase()} · ${leaveHours}h] ${entry.notes ?? ''}`.trim(),
+        };
+      }
+
       const grossHours = calculateHours(entry.clockIn, entry.clockOut);
       const breakMinutes = calculateHours(entry.breakStart, entry.breakEnd) * 60;
       const netHours = Math.max(0, grossHours - breakMinutes / 60);
@@ -150,7 +172,6 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         type: 'lunch' as const,
       }] : [];
 
-      // Auto-derive exception reason if user left it blank but a clock time is missing
       let exception: TimesheetException | undefined;
       if (entry.exceptionReason && entry.exceptionNote?.trim()) {
         exception = {
@@ -176,6 +197,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         exception,
       };
     });
+
 
     const totalHours = clockEntries.reduce((s, e) => s + e.netHours, 0);
     const overtimeHours = clockEntries.reduce((s, e) => s + e.overtime, 0);
