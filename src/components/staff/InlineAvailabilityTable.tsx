@@ -168,6 +168,32 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
       area: undefined,
     });
 
+  const WEEKDAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+  const WEEKENDS: DayOfWeek[] = ['saturday', 'sunday'];
+  const ALL_DAYS: DayOfWeek[] = [...WEEKDAYS, ...WEEKENDS];
+
+  const copyDayTo = (week: WeekIdx, sourceKey: DayOfWeek, targets: DayOfWeek[]) => {
+    const source = availability[week].find(d => d.dayOfWeek === sourceKey);
+    if (!source) return;
+    setAvailability(prev => ({
+      ...prev,
+      [week]: prev[week].map(day =>
+        targets.includes(day.dayOfWeek) && day.dayOfWeek !== sourceKey
+          ? {
+              ...day,
+              isAvailable: source.isAvailable,
+              isRdo: source.isRdo,
+              startTime: source.startTime,
+              endTime: source.endTime,
+              breakMinutes: source.breakMinutes,
+              area: source.area,
+            }
+          : day,
+      ),
+    }));
+    setHasChanges(true);
+  };
+
   const handleSave = () => {
     if (!onSave) {
       setHasChanges(false);
