@@ -408,7 +408,6 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
       <SheetContent className="w-full sm:max-w-4xl p-0 flex flex-col">
-      <old-placeholder/>
         <SheetHeader className="px-6 pt-6 pb-4 border-b">
           <SheetTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
