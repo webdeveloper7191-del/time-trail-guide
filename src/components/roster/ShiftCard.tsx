@@ -132,6 +132,7 @@ export function ShiftCard({
 
   const currentType = shift.shiftType || 'regular';
   const shiftTypeInfo = getShiftTypeConfig(currentType);
+  const leaveBadge = useLeaveTagBadge(shift, staff?.name);
 
   const handleShiftTypeQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
     e.stopPropagation();
