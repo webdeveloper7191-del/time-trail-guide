@@ -151,8 +151,23 @@ const _store = {
 };
 
 const listeners = new Set<() => void>();
-function emit() { listeners.forEach(fn => fn()); }
+let _snapshot = {
+  awards: _store.awards,
+  locations: _store.locations,
+  staff: _store.staff,
+  ledger: _store.ledger,
+};
+function emit() {
+  _snapshot = {
+    awards: _store.awards,
+    locations: _store.locations,
+    staff: _store.staff,
+    ledger: _store.ledger,
+  };
+  listeners.forEach(fn => fn());
+}
 export function subscribeLeave(fn: () => void) { listeners.add(fn); return () => listeners.delete(fn); }
+export function getLeaveSnapshot() { return _snapshot; }
 
 // ---------- API ----------
 
