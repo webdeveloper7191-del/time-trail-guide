@@ -601,6 +601,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           </button>
                         </div>
                         <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
+                        {entry.sourceClockIn && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Smartphone className="h-2.5 w-2.5" />
+                            App: <span className="font-medium text-foreground">{formatTime12h(entry.sourceClockIn)}</span>
+                            {entry.clockIn && entry.clockIn !== entry.sourceClockIn && (
+                              <span className="text-amber-600">· edited</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
