@@ -143,8 +143,6 @@ export function StaffAvailabilitySection({ staff }: StaffAvailabilitySectionProp
         </CardContent>
       </Card>
 
-      {/* Derived Availability — RDO / ADO / TOIL & Shift Worker overlays */}
-      <DerivedAvailabilityCard staff={staff} />
 
       {/* Contracted Hours */}
       <Card>
