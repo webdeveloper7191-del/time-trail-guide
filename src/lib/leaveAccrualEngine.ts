@@ -52,8 +52,27 @@ export interface StaffLeaveConfig {
   staffName: string;
   optedIn: Record<LeaveKind, boolean>;
   balanceHours: Record<LeaveKind, number>;
-  rdoAnchorDate?: string; // ISO
+  rdoAnchorDate?: string; // ISO — first scheduled RDO
+  // ---- Per-scheme overrides (fall back to award if undefined) ----
+  rdoSettings?: {
+    dayOfWeek?: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+    cycleWeeks?: number;              // usually 4
+    extraMinutesPerDay?: number;      // e.g. 24 min/day → banks 8h over 4 wks
+  };
+  adoSettings?: {
+    extraMinutesPerDay?: number;      // additional ordinary mins/day
+    targetHoursPerDayOff?: number;    // hours needed to trigger a day off (e.g. 7.6)
+    autoScheduleDayOff?: boolean;     // auto-book once threshold reached
+  };
+  toilSettings?: {
+    conversion?: 'time_for_time' | 'penalty_equivalent';
+    penaltyMultiplier?: number;       // e.g. 1.5
+    maxBalanceHours?: number;         // cap
+    expiryDays?: number;              // must be taken within
+    requiresPreApproval?: boolean;
+  };
 }
+
 
 // ---------- Ledger ----------
 
