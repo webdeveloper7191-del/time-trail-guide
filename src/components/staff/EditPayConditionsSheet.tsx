@@ -1114,10 +1114,27 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Percent className="h-4 w-4 text-muted-foreground" />
                   4. Loadings & allowances
+                  <SectionHeaderInfo text={PRECEDENCE.s4} />
+                  {s4OverrideCount > 0 && (
+                    <Badge variant="outline" className="ml-1 text-[10px] h-5 gap-1">
+                      <PencilLine className="h-2.5 w-2.5" /> {s4OverrideCount} override{s4OverrideCount === 1 ? '' : 's'}
+                    </Badge>
+                  )}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-4 space-y-4">
+                <div className="flex items-center justify-between rounded-md bg-muted/30 border border-dashed p-2.5 text-[11px] text-muted-foreground gap-3">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <span>Loadings shown are award defaults. Turn on <span className="font-medium text-foreground">Customize</span> to raise a rate above award (never below — BOOT).</span>
+                  </div>
+                  <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                    <span className="text-[11px] font-medium text-foreground">Customize</span>
+                    <Switch checked={customize.s4} onCheckedChange={(v) => setCustomize((c) => ({ ...c, s4: v }))} className="scale-75" />
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
+
                   <ResolvedField
                     label="Saturday loading"
                     value={`${saturdayLoading.value}%`}
