@@ -960,7 +960,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={ordinaryPerWeek.value}
                     unit="hrs"
                     override={ordinaryPerWeek.override}
-                    onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}                    info="Total standard hours before overtime applies. Award defaults prevent paying less than the legal minimum."
+                    onToggleOverride={(v) => setOrdinaryPerWeek({ ...ordinaryPerWeek, override: v })}                    customizeMode={customize.s3} info="Total standard hours before overtime applies. Award defaults prevent paying less than the legal minimum."
                     error={validation.errors.ordinaryPerWeek}
                     warning={validation.warnings.ordinaryPerWeek}
                   >
@@ -977,7 +977,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={ordinaryPerDay.value}
                     unit="hrs"
                     override={ordinaryPerDay.override}
-                    onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}                    info="Daily threshold for ordinary time. Exceeding this triggers daily overtime penalties."
+                    onToggleOverride={(v) => setOrdinaryPerDay({ ...ordinaryPerDay, override: v })}                    customizeMode={customize.s3} info="Daily threshold for ordinary time. Exceeding this triggers daily overtime penalties."
                     error={validation.errors.ordinaryPerDay}
                   >
                     <Input
@@ -991,7 +991,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={rosterCycle.value}
                     unit="weeks"
                     override={rosterCycle.override}
-                    onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}                    info="How many weeks the repeating roster pattern covers (e.g., 1 = weekly, 2 = fortnightly)."
+                    onToggleOverride={(v) => setRosterCycle({ ...rosterCycle, override: v })}                    customizeMode={customize.s3} info="How many weeks the repeating roster pattern covers (e.g., 1 = weekly, 2 = fortnightly)."
                     error={validation.errors.rosterCycle}
                   >
                     <Input
@@ -1012,7 +1012,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={otAfterDaily.value}
                     unit="hrs"
                     override={otAfterDaily.override}
-                    onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}                    info="Number of hours worked in a single day before overtime multipliers begin."
+                    onToggleOverride={(v) => setOtAfterDaily({ ...otAfterDaily, override: v })}                    customizeMode={customize.s3} info="Number of hours worked in a single day before overtime multipliers begin."
                     error={validation.errors.otAfterDaily}
                     warning={validation.warnings.otAfterDaily}
                   >
@@ -1027,7 +1027,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     value={otAfterWeekly.value}
                     unit="hrs"
                     override={otAfterWeekly.override}
-                    onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}                    info="Total weekly hours before overtime applies across the whole roster cycle."
+                    onToggleOverride={(v) => setOtAfterWeekly({ ...otAfterWeekly, override: v })}                    customizeMode={customize.s3} info="Total weekly hours before overtime applies across the whole roster cycle."
                     error={validation.errors.otAfterWeekly}
                   >
                     <Input
@@ -1040,7 +1040,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="First 2 hours OT"
                     value={`${otFirst2h.value}%`}
                     override={otFirst2h.override}
-                    onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}                    info="Multiplier applied to the first 2 hours of overtime in a day or shift."
+                    onToggleOverride={(v) => setOtFirst2h({ ...otFirst2h, override: v })}                    customizeMode={customize.s3} info="Multiplier applied to the first 2 hours of overtime in a day or shift."
                     error={validation.errors.otFirst2h}
                   >
                     <Input
@@ -1053,7 +1053,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="After 2 hours OT"
                     value={`${otAfter2h.value}%`}
                     override={otAfter2h.override}
-                    onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}                    info="Multiplier applied after the first 2 hours of overtime (usually higher)."
+                    onToggleOverride={(v) => setOtAfter2h({ ...otAfter2h, override: v })}                    customizeMode={customize.s3} info="Multiplier applied after the first 2 hours of overtime (usually higher)."
                     error={validation.errors.otAfter2h}
                   >
                     <Input
@@ -1069,7 +1069,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   label="Overtime × penalty interaction"
                   value={interaction.value === 'higher_of' ? 'Higher of (do not stack)' : 'Stack (multiplicative)'}
                   override={interaction.override}
-                  onToggleOverride={(v) => setInteraction({ ...interaction, override: v })}                  info="Choose whether weekend/PH penalties stack with overtime rates, or only the higher rate applies."
+                  onToggleOverride={(v) => setInteraction({ ...interaction, override: v })}                  customizeMode={customize.s3} info="Choose whether weekend/PH penalties stack with overtime rates, or only the higher rate applies."
                   hint="Controls whether overtime multipliers and weekend/PH penalties compound or the higher rate wins."
                 >
                   <Select
@@ -1102,7 +1102,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Saturday loading"
                     value={`${saturdayLoading.value}%`}
                     override={saturdayLoading.override}
-                    onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}                    info="Percentage added to the base rate for hours worked on Saturday."
+                    onToggleOverride={(v) => setSaturdayLoading({ ...saturdayLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked on Saturday."
                     error={validation.errors.saturdayLoading}
                   >
                     <Input
@@ -1115,7 +1115,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Sunday loading"
                     value={`${sundayLoading.value}%`}
                     override={sundayLoading.override}
-                    onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}                    info="Percentage added to the base rate for hours worked on Sunday."
+                    onToggleOverride={(v) => setSundayLoading({ ...sundayLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked on Sunday."
                     error={validation.errors.sundayLoading}
                   >
                     <Input
@@ -1128,7 +1128,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Public holiday loading"
                     value={`${phLoading.value}%`}
                     override={phLoading.override}
-                    onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}                    info="Percentage added to the base rate for hours worked on a public holiday."
+                    onToggleOverride={(v) => setPhLoading({ ...phLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked on a public holiday."
                     error={validation.errors.phLoading}
                   >
                     <Input
@@ -1141,7 +1141,7 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     label="Evening loading"
                     value={`${eveningLoading.value}%`}
                     override={eveningLoading.override}
-                    onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}                    info="Percentage added to the base rate for hours worked during the evening period."
+                    onToggleOverride={(v) => setEveningLoading({ ...eveningLoading, override: v })}                    customizeMode={customize.s4} info="Percentage added to the base rate for hours worked during the evening period."
                     error={validation.errors.eveningLoading}
                   >
                     <Input
