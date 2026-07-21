@@ -202,7 +202,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   };
 
   const addEntry = () => {
-    setEntries(prev => [...prev, prepopulateBreaks ? emptyEntry() : { ...emptyEntry(), breakStart: '', breakEnd: '' }]);
+    setEntries(prev => [...prev, prepopulateBreaks ? emptyEntry() : { ...emptyEntry(), breaks: [] }]);
   };
 
   const removeEntry = (index: number) => {
