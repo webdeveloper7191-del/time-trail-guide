@@ -300,3 +300,138 @@ export function getLSLProRataEntitlement(_startDate: string, _state: string): nu
 export function initializeLeaveBalances(_staffId: string): unknown[] {
   return [];
 }
+
+// ---------- Roster / timesheet integration helpers ----------
+
+export function findStaffByName(name: string): StaffLeaveConfig | undefined {
+  if (!name) return undefined;
+  const n = name.trim().toLowerCase();
+  return _store.staff.find(s => s.staffName.trim().toLowerCase() === n);
+}
+export function findAward(code?: string): AwardLeaveRule | undefined {
+  if (!code) return _store.awards[0];
+  return _store.awards.find(a => a.awardCode === code) ?? _store.awards[0];
+}
+export function findLocation(id?: string): LocationLeavePolicy | undefined {
+  if (!id) return _store.locations[0];
+  return _store.locations.find(l => l.locationId === id) ?? _store.locations[0];
+}
+
+export type ShiftLeaveTag = 'AUTO' | 'NONE' | 'RDO' | 'ADO' | 'TOIL' | 'RDO_LEAVE' | 'ADO_LEAVE' | 'TOIL_LEAVE';
+
+/**
+ * Called by the roster editor when a shift is saved.
+ * Returns the ledger entry that was posted (or null if no effect).
+ */
+export function applyShiftLeaveEffect(input: {
+  staffId?: string;
+  staffName?: string;
+  awardCode?: string;
+  locationId?: string;
+  shiftId: string;
+  date: string;
+  scheduledHours: number;
+  actualHours?: number;
+  isOvertime?: boolean;
+  isPublicHoliday?: boolean;
+  leaveTag?: ShiftLeaveTag;
+  note?: string;
+}): LedgerEntry | null {
+  const staff =
+    (input.staffId ? _store.staff.find(s => s.staffId === input.staffId) : undefined) ??
+    (input.staffName ? findStaffByName(input.staffName) : undefined);
+  if (!staff) return null;
+
+  const tag = input.leaveTag ?? 'AUTO';
+
+  // Consumption tags — a "leave day" shift that draws down balance
+  if (tag === 'RDO_LEAVE' || tag === 'ADO_LEAVE' || tag === 'TOIL_LEAVE') {
+    const kind: LeaveKind = tag === 'RDO_LEAVE' ? 'RDO' : tag === 'ADO_LEAVE' ? 'ADO' : 'TOIL';
+    const hours = -Math.abs(input.scheduledHours || 8);
+    return LeaveStore.postLedger({
+      staffId: staff.staffId,
+      kind,
+      type: 'consumption',
+      hours,
+      occurredOn: input.date,
+      sourceShiftId: input.shiftId,
+      note: input.note ?? `${kind} leave taken`,
+    });
+  }
+
+  if (tag === 'NONE') return null;
+
+  // Explicit accrual tag
+  if (tag === 'RDO' || tag === 'ADO' || tag === 'TOIL') {
+    const award = findAward(input.awardCode);
+    const hours =
+      tag === 'RDO' ? (award?.rdo?.hoursPerCycle ?? input.scheduledHours) :
+      tag === 'ADO' ? ((award?.ado?.accrualPerOrdinaryHour ?? 0) * input.scheduledHours) :
+      /* TOIL */    Math.max(0, (input.actualHours ?? input.scheduledHours) - input.scheduledHours) || input.scheduledHours;
+    if (hours <= 0) return null;
+    return LeaveStore.postLedger({
+      staffId: staff.staffId,
+      kind: tag,
+      type: 'accrual',
+      hours,
+      occurredOn: input.date,
+      sourceShiftId: input.shiftId,
+      note: input.note ?? `${tag} accrual (manual)`,
+    });
+  }
+
+  // AUTO — derive from context
+  const derived = deriveShiftTag(
+    {
+      staffId: staff.staffId,
+      date: input.date,
+      scheduledHours: input.scheduledHours,
+      actualHours: input.actualHours,
+      isOvertime: input.isOvertime,
+      isPublicHoliday: input.isPublicHoliday,
+    },
+    findAward(input.awardCode),
+    findLocation(input.locationId),
+    staff,
+  );
+  if (!derived.tag || derived.autoAccrualHours <= 0) return null;
+  return LeaveStore.postLedger({
+    staffId: staff.staffId,
+    kind: derived.tag,
+    type: 'accrual',
+    hours: derived.autoAccrualHours,
+    occurredOn: input.date,
+    sourceShiftId: input.shiftId,
+    note: input.note ?? derived.reason,
+  });
+}
+
+/**
+ * Called by timesheet approval to bank approved overtime as TOIL
+ * instead of paying it out.
+ */
+export function bankOvertimeAsTOIL(input: {
+  staffId?: string;
+  staffName?: string;
+  timesheetId: string;
+  date: string;
+  overtimeHours: number;
+  awardCode?: string;
+}): LedgerEntry | null {
+  const staff =
+    (input.staffId ? _store.staff.find(s => s.staffId === input.staffId) : undefined) ??
+    (input.staffName ? findStaffByName(input.staffName) : undefined);
+  if (!staff || input.overtimeHours <= 0) return null;
+  const award = findAward(input.awardCode);
+  const factor = award?.toil?.conversion === 'penalty_equivalent' ? 1.5 : 1;
+  return LeaveStore.postLedger({
+    staffId: staff.staffId,
+    kind: 'TOIL',
+    type: 'accrual',
+    hours: input.overtimeHours * factor,
+    occurredOn: input.date,
+    sourceShiftId: input.timesheetId,
+    note: `Banked from approved OT (×${factor})`,
+  });
+}
+
