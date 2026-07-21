@@ -15,7 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2, Save, CalendarIcon, Info, Moon } from 'lucide-react';
+import { Plus, Trash2, Save, CalendarIcon, Info, Moon, Copy } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { locations } from '@/data/mockStaffData';
 import { format, differenceInWeeks, startOfWeek, addWeeks } from 'date-fns';
@@ -161,6 +168,32 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
       area: undefined,
     });
 
+  const WEEKDAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+  const WEEKENDS: DayOfWeek[] = ['saturday', 'sunday'];
+  const ALL_DAYS: DayOfWeek[] = [...WEEKDAYS, ...WEEKENDS];
+
+  const copyDayTo = (week: WeekIdx, sourceKey: DayOfWeek, targets: DayOfWeek[]) => {
+    const source = availability[week].find(d => d.dayOfWeek === sourceKey);
+    if (!source) return;
+    setAvailability(prev => ({
+      ...prev,
+      [week]: prev[week].map(day =>
+        targets.includes(day.dayOfWeek) && day.dayOfWeek !== sourceKey
+          ? {
+              ...day,
+              isAvailable: source.isAvailable,
+              isRdo: source.isRdo,
+              startTime: source.startTime,
+              endTime: source.endTime,
+              breakMinutes: source.breakMinutes,
+              area: source.area,
+            }
+          : day,
+      ),
+    }));
+    setHasChanges(true);
+  };
+
   const handleSave = () => {
     if (!onSave) {
       setHasChanges(false);
@@ -193,6 +226,39 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
 
   const getRdoDays = (weekData: AvailabilityRow[]): number =>
     weekData.filter(d => d.isRdo).length;
+
+  const renderActionMenu = (
+    week: WeekIdx,
+    dayKey: DayOfWeek,
+    trigger: React.ReactNode,
+    opts: { hasData: boolean },
+  ) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuItem onClick={() => addHours(week, dayKey)}>
+          <Plus className="h-3.5 w-3.5 mr-2" /> Shift
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => markRdo(week, dayKey)}>
+          <Moon className="h-3.5 w-3.5 mr-2" /> Rostered Day Off
+        </DropdownMenuItem>
+        {opts.hasData && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => copyDayTo(week, dayKey, WEEKDAYS)}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copy to Weekdays
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyDayTo(week, dayKey, WEEKENDS)}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copy to Weekend
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyDayTo(week, dayKey, ALL_DAYS)}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copy to Full Week
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   const renderAvailabilityTable = (weekData: AvailabilityRow[], week: WeekIdx) => (
     <div className="border rounded-lg overflow-hidden">
@@ -288,7 +354,20 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="px-2 py-2 text-center">
+                <div className="px-2 py-2 flex items-center justify-center gap-1">
+                  {renderActionMenu(
+                    week,
+                    day.key,
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-primary hover:bg-primary/10"
+                      title="Row actions"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>,
+                    { hasData: true },
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -307,7 +386,20 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     RDO — Rostered Day Off (hard block, Week {week} of {cycleWeeks})
                   </Badge>
                 </div>
-                <div className="px-2 py-2 text-center">
+                <div className="px-2 py-2 flex items-center justify-center gap-1">
+                  {renderActionMenu(
+                    week,
+                    day.key,
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-primary hover:bg-primary/10"
+                      title="Row actions"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>,
+                    { hasData: true },
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -321,26 +413,23 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
               </>
             ) : (
               <>
-                <div className="col-span-5 px-3 py-2 flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => addHours(week, day.key)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Hours
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                    onClick={() => markRdo(week, day.key)}
-                    title={`Mark this weekday as an RDO in Week ${week}`}
-                  >
-                    <Moon className="h-3 w-3 mr-1" />
-                    Mark as RDO
-                  </Button>
+                <div className="px-2 py-2 flex items-center justify-center">
+                  {renderActionMenu(
+                    week,
+                    day.key,
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7 rounded-full text-primary border-primary/40 hover:bg-primary/10"
+                      title="Add shift or RDO"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>,
+                    { hasData: false },
+                  )}
+                </div>
+                <div className="col-span-4 px-3 py-2 text-xs text-muted-foreground">
+                  No availability set
                 </div>
                 <div className="px-2 py-2" />
               </>
