@@ -43,8 +43,8 @@ function useLeaveTagBadge(shift: Shift, staffName?: string) {
   })();
 
   const staffCfg = staffName ? findStaffByName(staffName) : undefined;
-  const award = findAward(staffCfg?.awardCode);
-  const location = findLocation(staffCfg?.locationId);
+  const award = findAward(undefined);
+  const location = findLocation(undefined);
   const derived = deriveShiftTag(
     {
       staffId: shift.staffId ?? '',
