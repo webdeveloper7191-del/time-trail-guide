@@ -537,6 +537,11 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       classification,
       payPeriod: payPeriod as PayCondition['payPeriod'],
       contractedHours: ordinaryPerWeek.value,
+      isShiftWorker,
+      isRotatingShiftWorker,
+      shiftPattern: isRotatingShiftWorker ? shiftPattern : undefined,
+      rotationCycleWeeks: isRotatingShiftWorker ? rotationCycleWeeks : undefined,
+      averageNightsPerCycle: isRotatingShiftWorker ? averageNightsPerCycle : undefined,
     };
     onSave?.(updatedCondition);
     toast.success('Pay conditions updated');
