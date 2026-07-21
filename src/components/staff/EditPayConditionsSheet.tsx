@@ -1273,12 +1273,12 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
             </AccordionItem>
             )}
 
-            {/* Section 5 · Leave Accrual Arrangements (RDO / ADO / TOIL) */}
+            {/* Section 5 · Is RDO/ADO/TOIL Applicable? */}
             <AccordionItem value="s5" className="border rounded-lg px-4">
               <AccordionTrigger className="hover:no-underline py-3">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">5. Leave Accrual Arrangements</span>
+                  <span className="font-medium">5. Is RDO/ADO/TOIL Applicable?</span>
                   <Badge variant="outline" className="ml-2 text-[10px]">RDO · ADO · TOIL</Badge>
                   <SectionHeaderInfo text={PRECEDENCE.s5} />
                 </div>
