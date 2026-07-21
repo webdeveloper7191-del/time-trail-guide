@@ -135,6 +135,24 @@ function FieldInfo({ text }: { text: string }) {
   );
 }
 
+function SectionHeaderInfo({ text }: { text: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-muted cursor-help"
+        >
+          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="max-w-[320px] text-xs leading-relaxed">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ResolvedField({
   label,
   value,
@@ -146,6 +164,7 @@ function ResolvedField({
   error,
   warning,
   info,
+  customizeMode = true,
 }: {
   label: string;
   value: string | number;
@@ -157,7 +176,9 @@ function ResolvedField({
   error?: string | null;
   warning?: string | null;
   info?: string;
+  customizeMode?: boolean;
 }) {
+  const showOverrideEditor = customizeMode && override;
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -165,24 +186,30 @@ function ResolvedField({
           {label}
           {info ? <FieldInfo text={info} /> : null}
         </Label>
-        <div className="flex items-center gap-1.5">
-          {override ? (
-            <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
-              <PencilLine className="h-2.5 w-2.5" /> Override
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-1">
-              <Lock className="h-2.5 w-2.5" /> From award
-            </Badge>
-          )}
-          <Switch
-            checked={override}
-            onCheckedChange={onToggleOverride}
-            className="scale-75 -mr-1"
-          />
-        </div>
+        {customizeMode ? (
+          <div className="flex items-center gap-1.5">
+            {override ? (
+              <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
+                <PencilLine className="h-2.5 w-2.5" /> Override
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] gap-1">
+                <Lock className="h-2.5 w-2.5" /> From award
+              </Badge>
+            )}
+            <Switch
+              checked={override}
+              onCheckedChange={onToggleOverride}
+              className="scale-75 -mr-1"
+            />
+          </div>
+        ) : override ? (
+          <Badge variant="outline" className="h-5 px-1.5 text-[10px] gap-1">
+            <PencilLine className="h-2.5 w-2.5" /> Override
+          </Badge>
+        ) : null}
       </div>
-      {override ? (
+      {showOverrideEditor ? (
         <div className={cn(error && '[&_input]:border-destructive [&_button]:border-destructive')}>
           {children}
         </div>
@@ -208,6 +235,17 @@ function ResolvedField({
     </div>
   );
 }
+
+// Precedence explainer text used in section header tooltips
+const PRECEDENCE = {
+  s1: 'Employment basis is set per employee — not resolved from the award. It determines which downstream rules apply (leave entitlements, overtime, guaranteed hours).',
+  s2: 'The industrial instrument selects the rule set. Rates flow: Award/EBA classification → optional Location policy → Staff override (custom hourly or annualised salary). Non-award rates must pass the Better Off Overall Test (BOOT).',
+  s3: 'Ordinary hours and overtime thresholds resolve from the award by default. Location policies can tighten them; per-staff overrides only apply when Customize is on and must be more generous than the award (BOOT).',
+  s4: 'Loadings and allowances resolve from the award. Location policies may add allowances (e.g. site-specific). Per-staff overrides may only raise loadings above the award minimum.',
+  s5: 'RDO / ADO / TOIL rules (cycle length, accrual rates, TOIL expiry) are set centrally in Settings → Awards. This panel only opts this employee in and shows their live balance.',
+};
+
+
 
 
 export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: EditPayConditionsSheetProps) {
