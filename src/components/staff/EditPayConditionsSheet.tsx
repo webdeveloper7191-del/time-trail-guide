@@ -32,6 +32,10 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { mockPositions } from '@/data/mockPositions';
+import { useSyncExternalStore } from 'react';
+import { LeaveStore, subscribeLeave, getLeaveSnapshot, type LeaveKind } from '@/lib/leaveAccrualEngine';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollText } from 'lucide-react';
 
 interface EditPayConditionsSheetProps {
   open: boolean;
