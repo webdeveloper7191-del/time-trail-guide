@@ -49,8 +49,12 @@ interface EntryForm {
   date: string;
   clockIn: string;
   clockOut: string;
+  // Unpaid break (deducted from paid hours)
   breakStart: string;
   breakEnd: string;
+  // Paid break (recorded but NOT deducted)
+  paidBreakStart: string;
+  paidBreakEnd: string;
   notes: string;
   exceptionReason?: ExceptionReason | '';
   exceptionNote?: string;
@@ -64,6 +68,8 @@ const emptyEntry = (): EntryForm => ({
   clockOut: '17:00',
   breakStart: '12:00',
   breakEnd: '12:30',
+  paidBreakStart: '',
+  paidBreakEnd: '',
   notes: '',
   exceptionReason: '',
   exceptionNote: '',
