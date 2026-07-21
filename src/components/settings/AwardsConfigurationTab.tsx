@@ -75,6 +75,8 @@ import { FWCIntegrationPanel } from './awards/FWCIntegrationPanel';
 import { OvertimeCalculatorTest } from './awards/OvertimeCalculatorTest';
 import { OvertimeRulesConfigPanel } from './OvertimeRulesConfigPanel';
 import { EmploymentTypesPanel } from './awards/EmploymentTypesPanel';
+import { CalendarClock } from 'lucide-react';
+import { LeaveAccrualsAwardSection } from '@/pages/LeaveAccrualsHub';
 
 interface EnabledAward {
   awardId: string;
