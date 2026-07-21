@@ -416,6 +416,33 @@ export function ShiftDetailPanel({
         </div>
       )}
 
+      {/* Leave Accrual Tag (RDO / ADO / TOIL) */}
+      <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Leave accrual tag</Label>
+          <a href="/leave-accruals" target="_blank" rel="noreferrer" className="text-[11px] text-primary hover:underline">Configure RDO/ADO/TOIL →</a>
+        </div>
+        <Select
+          value={editedShift.leaveTag ?? 'AUTO'}
+          onValueChange={(v) => setEditedShift(prev => ({ ...prev, leaveTag: v as NonNullable<Shift['leaveTag']> }))}
+        >
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="AUTO">Auto (derive from award &amp; staff opt-in)</SelectItem>
+            <SelectItem value="NONE">None — no leave impact</SelectItem>
+            <SelectItem value="RDO">Accrue RDO</SelectItem>
+            <SelectItem value="ADO">Accrue ADO</SelectItem>
+            <SelectItem value="TOIL">Accrue TOIL (bank overtime)</SelectItem>
+            <SelectItem value="RDO_LEAVE">RDO Leave — consume RDO balance</SelectItem>
+            <SelectItem value="ADO_LEAVE">ADO Leave — consume ADO balance</SelectItem>
+            <SelectItem value="TOIL_LEAVE">TOIL Leave — consume TOIL balance</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          On save, a ledger entry is posted for the assigned staff member. "Auto" uses the award rules and their opt-in.
+        </p>
+      </div>
+
       {/* Tabs for different sections */}
       <Tabs defaultValue="details" className="flex-1 flex flex-col">
         <TabsList className="h-10 w-full justify-start rounded-none border-b bg-transparent mb-4">
