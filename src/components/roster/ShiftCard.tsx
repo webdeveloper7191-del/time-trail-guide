@@ -288,7 +288,30 @@ export function ShiftCard({
                   </Tooltip>
                 </TooltipProvider>
               )}
+
+              {leaveBadge && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={cn(
+                          'ml-0.5 rounded border px-1 py-0 text-[9px] font-semibold leading-none uppercase tracking-wide',
+                          LEAVE_TAG_STYLES[leaveBadge.tag],
+                        )}
+                      >
+                        {leaveBadge.tag}
+                      </span>
+                    </TooltipTrigger>
+                    {showTooltipContent && (
+                      <TooltipContent>
+                        <p className="text-xs">{leaveBadge.reason}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
+
             
             {/* Three-dot menu for shift actions */}
             <DropdownMenu>
