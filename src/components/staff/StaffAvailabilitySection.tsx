@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { DerivedAvailabilityCard } from './DerivedAvailabilityCard';
 
 interface StaffAvailabilitySectionProps {
   staff: StaffMember;
@@ -141,6 +142,9 @@ export function StaffAvailabilitySection({ staff }: StaffAvailabilitySectionProp
           </div>
         </CardContent>
       </Card>
+
+      {/* Derived Availability — RDO / ADO / TOIL & Shift Worker overlays */}
+      <DerivedAvailabilityCard staff={staff} />
 
       {/* Contracted Hours */}
       <Card>
