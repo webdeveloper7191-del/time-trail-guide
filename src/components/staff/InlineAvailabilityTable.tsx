@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2, Save, CalendarIcon, Info } from 'lucide-react';
+import { Plus, Trash2, Save, CalendarIcon, Info, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { locations } from '@/data/mockStaffData';
 import { format, differenceInWeeks, startOfWeek, addWeeks } from 'date-fns';
