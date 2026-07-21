@@ -236,14 +236,13 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         if (hours > 0) {
           LeaveStore.postLedger({
             staffId: employeeId,
-            staffName: employeeName,
             kind: opt.ledgerKind,
+            type: 'consumption',
             hours: -hours,
-            reason: 'consumption',
-            source: 'timesheet',
-            effectiveDate: entry.date,
-            note: `Timesheet leave day (${opt.label})`,
+            occurredOn: entry.date,
+            note: `Timesheet leave day (${opt.label}) — ${employeeName}`,
           });
+
           ledgerPosts++;
         }
       }
