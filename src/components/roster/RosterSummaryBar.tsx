@@ -157,7 +157,11 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
     { label: 'Leave Approved', count: summary.leaveApproved, color: leaveColors.approved.dot, bgColor: 'bg-emerald-500/20' },
     { label: 'Leave Pending', count: summary.leavePending, color: leaveColors.pending.dot, bgColor: 'bg-amber-500/20' },
     { label: 'People Unavailable', count: summary.unavailable, color: leaveColors.unavailable.bg, bgColor: leaveColors.unavailable.bg },
+    { label: 'RDO', count: summary.rdoShifts, color: 'bg-rose-500', bgColor: 'bg-rose-500/15' },
+    { label: 'ADO', count: summary.adoShifts, color: 'bg-sky-500', bgColor: 'bg-sky-500/15' },
+    { label: 'TOIL', count: summary.toilShifts, color: 'bg-amber-500', bgColor: 'bg-amber-500/15' },
   ];
+
 
   // Items to show on mobile (condensed)
   const mobileItems = items.filter(item => 
