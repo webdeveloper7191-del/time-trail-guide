@@ -133,7 +133,9 @@ export interface StaffMember {
   
   // Availability
   weeklyAvailability: WeeklyAvailability[];
-  availabilityPattern: 'same_every_week' | 'alternate_weekly';
+  availabilityPattern: 'same_every_week' | 'alternate_weekly' | 'three_week_cycle' | 'four_week_cycle';
+  /** ISO date (Monday) marking Week 1 of a multi-week availability cycle. */
+  availabilityCycleAnchor?: string;
   
   // Other
   timeClockPasscode?: string;
