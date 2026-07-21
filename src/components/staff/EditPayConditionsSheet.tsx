@@ -359,6 +359,15 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     { id: 'uniform', label: 'Uniform / laundry', amount: 6.25, unit: 'per week' },
   ];
 
+  // Section-level "Customize" toggles — when off, override switches are hidden
+  // and all values render read-only from the award/location resolution.
+  const [customize, setCustomize] = useState<{ s3: boolean; s4: boolean }>({ s3: false, s4: false });
+  const countOverrides = (fields: OverrideField<any>[]) => fields.filter((f) => f.override).length;
+  const s3OverrideCount = countOverrides([ordinaryPerWeek, ordinaryPerDay, rosterCycle, otAfterDaily, otAfterWeekly, otFirst2h, otAfter2h, interaction]);
+  const s4OverrideCount = countOverrides([saturdayLoading, sundayLoading, phLoading, eveningLoading]);
+
+
+
   const toggleAllowance = (id: string) =>
     setSelectedAllowances((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
