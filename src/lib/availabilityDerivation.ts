@@ -219,10 +219,12 @@ export function deriveAvailability(
         : 'Ordinary hours only (per award span of hours)',
     },
     rdo: {
-      optedIn: rdoOpted,
-      nextDates: rdoDates,
+      optedIn: rdoOpted || declaredRdoDays.length > 0,
+      nextDates: rdoDates.length > 0
+        ? rdoDates
+        : blocks.filter(b => b.kind === 'rdo_scheduled').slice(0, 6).map(b => b.date),
       cycleWeeks: rdoCycle,
-      preferredDay: rdoDay,
+      preferredDay: rdoDay ?? declaredRdoDays[0],
     },
     ado: {
       optedIn: adoOpted,
