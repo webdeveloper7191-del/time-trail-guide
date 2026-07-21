@@ -226,10 +226,38 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     };
 
     onAdd(timesheet);
+
+    // Post RDO/ADO/TOIL consumption entries to the leave ledger
+    let ledgerPosts = 0;
+    entries.forEach((entry) => {
+      const opt = LEAVE_OPTIONS.find(o => o.value === entry.leaveType);
+      if (opt?.ledgerKind && entry.date) {
+        const hours = Math.max(0, Number(entry.leaveHours) || 0);
+        if (hours > 0) {
+          LeaveStore.postLedger({
+            staffId: employeeId,
+            staffName: employeeName,
+            kind: opt.ledgerKind,
+            hours: -hours,
+            reason: 'consumption',
+            source: 'timesheet',
+            effectiveDate: entry.date,
+            note: `Timesheet leave day (${opt.label})`,
+          });
+          ledgerPosts++;
+        }
+      }
+    });
+
     resetForm();
     onClose();
-    toast.success('Timesheet added successfully');
+    toast.success(
+      ledgerPosts > 0
+        ? `Timesheet added · ${ledgerPosts} leave ledger entr${ledgerPosts === 1 ? 'y' : 'ies'} posted`
+        : 'Timesheet added successfully'
+    );
   };
+
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
