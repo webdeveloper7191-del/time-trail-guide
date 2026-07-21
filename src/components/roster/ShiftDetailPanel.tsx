@@ -56,6 +56,7 @@ import { timesheetApi } from '@/lib/api/timesheetApi';
 import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/rosterColors';
 import { useRecurringPatterns } from '@/hooks/useRecurringPatterns';
 import { recurrencePatternLabels } from '@/types/advancedRoster';
+import { applyShiftLeaveEffect } from '@/lib/leaveAccrualEngine';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
@@ -219,6 +220,34 @@ export function ShiftDetailPanel({
   }, [editedShift, assignedStaff, calculateCost, getQuickEstimate]);
 
   const handleSave = () => {
+    // Post leave-accrual ledger effect (RDO/ADO/TOIL) if applicable
+    try {
+      const hoursBetween = (start: string, end: string, br: number) => {
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        let mins = (eh * 60 + em) - (sh * 60 + sm);
+        if (mins < 0) mins += 24 * 60;
+        return Math.max(0, (mins - (br || 0)) / 60);
+      };
+      const staffMember = staff.find(s => s.id === editedShift.staffId);
+      const scheduled = hoursBetween(editedShift.startTime, editedShift.endTime, editedShift.breakMinutes || 0);
+      const entry = applyShiftLeaveEffect({
+        staffId: editedShift.staffId,
+        staffName: staffMember?.name,
+        shiftId: editedShift.id,
+        date: editedShift.date,
+        scheduledHours: scheduled,
+        leaveTag: editedShift.leaveTag ?? 'AUTO',
+        locationId: centre?.id,
+      });
+      if (entry) {
+        toast.success(`${entry.kind} ${entry.type} posted`, {
+          description: `${entry.hours > 0 ? '+' : ''}${entry.hours.toFixed(2)}h • ${entry.note ?? ''}`,
+        });
+      }
+    } catch (e) {
+      console.warn('[leave] applyShiftLeaveEffect failed', e);
+    }
     onSave(editedShift);
     onClose();
   };
@@ -386,6 +415,33 @@ export function ShiftDetailPanel({
           </Badge>
         </div>
       )}
+
+      {/* Leave Accrual Tag (RDO / ADO / TOIL) */}
+      <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Leave accrual tag</Label>
+          <a href="/leave-accruals" target="_blank" rel="noreferrer" className="text-[11px] text-primary hover:underline">Configure RDO/ADO/TOIL →</a>
+        </div>
+        <Select
+          value={editedShift.leaveTag ?? 'AUTO'}
+          onValueChange={(v) => setEditedShift(prev => ({ ...prev, leaveTag: v as NonNullable<Shift['leaveTag']> }))}
+        >
+          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="AUTO">Auto (derive from award &amp; staff opt-in)</SelectItem>
+            <SelectItem value="NONE">None — no leave impact</SelectItem>
+            <SelectItem value="RDO">Accrue RDO</SelectItem>
+            <SelectItem value="ADO">Accrue ADO</SelectItem>
+            <SelectItem value="TOIL">Accrue TOIL (bank overtime)</SelectItem>
+            <SelectItem value="RDO_LEAVE">RDO Leave — consume RDO balance</SelectItem>
+            <SelectItem value="ADO_LEAVE">ADO Leave — consume ADO balance</SelectItem>
+            <SelectItem value="TOIL_LEAVE">TOIL Leave — consume TOIL balance</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          On save, a ledger entry is posted for the assigned staff member. "Auto" uses the award rules and their opt-in.
+        </p>
+      </div>
 
       {/* Tabs for different sections */}
       <Tabs defaultValue="details" className="flex-1 flex flex-col">

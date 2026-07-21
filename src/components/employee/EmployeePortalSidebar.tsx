@@ -40,6 +40,7 @@ export function EmployeePortalSidebar({
       children: [
         { id: 'schedule', label: 'My Schedule', icon: Calendar },
         { id: 'current', label: 'My Timesheets', icon: Clock },
+        { id: 'leave-balances', label: 'Leave Balances', icon: ClipboardCheck },
       ],
     },
     {

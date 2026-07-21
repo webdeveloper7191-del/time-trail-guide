@@ -257,20 +257,64 @@ function Field({ label, value, onChange }: { label: string; value: number; onCha
 function LedgerTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
   const [filterStaff, setFilterStaff] = useState<string>('all');
   const [filterKind, setFilterKind] = useState<string>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const rows = snap.ledger.filter(e =>
     (filterStaff === 'all' || e.staffId === filterStaff) &&
-    (filterKind === 'all' || e.kind === filterKind),
+    (filterKind === 'all' || e.kind === filterKind) &&
+    (!fromDate || e.occurredOn >= fromDate) &&
+    (!toDate || e.occurredOn <= toDate),
   );
   const nameOf = (id: string) => snap.staff.find(s => s.staffId === id)?.staffName ?? id;
 
+  const exportCsv = () => {
+    const header = ['Date','Staff','Kind','Type','Hours','Source','Note'];
+    const body = rows.map(e => [
+      e.occurredOn, nameOf(e.staffId), e.kind, e.type,
+      e.hours.toFixed(2), e.sourceShiftId ?? '', (e.note ?? '').replace(/"/g, '""'),
+    ]);
+    const csv = [header, ...body].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `leave-ledger-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} entries`);
+  };
+
+  const exportPdf = async () => {
+    const { default: jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+    const doc = new jsPDF();
+    doc.setFontSize(14); doc.text('Leave Accrual Ledger', 14, 16);
+    doc.setFontSize(9); doc.setTextColor(120);
+    doc.text(`Generated ${new Date().toLocaleString()} • ${rows.length} entries`, 14, 22);
+    if (fromDate || toDate) doc.text(`Period: ${fromDate || '…'} → ${toDate || '…'}`, 14, 27);
+    autoTable(doc, {
+      startY: 32,
+      head: [['Date','Staff','Kind','Type','Hours','Source','Note']],
+      body: rows.map(e => [
+        e.occurredOn, nameOf(e.staffId), e.kind, e.type,
+        `${e.hours >= 0 ? '+' : ''}${e.hours.toFixed(2)}`,
+        e.sourceShiftId ?? '—', e.note ?? '',
+      ]),
+      styles: { fontSize: 8 },
+    });
+    doc.save(`leave-ledger-${new Date().toISOString().slice(0,10)}.pdf`);
+    toast.success('PDF downloaded');
+  };
+
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-4">
+      <CardHeader className="flex-row items-center justify-between gap-4 flex-wrap">
         <div>
           <CardTitle className="text-base">Accrual ledger</CardTitle>
           <CardDescription>Every accrual, consumption, adjustment, expiry, and payout event.</CardDescription>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-center">
+          <Input type="date" className="h-8 w-36" value={fromDate} onChange={e => setFromDate(e.target.value)} placeholder="From" />
+          <span className="text-xs text-muted-foreground">→</span>
+          <Input type="date" className="h-8 w-36" value={toDate} onChange={e => setToDate(e.target.value)} placeholder="To" />
           <Select value={filterStaff} onValueChange={setFilterStaff}>
             <SelectTrigger className="h-8 w-40"><SelectValue placeholder="Staff" /></SelectTrigger>
             <SelectContent>
@@ -287,6 +331,8 @@ function LedgerTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
               <SelectItem value="TOIL">TOIL</SelectItem>
             </SelectContent>
           </Select>
+          <Button size="sm" variant="outline" onClick={exportCsv}>Export CSV</Button>
+          <Button size="sm" onClick={exportPdf}>Export PDF</Button>
         </div>
       </CardHeader>
       <CardContent>

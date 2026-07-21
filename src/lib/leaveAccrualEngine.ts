@@ -132,23 +132,49 @@ export const DEFAULT_LOCATIONS: LocationLeavePolicy[] = [
   },
 ];
 
-// ---------- In-memory store ----------
+// ---------- In-memory store (with localStorage persistence) ----------
 
-const _store = {
+const LS_KEY = 'rostered.leaveAccruals.v1';
+
+const _defaults = {
   awards: [...DEFAULT_AWARDS],
   locations: [...DEFAULT_LOCATIONS],
   staff: [
-    { staffId: 's-1', staffName: 'Sarah Chen',   optedIn: { RDO: true,  ADO: false, TOIL: true  }, balanceHours: { RDO: 12, ADO: 0,  TOIL: 6.5 } },
+    { staffId: 's-1', staffName: 'Sarah Chen',    optedIn: { RDO: true,  ADO: false, TOIL: true  }, balanceHours: { RDO: 12, ADO: 0,  TOIL: 6.5 } },
     { staffId: 's-2', staffName: 'Marcus Nguyen', optedIn: { RDO: false, ADO: true,  TOIL: true  }, balanceHours: { RDO: 0,  ADO: 24, TOIL: 3   } },
-    { staffId: 's-3', staffName: 'Priya Patel',  optedIn: { RDO: true,  ADO: true,  TOIL: false }, balanceHours: { RDO: 8,  ADO: 16, TOIL: 0   } },
+    { staffId: 's-3', staffName: 'Priya Patel',   optedIn: { RDO: true,  ADO: true,  TOIL: false }, balanceHours: { RDO: 8,  ADO: 16, TOIL: 0   } },
   ] as StaffLeaveConfig[],
   ledger: [
-    { id: 'l-1', staffId: 's-1', kind: 'RDO' as LeaveKind, type: 'accrual' as LedgerType,     hours:  8,   occurredOn: '2026-07-01', sourceShiftId: 'sh-101', note: '4-week cycle', createdAt: '2026-07-01T09:00:00Z' },
-    { id: 'l-2', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'accrual' as LedgerType,    hours:  2.5, occurredOn: '2026-07-05', sourceShiftId: 'sh-118', note: 'OT converted to TOIL', createdAt: '2026-07-05T18:00:00Z' },
-    { id: 'l-3', staffId: 's-2', kind: 'ADO' as LeaveKind, type: 'accrual' as LedgerType,     hours:  1.6, occurredOn: '2026-07-10', sourceShiftId: 'sh-140', note: 'Weekly ADO accrual', createdAt: '2026-07-10T17:00:00Z' },
-    { id: 'l-4', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'consumption' as LedgerType, hours: -4,   occurredOn: '2026-07-14', sourceShiftId: 'sh-150', note: 'TOIL leave taken', createdAt: '2026-07-14T09:00:00Z' },
+    { id: 'l-1', staffId: 's-1', kind: 'RDO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  8,   occurredOn: '2026-07-01', sourceShiftId: 'sh-101', note: '4-week cycle',           createdAt: '2026-07-01T09:00:00Z' },
+    { id: 'l-2', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'accrual'     as LedgerType, hours:  2.5, occurredOn: '2026-07-05', sourceShiftId: 'sh-118', note: 'OT converted to TOIL',   createdAt: '2026-07-05T18:00:00Z' },
+    { id: 'l-3', staffId: 's-2', kind: 'ADO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  1.6, occurredOn: '2026-07-10', sourceShiftId: 'sh-140', note: 'Weekly ADO accrual',     createdAt: '2026-07-10T17:00:00Z' },
+    { id: 'l-4', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'consumption' as LedgerType, hours: -4,   occurredOn: '2026-07-14', sourceShiftId: 'sh-150', note: 'TOIL leave taken',       createdAt: '2026-07-14T09:00:00Z' },
   ] as LedgerEntry[],
 };
+
+function hydrate() {
+  if (typeof window === 'undefined') return { ..._defaults };
+  try {
+    const raw = window.localStorage.getItem(LS_KEY);
+    if (!raw) return { ..._defaults };
+    const parsed = JSON.parse(raw);
+    return {
+      awards: parsed.awards ?? _defaults.awards,
+      locations: parsed.locations ?? _defaults.locations,
+      staff: parsed.staff ?? _defaults.staff,
+      ledger: parsed.ledger ?? _defaults.ledger,
+    };
+  } catch {
+    return { ..._defaults };
+  }
+}
+
+const _store = hydrate();
+
+function persist() {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(LS_KEY, JSON.stringify(_store)); } catch { /* quota */ }
+}
 
 const listeners = new Set<() => void>();
 let _snapshot = {
@@ -159,15 +185,23 @@ let _snapshot = {
 };
 function emit() {
   _snapshot = {
-    awards: _store.awards,
-    locations: _store.locations,
-    staff: _store.staff,
-    ledger: _store.ledger,
+    awards: [..._store.awards],
+    locations: [..._store.locations],
+    staff: [..._store.staff],
+    ledger: [..._store.ledger],
   };
+  persist();
   listeners.forEach(fn => fn());
 }
 export function subscribeLeave(fn: () => void) { listeners.add(fn); return () => listeners.delete(fn); }
 export function getLeaveSnapshot() { return _snapshot; }
+export function resetLeaveStore() {
+  _store.awards = [..._defaults.awards];
+  _store.locations = [..._defaults.locations];
+  _store.staff = _defaults.staff.map(s => ({ ...s, optedIn: { ...s.optedIn }, balanceHours: { ...s.balanceHours } }));
+  _store.ledger = [..._defaults.ledger];
+  emit();
+}
 
 // ---------- API ----------
 
@@ -266,3 +300,138 @@ export function getLSLProRataEntitlement(_startDate: string, _state: string): nu
 export function initializeLeaveBalances(_staffId: string): unknown[] {
   return [];
 }
+
+// ---------- Roster / timesheet integration helpers ----------
+
+export function findStaffByName(name: string): StaffLeaveConfig | undefined {
+  if (!name) return undefined;
+  const n = name.trim().toLowerCase();
+  return _store.staff.find(s => s.staffName.trim().toLowerCase() === n);
+}
+export function findAward(code?: string): AwardLeaveRule | undefined {
+  if (!code) return _store.awards[0];
+  return _store.awards.find(a => a.awardCode === code) ?? _store.awards[0];
+}
+export function findLocation(id?: string): LocationLeavePolicy | undefined {
+  if (!id) return _store.locations[0];
+  return _store.locations.find(l => l.locationId === id) ?? _store.locations[0];
+}
+
+export type ShiftLeaveTag = 'AUTO' | 'NONE' | 'RDO' | 'ADO' | 'TOIL' | 'RDO_LEAVE' | 'ADO_LEAVE' | 'TOIL_LEAVE';
+
+/**
+ * Called by the roster editor when a shift is saved.
+ * Returns the ledger entry that was posted (or null if no effect).
+ */
+export function applyShiftLeaveEffect(input: {
+  staffId?: string;
+  staffName?: string;
+  awardCode?: string;
+  locationId?: string;
+  shiftId: string;
+  date: string;
+  scheduledHours: number;
+  actualHours?: number;
+  isOvertime?: boolean;
+  isPublicHoliday?: boolean;
+  leaveTag?: ShiftLeaveTag;
+  note?: string;
+}): LedgerEntry | null {
+  const staff =
+    (input.staffId ? _store.staff.find(s => s.staffId === input.staffId) : undefined) ??
+    (input.staffName ? findStaffByName(input.staffName) : undefined);
+  if (!staff) return null;
+
+  const tag = input.leaveTag ?? 'AUTO';
+
+  // Consumption tags — a "leave day" shift that draws down balance
+  if (tag === 'RDO_LEAVE' || tag === 'ADO_LEAVE' || tag === 'TOIL_LEAVE') {
+    const kind: LeaveKind = tag === 'RDO_LEAVE' ? 'RDO' : tag === 'ADO_LEAVE' ? 'ADO' : 'TOIL';
+    const hours = -Math.abs(input.scheduledHours || 8);
+    return LeaveStore.postLedger({
+      staffId: staff.staffId,
+      kind,
+      type: 'consumption',
+      hours,
+      occurredOn: input.date,
+      sourceShiftId: input.shiftId,
+      note: input.note ?? `${kind} leave taken`,
+    });
+  }
+
+  if (tag === 'NONE') return null;
+
+  // Explicit accrual tag
+  if (tag === 'RDO' || tag === 'ADO' || tag === 'TOIL') {
+    const award = findAward(input.awardCode);
+    const hours =
+      tag === 'RDO' ? (award?.rdo?.hoursPerCycle ?? input.scheduledHours) :
+      tag === 'ADO' ? ((award?.ado?.accrualPerOrdinaryHour ?? 0) * input.scheduledHours) :
+      /* TOIL */    Math.max(0, (input.actualHours ?? input.scheduledHours) - input.scheduledHours) || input.scheduledHours;
+    if (hours <= 0) return null;
+    return LeaveStore.postLedger({
+      staffId: staff.staffId,
+      kind: tag,
+      type: 'accrual',
+      hours,
+      occurredOn: input.date,
+      sourceShiftId: input.shiftId,
+      note: input.note ?? `${tag} accrual (manual)`,
+    });
+  }
+
+  // AUTO — derive from context
+  const derived = deriveShiftTag(
+    {
+      staffId: staff.staffId,
+      date: input.date,
+      scheduledHours: input.scheduledHours,
+      actualHours: input.actualHours,
+      isOvertime: input.isOvertime,
+      isPublicHoliday: input.isPublicHoliday,
+    },
+    findAward(input.awardCode),
+    findLocation(input.locationId),
+    staff,
+  );
+  if (!derived.tag || derived.autoAccrualHours <= 0) return null;
+  return LeaveStore.postLedger({
+    staffId: staff.staffId,
+    kind: derived.tag,
+    type: 'accrual',
+    hours: derived.autoAccrualHours,
+    occurredOn: input.date,
+    sourceShiftId: input.shiftId,
+    note: input.note ?? derived.reason,
+  });
+}
+
+/**
+ * Called by timesheet approval to bank approved overtime as TOIL
+ * instead of paying it out.
+ */
+export function bankOvertimeAsTOIL(input: {
+  staffId?: string;
+  staffName?: string;
+  timesheetId: string;
+  date: string;
+  overtimeHours: number;
+  awardCode?: string;
+}): LedgerEntry | null {
+  const staff =
+    (input.staffId ? _store.staff.find(s => s.staffId === input.staffId) : undefined) ??
+    (input.staffName ? findStaffByName(input.staffName) : undefined);
+  if (!staff || input.overtimeHours <= 0) return null;
+  const award = findAward(input.awardCode);
+  const factor = award?.toil?.conversion === 'penalty_equivalent' ? 1.5 : 1;
+  return LeaveStore.postLedger({
+    staffId: staff.staffId,
+    kind: 'TOIL',
+    type: 'accrual',
+    hours: input.overtimeHours * factor,
+    occurredOn: input.date,
+    sourceShiftId: input.timesheetId,
+    note: `Banked from approved OT (×${factor})`,
+  });
+}
+

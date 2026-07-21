@@ -298,6 +298,10 @@ export interface Shift {
   // Travel/remote work
   isRemoteLocation?: boolean;
   travelKilometres?: number;
+
+  // Leave accrual tag (RDO/ADO/TOIL) — drives ledger effect when saved.
+  // 'AUTO' derives from context; 'NONE' opts out; '*_LEAVE' consumes balance.
+  leaveTag?: 'AUTO' | 'NONE' | 'RDO' | 'ADO' | 'TOIL' | 'RDO_LEAVE' | 'ADO_LEAVE' | 'TOIL_LEAVE';
 }
 
 export interface OpenShift {

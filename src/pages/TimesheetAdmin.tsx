@@ -52,6 +52,8 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { addDays } from 'date-fns';
+import { bankOvertimeAsTOIL } from '@/lib/leaveAccrualEngine';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type TabValue = 'all' | 'exceptions' | TimesheetStatus;
 type ViewMode = 'table' | 'analytics' | 'calendar' | 'audit' | 'compliance';
@@ -73,6 +75,7 @@ export default function TimesheetAdmin() {
   const [delegations, setDelegations] = useState(generateMockDelegations());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [otPrompt, setOtPrompt] = useState<{ ts: Timesheet } | null>(null);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -165,6 +168,28 @@ export default function TimesheetAdmin() {
       message: `${ts?.employee.name}'s timesheet has been approved`,
       employeeName: ts?.employee.name,
     });
+    if (ts && ts.overtimeHours > 0) setOtPrompt({ ts });
+  };
+
+  const confirmOtChoice = (bank: boolean) => {
+    if (!otPrompt) return;
+    const t = otPrompt.ts;
+    if (bank) {
+      const entry = bankOvertimeAsTOIL({
+        staffName: t.employee.name,
+        timesheetId: t.id,
+        date: t.weekStartDate ?? new Date().toISOString().slice(0, 10),
+        overtimeHours: t.overtimeHours,
+      });
+      if (entry) {
+        toast.success(`Banked ${entry.hours.toFixed(2)}h as TOIL`, { description: `Ledger entry ${entry.id}` });
+      } else {
+        toast.error('Could not bank TOIL — staff not found in leave engine');
+      }
+    } else {
+      toast.info('Overtime will be paid out via payroll');
+    }
+    setOtPrompt(null);
   };
 
   const handleReject = (id: string) => {
@@ -442,6 +467,26 @@ export default function TimesheetAdmin() {
         onClose={() => setIsImportModalOpen(false)}
         onImport={(imported) => setTimesheets(prev => [...imported, ...prev])}
       />
+      <Dialog open={!!otPrompt} onOpenChange={(o) => !o && setOtPrompt(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Overtime detected — pay or bank as TOIL?</DialogTitle>
+            <DialogDescription>
+              {otPrompt?.ts.employee.name} recorded{' '}
+              <strong>{otPrompt?.ts.overtimeHours.toFixed(2)}h</strong> of overtime.
+              Choose whether to pay it out via payroll or bank it as Time Off In Lieu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-xs text-muted-foreground rounded-md bg-muted/40 p-3">
+            Banking as TOIL adds hours to the staff member's TOIL balance
+            (converted at the award's TOIL rate) instead of paying the overtime.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => confirmOtChoice(false)}>Pay out</Button>
+            <Button onClick={() => confirmOtChoice(true)}>Bank as TOIL</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

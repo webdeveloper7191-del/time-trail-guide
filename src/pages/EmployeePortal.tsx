@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { mockTimesheets } from '@/data/mockTimesheets';
 import { Timesheet, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { RaiseExceptionDialog, EXCEPTION_REASONS } from '@/components/timesheet/RaiseExceptionDialog';
+import { LeaveBalancesView } from '@/components/employee/LeaveBalancesView';
 import { validateCompliance } from '@/lib/complianceEngine';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,6 +101,7 @@ export function EmployeePortal() {
     onboarding: { title: 'Onboarding', subtitle: 'Complete your setup' },
     schedule: { title: 'My Schedule', subtitle: 'Shifts, open shifts and swap requests' },
     current: { title: 'My Timesheets', subtitle: 'Review your hours and compliance' },
+    'leave-balances': { title: 'Leave Balances', subtitle: 'RDO, ADO and TOIL accruals' },
     recognition: { title: 'Recognition', subtitle: 'Celebrate your team' },
     performance: { title: 'Performance', subtitle: 'Reviews, goals and feedback' },
     okrs: { title: 'My OKRs', subtitle: 'Track objectives and key results' },
@@ -133,6 +135,8 @@ export function EmployeePortal() {
             stats={stats}
           />
         );
+      case 'leave-balances':
+        return <LeaveBalancesView employeeName={currentEmployee.name} />;
 
       case 'recognition':
         return <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />;
