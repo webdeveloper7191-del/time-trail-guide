@@ -9,12 +9,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle, X } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, addDays, parseISO } from 'date-fns';
 import { formatTime12h } from '@/lib/timeFormat';
 import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
+import { LeaveStore } from '@/lib/leaveAccrualEngine';
+
+type LeaveKindOption =
+  | 'annual_leave'
+  | 'sick_leave'
+  | 'personal_leave'
+  | 'unpaid_leave'
+  | 'rdo_leave'
+  | 'ado_leave'
+  | 'toil_leave';
+
+const LEAVE_OPTIONS: { value: LeaveKindOption; label: string; ledgerKind?: 'RDO' | 'ADO' | 'TOIL' }[] = [
+  { value: 'annual_leave', label: 'Annual Leave' },
+  { value: 'sick_leave', label: 'Sick Leave' },
+  { value: 'personal_leave', label: 'Personal / Carer\'s Leave' },
+  { value: 'unpaid_leave', label: 'Unpaid Leave' },
+  { value: 'rdo_leave', label: 'RDO Leave', ledgerKind: 'RDO' },
+  { value: 'ado_leave', label: 'ADO Leave', ledgerKind: 'ADO' },
+  { value: 'toil_leave', label: 'TOIL Leave', ledgerKind: 'TOIL' },
+];
+
 
 interface AddTimesheetPanelProps {
   open: boolean;
@@ -31,6 +52,8 @@ interface EntryForm {
   notes: string;
   exceptionReason?: ExceptionReason | '';
   exceptionNote?: string;
+  leaveType?: LeaveKindOption | '';
+  leaveHours?: number;
 }
 
 const emptyEntry = (): EntryForm => ({
@@ -42,7 +65,10 @@ const emptyEntry = (): EntryForm => ({
   notes: '',
   exceptionReason: '',
   exceptionNote: '',
+  leaveType: '',
+  leaveHours: 8,
 });
+
 
 
 export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelProps) {
@@ -86,7 +112,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     return Math.max(0, (outH * 60 + outM - inH * 60 - inM) / 60);
   };
 
-  const entryNeedsException = (e: EntryForm) => !e.clockIn || !e.clockOut;
+  const entryNeedsException = (e: EntryForm) => !e.leaveType && (!e.clockIn || !e.clockOut);
 
   const handleSubmit = () => {
     if (!employeeName || !employeeEmail || !department || !locationId || !weekStartDate) {
@@ -99,11 +125,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
       return;
     }
 
-    // Enforce exception when a clock time is missing
+    // Enforce exception when a clock time is missing (unless it's a leave day)
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
       if (entryNeedsException(e) && (!e.exceptionReason || !e.exceptionNote?.trim())) {
         toast.error(`Entry ${i + 1}: missing clock time requires an exception reason and note`);
+        return;
+      }
+      if (e.leaveType && !e.date) {
+        toast.error(`Entry ${i + 1}: leave day requires a date`);
         return;
       }
     }
@@ -113,6 +143,24 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     const employeeId = `E-${Date.now()}`;
 
     const clockEntries: ClockEntry[] = entries.map((entry, i) => {
+      // Leave day: zero worked hours, no breaks, prefix notes with leave tag
+      if (entry.leaveType) {
+        const leaveOpt = LEAVE_OPTIONS.find(o => o.value === entry.leaveType)!;
+        const leaveHours = Math.max(0, Number(entry.leaveHours) || 0);
+        return {
+          id: `entry-${i}`,
+          date: entry.date || weekStartDate,
+          clockIn: '',
+          clockOut: null,
+          breaks: [],
+          totalBreakMinutes: 0,
+          grossHours: 0,
+          netHours: 0,
+          overtime: 0,
+          notes: `[LEAVE - ${leaveOpt.label.toUpperCase()} · ${leaveHours}h] ${entry.notes ?? ''}`.trim(),
+        };
+      }
+
       const grossHours = calculateHours(entry.clockIn, entry.clockOut);
       const breakMinutes = calculateHours(entry.breakStart, entry.breakEnd) * 60;
       const netHours = Math.max(0, grossHours - breakMinutes / 60);
@@ -124,7 +172,6 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         type: 'lunch' as const,
       }] : [];
 
-      // Auto-derive exception reason if user left it blank but a clock time is missing
       let exception: TimesheetException | undefined;
       if (entry.exceptionReason && entry.exceptionNote?.trim()) {
         exception = {
@@ -150,6 +197,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
         exception,
       };
     });
+
 
     const totalHours = clockEntries.reduce((s, e) => s + e.netHours, 0);
     const overtimeHours = clockEntries.reduce((s, e) => s + e.overtime, 0);
@@ -178,10 +226,37 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     };
 
     onAdd(timesheet);
+
+    // Post RDO/ADO/TOIL consumption entries to the leave ledger
+    let ledgerPosts = 0;
+    entries.forEach((entry) => {
+      const opt = LEAVE_OPTIONS.find(o => o.value === entry.leaveType);
+      if (opt?.ledgerKind && entry.date) {
+        const hours = Math.max(0, Number(entry.leaveHours) || 0);
+        if (hours > 0) {
+          LeaveStore.postLedger({
+            staffId: employeeId,
+            kind: opt.ledgerKind,
+            type: 'consumption',
+            hours: -hours,
+            occurredOn: entry.date,
+            note: `Timesheet leave day (${opt.label}) — ${employeeName}`,
+          });
+
+          ledgerPosts++;
+        }
+      }
+    });
+
     resetForm();
     onClose();
-    toast.success('Timesheet added successfully');
+    toast.success(
+      ledgerPosts > 0
+        ? `Timesheet added · ${ledgerPosts} leave ledger entr${ledgerPosts === 1 ? 'y' : 'ies'} posted`
+        : 'Timesheet added successfully'
+    );
   };
+
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
@@ -253,12 +328,22 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add
                 </Button>
               </div>
-              {entries.map((entry, i) => (
-                <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-3">
+              {entries.map((entry, i) => {
+                const isLeave = !!entry.leaveType;
+                return (
+                <div key={i} className={`p-3 rounded-lg border space-y-3 ${isLeave ? 'bg-indigo-500/5 border-indigo-500/30' : 'bg-muted/30'}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted-foreground">Entry {i + 1}</span>
                     <div className="flex items-center gap-2">
-                      {entry.clockIn && entry.clockOut && (
+                      <span className="text-xs font-semibold text-muted-foreground">Entry {i + 1}</span>
+                      {isLeave && (
+                        <Badge variant="outline" className="text-[10px] h-4 border-indigo-500/50 text-indigo-700">
+                          <CalendarOff className="h-2.5 w-2.5 mr-1" />
+                          {LEAVE_OPTIONS.find(o => o.value === entry.leaveType)?.label}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isLeave && entry.clockIn && entry.clockOut && (
                         <span className="text-xs text-muted-foreground">
                           {formatTime12h(entry.clockIn)} – {formatTime12h(entry.clockOut)}
                         </span>
@@ -270,99 +355,148 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+
+                  {/* Day Type toggle: Worked vs Leave */}
+                  <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Date</Label>
-                      <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
+                      <Label className="text-[10px] text-muted-foreground">Day Type</Label>
+                      <Select
+                        value={entry.leaveType || 'worked'}
+                        onValueChange={(v) => {
+                          if (v === 'worked') {
+                            updateEntry(i, 'leaveType', '');
+                          } else {
+                            updateEntry(i, 'leaveType', v as LeaveKindOption);
+                            // Clear exception since it's a leave day
+                            updateEntry(i, 'exceptionReason', '');
+                            updateEntry(i, 'exceptionNote', '');
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="worked">Worked shift</SelectItem>
+                          {LEAVE_OPTIONS.map(o => (
+                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] text-muted-foreground">Clock In</Label>
-                        <button
-                          type="button"
-                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                          onClick={() => {
-                            const wasSet = !!entry.clockIn;
-                            updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
-                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
-                          }}
-                        >
-                          {entry.clockIn ? 'Mark missing' : 'Set time'}
-                        </button>
+                    {isLeave && (
+                      <div className="space-y-1 w-24">
+                        <Label className="text-[10px] text-muted-foreground">Hours</Label>
+                        <Input
+                          type="number" min={0} max={24} step={0.5}
+                          className="h-8 text-xs"
+                          value={entry.leaveHours ?? 8}
+                          onChange={e => updateEntry(i, 'leaveHours', Number(e.target.value))}
+                        />
                       </div>
-                      <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
-                        <button
-                          type="button"
-                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                          onClick={() => {
-                            const wasSet = !!entry.clockOut;
-                            updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
-                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
-                          }}
-                        >
-                          {entry.clockOut ? 'Mark missing' : 'Set time'}
-                        </button>
-                      </div>
-                      <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Break Start</Label>
-                      <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Break End</Label>
-                      <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">Notes</Label>
-                    <Input className="h-8 text-xs" placeholder="Optional notes" value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
+                    )}
                   </div>
 
-                  {/* Exception summary / trigger */}
-                  {entry.exceptionReason && entry.exceptionNote ? (
-                    <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-amber-700">
-                            {EXCEPTION_REASONS.find(r => r.value === entry.exceptionReason)?.label ?? 'Exception'}
-                          </span>
-                          <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
-                            Raised
-                          </Badge>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Date{isLeave ? ' *' : ''}</Label>
+                    <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
+                  </div>
+
+                  {!isLeave && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                              onClick={() => {
+                                const wasSet = !!entry.clockIn;
+                                updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
+                                if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
+                              }}
+                            >
+                              {entry.clockIn ? 'Mark missing' : 'Set time'}
+                            </button>
+                          </div>
+                          <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{entry.exceptionNote}</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                              onClick={() => {
+                                const wasSet = !!entry.clockOut;
+                                updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
+                                if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
+                              }}
+                            >
+                              {entry.clockOut ? 'Mark missing' : 'Set time'}
+                            </button>
+                          </div>
+                          <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2"
-                          onClick={() => setExceptionEntryIndex(i)}>
-                          Edit
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          onClick={() => { updateEntry(i, 'exceptionReason', ''); updateEntry(i, 'exceptionNote', ''); }}>
-                          <X className="h-3 w-3" />
-                        </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Break Start</Label>
+                          <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Break End</Label>
+                          <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <Button
-                      type="button" variant="outline" size="sm"
-                      className={`h-7 text-xs w-full ${entryNeedsException(entry) ? 'border-amber-500/60 text-amber-700 hover:bg-amber-500/10' : ''}`}
-                      onClick={() => setExceptionEntryIndex(i)}
-                    >
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      {entryNeedsException(entry) ? 'Raise exception (required — missing clock time)' : 'Raise exception'}
-                    </Button>
+                    </>
+                  )}
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Notes</Label>
+                    <Input className="h-8 text-xs" placeholder={isLeave ? 'Optional reason / note' : 'Optional notes'} value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
+                  </div>
+
+                  {!isLeave && (
+                    entry.exceptionReason && entry.exceptionNote ? (
+                      <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-semibold text-amber-700">
+                              {EXCEPTION_REASONS.find(r => r.value === entry.exceptionReason)?.label ?? 'Exception'}
+                            </span>
+                            <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
+                              Raised
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{entry.exceptionNote}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2"
+                            onClick={() => setExceptionEntryIndex(i)}>
+                            Edit
+                          </Button>
+                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => { updateEntry(i, 'exceptionReason', ''); updateEntry(i, 'exceptionNote', ''); }}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button" variant="outline" size="sm"
+                        className={`h-7 text-xs w-full ${entryNeedsException(entry) ? 'border-amber-500/60 text-amber-700 hover:bg-amber-500/10' : ''}`}
+                        onClick={() => setExceptionEntryIndex(i)}
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {entryNeedsException(entry) ? 'Raise exception (required — missing clock time)' : 'Raise exception'}
+                      </Button>
+                    )
                   )}
                 </div>
-              ))}
+                );
+              })}
+
             </div>
 
             <Separator />
