@@ -75,6 +75,7 @@ export default function TimesheetAdmin() {
   const [delegations, setDelegations] = useState(generateMockDelegations());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [otPrompt, setOtPrompt] = useState<{ ts: Timesheet } | null>(null);
 
   // Calculate stats
   const stats = useMemo(() => {
