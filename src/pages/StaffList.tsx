@@ -54,6 +54,7 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import OnboardingHistory from '@/components/workforce/OnboardingHistory';
 import OnboardingQuestions from '@/components/workforce/OnboardingQuestions';
+import { LeaveAccrualsWorkforceSection } from '@/pages/LeaveAccrualsHub';
 import { mockStaff, departments, locations } from '@/data/mockStaffData';
 import { StaffMember, employmentStatusLabels, employmentTypeLabels, EmploymentStatus, EmploymentType } from '@/types/staff';
 import { cn } from '@/lib/utils';
