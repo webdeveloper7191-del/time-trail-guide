@@ -45,16 +45,19 @@ interface AddTimesheetPanelProps {
   onAdd: (timesheet: Timesheet) => void;
 }
 
+interface BreakForm {
+  id: string;
+  start: string;
+  end: string;
+  paid: boolean;
+  label?: string;
+}
+
 interface EntryForm {
   date: string;
   clockIn: string;
   clockOut: string;
-  // Unpaid break (deducted from paid hours)
-  breakStart: string;
-  breakEnd: string;
-  // Paid break (recorded but NOT deducted)
-  paidBreakStart: string;
-  paidBreakEnd: string;
+  breaks: BreakForm[];
   notes: string;
   exceptionReason?: ExceptionReason | '';
   exceptionNote?: string;
@@ -62,14 +65,14 @@ interface EntryForm {
   leaveHours?: number;
 }
 
+let breakIdCounter = 0;
+const nextBreakId = () => `brk-${Date.now()}-${++breakIdCounter}`;
+
 const emptyEntry = (): EntryForm => ({
   date: '',
   clockIn: '09:00',
   clockOut: '17:00',
-  breakStart: '12:00',
-  breakEnd: '12:30',
-  paidBreakStart: '',
-  paidBreakEnd: '',
+  breaks: [{ id: nextBreakId(), start: '12:00', end: '12:30', paid: false, label: 'Lunch Break' }],
   notes: '',
   exceptionReason: '',
   exceptionNote: '',
