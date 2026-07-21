@@ -146,28 +146,37 @@ function getStaffWeeklyHours(
   return (fromExisting + fromGenerated) / 60;
 }
 
-function isStaffAvailable(staff: StaffMember, date: string, startTime: string, endTime: string): boolean {
+function isStaffAvailable(staff: StaffMember, date: string, startTime: string, endTime: string): { ok: boolean; reason?: string } {
   const dayOfWeek = getDay(parseISO(date));
   const avail = staff.availability?.find(a => a.dayOfWeek === dayOfWeek);
-  
-  if (!avail || !avail.available) return false;
-  
+
+  if (!avail || !avail.available) return { ok: false, reason: 'Not available' };
+
   if (avail.startTime && avail.endTime) {
     const shiftStart = timeToMinutes(startTime);
     const shiftEnd = timeToMinutes(endTime);
     const availStart = timeToMinutes(avail.startTime);
     const availEnd = timeToMinutes(avail.endTime);
-    
-    if (shiftStart < availStart || shiftEnd > availEnd) return false;
+
+    if (shiftStart < availStart || shiftEnd > availEnd) return { ok: false, reason: 'Outside available hours' };
   }
-  
-  if (staff.timeOff?.some(to => 
+
+  if (staff.timeOff?.some(to =>
     to.status === 'approved' && to.startDate <= date && to.endDate >= date
   )) {
-    return false;
+    return { ok: false, reason: 'Approved time off' };
   }
-  
-  return true;
+
+  // Hard blocks derived from Pay Conditions / Leave Accruals (RDO, ADO, TOIL, declared unavailability)
+  const derived = getDerivedAvailability(staff);
+  if (derived) {
+    const hardHit = derived.blocks.find(
+      b => b.severity === 'hard' && b.date === date,
+    );
+    if (hardHit) return { ok: false, reason: hardHit.label };
+  }
+
+  return { ok: true };
 }
 
 function hasShiftOverlap(
