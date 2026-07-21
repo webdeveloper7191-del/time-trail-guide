@@ -133,7 +133,30 @@ export function deriveAvailability(
 
   const blocks: DerivedAvailabilityBlock[] = [];
 
-  // RDO blocks — hard
+  // Weekday-declared RDOs (from Weekly Availability table) — hard block, recurring
+  const declaredRdoDays = (staff.weeklyAvailability ?? [])
+    .filter(w => w.isRdo)
+    .map(w => w.dayOfWeek);
+  if (declaredRdoDays.length > 0) {
+    const base = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const dowIdx: Record<string, number> = {
+      monday: 0, tuesday: 1, wednesday: 2, thursday: 3, friday: 4, saturday: 5, sunday: 6,
+    };
+    for (let w = 0; w < weeksAhead; w++) {
+      declaredRdoDays.forEach(dow => {
+        const date = addDays(base, w * 7 + (dowIdx[dow] ?? 0));
+        blocks.push({
+          date: format(date, 'yyyy-MM-dd'),
+          kind: 'rdo_scheduled',
+          severity: 'hard',
+          label: `RDO — ${dow.charAt(0).toUpperCase() + dow.slice(1)} declared unavailable`,
+          detail: 'Recurring Rostered Day Off set in Weekly Availability',
+        });
+      });
+    }
+  }
+
+  // RDO blocks — hard (from leave-accrual cycle config)
   rdoDates.forEach(d => {
     blocks.push({
       date: d,
