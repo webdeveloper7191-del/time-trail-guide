@@ -56,6 +56,7 @@ import { timesheetApi } from '@/lib/api/timesheetApi';
 import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/rosterColors';
 import { useRecurringPatterns } from '@/hooks/useRecurringPatterns';
 import { recurrencePatternLabels } from '@/types/advancedRoster';
+import { applyShiftLeaveEffect } from '@/lib/leaveAccrualEngine';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
