@@ -141,12 +141,22 @@ export interface StaffMember {
   email?: string;
   phone?: string;
   schedulingPreferences?: SchedulingPreferences;
-  
+
   // Cross-location scheduling fields
   defaultCentreId?: string; // Primary/home location
   willingToWorkMultipleLocations?: boolean; // Indicates flexibility
   maxTravelDistanceKm?: number; // Maximum travel distance willing to travel
   crossLocationNotes?: string; // Notes about location preferences
+
+  // --- Bridge fields carried over from the workforce (Pay Conditions) StaffMember ---
+  // These allow the roster/auto-scheduler/shift panels to consult the same source of
+  // truth used by Pay Conditions (weekly availability with RDO marks, multi-week
+  // cycles, and the current pay condition). See src/lib/staffBridge.ts.
+  sourceStaffId?: string;
+  weeklyAvailability?: import('@/types/staff').WeeklyAvailability[];
+  availabilityPattern?: import('@/types/staff').StaffMember['availabilityPattern'];
+  availabilityCycleAnchor?: string;
+  currentPayCondition?: import('@/types/staff').PayCondition;
 }
 
 export type ShiftConflictType = 
