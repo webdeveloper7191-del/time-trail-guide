@@ -798,8 +798,8 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                       const active = rateSource === opt.id;
                       return (
                         <button
-
                           key={opt.id}
+
                           type="button"
                           onClick={() => setRateSource(opt.id)}
                           className={cn(
