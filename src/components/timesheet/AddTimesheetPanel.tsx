@@ -52,6 +52,8 @@ interface EntryForm {
   notes: string;
   exceptionReason?: ExceptionReason | '';
   exceptionNote?: string;
+  leaveType?: LeaveKindOption | '';
+  leaveHours?: number;
 }
 
 const emptyEntry = (): EntryForm => ({
@@ -63,7 +65,10 @@ const emptyEntry = (): EntryForm => ({
   notes: '',
   exceptionReason: '',
   exceptionNote: '',
+  leaveType: '',
+  leaveHours: 8,
 });
+
 
 
 export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelProps) {
