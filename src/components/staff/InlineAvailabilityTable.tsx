@@ -116,6 +116,7 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
   const addHours = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
     updateDay(week, dayKey, {
       isAvailable: true,
+      isRdo: false,
       startTime: '09:00',
       endTime: '17:00',
       breakMinutes: 30,
@@ -126,10 +127,22 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
   const removeHours = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
     updateDay(week, dayKey, {
       isAvailable: false,
+      isRdo: false,
       startTime: undefined,
       endTime: undefined,
       breakMinutes: undefined,
       area: undefined
+    });
+  };
+
+  const markRdo = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
+    updateDay(week, dayKey, {
+      isAvailable: false,
+      isRdo: true,
+      startTime: undefined,
+      endTime: undefined,
+      breakMinutes: undefined,
+      area: undefined,
     });
   };
 
