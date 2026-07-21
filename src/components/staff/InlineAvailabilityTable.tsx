@@ -227,6 +227,39 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
   const getRdoDays = (weekData: AvailabilityRow[]): number =>
     weekData.filter(d => d.isRdo).length;
 
+  const renderActionMenu = (
+    week: WeekIdx,
+    dayKey: DayOfWeek,
+    trigger: React.ReactNode,
+    opts: { hasData: boolean },
+  ) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuItem onClick={() => addHours(week, dayKey)}>
+          <Plus className="h-3.5 w-3.5 mr-2" /> Shift
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => markRdo(week, dayKey)}>
+          <Moon className="h-3.5 w-3.5 mr-2" /> Rostered Day Off
+        </DropdownMenuItem>
+        {opts.hasData && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => copyDayTo(week, dayKey, WEEKDAYS)}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copy to Weekdays
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyDayTo(week, dayKey, WEEKENDS)}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copy to Weekend
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyDayTo(week, dayKey, ALL_DAYS)}>
+              <Copy className="h-3.5 w-3.5 mr-2" /> Copy to Full Week
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const renderAvailabilityTable = (weekData: AvailabilityRow[], week: WeekIdx) => (
     <div className="border rounded-lg overflow-hidden">
       <div className="grid grid-cols-[100px_1fr_1fr_80px_80px_1fr_50px] gap-0 bg-muted/50 text-sm font-medium border-b">
