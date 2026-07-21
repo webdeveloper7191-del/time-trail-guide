@@ -168,6 +168,28 @@ export default function TimesheetAdmin() {
       message: `${ts?.employee.name}'s timesheet has been approved`,
       employeeName: ts?.employee.name,
     });
+    if (ts && ts.overtimeHours > 0) setOtPrompt({ ts });
+  };
+
+  const confirmOtChoice = (bank: boolean) => {
+    if (!otPrompt) return;
+    const t = otPrompt.ts;
+    if (bank) {
+      const entry = bankOvertimeAsTOIL({
+        staffName: t.employee.name,
+        timesheetId: t.id,
+        date: t.weekStartDate ?? new Date().toISOString().slice(0, 10),
+        overtimeHours: t.overtimeHours,
+      });
+      if (entry) {
+        toast.success(`Banked ${entry.hours.toFixed(2)}h as TOIL`, { description: `Ledger entry ${entry.id}` });
+      } else {
+        toast.error('Could not bank TOIL — staff not found in leave engine');
+      }
+    } else {
+      toast.info('Overtime will be paid out via payroll');
+    }
+    setOtPrompt(null);
   };
 
   const handleReject = (id: string) => {
