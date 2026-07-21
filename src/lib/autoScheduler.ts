@@ -14,7 +14,26 @@
 import { Shift, StaffMember, Room, Centre, ShiftTemplate, DayAvailability } from '@/types/roster';
 import { DemandAnalyticsData } from '@/types/demandAnalytics';
 import { TimefoldConstraintConfiguration, defaultConstraintConfig } from '@/types/timefoldConstraintConfig';
+import { deriveAvailability, DerivedAvailabilitySummary } from '@/lib/availabilityDerivation';
+import type { StaffMember as WorkforceStaffMember } from '@/types/staff';
 import { format, parseISO, getDay, differenceInMinutes, addMinutes, parse } from 'date-fns';
+
+// Memoize derived-availability per StaffMember object across a scoring pass.
+const derivedAvailabilityCache = new WeakMap<StaffMember, DerivedAvailabilitySummary>();
+
+function getDerivedAvailability(staff: StaffMember): DerivedAvailabilitySummary | null {
+  // Only staff bridged from workforce carry the pay-condition / weekly-availability shape.
+  if (!staff.weeklyAvailability && !staff.currentPayCondition) return null;
+  const cached = derivedAvailabilityCache.get(staff);
+  if (cached) return cached;
+  try {
+    const summary = deriveAvailability(staff as unknown as WorkforceStaffMember);
+    derivedAvailabilityCache.set(staff, summary);
+    return summary;
+  } catch {
+    return null;
+  }
+}
 
 // ============= TYPES =============
 
