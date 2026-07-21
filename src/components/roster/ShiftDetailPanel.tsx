@@ -47,6 +47,7 @@ import { format, parseISO, isWithinInterval } from 'date-fns';
 import { DemandHistogram } from './DemandHistogram';
 import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
+import { ManualAllowancesEditor } from './ManualAllowancesEditor';
 import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { useShiftCost } from '@/hooks/useShiftCost';
