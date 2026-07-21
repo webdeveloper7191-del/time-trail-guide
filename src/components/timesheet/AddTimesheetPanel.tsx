@@ -643,7 +643,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         </div>
                         <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                           <Input type="time" className="h-8 min-w-0 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
-                          <AppRecordedTime value={entry.sourceClockIn} edited={!!entry.clockIn && entry.clockIn !== entry.sourceClockIn} />
+                          <AppRecordedTime value={entry.sourceClockIn} rounded={!!entry.clockIn && entry.clockIn !== entry.sourceClockIn} />
                         </div>
                       </div>
                       <div className="min-w-0 space-y-1">
@@ -663,7 +663,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         </div>
                         <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                           <Input type="time" className="h-8 min-w-0 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
-                          <AppRecordedTime value={entry.sourceClockOut} edited={!!entry.clockOut && entry.clockOut !== entry.sourceClockOut} />
+                          <AppRecordedTime value={entry.sourceClockOut} rounded={!!entry.clockOut && entry.clockOut !== entry.sourceClockOut} />
                         </div>
                       </div>
                     </div>
@@ -711,7 +711,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                                   <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                                     <Input type="time" className="h-8 min-w-0 text-xs"
                                       value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
-                                    <AppRecordedTime value={b.sourceStart} edited={!!b.start && b.start !== b.sourceStart} />
+                                    <AppRecordedTime value={b.sourceStart} rounded={!!b.start && b.start !== b.sourceStart} />
                                   </div>
                                 </div>
                                 <div className="min-w-0 space-y-1">
@@ -719,7 +719,7 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                                   <div className="grid grid-cols-[minmax(8.5rem,0.9fr)_minmax(0,1fr)] items-center gap-2">
                                     <Input type="time" className="h-8 min-w-0 text-xs"
                                       value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
-                                    <AppRecordedTime value={b.sourceEnd} edited={!!b.end && b.end !== b.sourceEnd} />
+                                    <AppRecordedTime value={b.sourceEnd} rounded={!!b.end && b.end !== b.sourceEnd} />
                                   </div>
                                 </div>
                                 <button type="button"
