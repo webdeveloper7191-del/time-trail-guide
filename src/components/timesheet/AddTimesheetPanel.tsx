@@ -9,12 +9,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle, X } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { format, addDays, parseISO } from 'date-fns';
 import { formatTime12h } from '@/lib/timeFormat';
 import { RaiseExceptionDialog, EXCEPTION_REASONS } from './RaiseExceptionDialog';
+import { LeaveStore } from '@/lib/leaveAccrualEngine';
+
+type LeaveKindOption =
+  | 'annual_leave'
+  | 'sick_leave'
+  | 'personal_leave'
+  | 'unpaid_leave'
+  | 'rdo_leave'
+  | 'ado_leave'
+  | 'toil_leave';
+
+const LEAVE_OPTIONS: { value: LeaveKindOption; label: string; ledgerKind?: 'RDO' | 'ADO' | 'TOIL' }[] = [
+  { value: 'annual_leave', label: 'Annual Leave' },
+  { value: 'sick_leave', label: 'Sick Leave' },
+  { value: 'personal_leave', label: 'Personal / Carer\'s Leave' },
+  { value: 'unpaid_leave', label: 'Unpaid Leave' },
+  { value: 'rdo_leave', label: 'RDO Leave', ledgerKind: 'RDO' },
+  { value: 'ado_leave', label: 'ADO Leave', ledgerKind: 'ADO' },
+  { value: 'toil_leave', label: 'TOIL Leave', ledgerKind: 'TOIL' },
+];
+
 
 interface AddTimesheetPanelProps {
   open: boolean;
