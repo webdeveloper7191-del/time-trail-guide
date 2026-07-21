@@ -18,6 +18,52 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { shiftTypeConfig, getShiftTypeConfig, openShiftColors, specialIndicatorConfig } from '@/lib/rosterColors';
+import {
+  deriveShiftTag,
+  findStaffByName,
+  findAward,
+  findLocation,
+  ShiftContext,
+} from '@/lib/leaveAccrualEngine';
+
+// Compute badge label + tone for RDO/ADO/TOIL surfacing on the grid card.
+function useLeaveTagBadge(shift: Shift, staffName?: string) {
+  const rawTag = (shift as unknown as { leaveTag?: string }).leaveTag;
+  const manualTag =
+    rawTag === 'RDO' || rawTag === 'ADO' || rawTag === 'TOIL' || rawTag === 'NONE'
+      ? (rawTag as ShiftContext['manualTag'])
+      : undefined;
+
+  const durationMins = (() => {
+    const [sh, sm] = shift.startTime.split(':').map(Number);
+    const [eh, em] = shift.endTime.split(':').map(Number);
+    let mins = eh * 60 + em - (sh * 60 + sm);
+    if (mins < 0) mins += 24 * 60;
+    return Math.max(0, mins - (shift.breakMinutes || 0));
+  })();
+
+  const staffCfg = staffName ? findStaffByName(staffName) : undefined;
+  const award = findAward(undefined);
+  const location = findLocation(undefined);
+  const derived = deriveShiftTag(
+    {
+      staffId: shift.staffId ?? '',
+      date: shift.date,
+      scheduledHours: durationMins / 60,
+      manualTag,
+    },
+    award,
+    location,
+    staffCfg,
+  );
+  return derived.tag ? { tag: derived.tag, reason: derived.reason } : null;
+}
+
+const LEAVE_TAG_STYLES: Record<'RDO' | 'ADO' | 'TOIL', string> = {
+  RDO: 'bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-400',
+  ADO: 'bg-sky-500/15 text-sky-700 border-sky-500/40 dark:text-sky-400',
+  TOIL: 'bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-400',
+};
 
 // Global drag state to disable tooltips during any drag operation
 let globalDragInProgress = false;
@@ -86,6 +132,7 @@ export function ShiftCard({
 
   const currentType = shift.shiftType || 'regular';
   const shiftTypeInfo = getShiftTypeConfig(currentType);
+  const leaveBadge = useLeaveTagBadge(shift, staff?.name);
 
   const handleShiftTypeQuickToggle = (type: ShiftSpecialType, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -241,7 +288,30 @@ export function ShiftCard({
                   </Tooltip>
                 </TooltipProvider>
               )}
+
+              {leaveBadge && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={cn(
+                          'ml-0.5 rounded border px-1 py-0 text-[9px] font-semibold leading-none uppercase tracking-wide',
+                          LEAVE_TAG_STYLES[leaveBadge.tag],
+                        )}
+                      >
+                        {leaveBadge.tag}
+                      </span>
+                    </TooltipTrigger>
+                    {showTooltipContent && (
+                      <TooltipContent>
+                        <p className="text-xs">{leaveBadge.reason}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
+
             
             {/* Three-dot menu for shift actions */}
             <DropdownMenu>
