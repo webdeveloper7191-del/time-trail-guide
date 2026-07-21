@@ -40,6 +40,12 @@ export interface PayCondition {
   classification?: string;
   payPeriod: 'weekly' | 'fortnightly' | 'monthly';
   contractedHours?: number;
+  // Shift-worker classification (NES s.87 — 5th week annual leave; 7-day span; night-shift penalties)
+  isShiftWorker?: boolean;
+  isRotatingShiftWorker?: boolean;
+  shiftPattern?: 'fixed_nights' | 'two_shift' | 'three_shift' | 'seven_day' | 'other';
+  rotationCycleWeeks?: number;
+  averageNightsPerCycle?: number;
 }
 
 export interface Allowance {
