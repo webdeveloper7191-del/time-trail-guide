@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
 import { Database, Briefcase, IdCard, CalendarDays, Coffee, DollarSign, AlertTriangle } from 'lucide-react';
 import { PositionsMasterPanel } from '@/components/settings/masterdata/PositionsMasterPanel';
 import { EmploymentTypesMasterPanel } from '@/components/settings/masterdata/EmploymentTypesMasterPanel';
+import { LeaveTypesMasterPanel } from '@/components/settings/masterdata/LeaveTypesMasterPanel';
+import { ShiftTypesMasterPanel } from '@/components/settings/masterdata/ShiftTypesMasterPanel';
+import { AllowanceTypesMasterPanel } from '@/components/settings/masterdata/AllowanceTypesMasterPanel';
+import { ExceptionReasonsMasterPanel } from '@/components/settings/masterdata/ExceptionReasonsMasterPanel';
 
 const sections = [
-  { id: 'positions', label: 'Positions', icon: Briefcase, ready: true },
-  { id: 'employment-types', label: 'Employment types', icon: IdCard, ready: true },
-  { id: 'leave-types', label: 'Leave types', icon: CalendarDays, ready: false },
-  { id: 'shift-types', label: 'Shift types', icon: Coffee, ready: false },
-  { id: 'allowance-types', label: 'Allowance types', icon: DollarSign, ready: false },
-  { id: 'exception-reasons', label: 'Exception reasons', icon: AlertTriangle, ready: false },
+  { id: 'positions',          label: 'Positions',          icon: Briefcase,     Comp: PositionsMasterPanel },
+  { id: 'employment-types',   label: 'Employment types',   icon: IdCard,        Comp: EmploymentTypesMasterPanel },
+  { id: 'leave-types',        label: 'Leave types',        icon: CalendarDays,  Comp: LeaveTypesMasterPanel },
+  { id: 'shift-types',        label: 'Shift types',        icon: Coffee,        Comp: ShiftTypesMasterPanel },
+  { id: 'allowance-types',    label: 'Allowance types',    icon: DollarSign,    Comp: AllowanceTypesMasterPanel },
+  { id: 'exception-reasons',  label: 'Exception reasons',  icon: AlertTriangle, Comp: ExceptionReasonsMasterPanel },
 ];
 
 export default function MasterDataHub() {
@@ -34,23 +37,16 @@ export default function MasterDataHub() {
             {sections.map(s => {
               const Icon = s.icon;
               return (
-                <TabsTrigger key={s.id} value={s.id} disabled={!s.ready} className="gap-1.5">
+                <TabsTrigger key={s.id} value={s.id} className="gap-1.5">
                   <Icon className="h-3.5 w-3.5" /> {s.label}
-                  {!s.ready && <span className="text-[10px] text-muted-foreground ml-1">Soon</span>}
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
-          <TabsContent value="positions" className="mt-4"><PositionsMasterPanel /></TabsContent>
-          <TabsContent value="employment-types" className="mt-4"><EmploymentTypesMasterPanel /></TabsContent>
-          {sections.filter(s => !s.ready).map(s => (
+          {sections.map(s => (
             <TabsContent key={s.id} value={s.id} className="mt-4">
-              <Card><CardContent className="py-12 text-center text-muted-foreground">
-                <s.icon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <div className="font-medium">{s.label}</div>
-                <p className="text-xs mt-1">Coming in the next slice.</p>
-              </CardContent></Card>
+              <s.Comp />
             </TabsContent>
           ))}
         </Tabs>
