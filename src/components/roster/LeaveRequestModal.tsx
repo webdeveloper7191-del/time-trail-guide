@@ -23,6 +23,14 @@ import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/Pr
 import { leaveRequestSchema, LeaveRequestFormValues } from '@/lib/validationSchemas';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LeaveStore, type LeaveKind } from '@/lib/leaveAccrualEngine';
+import { differenceInCalendarDays, parseISO } from 'date-fns';
+
+const LEAVE_TYPE_TO_KIND: Partial<Record<TimeOff['type'], LeaveKind>> = {
+  rdo_leave: 'RDO',
+  ado_leave: 'ADO',
+  toil_leave: 'TOIL',
+};
 
 interface LeaveRequest extends TimeOff {
   staffName: string;
