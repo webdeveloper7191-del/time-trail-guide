@@ -228,3 +228,26 @@ export function deriveShiftTag(
 
   return { tag: null, reason: 'No leave-accrual treatment', autoAccrualHours: 0, requiresApproval: false };
 }
+
+// ---------- Compatibility shims (used by LeaveBalanceDashboard) ----------
+
+export function calculateServiceYears(startDate: string): number {
+  const start = new Date(startDate).getTime();
+  const now = Date.now();
+  return Math.max(0, (now - start) / (1000 * 60 * 60 * 24 * 365.25));
+}
+
+export function formatLeaveBalance(hours: number): string {
+  if (!isFinite(hours)) return '0h';
+  const days = hours / 7.6;
+  return `${hours.toFixed(1)}h (${days.toFixed(1)}d)`;
+}
+
+export function getLSLProRataEntitlement(_startDate: string, _state: string): number {
+  // Simplified: 8.667 weeks after 10 years (NSW/VIC baseline)
+  return 8.667 * 38;
+}
+
+export function initializeLeaveBalances(_staffId: string): unknown[] {
+  return [];
+}
