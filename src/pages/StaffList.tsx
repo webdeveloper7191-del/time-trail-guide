@@ -49,6 +49,7 @@ import {
   Send,
   History,
   HelpCircle,
+  CalendarClock,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import OnboardingHistory from '@/components/workforce/OnboardingHistory';
