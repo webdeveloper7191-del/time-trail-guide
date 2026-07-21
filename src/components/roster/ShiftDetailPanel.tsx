@@ -1145,8 +1145,13 @@ export function ShiftDetailPanel({
               </>
             )}
 
+            {/* Manual Allowances */}
+            <FormSection title="Manual Allowances" tooltip="Add one-off allowances to this shift (paid on top of auto-eligible)">
+              <ManualAllowancesEditor shift={editedShift} onChange={setEditedShift} />
+            </FormSection>
+
             {/* Allowance Eligibility */}
-            <FormSection title="Allowance Eligibility" tooltip="View eligible allowances for this shift">
+            <FormSection title="Auto-Eligible Allowances" tooltip="Allowances automatically detected from award rules & shift attributes">
               <AllowanceEligibilityPanel 
                 shift={editedShift}
                 staff={assignedStaff}
