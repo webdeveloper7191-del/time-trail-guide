@@ -1280,7 +1280,9 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">5. Leave Accrual Arrangements</span>
                   <Badge variant="outline" className="ml-2 text-[10px]">RDO · ADO · TOIL</Badge>
+                  <SectionHeaderInfo text={PRECEDENCE.s5} />
                 </div>
+
               </AccordionTrigger>
               <AccordionContent className="pb-4">
                 <StaffLeaveAccrualEditor staffId={staff.id} staffName={`${staff.firstName} ${staff.lastName}`} />
