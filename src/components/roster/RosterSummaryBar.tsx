@@ -97,6 +97,15 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
       s.timeOff?.some(to => to.status === 'approved')
     ).length;
 
+    // Leave tag shifts (RDO/ADO/TOIL) — either explicitly tagged or derived leave consumption
+    const isLeaveTag = (s: Shift, tag: 'RDO' | 'ADO' | 'TOIL') => {
+      const t = (s as unknown as { leaveTag?: string }).leaveTag;
+      return t === tag || t === `${tag}_LEAVE`;
+    };
+    const rdoShifts = centreShifts.filter(s => isLeaveTag(s, 'RDO')).length;
+    const adoShifts = centreShifts.filter(s => isLeaveTag(s, 'ADO')).length;
+    const toilShifts = centreShifts.filter(s => isLeaveTag(s, 'TOIL')).length;
+
     return {
       empty: Math.max(0, empty),
       unpublished,
@@ -108,8 +117,12 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
       leaveApproved,
       leavePending,
       unavailable,
+      rdoShifts,
+      adoShifts,
+      toilShifts,
     };
   }, [shifts, openShifts, staff, dates, centreId]);
+
 
   const callbackSummary = useMemo(() => {
     const totalEvents = callbackEvents.length;
@@ -144,7 +157,11 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
     { label: 'Leave Approved', count: summary.leaveApproved, color: leaveColors.approved.dot, bgColor: 'bg-emerald-500/20' },
     { label: 'Leave Pending', count: summary.leavePending, color: leaveColors.pending.dot, bgColor: 'bg-amber-500/20' },
     { label: 'People Unavailable', count: summary.unavailable, color: leaveColors.unavailable.bg, bgColor: leaveColors.unavailable.bg },
+    { label: 'RDO', count: summary.rdoShifts, color: 'bg-rose-500', bgColor: 'bg-rose-500/15' },
+    { label: 'ADO', count: summary.adoShifts, color: 'bg-sky-500', bgColor: 'bg-sky-500/15' },
+    { label: 'TOIL', count: summary.toilShifts, color: 'bg-amber-500', bgColor: 'bg-amber-500/15' },
   ];
+
 
   // Items to show on mobile (condensed)
   const mobileItems = items.filter(item => 
@@ -242,9 +259,30 @@ export function RosterSummaryBar({ shifts, openShifts, staff, dates, centreId, c
         { icon: <div className="flex gap-0.5"><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">M</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">T</Badge><Badge variant="secondary" className="text-[7px] px-1 py-0 h-3.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">W</Badge></div>, label: 'Availability Days', description: 'Staff available work days' },
       ],
     },
+    {
+      title: 'Leave Tags (RDO / ADO / TOIL)',
+      items: [
+        {
+          icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-rose-500/40 text-rose-700 dark:text-rose-400 bg-rose-500/15">RDO</Badge>,
+          label: 'Rostered Day Off',
+          description: 'Planned day off inside the roster cycle — consumes RDO balance.',
+        },
+        {
+          icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-sky-500/40 text-sky-700 dark:text-sky-400 bg-sky-500/15">ADO</Badge>,
+          label: 'Accrued Day Off',
+          description: 'Ordinary hours accrue into a paid day off — consumes ADO balance.',
+        },
+        {
+          icon: <Badge variant="outline" className="text-[8px] px-1 py-0 h-4 border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/15">TOIL</Badge>,
+          label: 'Time Off in Lieu',
+          description: 'Time off taken instead of overtime payment — consumes TOIL balance.',
+        },
+      ],
+    },
   ];
 
   // Color Token Preview Categories
+
   const colorTokenCategories = [
     {
       title: 'Shift Status Tokens',

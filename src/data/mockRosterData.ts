@@ -578,8 +578,16 @@ export const generateMockShifts = (): Shift[] => {
     { id: 'shift-21', staffId: 'staff-6', centreId: 'centre-3', roomId: 'room-3c', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '06:00', endTime: '19:00', breakMinutes: 60, status: 'draft', isOpenShift: false },
   );
 
+  // Examples wired for legend: RDO / ADO / TOIL tagged shifts
+  shifts.push(
+    { id: 'shift-rdo-demo', staffId: 'staff-3', centreId: 'centre-1', roomId: 'room-1b', date: format(addDays(weekStart, 2), 'yyyy-MM-dd'), startTime: '09:00', endTime: '17:00', breakMinutes: 30, status: 'published', isOpenShift: false, leaveTag: 'RDO' },
+    { id: 'shift-ado-demo', staffId: 'staff-5', centreId: 'centre-1', roomId: 'room-1c', date: format(addDays(weekStart, 3), 'yyyy-MM-dd'), startTime: '08:00', endTime: '16:30', breakMinutes: 30, status: 'published', isOpenShift: false, leaveTag: 'ADO' },
+    { id: 'shift-toil-demo', staffId: 'staff-2', centreId: 'centre-1', roomId: 'room-1a', date: format(addDays(weekStart, 4), 'yyyy-MM-dd'), startTime: '14:00', endTime: '20:00', breakMinutes: 30, status: 'published', isOpenShift: false, leaveTag: 'TOIL' },
+  );
+
   return shifts;
 };
+
 
 export const mockOpenShifts: OpenShift[] = [
   {
