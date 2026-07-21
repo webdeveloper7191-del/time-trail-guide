@@ -141,18 +141,54 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
     setEntries(prev => prev.map(e => {
       if (e.leaveType) return e;
       if (checked) {
-        const d = defaultBreakFor(e.clockIn, e.clockOut);
-        return {
-          ...e,
-          breakStart: e.breakStart || d.unpaid.start,
-          breakEnd: e.breakEnd || d.unpaid.end,
-          paidBreakStart: e.paidBreakStart || d.paid.start,
-          paidBreakEnd: e.paidBreakEnd || d.paid.end,
-        };
+        // Only prepopulate if the user hasn't added any breaks yet
+        if (e.breaks.length > 0) return e;
+        return { ...e, breaks: buildDefaultBreaks(e.clockIn, e.clockOut) };
       }
-      return { ...e, breakStart: '', breakEnd: '', paidBreakStart: '', paidBreakEnd: '' };
+      return { ...e, breaks: [] };
     }));
   };
+
+  const buildDefaultBreaks = (clockIn: string, clockOut: string): BreakForm[] => {
+    const d = defaultBreakFor(clockIn, clockOut);
+    const out: BreakForm[] = [];
+    if (d.unpaid.start) out.push({ id: nextBreakId(), start: d.unpaid.start, end: d.unpaid.end, paid: false, label: 'Lunch Break' });
+    if (d.paid.start) out.push({ id: nextBreakId(), start: d.paid.start, end: d.paid.end, paid: true, label: 'Rest Break' });
+    return out;
+  };
+
+  const addBreak = (entryIndex: number, paid: boolean) => {
+    setEntries(prev => prev.map((e, i) => {
+      if (i !== entryIndex) return e;
+      const d = defaultBreakFor(e.clockIn, e.clockOut);
+      const w = paid ? d.paid : d.unpaid;
+      return {
+        ...e,
+        breaks: [...e.breaks, {
+          id: nextBreakId(),
+          start: w.start || '',
+          end: w.end || '',
+          paid,
+          label: paid ? 'Rest Break' : 'Break',
+        }],
+      };
+    }));
+  };
+
+  const updateBreak = (entryIndex: number, breakId: string, patch: Partial<BreakForm>) => {
+    setEntries(prev => prev.map((e, i) => {
+      if (i !== entryIndex) return e;
+      return { ...e, breaks: e.breaks.map(b => b.id === breakId ? { ...b, ...patch } : b) };
+    }));
+  };
+
+  const removeBreak = (entryIndex: number, breakId: string) => {
+    setEntries(prev => prev.map((e, i) => {
+      if (i !== entryIndex) return e;
+      return { ...e, breaks: e.breaks.filter(b => b.id !== breakId) };
+    }));
+  };
+
 
   const resetForm = () => {
     setEmployeeName('');
