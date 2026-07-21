@@ -363,6 +363,25 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add
                 </Button>
               </div>
+
+              {/* Prepopulate breaks toggle — applies across all worked entries, still editable per entry */}
+              <label className="flex items-start gap-2.5 p-2.5 rounded-md border bg-muted/20 cursor-pointer">
+                <Checkbox
+                  checked={prepopulateBreaks}
+                  onCheckedChange={(v) => applyPrepopulatedBreaks(!!v)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Coffee className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium">Prepopulate breaks for all entries</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Auto-fills a default break based on your configured break rules. You can still edit each entry's break times below.
+                  </p>
+                </div>
+              </label>
+
               {entries.map((entry, i) => {
                 const isLeave = !!entry.leaveType;
                 return (
