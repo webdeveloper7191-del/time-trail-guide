@@ -229,6 +229,9 @@ export default function StaffList() {
               <TabsTrigger value="onboarding-questions" className="gap-2">
                 <HelpCircle className="h-4 w-4" /> Onboarding Questions
               </TabsTrigger>
+              <TabsTrigger value="leave-accruals" className="gap-2">
+                <CalendarClock className="h-4 w-4" /> RDO / ADO / TOIL
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="directory">
