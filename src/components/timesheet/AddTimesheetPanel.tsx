@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Timesheet, ClockEntry, BreakEntry, ExceptionReason, TimesheetException } from '@/types/timesheet';
 import { locations } from '@/data/mockTimesheets';
-import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff, Coffee } from 'lucide-react';
+import { Plus, Trash2, Clock, AlertTriangle, X, CalendarOff, Coffee, Smartphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -51,6 +51,9 @@ interface BreakForm {
   end: string;
   paid: boolean;
   label?: string;
+  /** Original break window recorded by the mobile/kiosk app (source of truth). */
+  sourceStart?: string;
+  sourceEnd?: string;
 }
 
 interface EntryForm {
@@ -63,6 +66,9 @@ interface EntryForm {
   exceptionNote?: string;
   leaveType?: LeaveKindOption | '';
   leaveHours?: number;
+  /** Original clock times recorded by the mobile/kiosk app (source of truth). */
+  sourceClockIn?: string;
+  sourceClockOut?: string;
 }
 
 let breakIdCounter = 0;
@@ -72,7 +78,19 @@ const emptyEntry = (): EntryForm => ({
   date: '',
   clockIn: '09:00',
   clockOut: '17:00',
-  breaks: [{ id: nextBreakId(), start: '12:00', end: '12:30', paid: false, label: 'Lunch Break' }],
+  // Simulated app-recorded punches — differ slightly from the rounded schedule
+  // so users can compare recorded vs edited values.
+  sourceClockIn: '08:57',
+  sourceClockOut: '17:04',
+  breaks: [{
+    id: nextBreakId(),
+    start: '12:00',
+    end: '12:30',
+    paid: false,
+    label: 'Lunch Break',
+    sourceStart: '12:03',
+    sourceEnd: '12:36',
+  }],
   notes: '',
   exceptionReason: '',
   exceptionNote: '',
@@ -583,6 +601,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           </button>
                         </div>
                         <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
+                        {entry.sourceClockIn && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Smartphone className="h-2.5 w-2.5" />
+                            App: <span className="font-medium text-foreground">{formatTime12h(entry.sourceClockIn)}</span>
+                            {entry.clockIn && entry.clockIn !== entry.sourceClockIn && (
+                              <span className="text-amber-600">· edited</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -600,6 +627,15 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                           </button>
                         </div>
                         <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
+                        {entry.sourceClockOut && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Smartphone className="h-2.5 w-2.5" />
+                            App: <span className="font-medium text-foreground">{formatTime12h(entry.sourceClockOut)}</span>
+                            {entry.clockOut && entry.clockOut !== entry.sourceClockOut && (
+                              <span className="text-amber-600">· edited</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -631,25 +667,43 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         ) : (
                           <div className="space-y-1.5">
                             {entry.breaks.map(b => (
-                              <div key={b.id} className={`grid grid-cols-[minmax(0,1fr)_7rem_7rem_auto_auto] gap-2 items-center p-2 rounded border ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-300/60 bg-muted/20'}`}>
+                              <div key={b.id} className={`grid grid-cols-[minmax(0,1fr)_7rem_7rem_auto_auto] gap-2 items-start p-2 rounded border ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-300/60 bg-muted/20'}`}>
                                 <Input
                                   className="h-8 text-xs min-w-0"
                                   placeholder={b.paid ? 'Rest Break' : 'Break'}
                                   value={b.label ?? ''}
                                   onChange={e => updateBreak(i, b.id, { label: e.target.value })}
                                 />
-                                <Input type="time" className="h-8 text-xs w-28"
-                                  value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
-                                <Input type="time" className="h-8 text-xs w-28"
-                                  value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
+                                <div className="space-y-0.5">
+                                  <Input type="time" className="h-8 text-xs w-28"
+                                    value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
+                                  {b.sourceStart && (
+                                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <Smartphone className="h-2.5 w-2.5" />
+                                      <span className="font-medium text-foreground">{formatTime12h(b.sourceStart)}</span>
+                                      {b.start && b.start !== b.sourceStart && <span className="text-amber-600">·edit</span>}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="space-y-0.5">
+                                  <Input type="time" className="h-8 text-xs w-28"
+                                    value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
+                                  {b.sourceEnd && (
+                                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <Smartphone className="h-2.5 w-2.5" />
+                                      <span className="font-medium text-foreground">{formatTime12h(b.sourceEnd)}</span>
+                                      {b.end && b.end !== b.sourceEnd && <span className="text-amber-600">·edit</span>}
+                                    </p>
+                                  )}
+                                </div>
                                 <button type="button"
-                                  className={`text-[10px] px-2 h-7 rounded border whitespace-nowrap ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-slate-300 text-muted-foreground hover:bg-muted'}`}
+                                  className={`text-[10px] px-2 h-8 rounded border whitespace-nowrap ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-slate-300 text-muted-foreground hover:bg-muted'}`}
                                   onClick={() => updateBreak(i, b.id, { paid: !b.paid })}
                                   title={b.paid ? 'Paid — not deducted' : 'Unpaid — deducted'}
                                 >
                                   {b.paid ? 'Paid' : 'Unpaid'}
                                 </button>
-                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8"
                                   onClick={() => removeBreak(i, b.id)}>
                                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                 </Button>
