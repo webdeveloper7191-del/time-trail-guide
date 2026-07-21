@@ -197,7 +197,23 @@ export function LeaveRequestModal({
                         key={request.id} 
                         request={request}
                         statusColors={statusColors}
-                        onApprove={() => onApprove(request.id)}
+                        onApprove={() => {
+                          const kind = LEAVE_TYPE_TO_KIND[request.type];
+                          if (kind) {
+                            const days = Math.max(1, differenceInCalendarDays(parseISO(request.endDate), parseISO(request.startDate)) + 1);
+                            const hours = days * 8;
+                            LeaveStore.postLedger({
+                              staffId: request.staffId,
+                              kind,
+                              type: 'consumption',
+                              hours: -hours,
+                              reason: `${kind} leave approved (${request.startDate} → ${request.endDate})`,
+                              date: request.startDate,
+                            });
+                            toast.success(`${hours}h ${kind} deducted from balance`);
+                          }
+                          onApprove(request.id);
+                        }}
                         onReject={() => onReject(request.id)}
                         showActions
                       />
