@@ -395,99 +395,108 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                     )}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Date</Label>
-                      <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] text-muted-foreground">Clock In</Label>
-                        <button
-                          type="button"
-                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                          onClick={() => {
-                            const wasSet = !!entry.clockIn;
-                            updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
-                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
-                          }}
-                        >
-                          {entry.clockIn ? 'Mark missing' : 'Set time'}
-                        </button>
-                      </div>
-                      <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
-                        <button
-                          type="button"
-                          className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                          onClick={() => {
-                            const wasSet = !!entry.clockOut;
-                            updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
-                            if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
-                          }}
-                        >
-                          {entry.clockOut ? 'Mark missing' : 'Set time'}
-                        </button>
-                      </div>
-                      <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Break Start</Label>
-                      <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Break End</Label>
-                      <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
-                    </div>
-                  </div>
                   <div className="space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">Notes</Label>
-                    <Input className="h-8 text-xs" placeholder="Optional notes" value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
+                    <Label className="text-[10px] text-muted-foreground">Date{isLeave ? ' *' : ''}</Label>
+                    <Input type="date" className="h-8 text-xs" value={entry.date} onChange={e => updateEntry(i, 'date', e.target.value)} />
                   </div>
 
-                  {/* Exception summary / trigger */}
-                  {entry.exceptionReason && entry.exceptionNote ? (
-                    <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-amber-700">
-                            {EXCEPTION_REASONS.find(r => r.value === entry.exceptionReason)?.label ?? 'Exception'}
-                          </span>
-                          <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
-                            Raised
-                          </Badge>
+                  {!isLeave && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[10px] text-muted-foreground">Clock In</Label>
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                              onClick={() => {
+                                const wasSet = !!entry.clockIn;
+                                updateEntry(i, 'clockIn', wasSet ? '' : '09:00');
+                                if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_in');
+                              }}
+                            >
+                              {entry.clockIn ? 'Mark missing' : 'Set time'}
+                            </button>
+                          </div>
+                          <Input type="time" className="h-8 text-xs" value={entry.clockIn} onChange={e => updateEntry(i, 'clockIn', e.target.value)} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{entry.exceptionNote}</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[10px] text-muted-foreground">Clock Out</Label>
+                            <button
+                              type="button"
+                              className="text-[10px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                              onClick={() => {
+                                const wasSet = !!entry.clockOut;
+                                updateEntry(i, 'clockOut', wasSet ? '' : '17:00');
+                                if (wasSet && !entry.exceptionReason) updateEntry(i, 'exceptionReason', 'missed_clock_out');
+                              }}
+                            >
+                              {entry.clockOut ? 'Mark missing' : 'Set time'}
+                            </button>
+                          </div>
+                          <Input type="time" className="h-8 text-xs" value={entry.clockOut} onChange={e => updateEntry(i, 'clockOut', e.target.value)} />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2"
-                          onClick={() => setExceptionEntryIndex(i)}>
-                          Edit
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          onClick={() => { updateEntry(i, 'exceptionReason', ''); updateEntry(i, 'exceptionNote', ''); }}>
-                          <X className="h-3 w-3" />
-                        </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Break Start</Label>
+                          <Input type="time" className="h-8 text-xs" value={entry.breakStart} onChange={e => updateEntry(i, 'breakStart', e.target.value)} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Break End</Label>
+                          <Input type="time" className="h-8 text-xs" value={entry.breakEnd} onChange={e => updateEntry(i, 'breakEnd', e.target.value)} />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <Button
-                      type="button" variant="outline" size="sm"
-                      className={`h-7 text-xs w-full ${entryNeedsException(entry) ? 'border-amber-500/60 text-amber-700 hover:bg-amber-500/10' : ''}`}
-                      onClick={() => setExceptionEntryIndex(i)}
-                    >
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      {entryNeedsException(entry) ? 'Raise exception (required — missing clock time)' : 'Raise exception'}
-                    </Button>
+                    </>
+                  )}
+
+                  <div className="space-y-1">
+                    <Label className="text-[10px] text-muted-foreground">Notes</Label>
+                    <Input className="h-8 text-xs" placeholder={isLeave ? 'Optional reason / note' : 'Optional notes'} value={entry.notes} onChange={e => updateEntry(i, 'notes', e.target.value)} />
+                  </div>
+
+                  {!isLeave && (
+                    entry.exceptionReason && entry.exceptionNote ? (
+                      <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-500/40 bg-amber-500/5">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-semibold text-amber-700">
+                              {EXCEPTION_REASONS.find(r => r.value === entry.exceptionReason)?.label ?? 'Exception'}
+                            </span>
+                            <Badge variant="outline" className="text-[9px] h-4 border-amber-500/50 text-amber-700">
+                              Raised
+                            </Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{entry.exceptionNote}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] px-2"
+                            onClick={() => setExceptionEntryIndex(i)}>
+                            Edit
+                          </Button>
+                          <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => { updateEntry(i, 'exceptionReason', ''); updateEntry(i, 'exceptionNote', ''); }}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button" variant="outline" size="sm"
+                        className={`h-7 text-xs w-full ${entryNeedsException(entry) ? 'border-amber-500/60 text-amber-700 hover:bg-amber-500/10' : ''}`}
+                        onClick={() => setExceptionEntryIndex(i)}
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {entryNeedsException(entry) ? 'Raise exception (required — missing clock time)' : 'Raise exception'}
+                      </Button>
+                    )
                   )}
                 </div>
-              ))}
+                );
+              })}
+
             </div>
 
             <Separator />
