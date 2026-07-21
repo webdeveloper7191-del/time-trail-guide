@@ -88,6 +88,8 @@ export interface WeeklyAvailability {
   area?: string;
   /** Marks this weekday as a Rostered Day Off (hard scheduling block). */
   isRdo?: boolean;
+  /** Week position within a multi-week cycle (1-based). Undefined = applies to every week. */
+  week?: 1 | 2 | 3 | 4;
 }
 
 export interface StaffMember {
@@ -131,7 +133,9 @@ export interface StaffMember {
   
   // Availability
   weeklyAvailability: WeeklyAvailability[];
-  availabilityPattern: 'same_every_week' | 'alternate_weekly';
+  availabilityPattern: 'same_every_week' | 'alternate_weekly' | 'three_week_cycle' | 'four_week_cycle';
+  /** ISO date (Monday) marking Week 1 of a multi-week availability cycle. */
+  availabilityCycleAnchor?: string;
   
   // Other
   timeClockPasscode?: string;

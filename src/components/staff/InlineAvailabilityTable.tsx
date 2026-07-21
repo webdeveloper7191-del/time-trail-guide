@@ -20,15 +20,26 @@ import { cn } from '@/lib/utils';
 import { locations } from '@/data/mockStaffData';
 import { format, differenceInWeeks, startOfWeek, addWeeks } from 'date-fns';
 
+type PatternKey =
+  | 'same_every_week'
+  | 'alternate_weekly'
+  | 'three_week_cycle'
+  | 'four_week_cycle';
+
 interface InlineAvailabilityTableProps {
   staff: StaffMember;
-  onSave?: (availability: WeeklyAvailability[], pattern: 'same_every_week' | 'alternate_weekly') => void;
+  onSave?: (
+    availability: WeeklyAvailability[],
+    pattern: PatternKey,
+    anchor?: string,
+  ) => void;
 }
 
 type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+type WeekIdx = 1 | 2 | 3 | 4;
 
 interface AvailabilityRow extends WeeklyAvailability {
-  week?: 1 | 2;
+  week: WeekIdx;
 }
 
 const daysOfWeek: { key: DayOfWeek; label: string; short: string }[] = [
@@ -41,6 +52,20 @@ const daysOfWeek: { key: DayOfWeek; label: string; short: string }[] = [
   { key: 'sunday', label: 'Sunday', short: 'Sun' },
 ];
 
+const PATTERN_WEEKS: Record<PatternKey, number> = {
+  same_every_week: 1,
+  alternate_weekly: 2,
+  three_week_cycle: 3,
+  four_week_cycle: 4,
+};
+
+const PATTERN_LABELS: Record<PatternKey, string> = {
+  same_every_week: 'Same Every Week',
+  alternate_weekly: 'Alternate Weekly (2-wk)',
+  three_week_cycle: '3-Week Cycle',
+  four_week_cycle: '4-Week Cycle',
+};
+
 function calculateHours(startTime?: string, endTime?: string): string {
   if (!startTime || !endTime) return '-';
   const [startH, startM] = startTime.split(':').map(Number);
@@ -50,92 +75,83 @@ function calculateHours(startTime?: string, endTime?: string): string {
 }
 
 export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTableProps) {
-  const [pattern, setPattern] = useState<'same_every_week' | 'alternate_weekly'>(staff.availabilityPattern);
-  const [activeWeek, setActiveWeek] = useState<'week1' | 'week2'>('week1');
+  const [pattern, setPattern] = useState<PatternKey>(staff.availabilityPattern as PatternKey);
+  const cycleWeeks = PATTERN_WEEKS[pattern];
+
+  const [activeWeek, setActiveWeek] = useState<WeekIdx>(1);
   const [hasChanges, setHasChanges] = useState(false);
-  
-  // Week 1 anchor date - the Monday when Week 1 starts
-  const [week1StartDate, setWeek1StartDate] = useState<Date>(() => {
-    // Default to the start of current week (Monday)
-    return startOfWeek(new Date(), { weekStartsOn: 1 });
+
+  const [anchorDate, setAnchorDate] = useState<Date>(() => {
+    return staff.availabilityCycleAnchor
+      ? startOfWeek(new Date(staff.availabilityCycleAnchor), { weekStartsOn: 1 })
+      : startOfWeek(new Date(), { weekStartsOn: 1 });
   });
 
-  // Calculate which week is currently active based on anchor date
+  // Compute which cycle week is "current"
   const currentWeekInfo = useMemo(() => {
     const today = new Date();
-    const weeksSinceAnchor = differenceInWeeks(
+    const weeksSince = differenceInWeeks(
       startOfWeek(today, { weekStartsOn: 1 }),
-      startOfWeek(week1StartDate, { weekStartsOn: 1 })
+      startOfWeek(anchorDate, { weekStartsOn: 1 }),
     );
-    const isWeek1 = weeksSinceAnchor % 2 === 0;
-    
-    // Calculate date ranges for display
+    const currentWeek = (((weeksSince % cycleWeeks) + cycleWeeks) % cycleWeeks) + 1;
     const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
-    const nextWeekStart = addWeeks(currentWeekStart, 1);
-    
     return {
-      currentWeek: isWeek1 ? 1 : 2,
-      nextWeek: isWeek1 ? 2 : 1,
+      currentWeek: currentWeek as WeekIdx,
       currentWeekRange: `${format(currentWeekStart, 'dd MMM')} - ${format(addWeeks(currentWeekStart, 1), 'dd MMM')}`,
-      nextWeekRange: `${format(nextWeekStart, 'dd MMM')} - ${format(addWeeks(nextWeekStart, 1), 'dd MMM')}`,
     };
-  }, [week1StartDate]);
+  }, [anchorDate, cycleWeeks]);
 
-  // Initialize availability data - for alternate weekly, we duplicate to create Week 1 & Week 2
+  // Initialize a rows-by-week map for up to 4 weeks
   const initializeAvailability = useCallback(() => {
-    const week1: AvailabilityRow[] = daysOfWeek.map(day => {
-      const existing = staff.weeklyAvailability.find(a => a.dayOfWeek === day.key);
-      return existing 
-        ? { ...existing, week: 1 as const }
-        : { dayOfWeek: day.key, isAvailable: false, week: 1 as const };
+    const perWeek: Record<WeekIdx, AvailabilityRow[]> = { 1: [], 2: [], 3: [], 4: [] };
+    ([1, 2, 3, 4] as WeekIdx[]).forEach(w => {
+      perWeek[w] = daysOfWeek.map(day => {
+        // Prefer a row explicitly tagged with this week; fall back to untagged (same-week) row
+        const existing =
+          staff.weeklyAvailability.find(a => a.dayOfWeek === day.key && a.week === w) ||
+          (w === 1 ? staff.weeklyAvailability.find(a => a.dayOfWeek === day.key && !a.week) : undefined);
+        return existing
+          ? { ...existing, week: w }
+          : { dayOfWeek: day.key, isAvailable: false, week: w };
+      });
     });
-    
-    // Week 2 starts as copy of Week 1 for demo
-    const week2: AvailabilityRow[] = daysOfWeek.map(day => {
-      const existing = staff.weeklyAvailability.find(a => a.dayOfWeek === day.key);
-      return existing 
-        ? { ...existing, week: 2 as const }
-        : { dayOfWeek: day.key, isAvailable: false, week: 2 as const };
-    });
-    
-    return { week1, week2 };
+    return perWeek;
   }, [staff.weeklyAvailability]);
 
   const [availability, setAvailability] = useState(initializeAvailability);
 
-  const updateDay = (week: 'week1' | 'week2', dayKey: DayOfWeek, updates: Partial<AvailabilityRow>) => {
+  const updateDay = (week: WeekIdx, dayKey: DayOfWeek, updates: Partial<AvailabilityRow>) => {
     setAvailability(prev => ({
       ...prev,
-      [week]: prev[week].map(day => 
-        day.dayOfWeek === dayKey ? { ...day, ...updates } : day
-      )
+      [week]: prev[week].map(day =>
+        day.dayOfWeek === dayKey ? { ...day, ...updates } : day,
+      ),
     }));
     setHasChanges(true);
   };
 
-  const addHours = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
+  const addHours = (week: WeekIdx, dayKey: DayOfWeek) =>
     updateDay(week, dayKey, {
       isAvailable: true,
       isRdo: false,
       startTime: '09:00',
       endTime: '17:00',
       breakMinutes: 30,
-      area: locations[0]
+      area: locations[0],
     });
-  };
 
-  const removeHours = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
+  const removeHours = (week: WeekIdx, dayKey: DayOfWeek) =>
     updateDay(week, dayKey, {
       isAvailable: false,
       isRdo: false,
       startTime: undefined,
       endTime: undefined,
       breakMinutes: undefined,
-      area: undefined
+      area: undefined,
     });
-  };
 
-  const markRdo = (week: 'week1' | 'week2', dayKey: DayOfWeek) => {
+  const markRdo = (week: WeekIdx, dayKey: DayOfWeek) =>
     updateDay(week, dayKey, {
       isAvailable: false,
       isRdo: true,
@@ -144,35 +160,42 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
       breakMinutes: undefined,
       area: undefined,
     });
-  };
 
   const handleSave = () => {
-    if (onSave) {
-      const allAvailability = pattern === 'same_every_week' 
-        ? availability.week1 
-        : [...availability.week1, ...availability.week2];
-      onSave(allAvailability, pattern);
+    if (!onSave) {
+      setHasChanges(false);
+      return;
+    }
+    if (cycleWeeks === 1) {
+      // Strip week tag for single-week pattern
+      const rows = availability[1].map(({ week: _w, ...rest }) => rest);
+      onSave(rows, pattern, undefined);
+    } else {
+      const rows: WeeklyAvailability[] = [];
+      for (let w = 1 as WeekIdx; w <= cycleWeeks; w = (w + 1) as WeekIdx) {
+        rows.push(...availability[w]);
+      }
+      onSave(rows, pattern, format(anchorDate, 'yyyy-MM-dd'));
     }
     setHasChanges(false);
   };
 
-  const getTotalHours = (weekData: AvailabilityRow[]): number => {
-    return weekData.reduce((total, day) => {
+  const getTotalHours = (weekData: AvailabilityRow[]): number =>
+    weekData.reduce((total, day) => {
       if (!day.isAvailable || !day.startTime || !day.endTime) return total;
       const [startH, startM] = day.startTime.split(':').map(Number);
       const [endH, endM] = day.endTime.split(':').map(Number);
-      const hours = (endH + endM / 60) - (startH + startM / 60);
-      return total + hours;
+      return total + ((endH + endM / 60) - (startH + startM / 60));
     }, 0);
-  };
 
-  const getAvailableDays = (weekData: AvailabilityRow[]): number => {
-    return weekData.filter(d => d.isAvailable).length;
-  };
+  const getAvailableDays = (weekData: AvailabilityRow[]): number =>
+    weekData.filter(d => d.isAvailable).length;
 
-  const renderAvailabilityTable = (weekData: AvailabilityRow[], week: 'week1' | 'week2') => (
+  const getRdoDays = (weekData: AvailabilityRow[]): number =>
+    weekData.filter(d => d.isRdo).length;
+
+  const renderAvailabilityTable = (weekData: AvailabilityRow[], week: WeekIdx) => (
     <div className="border rounded-lg overflow-hidden">
-      {/* Header */}
       <div className="grid grid-cols-[100px_1fr_1fr_80px_80px_1fr_50px] gap-0 bg-muted/50 text-sm font-medium border-b">
         <div className="px-3 py-2.5">Day</div>
         <div className="px-3 py-2.5 text-center">Start</div>
@@ -180,68 +203,61 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
         <div className="px-3 py-2.5 text-center">Hours</div>
         <div className="px-3 py-2.5 text-center">Break</div>
         <div className="px-3 py-2.5 text-center">Area</div>
-        <div className="px-3 py-2.5"></div>
+        <div className="px-3 py-2.5" />
       </div>
-      
-      {/* Rows */}
+
       {daysOfWeek.map((day) => {
         const dayData = weekData.find(a => a.dayOfWeek === day.key);
-        const isAvailable = dayData?.isAvailable;
+        const isAvailable = !!dayData?.isAvailable;
         const isRdo = !!dayData?.isRdo;
-        
+
         return (
-          <div 
-            key={day.key} 
+          <div
+            key={day.key}
             className={cn(
-              "grid grid-cols-[100px_1fr_1fr_80px_80px_1fr_50px] gap-0 border-t items-center transition-colors",
-              isAvailable && "bg-green-50/30 dark:bg-green-950/10",
-              isRdo && "bg-rose-50/40 dark:bg-rose-950/10",
-              !isAvailable && !isRdo && "bg-muted/10"
+              'grid grid-cols-[100px_1fr_1fr_80px_80px_1fr_50px] gap-0 border-t items-center transition-colors',
+              isAvailable && 'bg-green-50/30 dark:bg-green-950/10',
+              isRdo && 'bg-rose-50/40 dark:bg-rose-950/10',
+              !isAvailable && !isRdo && 'bg-muted/10',
             )}
           >
-            {/* Day Label */}
             <div className="px-3 py-2">
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  isAvailable ? "bg-green-500" : isRdo ? "bg-rose-500" : "bg-muted-foreground/30"
-                )} />
+                <div
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    isAvailable ? 'bg-green-500' : isRdo ? 'bg-rose-500' : 'bg-muted-foreground/30',
+                  )}
+                />
                 <span className="font-medium text-sm">{day.label}</span>
               </div>
             </div>
-            
+
             {isAvailable ? (
               <>
-                {/* Start Time */}
                 <div className="px-2 py-2">
-                  <Input 
-                    type="time" 
-                    value={dayData?.startTime || ''} 
+                  <Input
+                    type="time"
+                    value={dayData?.startTime || ''}
                     onChange={(e) => updateDay(week, day.key, { startTime: e.target.value })}
                     className="h-8 text-sm"
                   />
                 </div>
-                
-                {/* End Time */}
                 <div className="px-2 py-2">
-                  <Input 
-                    type="time" 
+                  <Input
+                    type="time"
                     value={dayData?.endTime || ''}
                     onChange={(e) => updateDay(week, day.key, { endTime: e.target.value })}
                     className="h-8 text-sm"
                   />
                 </div>
-                
-                {/* Hours (calculated) */}
                 <div className="px-3 py-2 text-center">
                   <Badge variant="secondary" className="font-mono text-xs">
                     {calculateHours(dayData?.startTime, dayData?.endTime)}
                   </Badge>
                 </div>
-                
-                {/* Break */}
                 <div className="px-2 py-2">
-                  <Select 
+                  <Select
                     value={String(dayData?.breakMinutes || 30)}
                     onValueChange={(v) => updateDay(week, day.key, { breakMinutes: parseInt(v) })}
                   >
@@ -257,10 +273,8 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {/* Area */}
                 <div className="px-2 py-2">
-                  <Select 
+                  <Select
                     value={dayData?.area || locations[0]}
                     onValueChange={(v) => updateDay(week, day.key, { area: v })}
                   >
@@ -274,12 +288,10 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {/* Remove */}
                 <div className="px-2 py-2 text-center">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => removeHours(week, day.key)}
                   >
@@ -292,7 +304,7 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                 <div className="col-span-5 px-3 py-2">
                   <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900 gap-1">
                     <Moon className="h-3 w-3" />
-                    RDO — Rostered Day Off (hard block)
+                    RDO — Rostered Day Off (hard block, Week {week} of {cycleWeeks})
                   </Badge>
                 </div>
                 <div className="px-2 py-2 text-center">
@@ -309,11 +321,10 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
               </>
             ) : (
               <>
-                {/* Add Hours / Mark RDO */}
                 <div className="col-span-5 px-3 py-2 flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="h-7 text-xs"
                     onClick={() => addHours(week, day.key)}
                   >
@@ -325,58 +336,64 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
                     size="sm"
                     className="h-7 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                     onClick={() => markRdo(week, day.key)}
-                    title="Mark this weekday as a Rostered Day Off"
+                    title={`Mark this weekday as an RDO in Week ${week}`}
                   >
                     <Moon className="h-3 w-3 mr-1" />
                     Mark as RDO
                   </Button>
                 </div>
-                <div className="px-2 py-2"></div>
+                <div className="px-2 py-2" />
               </>
             )}
           </div>
         );
       })}
-      
-      {/* Summary Footer */}
+
       <div className="grid grid-cols-[100px_1fr_1fr_80px_80px_1fr_50px] gap-0 bg-muted/30 border-t text-sm font-medium">
         <div className="px-3 py-2.5">Total</div>
         <div className="px-3 py-2.5 text-center text-muted-foreground">
           {getAvailableDays(weekData)} days
+          {getRdoDays(weekData) > 0 && (
+            <span className="ml-2 text-rose-600">· {getRdoDays(weekData)} RDO</span>
+          )}
         </div>
-        <div className="px-3 py-2.5"></div>
+        <div className="px-3 py-2.5" />
         <div className="px-3 py-2.5 text-center">
           <Badge variant="default" className="font-mono text-xs">
             {getTotalHours(weekData).toFixed(1)}h
           </Badge>
         </div>
-        <div className="col-span-3 px-3 py-2.5"></div>
+        <div className="col-span-3 px-3 py-2.5" />
       </div>
     </div>
   );
 
+  const visibleWeeks = ([1, 2, 3, 4] as WeekIdx[]).slice(0, cycleWeeks);
+
   return (
     <div className="space-y-4">
       {/* Pattern Selection */}
-      <div className="flex items-center justify-between">
-        <RadioGroup 
-          value={pattern} 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <RadioGroup
+          value={pattern}
           onValueChange={(v) => {
-            setPattern(v as 'same_every_week' | 'alternate_weekly');
+            const next = v as PatternKey;
+            setPattern(next);
+            setActiveWeek(1);
             setHasChanges(true);
-          }} 
-          className="flex gap-6"
+          }}
+          className="flex flex-wrap gap-4"
         >
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="same_every_week" id="same" />
-            <Label htmlFor="same" className="font-medium cursor-pointer">Same Every Week</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="alternate_weekly" id="alternate" />
-            <Label htmlFor="alternate" className="font-medium cursor-pointer">Alternate Weekly</Label>
-          </div>
+          {(Object.keys(PATTERN_LABELS) as PatternKey[]).map(key => (
+            <div key={key} className="flex items-center gap-2">
+              <RadioGroupItem value={key} id={key} />
+              <Label htmlFor={key} className="font-medium cursor-pointer text-sm">
+                {PATTERN_LABELS[key]}
+              </Label>
+            </div>
+          ))}
         </RadioGroup>
-        
+
         {hasChanges && (
           <Button size="sm" onClick={handleSave} className="shadow-sm">
             <Save className="h-4 w-4 mr-2" />
@@ -385,19 +402,19 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
         )}
       </div>
 
-      {/* Availability Table(s) */}
-      {pattern === 'same_every_week' ? (
-        renderAvailabilityTable(availability.week1, 'week1')
+      {/* Single-week view */}
+      {cycleWeeks === 1 ? (
+        renderAvailabilityTable(availability[1], 1)
       ) : (
         <div className="space-y-4">
-          {/* Week 1 Anchor Date Picker */}
+          {/* Anchor Date */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900">
             <div className="flex items-center gap-3">
               <Info className="h-4 w-4 text-blue-600" />
               <div>
                 <p className="text-sm font-medium">Week 1 starts from</p>
                 <p className="text-xs text-muted-foreground">
-                  Set the anchor date to define which calendar weeks are Week 1 vs Week 2
+                  Anchors the {cycleWeeks}-week cycle. Today falls in Week {currentWeekInfo.currentWeek} ({currentWeekInfo.currentWeekRange}).
                 </p>
               </div>
             </div>
@@ -405,125 +422,93 @@ export function InlineAvailabilityTable({ staff, onSave }: InlineAvailabilityTab
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="min-w-[160px] justify-start">
                   <CalendarIcon className="h-4 w-4 mr-2" />
-                  {format(week1StartDate, 'dd MMM yyyy')}
+                  {format(anchorDate, 'dd MMM yyyy')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
                   mode="single"
-                  selected={week1StartDate}
+                  selected={anchorDate}
                   onSelect={(date) => {
                     if (date) {
-                      // Always snap to Monday of selected week
-                      setWeek1StartDate(startOfWeek(date, { weekStartsOn: 1 }));
+                      setAnchorDate(startOfWeek(date, { weekStartsOn: 1 }));
                       setHasChanges(true);
                     }
                   }}
-                  className={cn("p-3 pointer-events-auto")}
+                  className={cn('p-3 pointer-events-auto')}
                 />
               </PopoverContent>
             </Popover>
           </div>
 
-          {/* Current Week Indicator */}
-          <div className="flex items-center gap-4 p-3 rounded-lg bg-green-50/50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
-            <div className="flex items-center gap-2">
-              <Badge className="bg-green-600 text-white">This Week</Badge>
-              <span className="text-sm font-medium">
-                Week {currentWeekInfo.currentWeek}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({currentWeekInfo.currentWeekRange})
-              </span>
-            </div>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Next Week</Badge>
-              <span className="text-sm font-medium">
-                Week {currentWeekInfo.nextWeek}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({currentWeekInfo.nextWeekRange})
-              </span>
-            </div>
-          </div>
-
           {/* Week Tabs */}
-          <Tabs value={activeWeek} onValueChange={(v) => setActiveWeek(v as 'week1' | 'week2')}>
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="week1" className="flex items-center gap-2">
-                <Badge variant={activeWeek === 'week1' ? 'default' : 'secondary'} className="h-5 w-5 p-0 flex items-center justify-center text-xs">1</Badge>
-                Week 1
-                {currentWeekInfo.currentWeek === 1 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
-                    Current
+          <Tabs value={String(activeWeek)} onValueChange={(v) => setActiveWeek(Number(v) as WeekIdx)}>
+            <TabsList
+              className="grid w-full mb-4"
+              style={{ gridTemplateColumns: `repeat(${cycleWeeks}, minmax(0, 1fr))` }}
+            >
+              {visibleWeeks.map(w => (
+                <TabsTrigger key={w} value={String(w)} className="flex items-center gap-2">
+                  <Badge
+                    variant={activeWeek === w ? 'default' : 'secondary'}
+                    className="h-5 w-5 p-0 flex items-center justify-center text-xs"
+                  >
+                    {w}
                   </Badge>
-                )}
-                <span className="text-xs text-muted-foreground ml-1">
-                  ({getAvailableDays(availability.week1)} days, {getTotalHours(availability.week1).toFixed(0)}h)
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="week2" className="flex items-center gap-2">
-                <Badge variant={activeWeek === 'week2' ? 'default' : 'secondary'} className="h-5 w-5 p-0 flex items-center justify-center text-xs">2</Badge>
-                Week 2
-                {currentWeekInfo.currentWeek === 2 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
-                    Current
-                  </Badge>
-                )}
-                <span className="text-xs text-muted-foreground ml-1">
-                  ({getAvailableDays(availability.week2)} days, {getTotalHours(availability.week2).toFixed(0)}h)
-                </span>
-              </TabsTrigger>
+                  Week {w}
+                  {currentWeekInfo.currentWeek === w && (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] px-1.5 py-0 h-4 bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
+                    >
+                      Current
+                    </Badge>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-1 hidden md:inline">
+                    ({getAvailableDays(availability[w])}d, {getTotalHours(availability[w]).toFixed(0)}h)
+                  </span>
+                </TabsTrigger>
+              ))}
             </TabsList>
-            
-            <TabsContent value="week1" className="mt-0">
-              {renderAvailabilityTable(availability.week1, 'week1')}
-            </TabsContent>
-            
-            <TabsContent value="week2" className="mt-0">
-              {renderAvailabilityTable(availability.week2, 'week2')}
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
 
-      {/* Quick Stats */}
-      {pattern === 'alternate_weekly' && (
-        <div className="grid grid-cols-2 gap-4 pt-2">
-          <div className={cn(
-            "p-3 rounded-lg border",
-            currentWeekInfo.currentWeek === 1 
-              ? "bg-green-50/30 border-green-200 dark:bg-green-950/20 dark:border-green-900" 
-              : "bg-muted/30"
-          )}>
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-xs text-muted-foreground">Week 1 Hours</p>
-              {currentWeekInfo.currentWeek === 1 && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">This Week</Badge>
-              )}
-            </div>
-            <p className="text-lg font-semibold">
-              {getTotalHours(availability.week1).toFixed(1)} hours
-              <span className="text-sm font-normal text-muted-foreground ml-1">/ week</span>
-            </p>
-          </div>
-          <div className={cn(
-            "p-3 rounded-lg border",
-            currentWeekInfo.currentWeek === 2 
-              ? "bg-green-50/30 border-green-200 dark:bg-green-950/20 dark:border-green-900" 
-              : "bg-muted/30"
-          )}>
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-xs text-muted-foreground">Week 2 Hours</p>
-              {currentWeekInfo.currentWeek === 2 && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">This Week</Badge>
-              )}
-            </div>
-            <p className="text-lg font-semibold">
-              {getTotalHours(availability.week2).toFixed(1)} hours
-              <span className="text-sm font-normal text-muted-foreground ml-1">/ week</span>
-            </p>
+            {visibleWeeks.map(w => (
+              <TabsContent key={w} value={String(w)} className="mt-0">
+                {renderAvailabilityTable(availability[w], w)}
+              </TabsContent>
+            ))}
+          </Tabs>
+
+          {/* Quick Stats */}
+          <div
+            className="grid gap-3 pt-2"
+            style={{ gridTemplateColumns: `repeat(${cycleWeeks}, minmax(0, 1fr))` }}
+          >
+            {visibleWeeks.map(w => (
+              <div
+                key={w}
+                className={cn(
+                  'p-3 rounded-lg border',
+                  currentWeekInfo.currentWeek === w
+                    ? 'bg-green-50/30 border-green-200 dark:bg-green-950/20 dark:border-green-900'
+                    : 'bg-muted/30',
+                )}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-xs text-muted-foreground">Week {w}</p>
+                  {currentWeekInfo.currentWeek === w && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">This Week</Badge>
+                  )}
+                </div>
+                <p className="text-lg font-semibold">
+                  {getTotalHours(availability[w]).toFixed(1)}h
+                  {getRdoDays(availability[w]) > 0 && (
+                    <span className="text-xs font-normal text-rose-600 ml-2">
+                      {getRdoDays(availability[w])} RDO
+                    </span>
+                  )}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}

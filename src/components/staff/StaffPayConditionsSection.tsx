@@ -279,8 +279,8 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
               <Separator />
               <InlineAvailabilityTable 
                 staff={staff} 
-                onSave={(availability, pattern) => {
-                  console.log('Saving availability:', { availability, pattern });
+                onSave={(availability, pattern, anchor) => {
+                  console.log('Saving availability:', { availability, pattern, anchor });
                   // TODO: Integrate with API to save changes
                 }}
               />
