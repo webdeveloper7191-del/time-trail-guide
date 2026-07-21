@@ -30,6 +30,7 @@ import AgencyIntegrationApiDocs from "./pages/AgencyIntegrationApiDocs";
 import LocationManagement from "./pages/LocationManagement";
 import ReportsPage from "./pages/ReportsPage";
 import LeaveAccrualsHub from "./pages/LeaveAccrualsHub";
+import LeaveHub from "./pages/LeaveHub";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => {
                   <Route path="/locations" element={<LocationManagement />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/leave-accruals" element={<LeaveAccrualsHub />} />
+                  <Route path="/leave" element={<LeaveHub />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
