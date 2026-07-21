@@ -50,13 +50,13 @@ export function DerivedAvailabilityCard({ staff }: Props) {
       </CardHeader>
       <CardContent className="space-y-5">
         {!anyEnabled && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
+          <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+            <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+            <p className="text-muted-foreground">
               No leave-accrual schemes or shift-worker flags enabled. The weekly availability
               above is the only source of scheduling constraints for this staff member.
-            </AlertDescription>
-          </Alert>
+            </p>
+          </div>
         )}
 
         {/* Shift Worker band */}
