@@ -83,6 +83,39 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
   const [entries, setEntries] = useState<EntryForm[]>([emptyEntry()]);
   const [notes, setNotes] = useState('');
   const [exceptionEntryIndex, setExceptionEntryIndex] = useState<number | null>(null);
+  const [breakRules] = useBreakRules();
+  const [prepopulateBreaks, setPrepopulateBreaks] = useState(true);
+
+  // Derive a sensible default break window from configured break rules,
+  // anchored to the midpoint of the shift. Falls back to 30 min at noon.
+  const defaultBreakFor = (clockIn: string, clockOut: string) => {
+    const rule = breakRules.find(r => r.isMandatory) ?? breakRules[0];
+    const duration = rule?.breakDurationMinutes ?? 30;
+    if (!clockIn || !clockOut) return { start: '12:00', end: '12:30' };
+    const [ih, im] = clockIn.split(':').map(Number);
+    const [oh, om] = clockOut.split(':').map(Number);
+    const startMin = ih * 60 + im;
+    const endMin = oh * 60 + om;
+    if (endMin <= startMin) return { start: '12:00', end: '12:30' };
+    const midpoint = Math.round((startMin + endMin) / 2 - duration / 2);
+    const bs = Math.max(startMin, midpoint);
+    const be = bs + duration;
+    const fmt = (n: number) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    return { start: fmt(bs), end: fmt(be) };
+  };
+
+  const applyPrepopulatedBreaks = (checked: boolean) => {
+    setPrepopulateBreaks(checked);
+    setEntries(prev => prev.map(e => {
+      if (e.leaveType) return e;
+      if (checked) {
+        if (e.breakStart && e.breakEnd) return e; // don't overwrite user edits
+        const b = defaultBreakFor(e.clockIn, e.clockOut);
+        return { ...e, breakStart: b.start, breakEnd: b.end };
+      }
+      return { ...e, breakStart: '', breakEnd: '' };
+    }));
+  };
 
   const resetForm = () => {
     setEmployeeName('');
