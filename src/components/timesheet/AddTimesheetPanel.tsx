@@ -631,30 +631,28 @@ export function AddTimesheetPanel({ open, onClose, onAdd }: AddTimesheetPanelPro
                         ) : (
                           <div className="space-y-1.5">
                             {entry.breaks.map(b => (
-                              <div key={b.id} className={`grid grid-cols-[1fr_auto_auto_auto] gap-1.5 items-center p-1.5 rounded border ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-300/60 bg-muted/20'}`}>
+                              <div key={b.id} className={`grid grid-cols-[minmax(0,1fr)_7rem_7rem_auto_auto] gap-2 items-center p-2 rounded border ${b.paid ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-300/60 bg-muted/20'}`}>
                                 <Input
-                                  className="h-7 text-[11px]"
+                                  className="h-8 text-xs min-w-0"
                                   placeholder={b.paid ? 'Rest Break' : 'Break'}
                                   value={b.label ?? ''}
                                   onChange={e => updateBreak(i, b.id, { label: e.target.value })}
                                 />
-                                <Input type="time" className="h-7 text-[11px] w-24"
+                                <Input type="time" className="h-8 text-xs w-28"
                                   value={b.start} onChange={e => updateBreak(i, b.id, { start: e.target.value })} />
-                                <Input type="time" className="h-7 text-[11px] w-24"
+                                <Input type="time" className="h-8 text-xs w-28"
                                   value={b.end} onChange={e => updateBreak(i, b.id, { end: e.target.value })} />
-                                <div className="flex items-center gap-0.5">
-                                  <button type="button"
-                                    className={`text-[10px] px-1.5 h-6 rounded border ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-slate-300 text-muted-foreground hover:bg-muted'}`}
-                                    onClick={() => updateBreak(i, b.id, { paid: !b.paid })}
-                                    title={b.paid ? 'Paid — not deducted' : 'Unpaid — deducted'}
-                                  >
-                                    {b.paid ? 'Paid' : 'Unpaid'}
-                                  </button>
-                                  <Button type="button" variant="ghost" size="icon" className="h-6 w-6"
-                                    onClick={() => removeBreak(i, b.id)}>
-                                    <Trash2 className="h-3 w-3 text-destructive" />
-                                  </Button>
-                                </div>
+                                <button type="button"
+                                  className={`text-[10px] px-2 h-7 rounded border whitespace-nowrap ${b.paid ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-700' : 'border-slate-300 text-muted-foreground hover:bg-muted'}`}
+                                  onClick={() => updateBreak(i, b.id, { paid: !b.paid })}
+                                  title={b.paid ? 'Paid — not deducted' : 'Unpaid — deducted'}
+                                >
+                                  {b.paid ? 'Paid' : 'Unpaid'}
+                                </button>
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+                                  onClick={() => removeBreak(i, b.id)}>
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
                               </div>
                             ))}
                           </div>
