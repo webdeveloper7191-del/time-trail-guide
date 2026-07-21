@@ -13,20 +13,12 @@ import { CalendarClock, Clock, ArrowLeftRight, ScrollText, Sparkles, ArrowRight 
 import { toast } from 'sonner';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import {
-  LeaveStore, subscribeLeave, deriveShiftTag,
+  LeaveStore, subscribeLeave, getLeaveSnapshot, deriveShiftTag,
   type LeaveKind, type ShiftContext,
 } from '@/lib/leaveAccrualEngine';
 
 function useLeaveSnapshot() {
-  return useSyncExternalStore(
-    (cb) => subscribeLeave(cb),
-    () => ({
-      awards: LeaveStore.getAwards(),
-      locations: LeaveStore.getLocations(),
-      staff: LeaveStore.getStaff(),
-      ledger: LeaveStore.getLedger(),
-    }),
-  );
+  return useSyncExternalStore(subscribeLeave, getLeaveSnapshot, getLeaveSnapshot);
 }
 
 const KIND_META: Record<LeaveKind, { label: string; hue: string; blurb: string }> = {
