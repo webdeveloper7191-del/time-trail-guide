@@ -36,6 +36,7 @@ import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
 import { EditPayConditionsSheet } from './EditPayConditionsSheet';
 import { InlineAvailabilityTable } from './InlineAvailabilityTable';
+import { DerivedAvailabilityCard } from './DerivedAvailabilityCard';
 
 interface StaffPayConditionsSectionProps {
   staff: StaffMember;
