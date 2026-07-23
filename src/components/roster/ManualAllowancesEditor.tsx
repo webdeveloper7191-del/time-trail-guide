@@ -23,6 +23,9 @@ const PRESETS: { code: string; label: string; rate: number; unit: string }[] = [
   { code: 'CUSTOM', label: 'Custom allowance…', rate: 0, unit: 'occurrence' },
 ];
 
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
+
 export function ManualAllowancesEditor({ shift, onChange }: Props) {
   const items = shift.manualAllowances ?? [];
 
@@ -36,7 +39,7 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
     update([
       ...items,
       {
-        id: `ma-${Date.now()}`,
+        id: `ma-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         code: isCustom ? 'CUSTOM' : preset.code,
         label: isCustom ? '' : preset.label,
         rate: preset.rate,
@@ -61,18 +64,22 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
           <DollarSign className="h-4 w-4" />
           Manually add allowances that apply to this shift.
         </div>
-        <Select onValueChange={addPreset} value="">
-          <SelectTrigger className="h-9 w-[220px]">
-            <SelectValue placeholder="+ Add allowance" />
-          </SelectTrigger>
-          <SelectContent>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-1">
+              <Plus className="h-4 w-4" />
+              Add allowance
+              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[240px]">
             {PRESETS.map(p => (
-              <SelectItem key={p.code} value={p.code}>
+              <DropdownMenuItem key={p.code} onSelect={() => addPreset(p.code)}>
                 {p.label}
-              </SelectItem>
+              </DropdownMenuItem>
             ))}
-          </SelectContent>
-        </Select>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {items.length === 0 ? (
