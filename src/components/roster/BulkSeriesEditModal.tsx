@@ -55,7 +55,7 @@ export function BulkSeriesEditModal({
   const [endTime, setEndTime] = useState(firstShift?.endTime || '17:00');
   const [roomId, setRoomId] = useState(firstShift?.roomId || '');
   const [staffId, setStaffId] = useState(firstShift?.staffId || '');
-  const [breakMinutes, setBreakMinutes] = useState(firstShift?.breakMinutes || 30);
+  const [breaks, setBreaks] = useState<ShiftBreak[]>(firstShift?.breaks || []);
 
   const seriesInfo = useMemo(() => {
     if (seriesShifts.length === 0) return null;
