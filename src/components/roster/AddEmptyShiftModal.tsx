@@ -348,7 +348,7 @@ export function AddEmptyShiftModal({
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
               Custom Shift Times
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <TextField
                 type="time"
                 value={customStartTime}
@@ -365,13 +365,13 @@ export function AddEmptyShiftModal({
                 size="small"
                 InputLabelProps={{ shrink: true }}
               />
-              <TextField
-                type="number"
-                value={customBreakMinutes}
-                onChange={(e) => setCustomBreakMinutes(parseInt(e.target.value) || 0)}
-                label="Break (min)"
-                size="small"
-                inputProps={{ min: 0, max: 120 }}
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <ShiftBreaksEditor
+                breaks={customBreaks}
+                onChange={setCustomBreaks}
+                startTime={customStartTime}
+                endTime={customEndTime}
               />
             </Box>
           </TabsContent>
