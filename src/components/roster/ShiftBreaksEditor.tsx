@@ -61,6 +61,30 @@ export function unpaidBreakTotal(breaks: ShiftBreak[] | undefined): number {
   return breaks.filter(b => !b.paid).reduce((sum, b) => sum + durationMinutes(b.start, b.end), 0);
 }
 
+/** Sum of paid break durations (in minutes). Paid breaks are NOT deducted from worked hours. */
+export function paidBreakTotal(breaks: ShiftBreak[] | undefined): number {
+  if (!breaks || breaks.length === 0) return 0;
+  return breaks.filter(b => b.paid).reduce((sum, b) => sum + durationMinutes(b.start, b.end), 0);
+}
+
+/**
+ * Worked minutes for a single split-shift segment.
+ * Only unpaid breaks are deducted; paid breaks are counted as worked time.
+ */
+export function computeSplitSegmentWorkedMinutes(
+  startISO: string,
+  endISO: string,
+  unpaidBreakMinutes: number,
+  _paidBreakMinutes: number = 0,
+): number {
+  if (!startISO || !endISO) return 0;
+  const start = new Date(startISO).getTime();
+  const end = new Date(endISO).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 0;
+  const gross = (end - start) / 60000;
+  return Math.max(0, Math.round(gross - (unpaidBreakMinutes || 0)));
+}
+
 export function ShiftBreaksEditor({
   breaks,
   onChange,
@@ -181,10 +205,31 @@ export function ShiftBreaksEditor({
       )}
 
       {!compact && breaks.length > 0 && (
-        <p className="text-[11px] text-muted-foreground px-1">
-          Unpaid total <span className="font-medium text-foreground">{totals.unpaid} min</span> (deducted from paid
-          hours) · Paid total <span className="font-medium text-foreground">{totals.paid} min</span>
-        </p>
+        <div
+          data-testid="breaks-summary"
+          className="rounded-md border border-border/60 bg-muted/30 px-2.5 py-2 text-[11px] text-muted-foreground"
+        >
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground/60" />
+              <span>
+                Unpaid <span data-testid="unpaid-total" className="font-semibold text-foreground">{totals.unpaid} min</span>
+                <span className="ml-1 text-muted-foreground/80">(deducted from worked time)</span>
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+              <span>
+                Paid <span data-testid="paid-total" className="font-semibold text-foreground">{totals.paid} min</span>
+                <span className="ml-1 text-muted-foreground/80">(counted as worked time)</span>
+              </span>
+            </span>
+          </div>
+          <p className="mt-1 text-[10.5px] text-muted-foreground/90">
+            Net effect on shift: paid hours are reduced by <span className="font-medium text-foreground">{totals.unpaid} min</span> only.
+            Paid breaks do not change the shift's payable duration.
+          </p>
+        </div>
       )}
     </div>
   );
