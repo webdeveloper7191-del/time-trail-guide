@@ -40,6 +40,8 @@ import {
   defaultShiftTemplates,
 } from '@/types/roster';
 import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
+import { ShiftBreaksEditor, unpaidBreakTotal } from './ShiftBreaksEditor';
+import type { ShiftBreak } from '@/types/roster';
 import { Centre } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
