@@ -112,6 +112,9 @@ export function BulkShiftAssignmentModal({
       startTime: selectedTemplate.startTime,
       endTime: selectedTemplate.endTime,
       breakMinutes: selectedTemplate.breakMinutes,
+      breaks: selectedTemplate.breaks
+        ? selectedTemplate.breaks.map(b => ({ ...b, id: `${b.id}-${preview.staffId}-${preview.date}` }))
+        : undefined,
       status: 'draft',
       isOpenShift: false,
     }));
