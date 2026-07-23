@@ -31,13 +31,12 @@ import { ChevronDown } from 'lucide-react';
 
 export function ManualAllowancesEditor({ shift, onChange }: Props) {
   const items = shift.manualAllowances ?? [];
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const update = (next: ManualAllowance[]) =>
     onChange({ ...shift, manualAllowances: next });
 
   const addPreset = (code: string) => {
-    console.log('[ManualAllowances] addPreset', code, 'currentItems=', items.length);
-
     const preset = PRESETS.find(p => p.code === code);
     if (!preset) return;
     const isCustom = code === 'CUSTOM';
@@ -52,7 +51,9 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
         unit: preset.unit,
       },
     ]);
+    setPopoverOpen(false);
   };
+
 
   const patch = (id: string, changes: Partial<ManualAllowance>) => {
     update(items.map(i => (i.id === id ? { ...i, ...changes } : i)));
