@@ -61,6 +61,30 @@ export function unpaidBreakTotal(breaks: ShiftBreak[] | undefined): number {
   return breaks.filter(b => !b.paid).reduce((sum, b) => sum + durationMinutes(b.start, b.end), 0);
 }
 
+/** Sum of paid break durations (in minutes). Paid breaks are NOT deducted from worked hours. */
+export function paidBreakTotal(breaks: ShiftBreak[] | undefined): number {
+  if (!breaks || breaks.length === 0) return 0;
+  return breaks.filter(b => b.paid).reduce((sum, b) => sum + durationMinutes(b.start, b.end), 0);
+}
+
+/**
+ * Worked minutes for a single split-shift segment.
+ * Only unpaid breaks are deducted; paid breaks are counted as worked time.
+ */
+export function computeSplitSegmentWorkedMinutes(
+  startISO: string,
+  endISO: string,
+  unpaidBreakMinutes: number,
+  _paidBreakMinutes: number = 0,
+): number {
+  if (!startISO || !endISO) return 0;
+  const start = new Date(startISO).getTime();
+  const end = new Date(endISO).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 0;
+  const gross = (end - start) / 60000;
+  return Math.max(0, Math.round(gross - (unpaidBreakMinutes || 0)));
+}
+
 export function ShiftBreaksEditor({
   breaks,
   onChange,
