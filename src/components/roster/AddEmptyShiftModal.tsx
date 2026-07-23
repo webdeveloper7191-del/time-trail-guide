@@ -21,7 +21,9 @@ import {
   RecurrencePattern,
   RecurrenceEndType,
   RecurringShiftConfig,
+  ShiftBreak,
 } from '@/types/roster';
+import { ShiftBreaksEditor, unpaidBreakTotal } from '@/components/roster/ShiftBreaksEditor';
 import { 
   Clock, 
   Plus,
