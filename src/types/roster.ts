@@ -354,6 +354,8 @@ export interface OpenShift {
   
   // Fields from ShiftTemplate
   breakMinutes?: number;
+  /** Optional itemised paid/unpaid break entries. When set, `breakMinutes` equals the sum of unpaid durations. */
+  breaks?: ShiftBreak[];
   shiftType?: ShiftSpecialType;
   minimumClassification?: string;
   preferredRole?: StaffMember['role'];
