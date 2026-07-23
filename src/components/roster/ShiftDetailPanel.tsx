@@ -846,7 +846,7 @@ export function ShiftDetailPanel({
                 </FormField>
               </FormRow>
               
-              <FormRow columns={1}>
+              <FormRow columns={2}>
                 <FormField label="Required Employees">
                   <div className="flex items-center gap-2">
                     <Input
