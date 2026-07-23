@@ -221,7 +221,7 @@ export function AddEmptyShiftModal({
     setSelectedTemplateId('');
     setCustomStartTime('09:00');
     setCustomEndTime('17:00');
-    setCustomBreakMinutes(30);
+    setCustomBreaks([]);
     setActiveTab('template');
     setIsRecurring(false);
     setRecurrencePattern('weekly');
