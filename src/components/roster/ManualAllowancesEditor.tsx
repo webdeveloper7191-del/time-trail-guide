@@ -66,15 +66,21 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1">
+            <Button type="button" variant="outline" size="sm" className="h-9 gap-1">
               <Plus className="h-4 w-4" />
               Add allowance
               <ChevronDown className="h-3.5 w-3.5 opacity-60" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[240px]">
+          <DropdownMenuContent align="end" className="w-[240px] z-[100]">
             {PRESETS.map(p => (
-              <DropdownMenuItem key={p.code} onSelect={() => addPreset(p.code)}>
+              <DropdownMenuItem
+                key={p.code}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  addPreset(p.code);
+                }}
+              >
                 {p.label}
               </DropdownMenuItem>
             ))}
@@ -90,67 +96,79 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
           </p>
         </div>
       ) : (
-        <div className="rounded-md border overflow-hidden">
-          <div className="grid grid-cols-[1.6fr_1fr_0.8fr_1fr_1fr_auto] gap-2 px-3 py-2 bg-muted/50 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-            <span>Allowance</span>
-            <span>Rate ($)</span>
-            <span>Units</span>
-            <span>Unit</span>
-            <span className="text-right">Amount</span>
-            <span />
-          </div>
-          <div className="divide-y">
-            {items.map(item => (
-              <div key={item.id} className="grid grid-cols-[1.6fr_1fr_0.8fr_1fr_1fr_auto] gap-2 items-center px-3 py-2">
-                <Input
-                  value={item.label}
-                  onChange={e => patch(item.id, { label: e.target.value })}
-                  placeholder="Allowance name"
-                  className="h-9"
-                />
-                <Input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={item.rate}
-                  onChange={e => patch(item.id, { rate: Number(e.target.value) || 0 })}
-                  className="h-9"
-                />
-                <Input
-                  type="number"
-                  step="0.5"
-                  min={0}
-                  value={item.units}
-                  onChange={e => patch(item.id, { units: Number(e.target.value) || 0 })}
-                  className="h-9"
-                />
-                <Select value={item.unit} onValueChange={v => patch(item.id, { unit: v })}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hr">per hour</SelectItem>
-                    <SelectItem value="day">per day</SelectItem>
-                    <SelectItem value="km">per km</SelectItem>
-                    <SelectItem value="occurrence">per occurrence</SelectItem>
-                    <SelectItem value="shift">per shift</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="text-right font-medium text-sm tabular-nums">
-                  ${(item.rate * item.units).toFixed(2)}
-                </div>
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div key={item.id} className="rounded-md border p-3 space-y-2 bg-card">
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="outline" className="text-[10px]">
+                  #{idx + 1} · {item.code === 'CUSTOM' ? 'Custom' : item.code.replace(/_/g, ' ')}
+                </Badge>
                 <Button
+                  type="button"
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => remove(item.id)}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  className="h-8 gap-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove
                 </Button>
               </div>
-            ))}
-          </div>
-          <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-t">
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-12 sm:col-span-5">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Allowance</label>
+                  <Input
+                    value={item.label}
+                    onChange={e => patch(item.id, { label: e.target.value })}
+                    placeholder="Allowance name"
+                    className="h-9"
+                  />
+                </div>
+                <div className="col-span-4 sm:col-span-2">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Rate ($)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={item.rate}
+                    onChange={e => patch(item.id, { rate: Number(e.target.value) || 0 })}
+                    className="h-9"
+                  />
+                </div>
+                <div className="col-span-4 sm:col-span-2">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Units</label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min={0}
+                    value={item.units}
+                    onChange={e => patch(item.id, { units: Number(e.target.value) || 0 })}
+                    className="h-9"
+                  />
+                </div>
+                <div className="col-span-4 sm:col-span-3">
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground">Unit</label>
+                  <Select value={item.unit} onValueChange={v => patch(item.id, { unit: v })}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                      <SelectItem value="hr">per hour</SelectItem>
+                      <SelectItem value="day">per day</SelectItem>
+                      <SelectItem value="km">per km</SelectItem>
+                      <SelectItem value="occurrence">per occurrence</SelectItem>
+                      <SelectItem value="shift">per shift</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end text-sm">
+                <span className="text-muted-foreground mr-2">Amount:</span>
+                <span className="font-semibold tabular-nums">${(item.rate * item.units).toFixed(2)}</span>
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border rounded-md">
             <Badge variant="secondary" className="text-[11px]">
               {items.length} manual allowance{items.length !== 1 ? 's' : ''}
             </Badge>
