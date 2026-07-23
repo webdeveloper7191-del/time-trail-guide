@@ -7,8 +7,9 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
  import { Check, X, GraduationCap, Award, Plus, Trash2, Coffee } from 'lucide-react';
  import { cn } from '@/lib/utils';
- import { ShiftTypeSettings } from './ShiftTypeSettings';
- import { AllowanceType } from '@/types/allowances';
+import { ShiftTypeSettings } from './ShiftTypeSettings';
+import { AllowanceType } from '@/types/allowances';
+import { ShiftBreaksEditor, unpaidBreakTotal } from '../ShiftBreaksEditor';
  
  const colorOptions = [
    'hsl(200, 70%, 50%)',
