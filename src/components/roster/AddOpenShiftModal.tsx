@@ -112,6 +112,7 @@ export function AddOpenShiftModal({
   // Bulk mode selections
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [breaks, setBreaks] = useState<ShiftBreak[]>([]);
 
   // Generate default dates for the next 2 weeks if not provided
   const dateOptions = useMemo(() => {
