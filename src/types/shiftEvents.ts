@@ -66,7 +66,10 @@ export interface SplitShiftSegment {
   segmentNumber: number;
   startTime: string;
   endTime: string;
+  /** Total break minutes in this segment (unpaid only, deducted from worked time). Kept for backwards-compat; prefer `breaks`. */
   breakMinutes: number;
+  /** Paid break minutes within the segment (not deducted from worked time). */
+  paidBreakMinutes?: number;
   workedMinutes: number;
   roomId?: string;
   roomName?: string;
