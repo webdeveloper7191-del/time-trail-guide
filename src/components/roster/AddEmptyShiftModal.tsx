@@ -163,6 +163,7 @@ export function AddEmptyShiftModal({
           startTime: selectedTemplate?.startTime || customStartTime,
           endTime: selectedTemplate?.endTime || customEndTime,
           breakMinutes: selectedTemplate?.breakMinutes ?? customBreakMinutes,
+          breaks: selectedTemplate?.breaks ?? (customBreaks.length ? customBreaks : undefined),
           template: selectedTemplate,
           requiredQualifications: selectedTemplate?.requiredQualifications,
           minimumClassification: selectedTemplate?.minimumClassification,
