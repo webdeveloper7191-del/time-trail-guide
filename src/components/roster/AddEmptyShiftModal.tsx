@@ -97,7 +97,8 @@ export function AddEmptyShiftModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [customStartTime, setCustomStartTime] = useState('09:00');
   const [customEndTime, setCustomEndTime] = useState('17:00');
-  const [customBreakMinutes, setCustomBreakMinutes] = useState(30);
+  const [customBreaks, setCustomBreaks] = useState<ShiftBreak[]>([]);
+  const customBreakMinutes = useMemo(() => unpaidBreakTotal(customBreaks), [customBreaks]);
   const [activeTab, setActiveTab] = useState('template');
   
   // Recurring shift state
