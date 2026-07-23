@@ -861,17 +861,21 @@ export function AddOpenShiftModal({
                 </FormRow>
 
                 <FormRow>
-                  <FormField label="Break (mins)">
-                    <Controller name="breakMinutes" control={control} render={({ field }) => (
-                      <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 0, max: 120, step: 15 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
-                    )} />
-                  </FormField>
                   <FormField label="Required Employees">
                     <Controller name="requiredEmployeeCount" control={control} render={({ field }) => (
                       <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 1, max: 50, step: 1 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 1)} helperText="Number of staff needed" />
                     )} />
                   </FormField>
                 </FormRow>
+
+                <Box sx={{ mt: 1 }}>
+                  <ShiftBreaksEditor
+                    breaks={breaks}
+                    onChange={setBreaks}
+                    startTime={watch('startTime')}
+                    endTime={watch('endTime')}
+                  />
+                </Box>
 
                 <FormRow>
                   <FormField label="Shift Type">
