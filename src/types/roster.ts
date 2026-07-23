@@ -262,6 +262,8 @@ export interface Shift {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  /** Optional itemised paid/unpaid break entries. When set, `breakMinutes` equals the sum of unpaid durations. */
+  breaks?: ShiftBreak[];
   status: 'draft' | 'published' | 'confirmed' | 'completed';
   isOpenShift: boolean;
   notes?: string;
