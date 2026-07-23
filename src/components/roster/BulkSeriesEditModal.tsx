@@ -264,8 +264,8 @@ export function BulkSeriesEditModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label htmlFor="update-break" className="flex items-center gap-2 cursor-pointer">
-                <Clock className="h-4 w-4" />
-                Update Break Duration
+                <Coffee className="h-4 w-4" />
+                Update Breaks (Paid / Unpaid)
               </Label>
               <Switch
                 id="update-break"
@@ -275,21 +275,16 @@ export function BulkSeriesEditModal({
             </div>
             {updateBreak && (
               <div className="pl-6">
-                <Select 
-                  value={breakMinutes.toString()} 
-                  onValueChange={(v) => setBreakMinutes(parseInt(v))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select break duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">No break</SelectItem>
-                    <SelectItem value="15">15 minutes</SelectItem>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="45">45 minutes</SelectItem>
-                    <SelectItem value="60">60 minutes</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ShiftBreaksEditor
+                  breaks={breaks}
+                  onChange={setBreaks}
+                  startTime={firstShift?.startTime}
+                  endTime={firstShift?.endTime}
+                  label="Breaks for series"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Applies to all {seriesInfo.shiftCount} shifts. Unpaid time is deducted from paid hours.
+                </p>
               </div>
             )}
           </div>
