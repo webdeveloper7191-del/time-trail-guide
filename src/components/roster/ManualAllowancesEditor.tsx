@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Shift, ManualAllowance } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
 
 interface Props {
   shift: Shift;
