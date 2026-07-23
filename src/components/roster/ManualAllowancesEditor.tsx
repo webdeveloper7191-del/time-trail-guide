@@ -70,7 +70,7 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
           <DollarSign className="h-4 w-4" />
           Manually add allowances that apply to this shift.
         </div>
-        <Popover>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger asChild>
             <Button type="button" variant="outline" size="sm" className="h-9 gap-1">
               <Plus className="h-4 w-4" />
