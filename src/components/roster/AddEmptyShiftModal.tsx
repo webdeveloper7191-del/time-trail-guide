@@ -21,7 +21,9 @@ import {
   RecurrencePattern,
   RecurrenceEndType,
   RecurringShiftConfig,
+  ShiftBreak,
 } from '@/types/roster';
+import { ShiftBreaksEditor, unpaidBreakTotal } from '@/components/roster/ShiftBreaksEditor';
 import { 
   Clock, 
   Plus,
@@ -43,6 +45,7 @@ interface EmptyShift {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  breaks?: ShiftBreak[];
   template?: ShiftTemplate;
   requiredQualifications?: QualificationType[];
   minimumClassification?: string;
@@ -94,7 +97,8 @@ export function AddEmptyShiftModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [customStartTime, setCustomStartTime] = useState('09:00');
   const [customEndTime, setCustomEndTime] = useState('17:00');
-  const [customBreakMinutes, setCustomBreakMinutes] = useState(30);
+  const [customBreaks, setCustomBreaks] = useState<ShiftBreak[]>([]);
+  const customBreakMinutes = useMemo(() => unpaidBreakTotal(customBreaks), [customBreaks]);
   const [activeTab, setActiveTab] = useState('template');
   
   // Recurring shift state
@@ -159,6 +163,7 @@ export function AddEmptyShiftModal({
           startTime: selectedTemplate?.startTime || customStartTime,
           endTime: selectedTemplate?.endTime || customEndTime,
           breakMinutes: selectedTemplate?.breakMinutes ?? customBreakMinutes,
+          breaks: selectedTemplate?.breaks ?? (customBreaks.length ? customBreaks : undefined),
           template: selectedTemplate,
           requiredQualifications: selectedTemplate?.requiredQualifications,
           minimumClassification: selectedTemplate?.minimumClassification,
@@ -170,7 +175,7 @@ export function AddEmptyShiftModal({
     });
 
     return shifts;
-  }, [selectedDates, selectedRoomIds, selectedTemplate, customStartTime, customEndTime, customBreakMinutes, centreId, recurrenceConfig]);
+  }, [selectedDates, selectedRoomIds, selectedTemplate, customStartTime, customEndTime, customBreakMinutes, customBreaks, activeCentreId, recurrenceConfig]);
 
   // Calculate total recurring shifts for preview
   const recurringShiftCount = useMemo(() => {
@@ -216,7 +221,7 @@ export function AddEmptyShiftModal({
     setSelectedTemplateId('');
     setCustomStartTime('09:00');
     setCustomEndTime('17:00');
-    setCustomBreakMinutes(30);
+    setCustomBreaks([]);
     setActiveTab('template');
     setIsRecurring(false);
     setRecurrencePattern('weekly');
@@ -343,7 +348,7 @@ export function AddEmptyShiftModal({
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
               Custom Shift Times
             </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <TextField
                 type="time"
                 value={customStartTime}
@@ -360,13 +365,13 @@ export function AddEmptyShiftModal({
                 size="small"
                 InputLabelProps={{ shrink: true }}
               />
-              <TextField
-                type="number"
-                value={customBreakMinutes}
-                onChange={(e) => setCustomBreakMinutes(parseInt(e.target.value) || 0)}
-                label="Break (min)"
-                size="small"
-                inputProps={{ min: 0, max: 120 }}
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <ShiftBreaksEditor
+                breaks={customBreaks}
+                onChange={setCustomBreaks}
+                startTime={customStartTime}
+                endTime={customEndTime}
               />
             </Box>
           </TabsContent>

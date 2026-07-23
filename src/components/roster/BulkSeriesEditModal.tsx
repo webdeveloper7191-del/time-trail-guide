@@ -12,10 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Shift, StaffMember, Room } from '@/types/roster';
-import { Clock, MapPin, User, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Shift, StaffMember, Room, ShiftBreak } from '@/types/roster';
+import { Clock, MapPin, User, AlertTriangle, RefreshCw, Coffee } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ShiftBreaksEditor, unpaidBreakTotal } from '@/components/roster/ShiftBreaksEditor';
 
 interface BulkSeriesEditModalProps {
   open: boolean;
@@ -54,7 +55,7 @@ export function BulkSeriesEditModal({
   const [endTime, setEndTime] = useState(firstShift?.endTime || '17:00');
   const [roomId, setRoomId] = useState(firstShift?.roomId || '');
   const [staffId, setStaffId] = useState(firstShift?.staffId || '');
-  const [breakMinutes, setBreakMinutes] = useState(firstShift?.breakMinutes || 30);
+  const [breaks, setBreaks] = useState<ShiftBreak[]>(firstShift?.breaks || []);
 
   const seriesInfo = useMemo(() => {
     if (seriesShifts.length === 0) return null;
@@ -87,7 +88,8 @@ export function BulkSeriesEditModal({
       updates.staffId = staffId;
     }
     if (updateBreak) {
-      updates.breakMinutes = breakMinutes;
+      updates.breaks = breaks;
+      updates.breakMinutes = unpaidBreakTotal(breaks);
     }
     
     if (Object.keys(updates).length > 0) {
@@ -262,8 +264,8 @@ export function BulkSeriesEditModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label htmlFor="update-break" className="flex items-center gap-2 cursor-pointer">
-                <Clock className="h-4 w-4" />
-                Update Break Duration
+                <Coffee className="h-4 w-4" />
+                Update Breaks (Paid / Unpaid)
               </Label>
               <Switch
                 id="update-break"
@@ -273,21 +275,16 @@ export function BulkSeriesEditModal({
             </div>
             {updateBreak && (
               <div className="pl-6">
-                <Select 
-                  value={breakMinutes.toString()} 
-                  onValueChange={(v) => setBreakMinutes(parseInt(v))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select break duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">No break</SelectItem>
-                    <SelectItem value="15">15 minutes</SelectItem>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="45">45 minutes</SelectItem>
-                    <SelectItem value="60">60 minutes</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ShiftBreaksEditor
+                  breaks={breaks}
+                  onChange={setBreaks}
+                  startTime={firstShift?.startTime}
+                  endTime={firstShift?.endTime}
+                  label="Breaks for series"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Applies to all {seriesInfo.shiftCount} shifts. Unpaid time is deducted from paid hours.
+                </p>
               </div>
             )}
           </div>
