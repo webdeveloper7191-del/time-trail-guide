@@ -846,22 +846,20 @@ export function ShiftDetailPanel({
                 </FormField>
               </FormRow>
               
-              <FormRow columns={2}>
-                <FormField label="Required Employees">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={50}
-                      step={1}
-                      value={editedShift.requiredEmployeeCount || 1}
-                      onChange={(e) => setEditedShift(prev => ({ ...prev, requiredEmployeeCount: parseInt(e.target.value) || 1 }))}
-                      className="w-24 bg-background h-11"
-                    />
-                    <span className="text-sm text-muted-foreground">staff</span>
-                  </div>
-                </FormField>
-              </FormRow>
+              <FormField label="Required Employees">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={50}
+                    step={1}
+                    value={editedShift.requiredEmployeeCount || 1}
+                    onChange={(e) => setEditedShift(prev => ({ ...prev, requiredEmployeeCount: parseInt(e.target.value) || 1 }))}
+                    className="w-24 bg-background h-11"
+                  />
+                  <span className="text-sm text-muted-foreground">staff</span>
+                </div>
+              </FormField>
 
               {/* Paid / Unpaid break entries — mirrors the timesheet breaks grid */}
               <ShiftBreaksEditor
