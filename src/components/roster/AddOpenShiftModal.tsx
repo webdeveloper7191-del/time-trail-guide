@@ -206,6 +206,7 @@ export function AddOpenShiftModal({
         setValue('startTime', template.startTime);
         setValue('endTime', template.endTime);
         setValue('breakMinutes', template.breakMinutes);
+        setBreaks(template.breaks ? template.breaks.map(b => ({ ...b })) : []);
         setValue('shiftType', template.shiftType || 'regular');
         setValue('minimumClassification', template.minimumClassification || '');
         setValue('preferredRole', template.preferredRole);
