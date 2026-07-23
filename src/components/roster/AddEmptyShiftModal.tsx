@@ -175,7 +175,7 @@ export function AddEmptyShiftModal({
     });
 
     return shifts;
-  }, [selectedDates, selectedRoomIds, selectedTemplate, customStartTime, customEndTime, customBreakMinutes, centreId, recurrenceConfig]);
+  }, [selectedDates, selectedRoomIds, selectedTemplate, customStartTime, customEndTime, customBreakMinutes, customBreaks, activeCentreId, recurrenceConfig]);
 
   // Calculate total recurring shifts for preview
   const recurringShiftCount = useMemo(() => {
