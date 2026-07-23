@@ -224,7 +224,7 @@ export function LogSplitShiftSheet({
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-[11px]">Start *</Label>
                       <Input type="datetime-local" className="h-8 text-xs" value={seg.startTime} onChange={e => updateSegment(seg.id, { startTime: e.target.value })} />
@@ -234,8 +234,26 @@ export function LogSplitShiftSheet({
                       <Input type="datetime-local" className="h-8 text-xs" value={seg.endTime} onChange={e => updateSegment(seg.id, { endTime: e.target.value })} />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px]">Break (min)</Label>
-                      <Input type="number" className="h-8 text-xs" min="0" value={seg.breakMinutes} onChange={e => updateSegment(seg.id, { breakMinutes: parseInt(e.target.value) || 0 })} />
+                      <Label className="text-[11px]">Unpaid Break (min)</Label>
+                      <Input
+                        type="number"
+                        className="h-8 text-xs"
+                        min="0"
+                        value={seg.breakMinutes}
+                        onChange={e => updateSegment(seg.id, { breakMinutes: parseInt(e.target.value) || 0 })}
+                      />
+                      <p className="text-[10px] text-muted-foreground">Deducted from worked time</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Paid Break (min)</Label>
+                      <Input
+                        type="number"
+                        className="h-8 text-xs"
+                        min="0"
+                        value={seg.paidBreakMinutes ?? 0}
+                        onChange={e => updateSegment(seg.id, { paidBreakMinutes: parseInt(e.target.value) || 0 })}
+                      />
+                      <p className="text-[10px] text-emerald-700">Not deducted — paid</p>
                     </div>
                   </div>
 
