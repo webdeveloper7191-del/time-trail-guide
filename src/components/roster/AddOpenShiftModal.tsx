@@ -40,6 +40,8 @@ import {
   defaultShiftTemplates,
 } from '@/types/roster';
 import { Plus, X, AlertCircle, Clock, Moon, Phone, Split, ChevronDown, FileText, Car, Award, Layers, Calendar } from 'lucide-react';
+import { ShiftBreaksEditor, unpaidBreakTotal } from './ShiftBreaksEditor';
+import type { ShiftBreak } from '@/types/roster';
 import { Centre } from '@/types/roster';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
@@ -110,6 +112,7 @@ export function AddOpenShiftModal({
   // Bulk mode selections
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [breaks, setBreaks] = useState<ShiftBreak[]>([]);
 
   // Generate default dates for the next 2 weeks if not provided
   const dateOptions = useMemo(() => {
@@ -191,6 +194,7 @@ export function AddOpenShiftModal({
       setCreateMode('single');
       setSelectedRoomIds(selectedRoomId ? [selectedRoomId] : []);
       setSelectedDates(selectedDate ? [selectedDate] : []);
+      setBreaks([]);
     }
   }, [open, reset, centreId, selectedRoomId, selectedDate]);
 
@@ -202,6 +206,7 @@ export function AddOpenShiftModal({
         setValue('startTime', template.startTime);
         setValue('endTime', template.endTime);
         setValue('breakMinutes', template.breakMinutes);
+        setBreaks(template.breaks ? template.breaks.map(b => ({ ...b })) : []);
         setValue('shiftType', template.shiftType || 'regular');
         setValue('minimumClassification', template.minimumClassification || '');
         setValue('preferredRole', template.preferredRole);
@@ -282,7 +287,8 @@ export function AddOpenShiftModal({
       urgency: data.urgency,
       applicants: [],
       requiredEmployeeCount: data.requiredEmployeeCount || 1,
-      breakMinutes: data.breakMinutes,
+      breakMinutes: breaks.length > 0 ? unpaidBreakTotal(breaks) : data.breakMinutes,
+      breaks: breaks.length > 0 ? breaks.map(b => ({ ...b })) : undefined,
       shiftType: data.shiftType,
       minimumClassification: data.minimumClassification || undefined,
       preferredRole: data.preferredRole,
@@ -855,17 +861,21 @@ export function AddOpenShiftModal({
                 </FormRow>
 
                 <FormRow>
-                  <FormField label="Break (mins)">
-                    <Controller name="breakMinutes" control={control} render={({ field }) => (
-                      <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 0, max: 120, step: 15 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
-                    )} />
-                  </FormField>
                   <FormField label="Required Employees">
                     <Controller name="requiredEmployeeCount" control={control} render={({ field }) => (
                       <TextField {...field} type="number" size="small" fullWidth InputProps={{ inputProps: { min: 1, max: 50, step: 1 } }} onChange={(e) => field.onChange(parseInt(e.target.value) || 1)} helperText="Number of staff needed" />
                     )} />
                   </FormField>
                 </FormRow>
+
+                <Box sx={{ mt: 1 }}>
+                  <ShiftBreaksEditor
+                    breaks={breaks}
+                    onChange={setBreaks}
+                    startTime={watch('startTime')}
+                    endTime={watch('endTime')}
+                  />
+                </Box>
 
                 <FormRow>
                   <FormField label="Shift Type">
