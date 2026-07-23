@@ -12,10 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Shift, StaffMember, Room } from '@/types/roster';
-import { Clock, MapPin, User, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Shift, StaffMember, Room, ShiftBreak } from '@/types/roster';
+import { Clock, MapPin, User, AlertTriangle, RefreshCw, Coffee } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ShiftBreaksEditor, unpaidBreakTotal } from '@/components/roster/ShiftBreaksEditor';
 
 interface BulkSeriesEditModalProps {
   open: boolean;
