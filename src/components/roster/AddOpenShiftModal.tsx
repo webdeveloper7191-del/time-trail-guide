@@ -195,6 +195,7 @@ export function AddOpenShiftModal({
       setSelectedRoomIds(selectedRoomId ? [selectedRoomId] : []);
       setSelectedDates(selectedDate ? [selectedDate] : []);
       setBreaks([]);
+    }
   }, [open, reset, centreId, selectedRoomId, selectedDate]);
 
   // Apply template when selected
