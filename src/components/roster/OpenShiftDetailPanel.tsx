@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ShiftBreaksEditor, unpaidBreakTotal } from './ShiftBreaksEditor';
 
 interface OpenShiftDetailPanelProps {
   openShift: OpenShift;
