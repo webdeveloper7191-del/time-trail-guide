@@ -42,6 +42,15 @@ export interface ShiftTemplateBreakRule {
   isMandatory: boolean;
 }
 
+/** A single break entry on a shift/template (paid or unpaid, with start/end). */
+export interface ShiftBreak {
+  id: string;
+  start: string;          // "HH:mm"
+  end: string;            // "HH:mm"
+  paid: boolean;
+  label?: string;
+}
+
 export interface ShiftTemplate {
   id: string;
   name: string;
