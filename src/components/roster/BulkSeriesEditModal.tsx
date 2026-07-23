@@ -88,7 +88,8 @@ export function BulkSeriesEditModal({
       updates.staffId = staffId;
     }
     if (updateBreak) {
-      updates.breakMinutes = breakMinutes;
+      updates.breaks = breaks;
+      updates.breakMinutes = unpaidBreakTotal(breaks);
     }
     
     if (Object.keys(updates).length > 0) {
