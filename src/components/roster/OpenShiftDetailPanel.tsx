@@ -256,6 +256,27 @@ export function OpenShiftDetailPanel({
           </div>
         </div>
 
+        {/* Breaks — paid / unpaid entries */}
+        <div className="space-y-3">
+          <FormQuestionLabel question="Breaks" />
+          <ShiftBreaksEditor
+            breaks={editedShift.breaks ?? (editedShift.breakMinutes && editedShift.breakMinutes > 0 ? [{
+              id: 'legacy',
+              start: '',
+              end: '',
+              paid: false,
+              label: `Unpaid Break (${editedShift.breakMinutes} min)`,
+            }] : [])}
+            startTime={editedShift.startTime}
+            endTime={editedShift.endTime}
+            onChange={(breaks) => setEditedShift(prev => ({
+              ...prev,
+              breaks,
+              breakMinutes: unpaidBreakTotal(breaks),
+            }))}
+          />
+        </div>
+
         {/* Is this shift urgent? */}
         <div className="space-y-3">
           <FormQuestionLabel question="Is this shift urgent?" />
