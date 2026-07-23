@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Shift, ManualAllowance } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
 
 interface Props {
   shift: Shift;
@@ -23,11 +25,13 @@ const PRESETS: { code: string; label: string; rate: number; unit: string }[] = [
   { code: 'CUSTOM', label: 'Custom allowance…', rate: 0, unit: 'occurrence' },
 ];
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ChevronDown } from 'lucide-react';
+
 
 export function ManualAllowancesEditor({ shift, onChange }: Props) {
   const items = shift.manualAllowances ?? [];
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const update = (next: ManualAllowance[]) =>
     onChange({ ...shift, manualAllowances: next });
@@ -47,7 +51,9 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
         unit: preset.unit,
       },
     ]);
+    setPopoverOpen(false);
   };
+
 
   const patch = (id: string, changes: Partial<ManualAllowance>) => {
     update(items.map(i => (i.id === id ? { ...i, ...changes } : i)));
@@ -64,28 +70,30 @@ export function ManualAllowancesEditor({ shift, onChange }: Props) {
           <DollarSign className="h-4 w-4" />
           Manually add allowances that apply to this shift.
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <PopoverTrigger asChild>
             <Button type="button" variant="outline" size="sm" className="h-9 gap-1">
               <Plus className="h-4 w-4" />
               Add allowance
               <ChevronDown className="h-3.5 w-3.5 opacity-60" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[240px] z-[100]">
-            {PRESETS.map(p => (
-              <DropdownMenuItem
-                key={p.code}
-                onSelect={(e) => {
-                  e.preventDefault();
-                  addPreset(p.code);
-                }}
-              >
-                {p.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-[240px] p-1 z-[100]">
+            <div className="flex flex-col">
+              {PRESETS.map(p => (
+                <button
+                  key={p.code}
+                  type="button"
+                  onClick={() => addPreset(p.code)}
+                  className="text-left text-sm px-2 py-1.5 rounded hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:outline-none"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
       </div>
 
       {items.length === 0 ? (
