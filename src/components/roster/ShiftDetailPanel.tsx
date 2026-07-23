@@ -48,6 +48,7 @@ import { DemandHistogram } from './DemandHistogram';
 import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
 import { ManualAllowancesEditor } from './ManualAllowancesEditor';
+import { ShiftBreaksEditor, unpaidBreakTotal } from './ShiftBreaksEditor';
 import { OnCallPayBreakdown } from './OnCallPayBreakdown';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { useShiftCost } from '@/hooks/useShiftCost';
@@ -845,35 +846,39 @@ export function ShiftDetailPanel({
                 </FormField>
               </FormRow>
               
-              <FormRow columns={2}>
-                <FormField label="Break Duration">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      step={15}
-                      value={editedShift.breakMinutes}
-                      onChange={(e) => setEditedShift(prev => ({ ...prev, breakMinutes: parseInt(e.target.value) || 0 }))}
-                      className="w-24 bg-background h-11"
-                    />
-                    <span className="text-sm text-muted-foreground">mins</span>
-                  </div>
-                </FormField>
-                <FormField label="Required Employees">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={50}
-                      step={1}
-                      value={editedShift.requiredEmployeeCount || 1}
-                      onChange={(e) => setEditedShift(prev => ({ ...prev, requiredEmployeeCount: parseInt(e.target.value) || 1 }))}
-                      className="w-24 bg-background h-11"
-                    />
-                    <span className="text-sm text-muted-foreground">staff</span>
-                  </div>
-                </FormField>
-              </FormRow>
+              <FormField label="Required Employees">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={50}
+                    step={1}
+                    value={editedShift.requiredEmployeeCount || 1}
+                    onChange={(e) => setEditedShift(prev => ({ ...prev, requiredEmployeeCount: parseInt(e.target.value) || 1 }))}
+                    className="w-24 bg-background h-11"
+                  />
+                  <span className="text-sm text-muted-foreground">staff</span>
+                </div>
+              </FormField>
+
+              {/* Paid / Unpaid break entries — mirrors the timesheet breaks grid */}
+              <ShiftBreaksEditor
+                breaks={editedShift.breaks ?? (editedShift.breakMinutes > 0 ? [{
+                  id: 'legacy',
+                  start: '',
+                  end: '',
+                  paid: false,
+                  label: `Unpaid Break (${editedShift.breakMinutes} min)`,
+                }] : [])}
+                startTime={editedShift.startTime}
+                endTime={editedShift.endTime}
+                onChange={(breaks) => setEditedShift(prev => ({
+                  ...prev,
+                  breaks,
+                  breakMinutes: unpaidBreakTotal(breaks),
+                }))}
+              />
+
 
               {/* Duration & Cost Summary */}
               <div className="bg-background rounded-lg border p-3 grid grid-cols-2 gap-3">

@@ -42,12 +42,23 @@ export interface ShiftTemplateBreakRule {
   isMandatory: boolean;
 }
 
+/** A single break entry on a shift/template (paid or unpaid, with start/end). */
+export interface ShiftBreak {
+  id: string;
+  start: string;          // "HH:mm"
+  end: string;            // "HH:mm"
+  paid: boolean;
+  label?: string;
+}
+
 export interface ShiftTemplate {
   id: string;
   name: string;
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  /** Optional itemised paid/unpaid break entries. When set, `breakMinutes` should equal the sum of unpaid durations. */
+  breaks?: ShiftBreak[];
   /** Optional granular break rules. When present, overrides the location/award break rules for shifts using this template. */
   breakRules?: ShiftTemplateBreakRule[];
   color: string;
@@ -251,6 +262,8 @@ export interface Shift {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  /** Optional itemised paid/unpaid break entries. When set, `breakMinutes` equals the sum of unpaid durations. */
+  breaks?: ShiftBreak[];
   status: 'draft' | 'published' | 'confirmed' | 'completed';
   isOpenShift: boolean;
   notes?: string;
@@ -341,6 +354,8 @@ export interface OpenShift {
   
   // Fields from ShiftTemplate
   breakMinutes?: number;
+  /** Optional itemised paid/unpaid break entries. When set, `breakMinutes` equals the sum of unpaid durations. */
+  breaks?: ShiftBreak[];
   shiftType?: ShiftSpecialType;
   minimumClassification?: string;
   preferredRole?: StaffMember['role'];

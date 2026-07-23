@@ -7,8 +7,9 @@
  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
  import { Check, X, GraduationCap, Award, Plus, Trash2, Coffee } from 'lucide-react';
  import { cn } from '@/lib/utils';
- import { ShiftTypeSettings } from './ShiftTypeSettings';
- import { AllowanceType } from '@/types/allowances';
+import { ShiftTypeSettings } from './ShiftTypeSettings';
+import { AllowanceType } from '@/types/allowances';
+import { ShiftBreaksEditor, unpaidBreakTotal } from '../ShiftBreaksEditor';
  
  const colorOptions = [
    'hsl(200, 70%, 50%)',
@@ -68,34 +69,38 @@
              />
            </div>
            
-           <div className="grid grid-cols-3 gap-3">
-             <div className="space-y-1.5">
-               <Label className="text-xs text-muted-foreground">Start Time</Label>
-               <Input
-                 type="time"
-                 value={template.startTime || '09:00'}
-                 onChange={(e) => onUpdate({ startTime: e.target.value })}
-               />
-             </div>
-             <div className="space-y-1.5">
-               <Label className="text-xs text-muted-foreground">End Time</Label>
-               <Input
-                 type="time"
-                 value={template.endTime || '17:00'}
-                 onChange={(e) => onUpdate({ endTime: e.target.value })}
-               />
-             </div>
-             <div className="space-y-1.5">
-               <Label className="text-xs text-muted-foreground">Break (min)</Label>
-               <Input
-                 type="number"
-                 value={template.breakMinutes || 30}
-                 onChange={(e) => onUpdate({ breakMinutes: parseInt(e.target.value) || 0 })}
-                 min={0}
-                 max={120}
-               />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Start Time</Label>
+              <Input
+                type="time"
+                value={template.startTime || '09:00'}
+                onChange={(e) => onUpdate({ startTime: e.target.value })}
+              />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">End Time</Label>
+              <Input
+                type="time"
+                value={template.endTime || '17:00'}
+                onChange={(e) => onUpdate({ endTime: e.target.value })}
+              />
+            </div>
+          </div>
+
+          {/* Paid / unpaid break entries — mirrors timesheet breaks grid */}
+          <ShiftBreaksEditor
+            breaks={template.breaks ?? ((template.breakMinutes ?? 0) > 0 ? [{
+              id: 'legacy',
+              start: '',
+              end: '',
+              paid: false,
+              label: `Unpaid Break (${template.breakMinutes} min)`,
+            }] : [])}
+            startTime={template.startTime}
+            endTime={template.endTime}
+            onChange={(breaks) => onUpdate({ breaks, breakMinutes: unpaidBreakTotal(breaks) })}
+          />
 
             {/* Granular break rules override (optional) */}
             <div className="space-y-2 rounded-md border bg-muted/30 p-3">

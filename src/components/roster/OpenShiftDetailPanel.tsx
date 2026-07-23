@@ -17,6 +17,7 @@ import {
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ShiftBreaksEditor, unpaidBreakTotal } from './ShiftBreaksEditor';
 
 interface OpenShiftDetailPanelProps {
   openShift: OpenShift;
@@ -253,6 +254,27 @@ export function OpenShiftDetailPanel({
               )}
             </span>
           </div>
+        </div>
+
+        {/* Breaks — paid / unpaid entries */}
+        <div className="space-y-3">
+          <FormQuestionLabel question="Breaks" />
+          <ShiftBreaksEditor
+            breaks={editedShift.breaks ?? (editedShift.breakMinutes && editedShift.breakMinutes > 0 ? [{
+              id: 'legacy',
+              start: '',
+              end: '',
+              paid: false,
+              label: `Unpaid Break (${editedShift.breakMinutes} min)`,
+            }] : [])}
+            startTime={editedShift.startTime}
+            endTime={editedShift.endTime}
+            onChange={(breaks) => setEditedShift(prev => ({
+              ...prev,
+              breaks,
+              breakMinutes: unpaidBreakTotal(breaks),
+            }))}
+          />
         </div>
 
         {/* Is this shift urgent? */}
