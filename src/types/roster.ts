@@ -57,6 +57,8 @@ export interface ShiftTemplate {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  /** Optional itemised paid/unpaid break entries. When set, `breakMinutes` should equal the sum of unpaid durations. */
+  breaks?: ShiftBreak[];
   /** Optional granular break rules. When present, overrides the location/award break rules for shifts using this template. */
   breakRules?: ShiftTemplateBreakRule[];
   color: string;
