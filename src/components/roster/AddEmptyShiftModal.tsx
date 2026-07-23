@@ -45,6 +45,7 @@ interface EmptyShift {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  breaks?: ShiftBreak[];
   template?: ShiftTemplate;
   requiredQualifications?: QualificationType[];
   minimumClassification?: string;
