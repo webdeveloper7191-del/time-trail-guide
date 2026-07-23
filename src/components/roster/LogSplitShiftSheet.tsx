@@ -81,13 +81,14 @@ export function LogSplitShiftSheet({
     let gapMinutes = 0;
     let gapCompliant = true;
 
-    // Calculate worked minutes per segment
+    // Calculate worked minutes per segment (paid breaks are NOT deducted)
     const calculatedSegments = segments.map(seg => {
       if (!seg.startTime || !seg.endTime) return { ...seg, workedMinutes: 0 };
       const start = new Date(seg.startTime);
       const end = new Date(seg.endTime);
+      const paidBreak = seg.paidBreakMinutes ?? 0;
       const worked = Math.max(0, (end.getTime() - start.getTime()) / 60000 - seg.breakMinutes);
-      return { ...seg, workedMinutes: Math.round(worked) };
+      return { ...seg, workedMinutes: Math.round(worked), paidBreakMinutes: paidBreak };
     });
 
     calculatedSegments.forEach(s => { totalWorkedMinutes += s.workedMinutes; });
