@@ -367,6 +367,11 @@ function ApplicationsTable({
                   <TableCell>
                     <Badge className={statusVariant[a.status]}>{applicationStatusLabels[a.status]}</Badge>
                   </TableCell>
+                  {showIntegration && (
+                    <TableCell>
+                      <IntegrationStatusCell app={a} />
+                    </TableCell>
+                  )}
                   <TableCell className="text-xs text-muted-foreground">
                     {new Date(a.updatedAt).toLocaleDateString()}
                   </TableCell>
