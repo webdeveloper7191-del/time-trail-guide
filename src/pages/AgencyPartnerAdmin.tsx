@@ -304,7 +304,7 @@ function ApplicationsTable({
               <TableRow>
                 <SortHeader label="Agency" sortKey="agencyName" active={sortKey} dir={dir} onSort={onSort} />
                 <TableHead>Contact</TableHead>
-                <TableHead>Categories</TableHead>
+                <TableHead>Industries</TableHead>
                 <SortHeader label="Status" sortKey="status" active={sortKey} dir={dir} onSort={onSort} />
                 <SortHeader label="Updated" sortKey="updatedAt" active={sortKey} dir={dir} onSort={onSort} />
                 <TableHead className="text-right">Action</TableHead>
