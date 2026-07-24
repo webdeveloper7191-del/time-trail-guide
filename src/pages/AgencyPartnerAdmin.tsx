@@ -894,7 +894,7 @@ function AssignLocationsSheet({
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">{loc.name}</div>
                       <div className="text-xs text-muted-foreground truncate">
-                        {[loc.address?.city, loc.address?.state].filter(Boolean).join(', ') || 'No address on file'}
+                        {[loc.address?.suburb, loc.address?.state].filter(Boolean).join(', ') || 'No address on file'}
                       </div>
                     </div>
                   </label>
