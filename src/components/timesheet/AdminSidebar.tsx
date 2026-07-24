@@ -41,6 +41,7 @@ const navItems = [
   { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
   { icon: Database, label: 'Master Data', to: '/settings/master-data' },
+  { icon: Handshake, label: 'Agency Partners', to: '/settings/agency-partners' },
 ];
 
 export function AdminSidebar() {
