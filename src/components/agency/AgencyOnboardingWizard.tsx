@@ -184,7 +184,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
     const data: OnboardingData = {
       businessDetails, documents,
       rateCards: rateCards.filter(r => r.roleName && r.baseRate > 0),
-      coverageZones: coverageZones.filter(z => z.name && z.postcodes),
+      coverageZones: coverageZones.filter(z => z.name && z.centrePostcode && z.radiusKm > 0),
       serviceCategories,
     };
     onComplete(data);
