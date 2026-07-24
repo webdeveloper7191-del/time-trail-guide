@@ -197,7 +197,8 @@ export interface ReviewNote {
     | 'reminded'
     | 'onboarding_completed'
     | 'locations_assigned'
-    | 'activated';
+    | 'activated'
+    | 'integration_updated';
   message?: string;
 }
 
