@@ -54,6 +54,16 @@ export interface AgencyPartnerApplication {
   decisionBy?: string;
   rejectionReason?: string;
   changeRequestSummary?: string;
+  // Post-approval lifecycle
+  onboardingCompletedAt?: string;
+  onboardingSummary?: {
+    documentsUploaded: number;
+    rateCardCount: number;
+    coverageZoneCount: number;
+    serviceCategoryCount: number;
+  };
+  assignedLocationIds?: string[];
+  activatedAt?: string;
 }
 
 export interface ReviewNote {
@@ -68,7 +78,10 @@ export interface ReviewNote {
     | 'rejected'
     | 'note'
     | 'invited'
-    | 'reminded';
+    | 'reminded'
+    | 'onboarding_completed'
+    | 'locations_assigned'
+    | 'activated';
   message?: string;
 }
 
@@ -256,6 +269,45 @@ export const AgencyPartnerStore = {
     if (!a) return;
     a.updatedAt = now();
     a.reviewNotes = [...(a.reviewNotes ?? []), { id: uid('n'), at: now(), by, action: 'note', message }];
+    notify();
+  },
+
+  completeOnboarding(appId: string, by: string, summary: NonNullable<AgencyPartnerApplication['onboardingSummary']>) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a || a.status !== 'approved') return;
+    a.onboardingCompletedAt = now();
+    a.onboardingSummary = summary;
+    a.updatedAt = now();
+    a.reviewNotes = [
+      ...(a.reviewNotes ?? []),
+      {
+        id: uid('n'), at: now(), by, action: 'onboarding_completed',
+        message: `Docs ${summary.documentsUploaded} · Rate cards ${summary.rateCardCount} · Zones ${summary.coverageZoneCount}`,
+      },
+    ];
+    notify();
+  },
+
+  assignLocations(appId: string, by: string, locationIds: string[]) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a || a.status !== 'approved') return;
+    const previous = a.assignedLocationIds ?? [];
+    a.assignedLocationIds = [...locationIds];
+    a.updatedAt = now();
+    const wasActivated = !!a.activatedAt;
+    if (locationIds.length > 0 && a.onboardingCompletedAt && !wasActivated) {
+      a.activatedAt = now();
+    }
+    a.reviewNotes = [
+      ...(a.reviewNotes ?? []),
+      {
+        id: uid('n'), at: now(), by, action: 'locations_assigned',
+        message: `${locationIds.length} location(s) assigned (was ${previous.length}).`,
+      },
+      ...(!wasActivated && a.activatedAt
+        ? [{ id: uid('n'), at: now(), by, action: 'activated' as const, message: 'Agency activated for dispatch.' }]
+        : []),
+    ];
     notify();
   },
 };
