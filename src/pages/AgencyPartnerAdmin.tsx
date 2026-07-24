@@ -24,11 +24,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X, Rocket, MapPin, Sparkles, MoreHorizontal, FileText, DollarSign } from 'lucide-react';
+import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X, Rocket, MapPin, Sparkles, MoreHorizontal, FileText, DollarSign, Plug, AlertTriangle } from 'lucide-react';
 import AgencyOnboardingWizard from '@/components/agency/AgencyOnboardingWizard';
 import { AgencyDocumentsPanel, AgencyRateCardsPanel, AgencyCoverageZonesPanel } from '@/components/agency/AgencySectionPanels';
+import { AgencyIntegrationPanel } from '@/components/agency/AgencyIntegrationPanel';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { mockLocations } from '@/data/mockLocationData';
+import { integrationReadiness } from '@/lib/agencyPartnerApplicationStore';
 
 
 const CURRENT_USER = 'admin@rostered.ai';
