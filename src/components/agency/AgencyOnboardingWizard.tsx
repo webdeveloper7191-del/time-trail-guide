@@ -69,9 +69,12 @@ interface RateCardEntry {
 interface CoverageZoneEntry {
   id: string;
   name: string;
+  centrePostcode: string;
+  radiusKm: number;
   postcodes: string;
   slaMinutes: number;
 }
+
 
 const STEPS = [
   { id: 'business', label: 'Business Details', icon: Building2 },
@@ -109,8 +112,9 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
   ]);
 
   const [coverageZones, setCoverageZones] = useState<CoverageZoneEntry[]>([
-    { id: '1', name: '', postcodes: '', slaMinutes: 60 }
+    { id: '1', name: '', centrePostcode: '', radiusKm: 25, postcodes: '', slaMinutes: 60 }
   ]);
+
   const [serviceCategories, setServiceCategories] = useState<string[]>([]);
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
@@ -159,7 +163,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
 
 
   const addCoverageZone = () => {
-    setCoverageZones(prev => [...prev, { id: `zone-${Date.now()}`, name: '', postcodes: '', slaMinutes: 60 }]);
+    setCoverageZones(prev => [...prev, { id: `zone-${Date.now()}`, name: '', centrePostcode: '', radiusKm: 25, postcodes: '', slaMinutes: 60 }]);
   };
   const removeCoverageZone = (id: string) => setCoverageZones(prev => prev.filter(z => z.id !== id));
   const updateCoverageZone = (id: string, field: keyof CoverageZoneEntry, value: string | number) => {
@@ -171,7 +175,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
       case 0: return businessDetails.legalName && businessDetails.abn && abnValid && businessDetails.contactName && businessDetails.contactEmail;
       case 1: return REQUIRED_DOCUMENTS.every(req => documents.some(d => d.type === req.type && d.status === 'uploaded'));
       case 2: return rateCards.some(r => r.roleName && r.baseRate > 0);
-      case 3: return coverageZones.some(z => z.name && z.postcodes);
+      case 3: return coverageZones.some(z => z.name && z.centrePostcode && z.radiusKm > 0);
       default: return true;
     }
   };
@@ -180,7 +184,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
     const data: OnboardingData = {
       businessDetails, documents,
       rateCards: rateCards.filter(r => r.roleName && r.baseRate > 0),
-      coverageZones: coverageZones.filter(z => z.name && z.postcodes),
+      coverageZones: coverageZones.filter(z => z.name && z.centrePostcode && z.radiusKm > 0),
       serviceCategories,
     };
     onComplete(data);
@@ -413,17 +417,37 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                 <div className="flex justify-end -mt-2 mb-2">
                   {coverageZones.length > 1 && <Button variant="ghost" size="small" onClick={() => removeCoverageZone(zone.id)}><X className="h-4 w-4" /></Button>}
                 </div>
+                <FormField label="Zone Name">
+                  <Input value={zone.name} onChange={e => updateCoverageZone(zone.id, 'name', e.target.value)} placeholder="e.g., Sydney CBD" />
+                </FormField>
                 <FormRow columns={3}>
-                  <FormField label="Zone Name">
-                    <Input value={zone.name} onChange={e => updateCoverageZone(zone.id, 'name', e.target.value)} placeholder="e.g., Sydney CBD" />
+                  <FormField label="Centre Postcode">
+                    <Input
+                      value={zone.centrePostcode}
+                      onChange={e => updateCoverageZone(zone.id, 'centrePostcode', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="2000"
+                      inputMode="numeric"
+                      maxLength={4}
+                    />
                   </FormField>
-                  <FormField label="Postcodes (comma-separated)">
-                    <Input value={zone.postcodes} onChange={e => updateCoverageZone(zone.id, 'postcodes', e.target.value)} placeholder="2000, 2001, 2002" />
+                  <FormField label="Radius (km)">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={zone.radiusKm || ''}
+                      onChange={e => updateCoverageZone(zone.id, 'radiusKm', Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="25"
+                    />
                   </FormField>
                   <FormField label="Response SLA (minutes)">
                     <Input type="number" value={zone.slaMinutes} onChange={e => updateCoverageZone(zone.id, 'slaMinutes', parseInt(e.target.value) || 60)} />
                   </FormField>
                 </FormRow>
+                <FormField label="Additional Postcodes (optional)">
+                  <Input value={zone.postcodes} onChange={e => updateCoverageZone(zone.id, 'postcodes', e.target.value)} placeholder="2010, 2011, 2015" />
+                </FormField>
+
               </FormSection>
             ))}
             <Button variant="outlined" onClick={addCoverageZone} className="w-full"><Plus className="h-4 w-4 mr-2" />Add Coverage Zone</Button>
@@ -464,16 +488,17 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                 ))}
               </div>
             </FormSection>
-            <FormSection title={`Coverage Zones (${coverageZones.filter(z => z.name && z.postcodes).length})`}>
+            <FormSection title={`Coverage Zones (${coverageZones.filter(z => z.name && z.centrePostcode && z.radiusKm > 0).length})`}>
               <div className="space-y-2">
-                {coverageZones.filter(z => z.name && z.postcodes).map(zone => (
+                {coverageZones.filter(z => z.name && z.centrePostcode && z.radiusKm > 0).map(zone => (
                   <div key={zone.id} className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">{zone.name}</span>
-                    <span className="font-medium">{zone.slaMinutes}min SLA</span>
+                    <span className="font-medium">{zone.centrePostcode} · {zone.radiusKm}km · {zone.slaMinutes}min SLA</span>
                   </div>
                 ))}
               </div>
             </FormSection>
+
           </div>
         );
 
