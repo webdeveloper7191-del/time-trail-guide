@@ -291,33 +291,119 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
           </div>
         );
 
-      case 2:
+      case 2: {
+        const awardNames = [...new Set(mockAwardRules.map(a => a.awardName))];
         return (
           <div className="space-y-4">
-            {rateCards.map((rate, idx) => (
-              <FormSection key={rate.id} title={`Rate Card ${idx + 1}`}>
-                <div className="flex justify-end -mt-2 mb-2">
-                  {rateCards.length > 1 && <Button variant="ghost" size="small" onClick={() => removeRateCard(rate.id)}><X className="h-4 w-4" /></Button>}
-                </div>
-                <FormField label="Role Name">
-                  <Input value={rate.roleName} onChange={e => updateRateCard(rate.id, 'roleName', e.target.value)} placeholder="e.g., Registered Nurse" />
-                </FormField>
-                <FormRow columns={3}>
-                  <FormField label="Base Rate ($)">
-                    <Input type="number" value={rate.baseRate || ''} onChange={e => updateRateCard(rate.id, 'baseRate', parseFloat(e.target.value) || 0)} placeholder="45.00" />
+            {rateCards.map((rate, idx) => {
+              const classificationsForAward = mockAwardRules.filter(a => a.awardName === rate.awardName);
+              const selected = classificationsForAward.filter(a => rate.classificationIds.includes(a.id));
+              return (
+                <FormSection key={rate.id} title={`Rate Card ${idx + 1}`}>
+                  <div className="flex justify-end -mt-2 mb-2">
+                    {rateCards.length > 1 && <Button variant="ghost" size="small" onClick={() => removeRateCard(rate.id)}><X className="h-4 w-4" /></Button>}
+                  </div>
+                  <FormField label="Role Name">
+                    <Input value={rate.roleName} onChange={e => updateRateCard(rate.id, 'roleName', e.target.value)} placeholder="e.g., Registered Nurse" />
                   </FormField>
-                  <FormField label="Weekend Rate ($)">
-                    <Input type="number" value={rate.weekendRate || ''} onChange={e => updateRateCard(rate.id, 'weekendRate', parseFloat(e.target.value) || 0)} placeholder="56.25" />
-                  </FormField>
-                  <FormField label="Public Holiday ($)">
-                    <Input type="number" value={rate.publicHolidayRate || ''} onChange={e => updateRateCard(rate.id, 'publicHolidayRate', parseFloat(e.target.value) || 0)} placeholder="90.00" />
-                  </FormField>
-                </FormRow>
-              </FormSection>
-            ))}
+                  <FormRow columns={2}>
+                    <FormField label="Award">
+                      <Select
+                        value={rate.awardName || undefined}
+                        onValueChange={v => {
+                          updateRateCard(rate.id, 'awardName', v);
+                          updateRateCard(rate.id, 'classificationIds', []);
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select award" /></SelectTrigger>
+                        <SelectContent>
+                          {awardNames.map(name => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormField>
+                    <FormField label="Classifications">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={!rate.awardName}
+                            className={cn(
+                              'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm',
+                              !rate.awardName && 'opacity-50 cursor-not-allowed',
+                            )}
+                          >
+                            <span className="truncate text-left">
+                              {selected.length === 0
+                                ? (rate.awardName ? 'Select classifications' : 'Select award first')
+                                : `${selected.length} selected`}
+                            </span>
+                            <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-[360px] p-0">
+                          <ScrollArea className="max-h-64">
+                            <ul className="p-1">
+                              {classificationsForAward.length === 0 && (
+                                <li className="px-3 py-2 text-xs text-muted-foreground">No classifications for this award.</li>
+                              )}
+                              {classificationsForAward.map(c => {
+                                const on = rate.classificationIds.includes(c.id);
+                                return (
+                                  <li key={c.id}>
+                                    <label className="flex items-start gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer">
+                                      <Checkbox checked={on} onCheckedChange={() => toggleClassification(rate.id, c.id)} className="mt-0.5" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium truncate">{c.classification}</div>
+                                        <div className="text-[11px] text-muted-foreground">Code: {c.level} · ${c.baseHourlyRate.toFixed(2)}/hr</div>
+                                      </div>
+                                    </label>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </ScrollArea>
+                        </PopoverContent>
+                      </Popover>
+                    </FormField>
+                  </FormRow>
+                  {selected.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 -mt-2">
+                      {selected.map(c => (
+                        <Badge key={c.id} variant="secondary" className="gap-1.5 pr-1">
+                          <span className="font-mono text-[10px] opacity-70">{c.level}</span>
+                          <span>{c.classification}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleClassification(rate.id, c.id)}
+                            className="ml-1 rounded-sm hover:bg-background/50 p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <FormRow columns={3}>
+                    <FormField label="Base Rate ($)">
+                      <Input type="number" value={rate.baseRate || ''} onChange={e => updateRateCard(rate.id, 'baseRate', parseFloat(e.target.value) || 0)} placeholder="45.00" />
+                    </FormField>
+                    <FormField label="Weekend Rate ($)">
+                      <Input type="number" value={rate.weekendRate || ''} onChange={e => updateRateCard(rate.id, 'weekendRate', parseFloat(e.target.value) || 0)} placeholder="56.25" />
+                    </FormField>
+                    <FormField label="Public Holiday ($)">
+                      <Input type="number" value={rate.publicHolidayRate || ''} onChange={e => updateRateCard(rate.id, 'publicHolidayRate', parseFloat(e.target.value) || 0)} placeholder="90.00" />
+                    </FormField>
+                  </FormRow>
+                </FormSection>
+              );
+            })}
             <Button variant="outlined" onClick={addRateCard} className="w-full"><Plus className="h-4 w-4 mr-2" />Add Rate Card</Button>
           </div>
         );
+      }
+
 
       case 3:
         return (
