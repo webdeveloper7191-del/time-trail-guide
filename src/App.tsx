@@ -59,6 +59,7 @@ const App = () => {
                   <Route path="/workforce/onboarding" element={<PaperlessOnboarding />} />
                   <Route path="/workforce/:id" element={<StaffDetail />} />
                   <Route path="/agency" element={<AgencyPortal />} />
+                  <Route path="/settings/agency-partners" element={<AgencyPartnerAdmin />} />
                   <Route path="/performance" element={<PerformanceManagement />} />
                   <Route path="/performance/:tab" element={<PerformanceManagement />} />
                   <Route path="/recognition" element={<RecognitionPage />} />
