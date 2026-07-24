@@ -590,7 +590,7 @@ function ReviewSheet({ applicationId, onOpenChange }: { applicationId: string | 
               <Field label="Years operating" value={app.yearsInOperation?.toString() ?? '—'} />
               <Field label="Candidate pool" value={app.candidatePoolSize?.toString() ?? '—'} />
               <Field label="Insurance" value={app.insuranceProvider ? `${app.insuranceProvider}${app.insuranceExpiry ? ` (exp ${new Date(app.insuranceExpiry).toLocaleDateString()})` : ''}` : '—'} />
-              <Field label="Categories" value={app.serviceCategoryIds.map(id => mockServiceCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || '—'} />
+              <Field label="Industries" value={app.serviceCategoryIds.map(id => mockServiceCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || '—'} />
             </div>
             {app.references && (
               <div className="mt-3">
