@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { Button } from '@/components/mui/Button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Building2, FileText, DollarSign, MapPin, CheckCircle2, 
-  Upload, AlertCircle, Loader2, Plus, X, Shield
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { mockAwardRules } from '@/data/mockStaffData';
+import {
+  Building2, FileText, DollarSign, MapPin, CheckCircle2,
+  Upload, AlertCircle, Loader2, Plus, X, Shield, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
 
 interface AgencyOnboardingWizardProps {
   open: boolean;
