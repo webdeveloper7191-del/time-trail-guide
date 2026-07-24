@@ -454,11 +454,11 @@ function InvitesTable({ invites }: { invites: AgencyPartnerInvite[] }) {
 }
 
 
-function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+function InviteSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [agencyName, setAgencyName] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
+  const [industries, setIndustries] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const [expiresInDays, setExpiresInDays] = useState(14);
 
@@ -470,29 +470,31 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
       agencyName: agencyName.trim(),
       contactName: contactName.trim(),
       contactEmail: contactEmail.trim(),
-      serviceCategoryIds: categories,
+      serviceCategoryIds: industries,
       message: message.trim() || undefined,
       createdBy: CURRENT_USER,
       expiresInDays,
     });
     toast.success(`Invite sent to ${contactEmail}`);
-    setAgencyName(''); setContactName(''); setContactEmail(''); setCategories([]); setMessage(''); setExpiresInDays(14);
+    setAgencyName(''); setContactName(''); setContactEmail(''); setIndustries([]); setMessage(''); setExpiresInDays(14);
     onOpenChange(false);
   };
 
-  const toggleCat = (id: string) =>
-    setCategories(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  const toggleInd = (id: string) =>
+    setIndustries(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Invite agency partner</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-xl flex flex-col p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b">
+          <SheetTitle className="flex items-center gap-2">
+            <Send className="h-4 w-4" /> Invite agency partner
+          </SheetTitle>
+          <SheetDescription>
             Send a secure application link. The agency completes intake before onboarding begins.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div className="grid gap-1.5">
             <Label>Agency name</Label>
             <Input value={agencyName} onChange={e => setAgencyName(e.target.value)} placeholder="e.g. Bluewater Nursing Group" />
@@ -508,15 +510,16 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
             </div>
           </div>
           <div className="grid gap-1.5">
-            <Label>Service categories</Label>
+            <Label>Industries</Label>
+            <p className="text-xs text-muted-foreground">Sectors the agency will supply talent for.</p>
             <div className="flex flex-wrap gap-2">
               {mockServiceCategories.map(c => {
-                const on = categories.includes(c.id);
+                const on = industries.includes(c.id);
                 return (
                   <button
                     type="button"
                     key={c.id}
-                    onClick={() => toggleCat(c.id)}
+                    onClick={() => toggleInd(c.id)}
                     className={`px-2.5 py-1 rounded-full border text-xs transition ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border hover:bg-muted'}`}
                   >
                     {c.name}
@@ -529,19 +532,19 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
             <Label>Personal message (optional)</Label>
             <Textarea rows={3} value={message} onChange={e => setMessage(e.target.value)} placeholder="Add context for the agency contact." />
           </div>
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5 max-w-[240px]">
             <Label>Link expires in (days)</Label>
             <Input type="number" min={1} max={60} value={expiresInDays} onChange={e => setExpiresInDays(parseInt(e.target.value || '14', 10))} />
           </div>
         </div>
-        <DialogFooter>
+        <SheetFooter className="px-6 py-4 border-t bg-muted/30">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={!canSubmit}>
             <Mail className="h-4 w-4 mr-2" /> Send invite
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
