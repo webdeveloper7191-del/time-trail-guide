@@ -417,17 +417,37 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                 <div className="flex justify-end -mt-2 mb-2">
                   {coverageZones.length > 1 && <Button variant="ghost" size="small" onClick={() => removeCoverageZone(zone.id)}><X className="h-4 w-4" /></Button>}
                 </div>
+                <FormField label="Zone Name">
+                  <Input value={zone.name} onChange={e => updateCoverageZone(zone.id, 'name', e.target.value)} placeholder="e.g., Sydney CBD" />
+                </FormField>
                 <FormRow columns={3}>
-                  <FormField label="Zone Name">
-                    <Input value={zone.name} onChange={e => updateCoverageZone(zone.id, 'name', e.target.value)} placeholder="e.g., Sydney CBD" />
+                  <FormField label="Centre Postcode" hint="Anchor postcode for the coverage radius">
+                    <Input
+                      value={zone.centrePostcode}
+                      onChange={e => updateCoverageZone(zone.id, 'centrePostcode', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="2000"
+                      inputMode="numeric"
+                      maxLength={4}
+                    />
                   </FormField>
-                  <FormField label="Postcodes (comma-separated)">
-                    <Input value={zone.postcodes} onChange={e => updateCoverageZone(zone.id, 'postcodes', e.target.value)} placeholder="2000, 2001, 2002" />
+                  <FormField label="Radius (km)" hint="Distance from centre postcode">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={zone.radiusKm || ''}
+                      onChange={e => updateCoverageZone(zone.id, 'radiusKm', Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="25"
+                    />
                   </FormField>
                   <FormField label="Response SLA (minutes)">
                     <Input type="number" value={zone.slaMinutes} onChange={e => updateCoverageZone(zone.id, 'slaMinutes', parseInt(e.target.value) || 60)} />
                   </FormField>
                 </FormRow>
+                <FormField label="Additional Postcodes (optional)" hint="Comma-separated postcodes to include beyond the radius">
+                  <Input value={zone.postcodes} onChange={e => updateCoverageZone(zone.id, 'postcodes', e.target.value)} placeholder="2010, 2011, 2015" />
+                </FormField>
+
               </FormSection>
             ))}
             <Button variant="outlined" onClick={addCoverageZone} className="w-full"><Plus className="h-4 w-4 mr-2" />Add Coverage Zone</Button>
