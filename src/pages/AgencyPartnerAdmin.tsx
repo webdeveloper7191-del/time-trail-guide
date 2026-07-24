@@ -160,8 +160,34 @@ export default function AgencyPartnerAdmin() {
         open={sectionState?.section === 'coverageZones'}
         onClose={() => setSectionState(null)}
       />
+      <AgencyIntegrationPanel
+        app={integrationApp}
+        open={!!integrationApp}
+        onClose={() => setIntegrationId(null)}
+      />
     </div>
 
+  );
+}
+
+function IntegrationStatusCell({ app }: { app: AgencyPartnerApplication }) {
+  const r = integrationReadiness(app.integration);
+  if (r.overall === 'ready') {
+    return <Badge className="bg-emerald-100 text-emerald-800"><CheckCircle2 className="h-3 w-3 mr-1" />Ready</Badge>;
+  }
+  if (r.overall === 'not_configured') {
+    return <Badge variant="outline" className="text-muted-foreground">Not configured</Badge>;
+  }
+  const missing = [
+    !r.credentials && 'creds',
+    !r.webhook && 'webhook',
+    !r.events && 'events',
+    !r.mapping && 'mapping',
+  ].filter(Boolean).join(', ');
+  return (
+    <Badge className="bg-amber-100 text-amber-800">
+      <AlertTriangle className="h-3 w-3 mr-1" />Partial · {missing}
+    </Badge>
   );
 }
 
