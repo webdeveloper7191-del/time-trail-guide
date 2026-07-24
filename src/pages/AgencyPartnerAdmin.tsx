@@ -399,6 +399,14 @@ function ApplicationsTable({
                             <DropdownMenuItem onClick={() => onOpenSection(a.id, 'coverageZones')}>
                               <MapPin className="h-4 w-4 mr-2" />Coverage Zones
                             </DropdownMenuItem>
+                            {onOpenIntegration && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => onOpenIntegration(a.id)}>
+                                  <Plug className="h-4 w-4 mr-2" />Integration Settings
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
