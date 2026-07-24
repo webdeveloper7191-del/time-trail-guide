@@ -69,9 +69,12 @@ interface RateCardEntry {
 interface CoverageZoneEntry {
   id: string;
   name: string;
+  centrePostcode: string;
+  radiusKm: number;
   postcodes: string;
   slaMinutes: number;
 }
+
 
 const STEPS = [
   { id: 'business', label: 'Business Details', icon: Building2 },
