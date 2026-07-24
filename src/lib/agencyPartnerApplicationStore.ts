@@ -2,6 +2,9 @@
 // Manages invitations and applications BEFORE the AgencyOnboardingWizard runs.
 // In-memory (pre-Cloud) with subscribe/notify for reactive views.
 
+import type { DocumentUpload, RateCardEntry, CoverageZoneEntry } from '@/components/agency/AgencyOnboardingWizard';
+
+
 export type InviteStatus = 'sent' | 'opened' | 'accepted' | 'expired' | 'revoked';
 export type ApplicationStatus =
   | 'invited'
