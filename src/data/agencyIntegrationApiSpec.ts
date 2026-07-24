@@ -706,6 +706,8 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { code: '404 shift_not_found', description: 'Shift request id not recognised.' },
       { code: '410 shift_closed', description: 'SLA expired or shift already filled.' },
       { code: '422 candidate_validation_error', description: 'One or more candidate records failed schema validation.' },
+      { code: '422 confirmation_missing', description: '`confirmedAvailable`, `confirmedAt`, or `confirmationMethod` is missing. Only confirmed candidates may be submitted.' },
+      { code: '422 confirmation_stale', description: '`confirmedAt` is older than 60 minutes. Re-confirm with the candidate and resubmit.' },
     ],
   },
 
