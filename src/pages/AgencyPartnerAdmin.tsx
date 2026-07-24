@@ -416,21 +416,24 @@ function InvitesTable({ invites }: { invites: AgencyPartnerInvite[] }) {
                             }}>
                               <PlayCircle className="h-3.5 w-3.5 mr-1" /> Simulate accept
                             </Button>
-                        <Button variant="ghost" size="sm" onClick={() => { AgencyPartnerStore.revokeInvite(i.id); toast.success('Invite revoked'); }}>
-                          <Ban className="h-3.5 w-3.5 mr-1" /> Revoke
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </Card>
+                            <Button variant="ghost" size="sm" onClick={() => { AgencyPartnerStore.revokeInvite(i.id); toast.success('Invite revoked'); }}>
+                              <Ban className="h-3.5 w-3.5 mr-1" /> Revoke
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+    </>
   );
 }
+
 
 function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [agencyName, setAgencyName] = useState('');
