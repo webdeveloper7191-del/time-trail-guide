@@ -69,7 +69,8 @@ const isoDate: JSONSchema = { type: 'string', format: 'date', description: 'YYYY
 
 const candidateInputSchema: JSONSchema = {
   type: 'object',
-  required: ['externalId', 'firstName', 'lastName', 'email', 'phone', 'primaryRole', 'awardClassification', 'payRate', 'certifications'],
+  description: 'A candidate the agency has already contacted and CONFIRMED is available, willing, and compliant for this specific shift. Do NOT submit speculative or unconfirmed matches — the platform will reject any candidate missing confirmation fields.',
+  required: ['externalId', 'firstName', 'lastName', 'email', 'phone', 'primaryRole', 'awardClassification', 'payRate', 'certifications', 'confirmedAvailable', 'confirmedAt', 'confirmationMethod'],
   properties: {
     externalId: { type: 'string', description: 'Agency-local candidate id. Unique per agency.' },
     firstName: { type: 'string' },
