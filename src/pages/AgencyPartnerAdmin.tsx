@@ -139,7 +139,23 @@ export default function AgencyPartnerAdmin() {
         applicationId={reviewId}
         onOpenChange={(o) => !o && setReviewId(null)}
       />
+      <AgencyDocumentsPanel
+        app={sectionState?.section === 'documents' ? sectionApp : null}
+        open={sectionState?.section === 'documents'}
+        onClose={() => setSectionState(null)}
+      />
+      <AgencyRateCardsPanel
+        app={sectionState?.section === 'rateCards' ? sectionApp : null}
+        open={sectionState?.section === 'rateCards'}
+        onClose={() => setSectionState(null)}
+      />
+      <AgencyCoverageZonesPanel
+        app={sectionState?.section === 'coverageZones' ? sectionApp : null}
+        open={sectionState?.section === 'coverageZones'}
+        onClose={() => setSectionState(null)}
+      />
     </div>
+
   );
 }
 
