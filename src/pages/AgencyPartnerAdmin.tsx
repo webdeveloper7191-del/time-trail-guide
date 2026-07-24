@@ -60,6 +60,11 @@ export default function AgencyPartnerAdmin() {
   const [tab, setTab] = useState('pending');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [sectionState, setSectionState] = useState<{ id: string; section: 'documents' | 'rateCards' | 'coverageZones' } | null>(null);
+  const sectionApp = sectionState ? applications.find(a => a.id === sectionState.id) ?? null : null;
+  const openSection = (id: string, section: 'documents' | 'rateCards' | 'coverageZones') =>
+    setSectionState({ id, section });
+
 
   useEffect(() => {
     document.title = 'Agency Partners – Admin';
