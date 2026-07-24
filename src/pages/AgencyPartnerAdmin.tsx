@@ -122,6 +122,8 @@ export default function AgencyPartnerAdmin() {
               rows={approved}
               onOpen={setReviewId}
               onOpenSection={openSection}
+              onOpenIntegration={setIntegrationId}
+              showIntegration
               showFilters
               statusOptions={[{ value: 'approved', label: applicationStatusLabels.approved }]}
             />
