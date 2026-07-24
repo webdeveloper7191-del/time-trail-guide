@@ -67,7 +67,12 @@ export interface AgencyPartnerApplication {
   };
   assignedLocationIds?: string[];
   activatedAt?: string;
+  // Independently editable onboarding sections
+  documents?: DocumentUpload[];
+  rateCards?: RateCardEntry[];
+  coverageZones?: CoverageZoneEntry[];
 }
+
 
 export interface ReviewNote {
   id: string;
