@@ -163,7 +163,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
 
 
   const addCoverageZone = () => {
-    setCoverageZones(prev => [...prev, { id: `zone-${Date.now()}`, name: '', postcodes: '', slaMinutes: 60 }]);
+    setCoverageZones(prev => [...prev, { id: `zone-${Date.now()}`, name: '', centrePostcode: '', radiusKm: 25, postcodes: '', slaMinutes: 60 }]);
   };
   const removeCoverageZone = (id: string) => setCoverageZones(prev => prev.filter(z => z.id !== id));
   const updateCoverageZone = (id: string, field: keyof CoverageZoneEntry, value: string | number) => {
