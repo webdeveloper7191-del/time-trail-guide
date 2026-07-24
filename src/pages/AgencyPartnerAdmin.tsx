@@ -27,10 +27,16 @@ import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, Mes
 
 const CURRENT_USER = 'admin@rostered.ai';
 
+let __snap: { invites: ReturnType<typeof AgencyPartnerStore.getInvites>; applications: ReturnType<typeof AgencyPartnerStore.getApplications> } | null = null;
+function refreshSnap() {
+  __snap = { invites: AgencyPartnerStore.getInvites(), applications: AgencyPartnerStore.getApplications() };
+}
+refreshSnap();
+
 function useStore() {
   return useSyncExternalStore(
-    (cb) => AgencyPartnerStore.subscribe(cb),
-    () => ({ invites: AgencyPartnerStore.getInvites(), applications: AgencyPartnerStore.getApplications() }),
+    (cb) => AgencyPartnerStore.subscribe(() => { refreshSnap(); cb(); }),
+    () => __snap!,
   );
 }
 
