@@ -318,7 +318,23 @@ export const AgencyPartnerStore = {
     ];
     notify();
   },
+
+  updateOnboardingSection<K extends 'documents' | 'rateCards' | 'coverageZones'>(
+    appId: string, section: K, value: NonNullable<AgencyPartnerApplication[K]>, by: string,
+  ) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    (a[section] as NonNullable<AgencyPartnerApplication[K]>) = value;
+    a.updatedAt = now();
+    const labels = { documents: 'Compliance documents', rateCards: 'Rate cards', coverageZones: 'Coverage zones' } as const;
+    a.reviewNotes = [
+      ...(a.reviewNotes ?? []),
+      { id: uid('n'), at: now(), by, action: 'note', message: `${labels[section]} updated.` },
+    ];
+    notify();
+  },
 };
+
 
 export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   invited: 'Invited',
