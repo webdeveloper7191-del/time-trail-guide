@@ -99,7 +99,11 @@ export function AgencyDocumentsPanel({
                       </Button>
                     </>
                   ) : (
-                    <label htmlFor={`sec-upload-${doc.type}`}>
+                    <label
+                      htmlFor={`sec-upload-${doc.type}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md border cursor-pointer hover:bg-muted"
+                    >
+                      <Upload className="h-4 w-4" />Upload
                       <input
                         id={`sec-upload-${doc.type}`}
                         type="file"
@@ -107,10 +111,8 @@ export function AgencyDocumentsPanel({
                         accept=".pdf,.jpg,.jpeg,.png"
                         onChange={e => handleUpload(doc.type, e.target.files)}
                       />
-                      <Button variant="outlined" size="small" component="span">
-                        <Upload className="h-4 w-4 mr-1" />Upload
-                      </Button>
                     </label>
+
                   )}
                 </div>
               </div>
