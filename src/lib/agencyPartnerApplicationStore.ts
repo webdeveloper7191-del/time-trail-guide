@@ -2,6 +2,9 @@
 // Manages invitations and applications BEFORE the AgencyOnboardingWizard runs.
 // In-memory (pre-Cloud) with subscribe/notify for reactive views.
 
+import type { DocumentUpload, RateCardEntry, CoverageZoneEntry } from '@/components/agency/AgencyOnboardingWizard';
+
+
 export type InviteStatus = 'sent' | 'opened' | 'accepted' | 'expired' | 'revoked';
 export type ApplicationStatus =
   | 'invited'
@@ -64,7 +67,12 @@ export interface AgencyPartnerApplication {
   };
   assignedLocationIds?: string[];
   activatedAt?: string;
+  // Independently editable onboarding sections
+  documents?: DocumentUpload[];
+  rateCards?: RateCardEntry[];
+  coverageZones?: CoverageZoneEntry[];
 }
+
 
 export interface ReviewNote {
   id: string;
@@ -310,7 +318,23 @@ export const AgencyPartnerStore = {
     ];
     notify();
   },
+
+  updateOnboardingSection<K extends 'documents' | 'rateCards' | 'coverageZones'>(
+    appId: string, section: K, value: NonNullable<AgencyPartnerApplication[K]>, by: string,
+  ) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    (a[section] as NonNullable<AgencyPartnerApplication[K]>) = value;
+    a.updatedAt = now();
+    const labels = { documents: 'Compliance documents', rateCards: 'Rate cards', coverageZones: 'Coverage zones' } as const;
+    a.reviewNotes = [
+      ...(a.reviewNotes ?? []),
+      { id: uid('n'), at: now(), by, action: 'note', message: `${labels[section]} updated.` },
+    ];
+    notify();
+  },
 };
+
 
 export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   invited: 'Invited',

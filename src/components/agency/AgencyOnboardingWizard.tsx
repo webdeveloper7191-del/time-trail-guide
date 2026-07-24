@@ -24,7 +24,7 @@ interface AgencyOnboardingWizardProps {
   onComplete: (data: OnboardingData) => void;
 }
 
-interface OnboardingData {
+export interface OnboardingData {
   businessDetails: {
     legalName: string;
     tradingName: string;
@@ -46,7 +46,7 @@ interface OnboardingData {
   serviceCategories: string[];
 }
 
-interface DocumentUpload {
+export interface DocumentUpload {
   id: string;
   type: 'public_liability' | 'professional_indemnity' | 'workers_comp' | 'abn_certificate' | 'other';
   name: string;
@@ -54,7 +54,7 @@ interface DocumentUpload {
   status: 'pending' | 'uploaded' | 'verified';
 }
 
-interface RateCardEntry {
+export interface RateCardEntry {
   id: string;
   roleName: string;
   awardName: string;
@@ -66,7 +66,7 @@ interface RateCardEntry {
 }
 
 
-interface CoverageZoneEntry {
+export interface CoverageZoneEntry {
   id: string;
   name: string;
   centrePostcode: string;
@@ -84,12 +84,13 @@ const STEPS = [
   { id: 'review', label: 'Review & Submit', icon: CheckCircle2 },
 ];
 
-const REQUIRED_DOCUMENTS = [
+export const REQUIRED_DOCUMENTS = [
   { type: 'public_liability' as const, label: 'Public Liability Insurance', required: true },
   { type: 'professional_indemnity' as const, label: 'Professional Indemnity Insurance', required: true },
   { type: 'workers_comp' as const, label: 'Workers Compensation Insurance', required: true },
   { type: 'abn_certificate' as const, label: 'ABN Certificate', required: true },
 ];
+
 
 const SERVICE_CATEGORIES = [
   'Healthcare', 'Hospitality', 'Childcare', 'Aged Care', 'Logistics', 'Events', 'Administration', 'Retail'

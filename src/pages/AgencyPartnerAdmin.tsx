@@ -24,9 +24,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X, Rocket, MapPin, Sparkles } from 'lucide-react';
+import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X, Rocket, MapPin, Sparkles, MoreHorizontal, FileText, DollarSign } from 'lucide-react';
 import AgencyOnboardingWizard from '@/components/agency/AgencyOnboardingWizard';
+import { AgencyDocumentsPanel, AgencyRateCardsPanel, AgencyCoverageZonesPanel } from '@/components/agency/AgencySectionPanels';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { mockLocations } from '@/data/mockLocationData';
+
 
 const CURRENT_USER = 'admin@rostered.ai';
 
@@ -57,6 +60,11 @@ export default function AgencyPartnerAdmin() {
   const [tab, setTab] = useState('pending');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
+  const [sectionState, setSectionState] = useState<{ id: string; section: 'documents' | 'rateCards' | 'coverageZones' } | null>(null);
+  const sectionApp = sectionState ? applications.find(a => a.id === sectionState.id) ?? null : null;
+  const openSection = (id: string, section: 'documents' | 'rateCards' | 'coverageZones') =>
+    setSectionState({ id, section });
+
 
   useEffect(() => {
     document.title = 'Agency Partners – Admin';
@@ -109,10 +117,12 @@ export default function AgencyPartnerAdmin() {
             <ApplicationsTable
               rows={approved}
               onOpen={setReviewId}
+              onOpenSection={openSection}
               showFilters
               statusOptions={[{ value: 'approved', label: applicationStatusLabels.approved }]}
             />
           </TabsContent>
+
           <TabsContent value="rejected" className="mt-4">
             <ApplicationsTable
               rows={rejected}
@@ -129,7 +139,23 @@ export default function AgencyPartnerAdmin() {
         applicationId={reviewId}
         onOpenChange={(o) => !o && setReviewId(null)}
       />
+      <AgencyDocumentsPanel
+        app={sectionState?.section === 'documents' ? sectionApp : null}
+        open={sectionState?.section === 'documents'}
+        onClose={() => setSectionState(null)}
+      />
+      <AgencyRateCardsPanel
+        app={sectionState?.section === 'rateCards' ? sectionApp : null}
+        open={sectionState?.section === 'rateCards'}
+        onClose={() => setSectionState(null)}
+      />
+      <AgencyCoverageZonesPanel
+        app={sectionState?.section === 'coverageZones' ? sectionApp : null}
+        open={sectionState?.section === 'coverageZones'}
+        onClose={() => setSectionState(null)}
+      />
     </div>
+
   );
 }
 
@@ -240,13 +266,15 @@ const PENDING_STATUS_OPTIONS = [
 ];
 
 function ApplicationsTable({
-  rows, onOpen, showFilters = false, statusOptions,
+  rows, onOpen, onOpenSection, showFilters = false, statusOptions,
 }: {
   rows: AgencyPartnerApplication[];
   onOpen: (id: string) => void;
+  onOpenSection?: (id: string, section: 'documents' | 'rateCards' | 'coverageZones') => void;
   showFilters?: boolean;
   statusOptions?: { value: string; label: string }[];
 }) {
+
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [statusValue, setStatusValue] = useState('all');
@@ -334,10 +362,35 @@ function ApplicationsTable({
                     {new Date(a.updatedAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpen(a.id); }}>
-                      Review
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpen(a.id); }}>
+                        Review
+                      </Button>
+                      {onOpenSection && a.status === 'approved' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuLabel>Manage</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onOpenSection(a.id, 'documents')}>
+                              <FileText className="h-4 w-4 mr-2" />Compliance Documents
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onOpenSection(a.id, 'rateCards')}>
+                              <DollarSign className="h-4 w-4 mr-2" />Rate Cards
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onOpenSection(a.id, 'coverageZones')}>
+                              <MapPin className="h-4 w-4 mr-2" />Coverage Zones
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </TableCell>
+
                 </TableRow>
               ))}
             </TableBody>
