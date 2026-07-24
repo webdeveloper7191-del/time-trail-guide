@@ -71,6 +71,114 @@ export interface AgencyPartnerApplication {
   documents?: DocumentUpload[];
   rateCards?: RateCardEntry[];
   coverageZones?: CoverageZoneEntry[];
+  // Integration configuration (post-approval)
+  integration?: AgencyIntegrationConfig;
+}
+
+// ============================================================================
+// Integration types
+// ============================================================================
+
+export type IntegrationEnv = 'sandbox' | 'production';
+export const ALL_SCOPES = [
+  'shifts.read',
+  'shifts.write',
+  'placements.read',
+  'placements.write',
+  'candidates.read',
+  'candidates.write',
+  'timesheets.read',
+  'invoices.read',
+] as const;
+export type IntegrationScope = typeof ALL_SCOPES[number];
+
+export const ALL_WEBHOOK_EVENTS = [
+  'shift.broadcast',
+  'shift.updated',
+  'shift.cancelled',
+  'placement.confirmed',
+  'placement.cancelled',
+  'timesheet.approved',
+  'invoice.issued',
+] as const;
+export type WebhookEvent = typeof ALL_WEBHOOK_EVENTS[number];
+
+export interface ApiCredential {
+  id: string;
+  clientId: string;
+  clientSecretPreview: string; // e.g. "sk_live_••••••4f9c"
+  env: IntegrationEnv;
+  scopes: IntegrationScope[];
+  createdAt: string;
+  createdBy: string;
+  lastUsedAt?: string;
+  rotatedAt?: string;
+  revokedAt?: string;
+}
+
+export interface RoleMapping {
+  id: string;
+  agencyRoleLabel: string; // free-text label agency sends
+  positionId?: string;     // tenant canonical position id
+  positionLabel?: string;  // denormalised for display
+  confirmedAt?: string;
+  confirmedBy?: string;
+}
+
+export interface NotificationRouting {
+  dispatchFailureRecipients: string[]; // email addresses
+  deadLetterRecipients: string[];
+  channelEmail: boolean;
+  channelInApp: boolean;
+}
+
+export type DeliveryStatus = 'delivered' | 'failed' | 'retrying' | 'dead_letter';
+
+export interface WebhookDelivery {
+  id: string;
+  event: WebhookEvent;
+  attemptedAt: string;
+  status: DeliveryStatus;
+  responseCode?: number;
+  latencyMs?: number;
+  attempt: number;
+  errorMessage?: string;
+  payloadPreview?: string;
+  isTest?: boolean;
+}
+
+export interface AgencyIntegrationConfig {
+  env: IntegrationEnv;
+  credentials: ApiCredential[];
+  webhookUrl?: string;
+  webhookSigningSecretPreview?: string; // "whsec_••••••ab12"
+  webhookVerifiedAt?: string;
+  eventSubscriptions: WebhookEvent[];
+  rateLimitRpm: number;         // requests/min override (default 60)
+  rateLimitBurst: number;       // burst allowance
+  ipAllowlist: string[];        // CIDR or IPs; empty = any
+  roleMappings: RoleMapping[];
+  notifications: NotificationRouting;
+  deliveries: WebhookDelivery[];
+  lastSuccessfulDeliveryAt?: string;
+  lastFailedDeliveryAt?: string;
+}
+
+export function integrationReadiness(cfg?: AgencyIntegrationConfig): {
+  credentials: boolean;
+  webhook: boolean;
+  events: boolean;
+  mapping: boolean;
+  overall: 'not_configured' | 'partial' | 'ready';
+} {
+  const credentials = !!cfg?.credentials.some(c => !c.revokedAt);
+  const webhook = !!cfg?.webhookUrl && !!cfg?.webhookVerifiedAt;
+  const events = !!cfg && cfg.eventSubscriptions.length > 0;
+  const mapping = !!cfg && cfg.roleMappings.length > 0 && cfg.roleMappings.every(m => !!m.positionId);
+  const flags = [credentials, webhook, events, mapping];
+  const done = flags.filter(Boolean).length;
+  const overall = done === 4 ? 'ready' : done === 0 ? 'not_configured' : 'partial';
+  return { credentials, webhook, events, mapping, overall };
 }
 
 
