@@ -148,6 +148,10 @@ const candidateInputSchema: JSONSchema = {
       },
     },
     tfn: { type: 'string', description: 'Tax File Number. Encrypted at rest.' },
+    confirmedAvailable: { type: 'boolean', enum: [true], description: 'MUST be true. Explicit confirmation that the agency has contacted the candidate and they have accepted this specific shift.' },
+    confirmedAt: { ...isoDateTime, description: 'Timestamp when the candidate confirmed acceptance of the shift. Must be within the last 60 minutes.' },
+    confirmationMethod: { type: 'string', enum: ['sms', 'call', 'app', 'email', 'in_person'], description: 'How the agency captured the candidate confirmation. Used for audit only.' },
+    confirmationReference: { type: 'string', description: 'Optional agency-side reference (message id, call id, app booking id) for audit trace.' },
   },
 };
 
