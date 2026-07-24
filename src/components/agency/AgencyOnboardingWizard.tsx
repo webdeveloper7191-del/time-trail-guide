@@ -57,11 +57,14 @@ interface DocumentUpload {
 interface RateCardEntry {
   id: string;
   roleName: string;
+  awardName: string;
+  classificationIds: string[];
   baseRate: number;
   casualLoading: number;
   weekendRate: number;
   publicHolidayRate: number;
 }
+
 
 interface CoverageZoneEntry {
   id: string;
