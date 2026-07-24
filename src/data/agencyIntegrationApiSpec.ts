@@ -399,7 +399,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     direction: 'webhook',
     auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift.broadcast — open shift dispatched to agency',
-    description: 'Fired when the tenant broadcasts an open shift. Agency must respond 2xx within 5 s; matching candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates.',
+    description: 'Fired when the tenant broadcasts an open shift. Agency must respond 2xx within 5 s. Once the agency has contacted candidates and captured explicit acceptance, only those CONFIRMED candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates. Do not submit speculative matches — the platform does not run a two-stage shortlist/confirm workflow.',
     webhook: {
       eventName: 'shift.broadcast',
       deliveryHeaders: agencyWebhookDeliveryHeaders,
