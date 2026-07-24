@@ -78,7 +78,10 @@ export interface ReviewNote {
     | 'rejected'
     | 'note'
     | 'invited'
-    | 'reminded';
+    | 'reminded'
+    | 'onboarding_completed'
+    | 'locations_assigned'
+    | 'activated';
   message?: string;
 }
 
