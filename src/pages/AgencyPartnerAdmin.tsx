@@ -117,10 +117,12 @@ export default function AgencyPartnerAdmin() {
             <ApplicationsTable
               rows={approved}
               onOpen={setReviewId}
+              onOpenSection={openSection}
               showFilters
               statusOptions={[{ value: 'approved', label: applicationStatusLabels.approved }]}
             />
           </TabsContent>
+
           <TabsContent value="rejected" className="mt-4">
             <ApplicationsTable
               rows={rejected}
