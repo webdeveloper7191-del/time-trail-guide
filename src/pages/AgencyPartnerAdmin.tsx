@@ -272,11 +272,13 @@ const PENDING_STATUS_OPTIONS = [
 ];
 
 function ApplicationsTable({
-  rows, onOpen, onOpenSection, showFilters = false, statusOptions,
+  rows, onOpen, onOpenSection, onOpenIntegration, showIntegration = false, showFilters = false, statusOptions,
 }: {
   rows: AgencyPartnerApplication[];
   onOpen: (id: string) => void;
   onOpenSection?: (id: string, section: 'documents' | 'rateCards' | 'coverageZones') => void;
+  onOpenIntegration?: (id: string) => void;
+  showIntegration?: boolean;
   showFilters?: boolean;
   statusOptions?: { value: string; label: string }[];
 }) {
