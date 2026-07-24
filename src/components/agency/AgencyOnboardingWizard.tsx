@@ -421,7 +421,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                   <Input value={zone.name} onChange={e => updateCoverageZone(zone.id, 'name', e.target.value)} placeholder="e.g., Sydney CBD" />
                 </FormField>
                 <FormRow columns={3}>
-                  <FormField label="Centre Postcode" hint="Anchor postcode for the coverage radius">
+                  <FormField label="Centre Postcode">
                     <Input
                       value={zone.centrePostcode}
                       onChange={e => updateCoverageZone(zone.id, 'centrePostcode', e.target.value.replace(/\D/g, '').slice(0, 4))}
@@ -430,7 +430,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                       maxLength={4}
                     />
                   </FormField>
-                  <FormField label="Radius (km)" hint="Distance from centre postcode">
+                  <FormField label="Radius (km)">
                     <Input
                       type="number"
                       min={1}
@@ -444,7 +444,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                     <Input type="number" value={zone.slaMinutes} onChange={e => updateCoverageZone(zone.id, 'slaMinutes', parseInt(e.target.value) || 60)} />
                   </FormField>
                 </FormRow>
-                <FormField label="Additional Postcodes (optional)" hint="Comma-separated postcodes to include beyond the radius">
+                <FormField label="Additional Postcodes (optional)">
                   <Input value={zone.postcodes} onChange={e => updateCoverageZone(zone.id, 'postcodes', e.target.value)} placeholder="2010, 2011, 2015" />
                 </FormField>
 
