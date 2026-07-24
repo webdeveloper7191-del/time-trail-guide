@@ -346,10 +346,35 @@ function ApplicationsTable({
                     {new Date(a.updatedAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpen(a.id); }}>
-                      Review
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpen(a.id); }}>
+                        Review
+                      </Button>
+                      {onOpenSection && a.status === 'approved' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuLabel>Manage</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onOpenSection(a.id, 'documents')}>
+                              <FileText className="h-4 w-4 mr-2" />Compliance Documents
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onOpenSection(a.id, 'rateCards')}>
+                              <DollarSign className="h-4 w-4 mr-2" />Rate Cards
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onOpenSection(a.id, 'coverageZones')}>
+                              <MapPin className="h-4 w-4 mr-2" />Coverage Zones
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </TableCell>
+
                 </TableRow>
               ))}
             </TableBody>
