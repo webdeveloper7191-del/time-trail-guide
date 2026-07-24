@@ -662,7 +662,11 @@ export const agencyApiSpec: ApiEndpoint[] = [
       "complianceScore": 98,
       "reliabilityScore": 95,
       "hoursWorkedThisWeek": 22,
-      "lastShiftEndTime": "2026-06-14T16:30:00+10:00"
+      "lastShiftEndTime": "2026-06-14T16:30:00+10:00",
+      "confirmedAvailable": true,
+      "confirmedAt": "2026-06-15T08:12:44+10:00",
+      "confirmationMethod": "sms",
+      "confirmationReference": "twlo_SM1a2b3c"
     }
   ]
 }`,
