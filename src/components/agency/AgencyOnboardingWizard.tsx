@@ -112,8 +112,9 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
   ]);
 
   const [coverageZones, setCoverageZones] = useState<CoverageZoneEntry[]>([
-    { id: '1', name: '', postcodes: '', slaMinutes: 60 }
+    { id: '1', name: '', centrePostcode: '', radiusKm: 25, postcodes: '', slaMinutes: 60 }
   ]);
+
   const [serviceCategories, setServiceCategories] = useState<string[]>([]);
 
   const progress = ((currentStep + 1) / STEPS.length) * 100;
