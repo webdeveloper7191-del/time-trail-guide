@@ -63,7 +63,9 @@ export default function AgencyPartnerAdmin() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [sectionState, setSectionState] = useState<{ id: string; section: 'documents' | 'rateCards' | 'coverageZones' } | null>(null);
+  const [integrationId, setIntegrationId] = useState<string | null>(null);
   const sectionApp = sectionState ? applications.find(a => a.id === sectionState.id) ?? null : null;
+  const integrationApp = integrationId ? applications.find(a => a.id === integrationId) ?? null : null;
   const openSection = (id: string, section: 'documents' | 'rateCards' | 'coverageZones') =>
     setSectionState({ id, section });
 
