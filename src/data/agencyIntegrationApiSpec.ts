@@ -620,17 +620,17 @@ export const agencyApiSpec: ApiEndpoint[] = [
   },
 
   {
-    id: 'submit-candidates',
+    id: 'submit-confirmed-candidates',
     group: 'Shift Requests',
     method: 'POST',
     path: '/v1/shift-requests/{shiftRequestId}/candidates',
     direction: 'inbound',
     auth: 'Bearer (agency)',
-    summary: 'Submit candidate matches for a broadcast shift',
-    description: 'Agency posts one or more candidates it proposes for the shift. Platform runs eligibility + compliance checks and returns per-candidate status.',
+    summary: 'Submit CONFIRMED candidates for a broadcast shift',
+    description: 'Post ONLY candidates the agency has already contacted and who have explicitly confirmed acceptance of THIS shift. Speculative matches, "available" candidates, or shortlists must not be posted here — filter them agency-side first. Each record must carry `confirmedAvailable: true`, `confirmedAt` (≤ 60 minutes old), and `confirmationMethod`. The platform runs eligibility + compliance checks and, in express mode, may auto-create the placement.',
     pathParams: [{ name: 'shiftRequestId', type: 'string', required: true, description: 'Platform shift request id.' }],
     requestBody: [
-      { name: 'candidates', type: 'object[]', required: true, description: 'See Candidate schema.' },
+      { name: 'candidates', type: 'object[]', required: true, description: 'Confirmed candidates only. See Candidate schema — `confirmedAvailable`, `confirmedAt`, `confirmationMethod` are mandatory.' },
     ],
     requestSchema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
