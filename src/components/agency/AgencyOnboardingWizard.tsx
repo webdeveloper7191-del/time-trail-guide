@@ -105,8 +105,9 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
 
   const [documents, setDocuments] = useState<DocumentUpload[]>([]);
   const [rateCards, setRateCards] = useState<RateCardEntry[]>([
-    { id: '1', roleName: '', baseRate: 0, casualLoading: 25, weekendRate: 0, publicHolidayRate: 0 }
+    { id: '1', roleName: '', awardName: '', classificationIds: [], baseRate: 0, casualLoading: 25, weekendRate: 0, publicHolidayRate: 0 }
   ]);
+
   const [coverageZones, setCoverageZones] = useState<CoverageZoneEntry[]>([
     { id: '1', name: '', postcodes: '', slaMinutes: 60 }
   ]);
