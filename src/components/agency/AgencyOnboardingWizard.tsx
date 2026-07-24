@@ -488,16 +488,17 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
                 ))}
               </div>
             </FormSection>
-            <FormSection title={`Coverage Zones (${coverageZones.filter(z => z.name && z.postcodes).length})`}>
+            <FormSection title={`Coverage Zones (${coverageZones.filter(z => z.name && z.centrePostcode && z.radiusKm > 0).length})`}>
               <div className="space-y-2">
-                {coverageZones.filter(z => z.name && z.postcodes).map(zone => (
+                {coverageZones.filter(z => z.name && z.centrePostcode && z.radiusKm > 0).map(zone => (
                   <div key={zone.id} className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">{zone.name}</span>
-                    <span className="font-medium">{zone.slaMinutes}min SLA</span>
+                    <span className="font-medium">{zone.centrePostcode} · {zone.radiusKm}km · {zone.slaMinutes}min SLA</span>
                   </div>
                 ))}
               </div>
             </FormSection>
+
           </div>
         );
 
