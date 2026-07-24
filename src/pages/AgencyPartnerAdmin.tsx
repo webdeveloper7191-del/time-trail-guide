@@ -91,16 +91,26 @@ export default function AgencyPartnerAdmin() {
           </TabsList>
 
           <TabsContent value="pending" className="mt-4">
-            <ApplicationsTable rows={pending} onOpen={setReviewId} />
+            <ApplicationsTable rows={pending} onOpen={setReviewId} showFilters />
           </TabsContent>
           <TabsContent value="invites" className="mt-4">
             <InvitesTable invites={invites} />
           </TabsContent>
           <TabsContent value="approved" className="mt-4">
-            <ApplicationsTable rows={approved} onOpen={setReviewId} />
+            <ApplicationsTable
+              rows={approved}
+              onOpen={setReviewId}
+              showFilters
+              statusOptions={[{ value: 'approved', label: applicationStatusLabels.approved }]}
+            />
           </TabsContent>
           <TabsContent value="rejected" className="mt-4">
-            <ApplicationsTable rows={rejected} onOpen={setReviewId} />
+            <ApplicationsTable
+              rows={rejected}
+              onOpen={setReviewId}
+              showFilters
+              statusOptions={[{ value: 'rejected', label: applicationStatusLabels.rejected }]}
+            />
           </TabsContent>
         </Tabs>
       </main>
