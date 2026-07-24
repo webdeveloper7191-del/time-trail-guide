@@ -69,7 +69,8 @@ const isoDate: JSONSchema = { type: 'string', format: 'date', description: 'YYYY
 
 const candidateInputSchema: JSONSchema = {
   type: 'object',
-  required: ['externalId', 'firstName', 'lastName', 'email', 'phone', 'primaryRole', 'awardClassification', 'payRate', 'certifications'],
+  description: 'A candidate the agency has already contacted and CONFIRMED is available, willing, and compliant for this specific shift. Do NOT submit speculative or unconfirmed matches — the platform will reject any candidate missing confirmation fields.',
+  required: ['externalId', 'firstName', 'lastName', 'email', 'phone', 'primaryRole', 'awardClassification', 'payRate', 'certifications', 'confirmedAvailable', 'confirmedAt', 'confirmationMethod'],
   properties: {
     externalId: { type: 'string', description: 'Agency-local candidate id. Unique per agency.' },
     firstName: { type: 'string' },
@@ -147,6 +148,10 @@ const candidateInputSchema: JSONSchema = {
       },
     },
     tfn: { type: 'string', description: 'Tax File Number. Encrypted at rest.' },
+    confirmedAvailable: { type: 'boolean', enum: [true], description: 'MUST be true. Explicit confirmation that the agency has contacted the candidate and they have accepted this specific shift.' },
+    confirmedAt: { ...isoDateTime, description: 'Timestamp when the candidate confirmed acceptance of the shift. Must be within the last 60 minutes.' },
+    confirmationMethod: { type: 'string', enum: ['sms', 'call', 'app', 'email', 'in_person'], description: 'How the agency captured the candidate confirmation. Used for audit only.' },
+    confirmationReference: { type: 'string', description: 'Optional agency-side reference (message id, call id, app booking id) for audit trace.' },
   },
 };
 
@@ -394,7 +399,7 @@ export const agencyApiSpec: ApiEndpoint[] = [
     direction: 'webhook',
     auth: 'HMAC X-RosteredAI-Signature',
     summary: 'shift.broadcast — open shift dispatched to agency',
-    description: 'Fired when the tenant broadcasts an open shift. Agency must respond 2xx within 5 s; matching candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates.',
+    description: 'Fired when the tenant broadcasts an open shift. Agency must respond 2xx within 5 s. Once the agency has contacted candidates and captured explicit acceptance, only those CONFIRMED candidates are submitted asynchronously via POST /v1/shift-requests/{id}/candidates. Do not submit speculative matches — the platform does not run a two-stage shortlist/confirm workflow.',
     webhook: {
       eventName: 'shift.broadcast',
       deliveryHeaders: agencyWebhookDeliveryHeaders,
@@ -615,17 +620,17 @@ export const agencyApiSpec: ApiEndpoint[] = [
   },
 
   {
-    id: 'submit-candidates',
+    id: 'submit-confirmed-candidates',
     group: 'Shift Requests',
     method: 'POST',
     path: '/v1/shift-requests/{shiftRequestId}/candidates',
     direction: 'inbound',
     auth: 'Bearer (agency)',
-    summary: 'Submit candidate matches for a broadcast shift',
-    description: 'Agency posts one or more candidates it proposes for the shift. Platform runs eligibility + compliance checks and returns per-candidate status.',
+    summary: 'Submit CONFIRMED candidates for a broadcast shift',
+    description: 'Post ONLY candidates the agency has already contacted and who have explicitly confirmed acceptance of THIS shift. Speculative matches, "available" candidates, or shortlists must not be posted here — filter them agency-side first. Each record must carry `confirmedAvailable: true`, `confirmedAt` (≤ 60 minutes old), and `confirmationMethod`. The platform runs eligibility + compliance checks and, in express mode, may auto-create the placement.',
     pathParams: [{ name: 'shiftRequestId', type: 'string', required: true, description: 'Platform shift request id.' }],
     requestBody: [
-      { name: 'candidates', type: 'object[]', required: true, description: 'See Candidate schema.' },
+      { name: 'candidates', type: 'object[]', required: true, description: 'Confirmed candidates only. See Candidate schema — `confirmedAvailable`, `confirmedAt`, `confirmationMethod` are mandatory.' },
     ],
     requestSchema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -657,7 +662,11 @@ export const agencyApiSpec: ApiEndpoint[] = [
       "complianceScore": 98,
       "reliabilityScore": 95,
       "hoursWorkedThisWeek": 22,
-      "lastShiftEndTime": "2026-06-14T16:30:00+10:00"
+      "lastShiftEndTime": "2026-06-14T16:30:00+10:00",
+      "confirmedAvailable": true,
+      "confirmedAt": "2026-06-15T08:12:44+10:00",
+      "confirmationMethod": "sms",
+      "confirmationReference": "twlo_SM1a2b3c"
     }
   ]
 }`,
@@ -697,6 +706,8 @@ export const agencyApiSpec: ApiEndpoint[] = [
       { code: '404 shift_not_found', description: 'Shift request id not recognised.' },
       { code: '410 shift_closed', description: 'SLA expired or shift already filled.' },
       { code: '422 candidate_validation_error', description: 'One or more candidate records failed schema validation.' },
+      { code: '422 confirmation_missing', description: '`confirmedAvailable`, `confirmedAt`, or `confirmationMethod` is missing. Only confirmed candidates may be submitted.' },
+      { code: '422 confirmation_stale', description: '`confirmedAt` is older than 60 minutes. Re-confirm with the candidate and resubmit.' },
     ],
   },
 
