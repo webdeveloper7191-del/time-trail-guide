@@ -21,8 +21,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Separator } from '@/components/ui/separator';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send } from 'lucide-react';
+import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
 
 const CURRENT_USER = 'admin@rostered.ai';
 
