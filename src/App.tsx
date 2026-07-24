@@ -18,6 +18,7 @@ import StaffDetail from "./pages/StaffDetail";
 import AddStaffManual from "./pages/AddStaffManual";
 import PaperlessOnboarding from "./pages/PaperlessOnboarding";
 import AgencyPortal from "./pages/AgencyPortal";
+import AgencyPartnerAdmin from "./pages/AgencyPartnerAdmin";
 import PerformanceManagement from "./pages/PerformanceManagement";
 import RecognitionPage from "./pages/RecognitionPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
