@@ -21,8 +21,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Separator } from '@/components/ui/separator';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send } from 'lucide-react';
+import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
 
 const CURRENT_USER = 'admin@rostered.ai';
 
@@ -90,16 +91,26 @@ export default function AgencyPartnerAdmin() {
           </TabsList>
 
           <TabsContent value="pending" className="mt-4">
-            <ApplicationsTable rows={pending} onOpen={setReviewId} />
+            <ApplicationsTable rows={pending} onOpen={setReviewId} showFilters />
           </TabsContent>
           <TabsContent value="invites" className="mt-4">
             <InvitesTable invites={invites} />
           </TabsContent>
           <TabsContent value="approved" className="mt-4">
-            <ApplicationsTable rows={approved} onOpen={setReviewId} />
+            <ApplicationsTable
+              rows={approved}
+              onOpen={setReviewId}
+              showFilters
+              statusOptions={[{ value: 'approved', label: applicationStatusLabels.approved }]}
+            />
           </TabsContent>
           <TabsContent value="rejected" className="mt-4">
-            <ApplicationsTable rows={rejected} onOpen={setReviewId} />
+            <ApplicationsTable
+              rows={rejected}
+              onOpen={setReviewId}
+              showFilters
+              statusOptions={[{ value: 'rejected', label: applicationStatusLabels.rejected }]}
+            />
           </TabsContent>
         </Tabs>
       </main>
@@ -122,117 +133,317 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-function ApplicationsTable({ rows, onOpen }: { rows: AgencyPartnerApplication[]; onOpen: (id: string) => void }) {
-  if (rows.length === 0) {
-    return <Card className="p-8 text-center text-sm text-muted-foreground">No applications in this bucket.</Card>;
-  }
+type SortDir = 'asc' | 'desc';
+type AppSortKey = 'agencyName' | 'status' | 'updatedAt' | 'submittedAt';
+type InviteSortKey = 'agencyName' | 'status' | 'createdAt' | 'expiresAt';
+
+const DATE_RANGES = [
+  { value: 'any', label: 'Any time' },
+  { value: '24h', label: 'Last 24 hours' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '90d', label: 'Last 90 days' },
+] as const;
+type DateRange = typeof DATE_RANGES[number]['value'];
+
+function withinRange(iso: string, range: DateRange): boolean {
+  if (range === 'any') return true;
+  const days = range === '24h' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 90;
+  return Date.now() - new Date(iso).getTime() <= days * 86400_000;
+}
+
+function SortHeader<K extends string>({
+  label, sortKey, active, dir, onSort, className,
+}: { label: string; sortKey: K; active: K; dir: SortDir; onSort: (k: K) => void; className?: string }) {
+  const isActive = active === sortKey;
+  const Icon = isActive ? (dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Agency</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Categories</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Updated</TableHead>
-            <TableHead className="text-right">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((a) => (
-            <TableRow key={a.id} className="cursor-pointer" onClick={() => onOpen(a.id)}>
-              <TableCell>
-                <div className="font-medium flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  {a.agencyName}
-                </div>
-                {a.abn && <div className="text-xs text-muted-foreground">ABN {a.abn}</div>}
-              </TableCell>
-              <TableCell>
-                <div className="text-sm">{a.contactName}</div>
-                <div className="text-xs text-muted-foreground">{a.contactEmail}</div>
-              </TableCell>
-              <TableCell className="text-xs">
-                {a.serviceCategoryIds.map(id => mockServiceCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || '—'}
-              </TableCell>
-              <TableCell>
-                <Badge className={statusVariant[a.status]}>{applicationStatusLabels[a.status]}</Badge>
-              </TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {new Date(a.updatedAt).toLocaleDateString()}
-              </TableCell>
-              <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpen(a.id); }}>
-                  Review
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className="inline-flex items-center gap-1 hover:text-foreground"
+      >
+        {label} <Icon className="h-3 w-3 opacity-70" />
+      </button>
+    </TableHead>
   );
 }
 
-function InvitesTable({ invites }: { invites: AgencyPartnerInvite[] }) {
-  if (invites.length === 0) {
-    return <Card className="p-8 text-center text-sm text-muted-foreground">No invites yet.</Card>;
-  }
+function FilterBar({
+  search, onSearch, category, onCategory, statusValue, statusOptions, onStatus, dateRange, onDateRange, onClear, resultCount, totalCount,
+}: {
+  search: string; onSearch: (v: string) => void;
+  category: string; onCategory: (v: string) => void;
+  statusValue: string; statusOptions: { value: string; label: string }[]; onStatus: (v: string) => void;
+  dateRange: DateRange; onDateRange: (v: DateRange) => void;
+  onClear: () => void;
+  resultCount: number; totalCount: number;
+}) {
+  const dirty = search || category !== 'all' || statusValue !== 'all' || dateRange !== 'any';
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Agency</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Sent</TableHead>
-            <TableHead>Expires</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invites.map(i => {
-            const isOpen = i.status === 'sent' || i.status === 'opened';
-            return (
-              <TableRow key={i.id}>
-                <TableCell className="font-medium">{i.agencyName}</TableCell>
-                <TableCell>
-                  <div className="text-sm">{i.contactName}</div>
-                  <div className="text-xs text-muted-foreground">{i.contactEmail}</div>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{new Date(i.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{new Date(i.expiresAt).toLocaleDateString()}</TableCell>
-                <TableCell><Badge variant="secondary">{inviteStatusLabels[i.status]}</Badge></TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    {isOpen && (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => { AgencyPartnerStore.resendInvite(i.id); toast.success('Invite resent'); }}>
-                          <RotateCcw className="h-3.5 w-3.5 mr-1" /> Resend
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          const app = AgencyPartnerStore.simulateAcceptance(i.id);
-                          if (app) toast.success(`${i.agencyName} accepted — application ready for review`);
-                        }}>
-                          <PlayCircle className="h-3.5 w-3.5 mr-1" /> Simulate accept
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => { AgencyPartnerStore.revokeInvite(i.id); toast.success('Invite revoked'); }}>
-                          <Ban className="h-3.5 w-3.5 mr-1" /> Revoke
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </Card>
+    <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className="relative flex-1 min-w-[220px]">
+        <Search className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder="Search agency, contact, email…"
+          className="pl-8"
+        />
+      </div>
+      <Select value={category} onValueChange={onCategory}>
+        <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All categories</SelectItem>
+          {mockServiceCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={statusValue} onValueChange={onStatus}>
+        <SelectTrigger className="w-[170px]"><SelectValue placeholder="Status" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          {statusOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={dateRange} onValueChange={(v) => onDateRange(v as DateRange)}>
+        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Updated" /></SelectTrigger>
+        <SelectContent>
+          {DATE_RANGES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      {dirty && (
+        <Button variant="ghost" size="sm" onClick={onClear}>
+          <X className="h-3.5 w-3.5 mr-1" /> Clear
+        </Button>
+      )}
+      <div className="ml-auto text-xs text-muted-foreground">
+        {resultCount} of {totalCount}
+      </div>
+    </div>
   );
 }
+
+const PENDING_STATUS_OPTIONS = [
+  { value: 'submitted', label: applicationStatusLabels.submitted },
+  { value: 'in_review', label: applicationStatusLabels.in_review },
+  { value: 'changes_requested', label: applicationStatusLabels.changes_requested },
+];
+
+function ApplicationsTable({
+  rows, onOpen, showFilters = false, statusOptions,
+}: {
+  rows: AgencyPartnerApplication[];
+  onOpen: (id: string) => void;
+  showFilters?: boolean;
+  statusOptions?: { value: string; label: string }[];
+}) {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [statusValue, setStatusValue] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange>('any');
+  const [sortKey, setSortKey] = useState<AppSortKey>('updatedAt');
+  const [dir, setDir] = useState<SortDir>('desc');
+
+  const clear = () => { setSearch(''); setCategory('all'); setStatusValue('all'); setDateRange('any'); };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rows.filter(a => {
+      if (q && !`${a.agencyName} ${a.contactName} ${a.contactEmail}`.toLowerCase().includes(q)) return false;
+      if (category !== 'all' && !a.serviceCategoryIds.includes(category)) return false;
+      if (statusValue !== 'all' && a.status !== statusValue) return false;
+      if (!withinRange(a.updatedAt, dateRange)) return false;
+      return true;
+    });
+  }, [rows, search, category, statusValue, dateRange]);
+
+  const sorted = useMemo(() => {
+    const mult = dir === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const av = (a[sortKey] ?? '') as string;
+      const bv = (b[sortKey] ?? '') as string;
+      return av.localeCompare(bv) * mult;
+    });
+  }, [filtered, sortKey, dir]);
+
+  const onSort = (k: AppSortKey) => {
+    if (k === sortKey) setDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(k); setDir(k === 'agencyName' ? 'asc' : 'desc'); }
+  };
+
+  return (
+    <>
+      {showFilters && (
+        <FilterBar
+          search={search} onSearch={setSearch}
+          category={category} onCategory={setCategory}
+          statusValue={statusValue} statusOptions={statusOptions ?? PENDING_STATUS_OPTIONS} onStatus={setStatusValue}
+          dateRange={dateRange} onDateRange={setDateRange}
+          onClear={clear}
+          resultCount={sorted.length} totalCount={rows.length}
+        />
+      )}
+      {sorted.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">
+          {rows.length === 0 ? 'No applications in this bucket.' : 'No results match your filters.'}
+        </Card>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortHeader label="Agency" sortKey="agencyName" active={sortKey} dir={dir} onSort={onSort} />
+                <TableHead>Contact</TableHead>
+                <TableHead>Categories</TableHead>
+                <SortHeader label="Status" sortKey="status" active={sortKey} dir={dir} onSort={onSort} />
+                <SortHeader label="Updated" sortKey="updatedAt" active={sortKey} dir={dir} onSort={onSort} />
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sorted.map((a) => (
+                <TableRow key={a.id} className="cursor-pointer" onClick={() => onOpen(a.id)}>
+                  <TableCell>
+                    <div className="font-medium flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      {a.agencyName}
+                    </div>
+                    {a.abn && <div className="text-xs text-muted-foreground">ABN {a.abn}</div>}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">{a.contactName}</div>
+                    <div className="text-xs text-muted-foreground">{a.contactEmail}</div>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {a.serviceCategoryIds.map(id => mockServiceCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={statusVariant[a.status]}>{applicationStatusLabels[a.status]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(a.updatedAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onOpen(a.id); }}>
+                      Review
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+    </>
+  );
+}
+
+const INVITE_STATUS_OPTIONS = (Object.keys(inviteStatusLabels) as (keyof typeof inviteStatusLabels)[])
+  .map(v => ({ value: v, label: inviteStatusLabels[v] }));
+
+function InvitesTable({ invites }: { invites: AgencyPartnerInvite[] }) {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('all');
+  const [statusValue, setStatusValue] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange>('any');
+  const [sortKey, setSortKey] = useState<InviteSortKey>('createdAt');
+  const [dir, setDir] = useState<SortDir>('desc');
+
+  const clear = () => { setSearch(''); setCategory('all'); setStatusValue('all'); setDateRange('any'); };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return invites.filter(i => {
+      if (q && !`${i.agencyName} ${i.contactName} ${i.contactEmail}`.toLowerCase().includes(q)) return false;
+      if (category !== 'all' && !i.serviceCategoryIds.includes(category)) return false;
+      if (statusValue !== 'all' && i.status !== statusValue) return false;
+      if (!withinRange(i.createdAt, dateRange)) return false;
+      return true;
+    });
+  }, [invites, search, category, statusValue, dateRange]);
+
+  const sorted = useMemo(() => {
+    const mult = dir === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => (((a[sortKey] ?? '') as string).localeCompare((b[sortKey] ?? '') as string)) * mult);
+  }, [filtered, sortKey, dir]);
+
+  const onSort = (k: InviteSortKey) => {
+    if (k === sortKey) setDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(k); setDir(k === 'agencyName' ? 'asc' : 'desc'); }
+  };
+
+  return (
+    <>
+      <FilterBar
+        search={search} onSearch={setSearch}
+        category={category} onCategory={setCategory}
+        statusValue={statusValue} statusOptions={INVITE_STATUS_OPTIONS} onStatus={setStatusValue}
+        dateRange={dateRange} onDateRange={setDateRange}
+        onClear={clear}
+        resultCount={sorted.length} totalCount={invites.length}
+      />
+      {sorted.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">
+          {invites.length === 0 ? 'No invites yet.' : 'No results match your filters.'}
+        </Card>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <SortHeader label="Agency" sortKey="agencyName" active={sortKey} dir={dir} onSort={onSort} />
+                <TableHead>Contact</TableHead>
+                <SortHeader label="Sent" sortKey="createdAt" active={sortKey} dir={dir} onSort={onSort} />
+                <SortHeader label="Expires" sortKey="expiresAt" active={sortKey} dir={dir} onSort={onSort} />
+                <SortHeader label="Status" sortKey="status" active={sortKey} dir={dir} onSort={onSort} />
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sorted.map(i => {
+                const isOpen = i.status === 'sent' || i.status === 'opened';
+                return (
+                  <TableRow key={i.id}>
+                    <TableCell className="font-medium">{i.agencyName}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">{i.contactName}</div>
+                      <div className="text-xs text-muted-foreground">{i.contactEmail}</div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(i.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{new Date(i.expiresAt).toLocaleDateString()}</TableCell>
+                    <TableCell><Badge variant="secondary">{inviteStatusLabels[i.status]}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {isOpen && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => { AgencyPartnerStore.resendInvite(i.id); toast.success('Invite resent'); }}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Resend
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              const app = AgencyPartnerStore.simulateAcceptance(i.id);
+                              if (app) toast.success(`${i.agencyName} accepted — application ready for review`);
+                            }}>
+                              <PlayCircle className="h-3.5 w-3.5 mr-1" /> Simulate accept
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => { AgencyPartnerStore.revokeInvite(i.id); toast.success('Invite revoked'); }}>
+                              <Ban className="h-3.5 w-3.5 mr-1" /> Revoke
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+    </>
+  );
+}
+
 
 function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [agencyName, setAgencyName] = useState('');
