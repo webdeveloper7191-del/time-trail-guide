@@ -54,6 +54,16 @@ export interface AgencyPartnerApplication {
   decisionBy?: string;
   rejectionReason?: string;
   changeRequestSummary?: string;
+  // Post-approval lifecycle
+  onboardingCompletedAt?: string;
+  onboardingSummary?: {
+    documentsUploaded: number;
+    rateCardCount: number;
+    coverageZoneCount: number;
+    serviceCategoryCount: number;
+  };
+  assignedLocationIds?: string[];
+  activatedAt?: string;
 }
 
 export interface ReviewNote {
