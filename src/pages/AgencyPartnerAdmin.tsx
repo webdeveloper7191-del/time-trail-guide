@@ -202,9 +202,9 @@ function FilterBar({
         />
       </div>
       <Select value={category} onValueChange={onCategory}>
-        <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
+        <SelectTrigger className="w-[180px]"><SelectValue placeholder="Industry" /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All categories</SelectItem>
+          <SelectItem value="all">All industries</SelectItem>
           {mockServiceCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
         </SelectContent>
       </Select>
