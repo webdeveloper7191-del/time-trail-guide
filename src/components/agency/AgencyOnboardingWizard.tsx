@@ -175,7 +175,7 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
       case 0: return businessDetails.legalName && businessDetails.abn && abnValid && businessDetails.contactName && businessDetails.contactEmail;
       case 1: return REQUIRED_DOCUMENTS.every(req => documents.some(d => d.type === req.type && d.status === 'uploaded'));
       case 2: return rateCards.some(r => r.roleName && r.baseRate > 0);
-      case 3: return coverageZones.some(z => z.name && z.postcodes);
+      case 3: return coverageZones.some(z => z.name && z.centrePostcode && z.radiusKm > 0);
       default: return true;
     }
   };
