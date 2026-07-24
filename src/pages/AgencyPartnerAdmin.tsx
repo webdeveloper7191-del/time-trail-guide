@@ -342,6 +342,7 @@ function ApplicationsTable({
                 <TableHead>Contact</TableHead>
                 <TableHead>Industries</TableHead>
                 <SortHeader label="Status" sortKey="status" active={sortKey} dir={dir} onSort={onSort} />
+                {showIntegration && <TableHead>Integration</TableHead>}
                 <SortHeader label="Updated" sortKey="updatedAt" active={sortKey} dir={dir} onSort={onSort} />
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
