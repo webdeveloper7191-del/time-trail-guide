@@ -52,7 +52,8 @@ export function AgencyIntegrationPanel({
       onClose={onClose}
       title={`Integration — ${app.agencyName}`}
       description="API credentials, webhooks, mapping and delivery log."
-      widthClassName="w-full sm:max-w-3xl"
+      size="xl"
+      showFooter={false}
     >
       <div className="px-6 py-3 border-b flex items-center gap-3">
         <ReadinessPill label="Credentials" ok={readiness.credentials} />
