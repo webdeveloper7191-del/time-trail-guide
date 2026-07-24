@@ -124,7 +124,7 @@ export default function AgencyPartnerAdmin() {
         </Tabs>
       </main>
 
-      <InviteDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+      <InviteSheet open={inviteOpen} onOpenChange={setInviteOpen} />
       <ReviewSheet
         applicationId={reviewId}
         onOpenChange={(o) => !o && setReviewId(null)}
