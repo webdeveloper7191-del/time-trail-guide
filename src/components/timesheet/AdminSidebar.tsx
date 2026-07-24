@@ -18,6 +18,7 @@ import {
   CalendarClock,
   CalendarCheck,
   Database,
+  Handshake,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ const navItems = [
   { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
   { icon: Database, label: 'Master Data', to: '/settings/master-data' },
+  { icon: Handshake, label: 'Agency Partners', to: '/settings/agency-partners' },
 ];
 
 export function AdminSidebar() {

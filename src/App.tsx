@@ -18,6 +18,7 @@ import StaffDetail from "./pages/StaffDetail";
 import AddStaffManual from "./pages/AddStaffManual";
 import PaperlessOnboarding from "./pages/PaperlessOnboarding";
 import AgencyPortal from "./pages/AgencyPortal";
+import AgencyPartnerAdmin from "./pages/AgencyPartnerAdmin";
 import PerformanceManagement from "./pages/PerformanceManagement";
 import RecognitionPage from "./pages/RecognitionPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
@@ -58,6 +59,7 @@ const App = () => {
                   <Route path="/workforce/onboarding" element={<PaperlessOnboarding />} />
                   <Route path="/workforce/:id" element={<StaffDetail />} />
                   <Route path="/agency" element={<AgencyPortal />} />
+                  <Route path="/settings/agency-partners" element={<AgencyPartnerAdmin />} />
                   <Route path="/performance" element={<PerformanceManagement />} />
                   <Route path="/performance/:tab" element={<PerformanceManagement />} />
                   <Route path="/recognition" element={<RecognitionPage />} />

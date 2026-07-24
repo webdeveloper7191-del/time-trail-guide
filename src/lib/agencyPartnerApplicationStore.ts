@@ -1,0 +1,278 @@
+// Tenant-admin agency-partner intake store
+// Manages invitations and applications BEFORE the AgencyOnboardingWizard runs.
+// In-memory (pre-Cloud) with subscribe/notify for reactive views.
+
+export type InviteStatus = 'sent' | 'opened' | 'accepted' | 'expired' | 'revoked';
+export type ApplicationStatus =
+  | 'invited'
+  | 'submitted'
+  | 'in_review'
+  | 'changes_requested'
+  | 'approved'
+  | 'rejected';
+
+export interface AgencyPartnerInvite {
+  id: string;
+  agencyName: string;
+  contactName: string;
+  contactEmail: string;
+  serviceCategoryIds: string[];
+  regionNotes?: string;
+  message?: string;
+  token: string;
+  status: InviteStatus;
+  createdAt: string;
+  createdBy: string;
+  expiresAt: string;
+  acceptedAt?: string;
+  applicationId?: string;
+}
+
+export interface AgencyPartnerApplication {
+  id: string;
+  inviteId?: string;
+  agencyName: string;
+  legalEntityName?: string;
+  abn?: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone?: string;
+  website?: string;
+  headquartersCity?: string;
+  serviceCategoryIds: string[];
+  yearsInOperation?: number;
+  candidatePoolSize?: number;
+  insuranceProvider?: string;
+  insuranceExpiry?: string;
+  references?: string;
+  notesFromApplicant?: string;
+  status: ApplicationStatus;
+  submittedAt: string;
+  updatedAt: string;
+  reviewNotes?: ReviewNote[];
+  decisionAt?: string;
+  decisionBy?: string;
+  rejectionReason?: string;
+  changeRequestSummary?: string;
+}
+
+export interface ReviewNote {
+  id: string;
+  at: string;
+  by: string;
+  action:
+    | 'submitted'
+    | 'moved_to_review'
+    | 'changes_requested'
+    | 'approved'
+    | 'rejected'
+    | 'note'
+    | 'invited'
+    | 'reminded';
+  message?: string;
+}
+
+interface State {
+  invites: AgencyPartnerInvite[];
+  applications: AgencyPartnerApplication[];
+}
+
+const state: State = { invites: [], applications: [] };
+const listeners = new Set<() => void>();
+const notify = () => listeners.forEach(l => l());
+
+const uid = (p = 'id') => `${p}_${Math.random().toString(36).slice(2, 10)}`;
+const now = () => new Date().toISOString();
+const addDays = (d: number) => new Date(Date.now() + d * 86400_000).toISOString();
+
+function seed() {
+  if (state.invites.length || state.applications.length) return;
+  const inv: AgencyPartnerInvite = {
+    id: uid('inv'),
+    agencyName: 'Bluewater Nursing Group',
+    contactName: 'Rachel Adams',
+    contactEmail: 'rachel@bluewaternursing.com.au',
+    serviceCategoryIds: ['cat-1'],
+    message: 'Following our chat at the sector event.',
+    token: uid('tok'),
+    status: 'opened',
+    createdAt: addDays(-4),
+    createdBy: 'admin@rostered.ai',
+    expiresAt: addDays(10),
+  };
+  const app: AgencyPartnerApplication = {
+    id: uid('app'),
+    agencyName: 'Northern Suburbs Educators',
+    contactName: 'Priya Menon',
+    contactEmail: 'priya@nsedu.com.au',
+    contactPhone: '+61 400 111 222',
+    abn: '12 345 678 901',
+    website: 'https://nsedu.com.au',
+    headquartersCity: 'Sydney',
+    serviceCategoryIds: ['cat-3'],
+    yearsInOperation: 7,
+    candidatePoolSize: 84,
+    insuranceProvider: 'CGU',
+    insuranceExpiry: addDays(220),
+    references: 'Bright Beginnings, Little Steps ELC',
+    notesFromApplicant: 'Available to start dispatch in 2 weeks.',
+    status: 'submitted',
+    submittedAt: addDays(-2),
+    updatedAt: addDays(-2),
+    reviewNotes: [
+      { id: uid('n'), at: addDays(-2), by: 'system', action: 'submitted', message: 'Application submitted via invite link.' },
+    ],
+  };
+  const rejected: AgencyPartnerApplication = {
+    id: uid('app'),
+    agencyName: 'QuickStaff Co',
+    contactName: 'Sam Lee',
+    contactEmail: 'sam@quickstaff.example',
+    serviceCategoryIds: ['cat-2'],
+    status: 'rejected',
+    submittedAt: addDays(-14),
+    updatedAt: addDays(-9),
+    decisionAt: addDays(-9),
+    decisionBy: 'admin@rostered.ai',
+    rejectionReason: 'Insufficient insurance coverage for target locations.',
+    reviewNotes: [
+      { id: uid('n'), at: addDays(-9), by: 'admin@rostered.ai', action: 'rejected', message: 'Insurance below required threshold.' },
+    ],
+  };
+  state.invites.push(inv);
+  state.applications.push(app, rejected);
+}
+seed();
+
+export const AgencyPartnerStore = {
+  subscribe(fn: () => void) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  },
+  getInvites: () => [...state.invites].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+  getApplications: () => [...state.applications].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+  getApplication: (id: string) => state.applications.find(a => a.id === id),
+
+  createInvite(input: Omit<AgencyPartnerInvite, 'id' | 'token' | 'status' | 'createdAt' | 'expiresAt'> & { expiresInDays?: number }) {
+    const invite: AgencyPartnerInvite = {
+      ...input,
+      id: uid('inv'),
+      token: uid('tok'),
+      status: 'sent',
+      createdAt: now(),
+      expiresAt: addDays(input.expiresInDays ?? 14),
+    };
+    state.invites.unshift(invite);
+    notify();
+    return invite;
+  },
+
+  revokeInvite(id: string) {
+    const i = state.invites.find(x => x.id === id);
+    if (!i) return;
+    i.status = 'revoked';
+    notify();
+  },
+
+  resendInvite(id: string) {
+    const i = state.invites.find(x => x.id === id);
+    if (!i) return;
+    i.status = 'sent';
+    i.createdAt = now();
+    i.expiresAt = addDays(14);
+    notify();
+  },
+
+  // Simulate the agency accepting the invite and submitting an application draft.
+  simulateAcceptance(inviteId: string) {
+    const inv = state.invites.find(x => x.id === inviteId);
+    if (!inv || inv.status === 'accepted' || inv.status === 'revoked') return;
+    const app: AgencyPartnerApplication = {
+      id: uid('app'),
+      inviteId: inv.id,
+      agencyName: inv.agencyName,
+      contactName: inv.contactName,
+      contactEmail: inv.contactEmail,
+      serviceCategoryIds: inv.serviceCategoryIds,
+      status: 'submitted',
+      submittedAt: now(),
+      updatedAt: now(),
+      reviewNotes: [
+        { id: uid('n'), at: now(), by: 'system', action: 'submitted', message: 'Invite accepted; application submitted.' },
+      ],
+    };
+    inv.status = 'accepted';
+    inv.acceptedAt = now();
+    inv.applicationId = app.id;
+    state.applications.unshift(app);
+    notify();
+    return app;
+  },
+
+  moveToReview(appId: string, by: string) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    a.status = 'in_review';
+    a.updatedAt = now();
+    a.reviewNotes = [...(a.reviewNotes ?? []), { id: uid('n'), at: now(), by, action: 'moved_to_review' }];
+    notify();
+  },
+
+  requestChanges(appId: string, by: string, summary: string) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    a.status = 'changes_requested';
+    a.changeRequestSummary = summary;
+    a.updatedAt = now();
+    a.reviewNotes = [...(a.reviewNotes ?? []), { id: uid('n'), at: now(), by, action: 'changes_requested', message: summary }];
+    notify();
+  },
+
+  approve(appId: string, by: string, message?: string) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    a.status = 'approved';
+    a.decisionAt = now();
+    a.decisionBy = by;
+    a.updatedAt = now();
+    a.reviewNotes = [...(a.reviewNotes ?? []), { id: uid('n'), at: now(), by, action: 'approved', message }];
+    notify();
+  },
+
+  reject(appId: string, by: string, reason: string) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    a.status = 'rejected';
+    a.rejectionReason = reason;
+    a.decisionAt = now();
+    a.decisionBy = by;
+    a.updatedAt = now();
+    a.reviewNotes = [...(a.reviewNotes ?? []), { id: uid('n'), at: now(), by, action: 'rejected', message: reason }];
+    notify();
+  },
+
+  addNote(appId: string, by: string, message: string) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    a.updatedAt = now();
+    a.reviewNotes = [...(a.reviewNotes ?? []), { id: uid('n'), at: now(), by, action: 'note', message }];
+    notify();
+  },
+};
+
+export const applicationStatusLabels: Record<ApplicationStatus, string> = {
+  invited: 'Invited',
+  submitted: 'Submitted',
+  in_review: 'In review',
+  changes_requested: 'Changes requested',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
+
+export const inviteStatusLabels: Record<InviteStatus, string> = {
+  sent: 'Sent',
+  opened: 'Opened',
+  accepted: 'Accepted',
+  expired: 'Expired',
+  revoked: 'Revoked',
+};
