@@ -250,13 +250,15 @@ const PENDING_STATUS_OPTIONS = [
 ];
 
 function ApplicationsTable({
-  rows, onOpen, showFilters = false, statusOptions,
+  rows, onOpen, onOpenSection, showFilters = false, statusOptions,
 }: {
   rows: AgencyPartnerApplication[];
   onOpen: (id: string) => void;
+  onOpenSection?: (id: string, section: 'documents' | 'rateCards' | 'coverageZones') => void;
   showFilters?: boolean;
   statusOptions?: { value: string; label: string }[];
 }) {
+
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [statusValue, setStatusValue] = useState('all');
