@@ -555,137 +555,358 @@ function ReviewSheet({ applicationId, onOpenChange }: { applicationId: string | 
   const [changeSummary, setChangeSummary] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [approveMessage, setApproveMessage] = useState('');
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
 
-  useEffect(() => { setNote(''); setChangeSummary(''); setRejectReason(''); setApproveMessage(''); }, [applicationId]);
+  useEffect(() => {
+    setNote(''); setChangeSummary(''); setRejectReason(''); setApproveMessage('');
+    setWizardOpen(false); setAssignOpen(false);
+  }, [applicationId]);
 
   if (!app) return null;
 
   const decided = app.status === 'approved' || app.status === 'rejected';
+  const isApproved = app.status === 'approved';
 
   return (
-    <Sheet open={!!applicationId} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
+    <>
+      <Sheet open={!!applicationId} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" /> {app.agencyName}
+            </SheetTitle>
+            <SheetDescription className="flex flex-wrap items-center gap-2">
+              <Badge className={statusVariant[app.status]}>{applicationStatusLabels[app.status]}</Badge>
+              {app.activatedAt && (
+                <Badge className="bg-emerald-600 text-white">
+                  <Sparkles className="h-3 w-3 mr-1" /> Active partner
+                </Badge>
+              )}
+              <span className="text-xs text-muted-foreground">
+                Submitted {new Date(app.submittedAt).toLocaleDateString()}
+              </span>
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            <section>
+              <h3 className="text-sm font-semibold mb-2">Application details</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Field label="Legal entity" value={app.legalEntityName ?? '—'} />
+                <Field label="ABN" value={app.abn ?? '—'} />
+                <Field label="Contact" value={`${app.contactName} · ${app.contactEmail}`} />
+                <Field label="Phone" value={app.contactPhone ?? '—'} />
+                <Field label="Website" value={app.website ?? '—'} />
+                <Field label="Headquarters" value={app.headquartersCity ?? '—'} />
+                <Field label="Years operating" value={app.yearsInOperation?.toString() ?? '—'} />
+                <Field label="Candidate pool" value={app.candidatePoolSize?.toString() ?? '—'} />
+                <Field label="Insurance" value={app.insuranceProvider ? `${app.insuranceProvider}${app.insuranceExpiry ? ` (exp ${new Date(app.insuranceExpiry).toLocaleDateString()})` : ''}` : '—'} />
+                <Field label="Industries" value={app.serviceCategoryIds.map(id => mockServiceCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || '—'} />
+              </div>
+              {app.references && (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-foreground uppercase">References</div>
+                  <div className="text-sm mt-1">{app.references}</div>
+                </div>
+              )}
+              {app.notesFromApplicant && (
+                <div className="mt-3">
+                  <div className="text-xs text-muted-foreground uppercase">Notes from applicant</div>
+                  <div className="text-sm mt-1 whitespace-pre-wrap">{app.notesFromApplicant}</div>
+                </div>
+              )}
+            </section>
+
+            <Separator />
+
+            {!decided && (
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold">Review actions</h3>
+
+                {app.status === 'submitted' && (
+                  <Button variant="secondary" onClick={() => AgencyPartnerStore.moveToReview(app.id, CURRENT_USER)}>
+                    Move to in-review
+                  </Button>
+                )}
+
+                <Card className="p-3 space-y-2">
+                  <Label className="text-xs">Request changes</Label>
+                  <Textarea rows={2} value={changeSummary} onChange={e => setChangeSummary(e.target.value)} placeholder="What does the agency need to update?" />
+                  <Button size="sm" variant="outline" disabled={!changeSummary.trim()} onClick={() => {
+                    AgencyPartnerStore.requestChanges(app.id, CURRENT_USER, changeSummary.trim());
+                    toast.success('Changes requested');
+                    setChangeSummary('');
+                  }}>
+                    <MessageSquarePlus className="h-4 w-4 mr-1" /> Send change request
+                  </Button>
+                </Card>
+
+                <Card className="p-3 space-y-2 border-emerald-200 bg-emerald-50/50">
+                  <Label className="text-xs">Approve</Label>
+                  <Textarea rows={2} value={approveMessage} onChange={e => setApproveMessage(e.target.value)} placeholder="Optional welcome note. Approval unlocks onboarding & tenant assignment." />
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
+                    AgencyPartnerStore.approve(app.id, CURRENT_USER, approveMessage.trim() || undefined);
+                    toast.success(`${app.agencyName} approved — onboarding wizard unlocked`);
+                  }}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Approve partner
+                  </Button>
+                </Card>
+
+                <Card className="p-3 space-y-2 border-rose-200 bg-rose-50/50">
+                  <Label className="text-xs">Reject</Label>
+                  <Textarea rows={2} value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Reason (shared with applicant)." />
+                  <Button size="sm" variant="destructive" disabled={!rejectReason.trim()} onClick={() => {
+                    AgencyPartnerStore.reject(app.id, CURRENT_USER, rejectReason.trim());
+                    toast.success('Application rejected');
+                  }}>
+                    <XCircle className="h-4 w-4 mr-1" /> Reject application
+                  </Button>
+                </Card>
+              </section>
+            )}
+
+            {decided && (
+              <section className="rounded-md bg-muted p-3 text-sm">
+                Decision by <span className="font-medium">{app.decisionBy}</span> on{' '}
+                {app.decisionAt ? new Date(app.decisionAt).toLocaleString() : '—'}.
+                {app.rejectionReason && <div className="mt-2 text-rose-700">Reason: {app.rejectionReason}</div>}
+              </section>
+            )}
+
+            {isApproved && (
+              <>
+                <Separator />
+                <ActivationWorkflow app={app} onLaunchWizard={() => setWizardOpen(true)} onAssignLocations={() => setAssignOpen(true)} />
+              </>
+            )}
+
+            <Separator />
+
+            <section>
+              <h3 className="text-sm font-semibold mb-2">Activity</h3>
+              <ol className="space-y-2">
+                {(app.reviewNotes ?? []).slice().reverse().map(n => (
+                  <li key={n.id} className="text-sm">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(n.at).toLocaleString()} · {n.by} · <span className="uppercase">{n.action.replace(/_/g, ' ')}</span>
+                    </div>
+                    {n.message && <div className="mt-0.5">{n.message}</div>}
+                  </li>
+                ))}
+              </ol>
+
+              <div className="mt-3 flex gap-2">
+                <Input value={note} onChange={e => setNote(e.target.value)} placeholder="Add internal note…" />
+                <Button variant="outline" disabled={!note.trim()} onClick={() => {
+                  AgencyPartnerStore.addNote(app.id, CURRENT_USER, note.trim());
+                  setNote('');
+                }}>Add</Button>
+              </div>
+            </section>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {isApproved && (
+        <AgencyOnboardingWizard
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+          onComplete={(data) => {
+            AgencyPartnerStore.completeOnboarding(app.id, CURRENT_USER, {
+              documentsUploaded: data.documents.length,
+              rateCardCount: data.rateCards.length,
+              coverageZoneCount: data.coverageZones.length,
+              serviceCategoryCount: data.serviceCategories.length,
+            });
+          }}
+        />
+      )}
+
+      {isApproved && (
+        <AssignLocationsSheet
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          app={app}
+        />
+      )}
+    </>
+  );
+}
+
+function ActivationWorkflow({
+  app, onLaunchWizard, onAssignLocations,
+}: {
+  app: AgencyPartnerApplication;
+  onLaunchWizard: () => void;
+  onAssignLocations: () => void;
+}) {
+  const onboardingDone = !!app.onboardingCompletedAt;
+  const assignedCount = app.assignedLocationIds?.length ?? 0;
+  const assignmentDone = assignedCount > 0;
+  const activated = !!app.activatedAt;
+
+  const Step = ({ n, done, title, desc, action }: { n: number; done: boolean; title: string; desc: string; action: React.ReactNode }) => (
+    <div className="flex gap-3">
+      <div className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-xs font-medium ${done ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground border'}`}>
+        {done ? <CheckCircle2 className="h-4 w-4" /> : n}
+      </div>
+      <div className="flex-1">
+        <div className="text-sm font-medium">{title}</div>
+        <div className="text-xs text-muted-foreground">{desc}</div>
+        <div className="mt-2">{action}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Activation workflow</h3>
+        {activated && <Badge className="bg-emerald-600 text-white text-xs">Active</Badge>}
+      </div>
+
+      <Card className="p-4 space-y-5">
+        <Step
+          n={1}
+          done
+          title="Application approved"
+          desc={`Approved by ${app.decisionBy} on ${app.decisionAt ? new Date(app.decisionAt).toLocaleDateString() : '—'}.`}
+          action={null}
+        />
+
+        <Step
+          n={2}
+          done={onboardingDone}
+          title="Complete onboarding"
+          desc="Business details, compliance documents, rate cards, and coverage zones."
+          action={
+            onboardingDone ? (
+              <div className="text-xs text-muted-foreground">
+                Completed {new Date(app.onboardingCompletedAt!).toLocaleDateString()} ·
+                {' '}Docs {app.onboardingSummary?.documentsUploaded ?? 0} ·
+                {' '}Rate cards {app.onboardingSummary?.rateCardCount ?? 0} ·
+                {' '}Zones {app.onboardingSummary?.coverageZoneCount ?? 0}
+                <Button size="sm" variant="ghost" className="ml-2 h-7" onClick={onLaunchWizard}>Re-open</Button>
+              </div>
+            ) : (
+              <Button size="sm" onClick={onLaunchWizard}>
+                <Rocket className="h-4 w-4 mr-1.5" /> Launch onboarding wizard
+              </Button>
+            )
+          }
+        />
+
+        <Step
+          n={3}
+          done={assignmentDone}
+          title="Assign to tenant locations"
+          desc="Grant this agency permission to receive shift dispatches from selected locations."
+          action={
+            <div className="space-y-2">
+              {assignmentDone && (
+                <div className="flex flex-wrap gap-1">
+                  {(app.assignedLocationIds ?? []).map(id => {
+                    const loc = mockLocations.find(l => l.id === id);
+                    return (
+                      <Badge key={id} variant="secondary" className="text-xs">
+                        <MapPin className="h-3 w-3 mr-1" /> {loc?.name ?? id}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+              <Button
+                size="sm"
+                variant={assignmentDone ? 'outline' : 'default'}
+                disabled={!onboardingDone}
+                onClick={onAssignLocations}
+              >
+                <MapPin className="h-4 w-4 mr-1.5" />
+                {assignmentDone ? 'Manage assignments' : 'Assign to locations'}
+              </Button>
+              {!onboardingDone && (
+                <p className="text-xs text-muted-foreground">Complete onboarding before assigning locations.</p>
+              )}
+            </div>
+          }
+        />
+      </Card>
+    </section>
+  );
+}
+
+function AssignLocationsSheet({
+  open, onOpenChange, app,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  app: AgencyPartnerApplication;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) setSelected(app.assignedLocationIds ?? []);
+  }, [open, app.assignedLocationIds]);
+
+  const toggle = (id: string) =>
+    setSelected(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+
+  const selectAll = () => setSelected(mockLocations.map(l => l.id));
+  const clearAll = () => setSelected([]);
+
+  const save = () => {
+    AgencyPartnerStore.assignLocations(app.id, CURRENT_USER, selected);
+    toast.success(
+      selected.length === 0
+        ? `${app.agencyName} removed from all locations`
+        : `${app.agencyName} assigned to ${selected.length} location${selected.length === 1 ? '' : 's'}`,
+    );
+    onOpenChange(false);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-lg flex flex-col p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b">
           <SheetTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" /> {app.agencyName}
+            <MapPin className="h-4 w-4" /> Assign {app.agencyName}
           </SheetTitle>
           <SheetDescription>
-            <Badge className={statusVariant[app.status]}>{applicationStatusLabels[app.status]}</Badge>
-            <span className="ml-2 text-xs text-muted-foreground">
-              Submitted {new Date(app.submittedAt).toLocaleDateString()}
-            </span>
+            Choose which tenant locations may dispatch shifts to this agency. Assignments can be updated at any time.
           </SheetDescription>
         </SheetHeader>
-
-        <div className="mt-6 space-y-6">
-          <section>
-            <h3 className="text-sm font-semibold mb-2">Application details</h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <Field label="Legal entity" value={app.legalEntityName ?? '—'} />
-              <Field label="ABN" value={app.abn ?? '—'} />
-              <Field label="Contact" value={`${app.contactName} · ${app.contactEmail}`} />
-              <Field label="Phone" value={app.contactPhone ?? '—'} />
-              <Field label="Website" value={app.website ?? '—'} />
-              <Field label="Headquarters" value={app.headquartersCity ?? '—'} />
-              <Field label="Years operating" value={app.yearsInOperation?.toString() ?? '—'} />
-              <Field label="Candidate pool" value={app.candidatePoolSize?.toString() ?? '—'} />
-              <Field label="Insurance" value={app.insuranceProvider ? `${app.insuranceProvider}${app.insuranceExpiry ? ` (exp ${new Date(app.insuranceExpiry).toLocaleDateString()})` : ''}` : '—'} />
-              <Field label="Industries" value={app.serviceCategoryIds.map(id => mockServiceCategories.find(c => c.id === id)?.name).filter(Boolean).join(', ') || '—'} />
-            </div>
-            {app.references && (
-              <div className="mt-3">
-                <div className="text-xs text-muted-foreground uppercase">References</div>
-                <div className="text-sm mt-1">{app.references}</div>
-              </div>
-            )}
-            {app.notesFromApplicant && (
-              <div className="mt-3">
-                <div className="text-xs text-muted-foreground uppercase">Notes from applicant</div>
-                <div className="text-sm mt-1 whitespace-pre-wrap">{app.notesFromApplicant}</div>
-              </div>
-            )}
-          </section>
-
-          <Separator />
-
-          {!decided && (
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold">Review actions</h3>
-
-              {app.status === 'submitted' && (
-                <Button variant="secondary" onClick={() => AgencyPartnerStore.moveToReview(app.id, CURRENT_USER)}>
-                  Move to in-review
-                </Button>
-              )}
-
-              <Card className="p-3 space-y-2">
-                <Label className="text-xs">Request changes</Label>
-                <Textarea rows={2} value={changeSummary} onChange={e => setChangeSummary(e.target.value)} placeholder="What does the agency need to update?" />
-                <Button size="sm" variant="outline" disabled={!changeSummary.trim()} onClick={() => {
-                  AgencyPartnerStore.requestChanges(app.id, CURRENT_USER, changeSummary.trim());
-                  toast.success('Changes requested');
-                  setChangeSummary('');
-                }}>
-                  <MessageSquarePlus className="h-4 w-4 mr-1" /> Send change request
-                </Button>
-              </Card>
-
-              <Card className="p-3 space-y-2 border-emerald-200 bg-emerald-50/50">
-                <Label className="text-xs">Approve</Label>
-                <Textarea rows={2} value={approveMessage} onChange={e => setApproveMessage(e.target.value)} placeholder="Optional welcome note. Approval triggers the onboarding wizard." />
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
-                  AgencyPartnerStore.approve(app.id, CURRENT_USER, approveMessage.trim() || undefined);
-                  toast.success(`${app.agencyName} approved — onboarding wizard unlocked`);
-                }}>
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> Approve partner
-                </Button>
-              </Card>
-
-              <Card className="p-3 space-y-2 border-rose-200 bg-rose-50/50">
-                <Label className="text-xs">Reject</Label>
-                <Textarea rows={2} value={rejectReason} onChange={e => setRejectReason(e.target.value)} placeholder="Reason (shared with applicant)." />
-                <Button size="sm" variant="destructive" disabled={!rejectReason.trim()} onClick={() => {
-                  AgencyPartnerStore.reject(app.id, CURRENT_USER, rejectReason.trim());
-                  toast.success('Application rejected');
-                }}>
-                  <XCircle className="h-4 w-4 mr-1" /> Reject application
-                </Button>
-              </Card>
-            </section>
-          )}
-
-          {decided && (
-            <section className="rounded-md bg-muted p-3 text-sm">
-              Decision by <span className="font-medium">{app.decisionBy}</span> on{' '}
-              {app.decisionAt ? new Date(app.decisionAt).toLocaleString() : '—'}.
-              {app.rejectionReason && <div className="mt-2 text-rose-700">Reason: {app.rejectionReason}</div>}
-            </section>
-          )}
-
-          <Separator />
-
-          <section>
-            <h3 className="text-sm font-semibold mb-2">Activity</h3>
-            <ol className="space-y-2">
-              {(app.reviewNotes ?? []).slice().reverse().map(n => (
-                <li key={n.id} className="text-sm">
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(n.at).toLocaleString()} · {n.by} · <span className="uppercase">{n.action.replace(/_/g, ' ')}</span>
-                  </div>
-                  {n.message && <div className="mt-0.5">{n.message}</div>}
-                </li>
-              ))}
-            </ol>
-
-            <div className="mt-3 flex gap-2">
-              <Input value={note} onChange={e => setNote(e.target.value)} placeholder="Add internal note…" />
-              <Button variant="outline" disabled={!note.trim()} onClick={() => {
-                AgencyPartnerStore.addNote(app.id, CURRENT_USER, note.trim());
-                setNote('');
-              }}>Add</Button>
-            </div>
-          </section>
+        <div className="px-6 py-3 border-b flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">{selected.length} of {mockLocations.length} selected</span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={selectAll}>Select all</Button>
+            <Button size="sm" variant="ghost" onClick={clearAll}>Clear</Button>
+          </div>
         </div>
+        <ScrollArea className="flex-1">
+          <ul className="divide-y">
+            {mockLocations.map(loc => {
+              const on = selected.includes(loc.id);
+              return (
+                <li key={loc.id}>
+                  <label className="flex items-start gap-3 px-6 py-3 cursor-pointer hover:bg-muted/50">
+                    <Checkbox checked={on} onCheckedChange={() => toggle(loc.id)} className="mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{loc.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {[loc.address?.city, loc.address?.state].filter(Boolean).join(', ') || 'No address on file'}
+                      </div>
+                    </div>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </ScrollArea>
+        <SheetFooter className="px-6 py-4 border-t bg-muted/30">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={save}>Save assignments</Button>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );
