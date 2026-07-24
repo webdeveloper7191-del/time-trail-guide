@@ -143,12 +143,20 @@ const AgencyOnboardingWizard = ({ open, onClose, onComplete }: AgencyOnboardingW
   };
 
   const addRateCard = () => {
-    setRateCards(prev => [...prev, { id: `rate-${Date.now()}`, roleName: '', baseRate: 0, casualLoading: 25, weekendRate: 0, publicHolidayRate: 0 }]);
+    setRateCards(prev => [...prev, { id: `rate-${Date.now()}`, roleName: '', awardName: '', classificationIds: [], baseRate: 0, casualLoading: 25, weekendRate: 0, publicHolidayRate: 0 }]);
   };
   const removeRateCard = (id: string) => setRateCards(prev => prev.filter(r => r.id !== id));
-  const updateRateCard = (id: string, field: keyof RateCardEntry, value: string | number) => {
+  const updateRateCard = <K extends keyof RateCardEntry>(id: string, field: K, value: RateCardEntry[K]) => {
     setRateCards(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
+  const toggleClassification = (id: string, classificationId: string) => {
+    setRateCards(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const on = r.classificationIds.includes(classificationId);
+      return { ...r, classificationIds: on ? r.classificationIds.filter(c => c !== classificationId) : [...r.classificationIds, classificationId] };
+    }));
+  };
+
 
   const addCoverageZone = () => {
     setCoverageZones(prev => [...prev, { id: `zone-${Date.now()}`, name: '', postcodes: '', slaMinutes: 60 }]);
