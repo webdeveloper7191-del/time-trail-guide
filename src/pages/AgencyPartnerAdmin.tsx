@@ -24,11 +24,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X, Rocket, MapPin, Sparkles, MoreHorizontal, FileText, DollarSign } from 'lucide-react';
+import { Building2, Mail, RotateCcw, Ban, PlayCircle, CheckCircle2, XCircle, MessageSquarePlus, Send, Search, ArrowUp, ArrowDown, ArrowUpDown, X, Rocket, MapPin, Sparkles, MoreHorizontal, FileText, DollarSign, Plug, AlertTriangle } from 'lucide-react';
 import AgencyOnboardingWizard from '@/components/agency/AgencyOnboardingWizard';
 import { AgencyDocumentsPanel, AgencyRateCardsPanel, AgencyCoverageZonesPanel } from '@/components/agency/AgencySectionPanels';
+import { AgencyIntegrationPanel } from '@/components/agency/AgencyIntegrationPanel';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { mockLocations } from '@/data/mockLocationData';
+import { integrationReadiness } from '@/lib/agencyPartnerApplicationStore';
 
 
 const CURRENT_USER = 'admin@rostered.ai';
@@ -61,7 +63,9 @@ export default function AgencyPartnerAdmin() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [sectionState, setSectionState] = useState<{ id: string; section: 'documents' | 'rateCards' | 'coverageZones' } | null>(null);
+  const [integrationId, setIntegrationId] = useState<string | null>(null);
   const sectionApp = sectionState ? applications.find(a => a.id === sectionState.id) ?? null : null;
+  const integrationApp = integrationId ? applications.find(a => a.id === integrationId) ?? null : null;
   const openSection = (id: string, section: 'documents' | 'rateCards' | 'coverageZones') =>
     setSectionState({ id, section });
 
@@ -118,6 +122,8 @@ export default function AgencyPartnerAdmin() {
               rows={approved}
               onOpen={setReviewId}
               onOpenSection={openSection}
+              onOpenIntegration={setIntegrationId}
+              showIntegration
               showFilters
               statusOptions={[{ value: 'approved', label: applicationStatusLabels.approved }]}
             />
@@ -154,8 +160,34 @@ export default function AgencyPartnerAdmin() {
         open={sectionState?.section === 'coverageZones'}
         onClose={() => setSectionState(null)}
       />
+      <AgencyIntegrationPanel
+        app={integrationApp}
+        open={!!integrationApp}
+        onClose={() => setIntegrationId(null)}
+      />
     </div>
 
+  );
+}
+
+function IntegrationStatusCell({ app }: { app: AgencyPartnerApplication }) {
+  const r = integrationReadiness(app.integration);
+  if (r.overall === 'ready') {
+    return <Badge className="bg-emerald-100 text-emerald-800"><CheckCircle2 className="h-3 w-3 mr-1" />Ready</Badge>;
+  }
+  if (r.overall === 'not_configured') {
+    return <Badge variant="outline" className="text-muted-foreground">Not configured</Badge>;
+  }
+  const missing = [
+    !r.credentials && 'creds',
+    !r.webhook && 'webhook',
+    !r.events && 'events',
+    !r.mapping && 'mapping',
+  ].filter(Boolean).join(', ');
+  return (
+    <Badge className="bg-amber-100 text-amber-800">
+      <AlertTriangle className="h-3 w-3 mr-1" />Partial · {missing}
+    </Badge>
   );
 }
 
@@ -266,11 +298,13 @@ const PENDING_STATUS_OPTIONS = [
 ];
 
 function ApplicationsTable({
-  rows, onOpen, onOpenSection, showFilters = false, statusOptions,
+  rows, onOpen, onOpenSection, onOpenIntegration, showIntegration = false, showFilters = false, statusOptions,
 }: {
   rows: AgencyPartnerApplication[];
   onOpen: (id: string) => void;
   onOpenSection?: (id: string, section: 'documents' | 'rateCards' | 'coverageZones') => void;
+  onOpenIntegration?: (id: string) => void;
+  showIntegration?: boolean;
   showFilters?: boolean;
   statusOptions?: { value: string; label: string }[];
 }) {
@@ -334,6 +368,7 @@ function ApplicationsTable({
                 <TableHead>Contact</TableHead>
                 <TableHead>Industries</TableHead>
                 <SortHeader label="Status" sortKey="status" active={sortKey} dir={dir} onSort={onSort} />
+                {showIntegration && <TableHead>Integration</TableHead>}
                 <SortHeader label="Updated" sortKey="updatedAt" active={sortKey} dir={dir} onSort={onSort} />
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
@@ -358,6 +393,11 @@ function ApplicationsTable({
                   <TableCell>
                     <Badge className={statusVariant[a.status]}>{applicationStatusLabels[a.status]}</Badge>
                   </TableCell>
+                  {showIntegration && (
+                    <TableCell>
+                      <IntegrationStatusCell app={a} />
+                    </TableCell>
+                  )}
                   <TableCell className="text-xs text-muted-foreground">
                     {new Date(a.updatedAt).toLocaleDateString()}
                   </TableCell>
@@ -385,6 +425,14 @@ function ApplicationsTable({
                             <DropdownMenuItem onClick={() => onOpenSection(a.id, 'coverageZones')}>
                               <MapPin className="h-4 w-4 mr-2" />Coverage Zones
                             </DropdownMenuItem>
+                            {onOpenIntegration && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => onOpenIntegration(a.id)}>
+                                  <Plug className="h-4 w-4 mr-2" />Integration Settings
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}

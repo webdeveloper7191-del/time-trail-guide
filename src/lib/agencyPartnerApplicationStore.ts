@@ -71,6 +71,114 @@ export interface AgencyPartnerApplication {
   documents?: DocumentUpload[];
   rateCards?: RateCardEntry[];
   coverageZones?: CoverageZoneEntry[];
+  // Integration configuration (post-approval)
+  integration?: AgencyIntegrationConfig;
+}
+
+// ============================================================================
+// Integration types
+// ============================================================================
+
+export type IntegrationEnv = 'sandbox' | 'production';
+export const ALL_SCOPES = [
+  'shifts.read',
+  'shifts.write',
+  'placements.read',
+  'placements.write',
+  'candidates.read',
+  'candidates.write',
+  'timesheets.read',
+  'invoices.read',
+] as const;
+export type IntegrationScope = typeof ALL_SCOPES[number];
+
+export const ALL_WEBHOOK_EVENTS = [
+  'shift.broadcast',
+  'shift.updated',
+  'shift.cancelled',
+  'placement.confirmed',
+  'placement.cancelled',
+  'timesheet.approved',
+  'invoice.issued',
+] as const;
+export type WebhookEvent = typeof ALL_WEBHOOK_EVENTS[number];
+
+export interface ApiCredential {
+  id: string;
+  clientId: string;
+  clientSecretPreview: string; // e.g. "sk_live_••••••4f9c"
+  env: IntegrationEnv;
+  scopes: IntegrationScope[];
+  createdAt: string;
+  createdBy: string;
+  lastUsedAt?: string;
+  rotatedAt?: string;
+  revokedAt?: string;
+}
+
+export interface RoleMapping {
+  id: string;
+  agencyRoleLabel: string; // free-text label agency sends
+  positionId?: string;     // tenant canonical position id
+  positionLabel?: string;  // denormalised for display
+  confirmedAt?: string;
+  confirmedBy?: string;
+}
+
+export interface NotificationRouting {
+  dispatchFailureRecipients: string[]; // email addresses
+  deadLetterRecipients: string[];
+  channelEmail: boolean;
+  channelInApp: boolean;
+}
+
+export type DeliveryStatus = 'delivered' | 'failed' | 'retrying' | 'dead_letter';
+
+export interface WebhookDelivery {
+  id: string;
+  event: WebhookEvent;
+  attemptedAt: string;
+  status: DeliveryStatus;
+  responseCode?: number;
+  latencyMs?: number;
+  attempt: number;
+  errorMessage?: string;
+  payloadPreview?: string;
+  isTest?: boolean;
+}
+
+export interface AgencyIntegrationConfig {
+  env: IntegrationEnv;
+  credentials: ApiCredential[];
+  webhookUrl?: string;
+  webhookSigningSecretPreview?: string; // "whsec_••••••ab12"
+  webhookVerifiedAt?: string;
+  eventSubscriptions: WebhookEvent[];
+  rateLimitRpm: number;         // requests/min override (default 60)
+  rateLimitBurst: number;       // burst allowance
+  ipAllowlist: string[];        // CIDR or IPs; empty = any
+  roleMappings: RoleMapping[];
+  notifications: NotificationRouting;
+  deliveries: WebhookDelivery[];
+  lastSuccessfulDeliveryAt?: string;
+  lastFailedDeliveryAt?: string;
+}
+
+export function integrationReadiness(cfg?: AgencyIntegrationConfig): {
+  credentials: boolean;
+  webhook: boolean;
+  events: boolean;
+  mapping: boolean;
+  overall: 'not_configured' | 'partial' | 'ready';
+} {
+  const credentials = !!cfg?.credentials.some(c => !c.revokedAt);
+  const webhook = !!cfg?.webhookUrl && !!cfg?.webhookVerifiedAt;
+  const events = !!cfg && cfg.eventSubscriptions.length > 0;
+  const mapping = !!cfg && cfg.roleMappings.length > 0 && cfg.roleMappings.every(m => !!m.positionId);
+  const flags = [credentials, webhook, events, mapping];
+  const done = flags.filter(Boolean).length;
+  const overall = done === 4 ? 'ready' : done === 0 ? 'not_configured' : 'partial';
+  return { credentials, webhook, events, mapping, overall };
 }
 
 
@@ -89,7 +197,8 @@ export interface ReviewNote {
     | 'reminded'
     | 'onboarding_completed'
     | 'locations_assigned'
-    | 'activated';
+    | 'activated'
+    | 'integration_updated';
   message?: string;
 }
 
@@ -332,6 +441,134 @@ export const AgencyPartnerStore = {
       { id: uid('n'), at: now(), by, action: 'note', message: `${labels[section]} updated.` },
     ];
     notify();
+  },
+
+  // ------------------------------------------------------------------ Integration
+  getIntegration(appId: string): AgencyIntegrationConfig {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) throw new Error('Application not found');
+    if (!a.integration) {
+      a.integration = {
+        env: 'sandbox',
+        credentials: [],
+        eventSubscriptions: [],
+        rateLimitRpm: 60,
+        rateLimitBurst: 20,
+        ipAllowlist: [],
+        roleMappings: [],
+        notifications: {
+          dispatchFailureRecipients: [],
+          deadLetterRecipients: [],
+          channelEmail: true,
+          channelInApp: true,
+        },
+        deliveries: [],
+      };
+    }
+    return a.integration;
+  },
+
+  updateIntegration(appId: string, by: string, patch: Partial<AgencyIntegrationConfig>, note?: string) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    const cur = this.getIntegration(appId);
+    a.integration = { ...cur, ...patch };
+    a.updatedAt = now();
+    a.reviewNotes = [
+      ...(a.reviewNotes ?? []),
+      { id: uid('n'), at: now(), by, action: 'integration_updated', message: note ?? 'Integration settings updated.' },
+    ];
+    notify();
+  },
+
+  issueCredentials(appId: string, by: string, env: IntegrationEnv, scopes: IntegrationScope[]) {
+    const cfg = this.getIntegration(appId);
+    const suffix = Math.random().toString(36).slice(2, 6);
+    const cred: ApiCredential = {
+      id: uid('cred'),
+      clientId: `${env === 'production' ? 'live' : 'sbx'}_${uid('cid').slice(4)}`,
+      clientSecretPreview: `sk_${env === 'production' ? 'live' : 'test'}_••••••${suffix}`,
+      env,
+      scopes,
+      createdAt: now(),
+      createdBy: by,
+    };
+    this.updateIntegration(appId, by, { credentials: [cred, ...cfg.credentials] }, `Issued ${env} credentials.`);
+    return cred;
+  },
+
+  rotateClientSecret(appId: string, credentialId: string, by: string) {
+    const cfg = this.getIntegration(appId);
+    const next = cfg.credentials.map(c => c.id === credentialId
+      ? { ...c, clientSecretPreview: `sk_${c.env === 'production' ? 'live' : 'test'}_••••••${Math.random().toString(36).slice(2, 6)}`, rotatedAt: now() }
+      : c);
+    this.updateIntegration(appId, by, { credentials: next }, 'Client secret rotated.');
+  },
+
+  revokeCredential(appId: string, credentialId: string, by: string) {
+    const cfg = this.getIntegration(appId);
+    const next = cfg.credentials.map(c => c.id === credentialId ? { ...c, revokedAt: now() } : c);
+    this.updateIntegration(appId, by, { credentials: next }, 'Credential revoked.');
+  },
+
+  rotateWebhookSecret(appId: string, by: string) {
+    const suffix = Math.random().toString(36).slice(2, 6);
+    this.updateIntegration(appId, by, {
+      webhookSigningSecretPreview: `whsec_••••••${suffix}`,
+      webhookVerifiedAt: undefined,
+    }, 'Webhook signing secret rotated — resend test to re-verify.');
+  },
+
+  recordDelivery(appId: string, delivery: Omit<WebhookDelivery, 'id'>) {
+    const a = state.applications.find(x => x.id === appId);
+    if (!a) return;
+    const cfg = this.getIntegration(appId);
+    const d: WebhookDelivery = { ...delivery, id: uid('dlv') };
+    const deliveries = [d, ...cfg.deliveries].slice(0, 200);
+    const patch: Partial<AgencyIntegrationConfig> = { deliveries };
+    if (d.status === 'delivered') patch.lastSuccessfulDeliveryAt = d.attemptedAt;
+    if (d.status === 'failed' || d.status === 'dead_letter') patch.lastFailedDeliveryAt = d.attemptedAt;
+    a.integration = { ...cfg, ...patch };
+    a.updatedAt = now();
+    notify();
+  },
+
+  sendTestDelivery(appId: string, event: WebhookEvent, by: string) {
+    const cfg = this.getIntegration(appId);
+    if (!cfg.webhookUrl) throw new Error('Set a webhook URL first.');
+    const success = Math.random() > 0.15;
+    this.recordDelivery(appId, {
+      event,
+      attemptedAt: now(),
+      status: success ? 'delivered' : 'failed',
+      responseCode: success ? 200 : 500,
+      latencyMs: 80 + Math.floor(Math.random() * 400),
+      attempt: 1,
+      isTest: true,
+      errorMessage: success ? undefined : 'Endpoint returned 500 Internal Server Error',
+      payloadPreview: `{"event":"${event}","test":true}`,
+    });
+    if (success) {
+      this.updateIntegration(appId, by, { webhookVerifiedAt: now() }, `Test ${event} delivered — webhook verified.`);
+    }
+    return success;
+  },
+
+  retryDelivery(appId: string, deliveryId: string, by: string) {
+    const cfg = this.getIntegration(appId);
+    const original = cfg.deliveries.find(d => d.id === deliveryId);
+    if (!original) return;
+    const success = Math.random() > 0.3;
+    this.recordDelivery(appId, {
+      event: original.event,
+      attemptedAt: now(),
+      status: success ? 'delivered' : 'failed',
+      responseCode: success ? 200 : 502,
+      latencyMs: 100 + Math.floor(Math.random() * 500),
+      attempt: original.attempt + 1,
+      errorMessage: success ? undefined : 'Endpoint returned 502 Bad Gateway',
+      payloadPreview: original.payloadPreview,
+    });
   },
 };
 
