@@ -1598,6 +1598,24 @@ export default function RosterScheduler() {
     toast.success(`Auto-assigned ${newShifts.length} shift(s)`);
   };
 
+  // Apply a demand-driven optimisation plan (Optimize screen → Demand optimiser)
+  const handleApplyOptimizationPlan = (
+    newShifts: Omit<Shift, 'id'>[],
+    releaseShiftIds: string[],
+  ) => {
+    const withIds: Shift[] = newShifts.map((s, i) => ({
+      ...s,
+      id: `shift-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 6)}`,
+    }));
+    const releaseSet = new Set(releaseShiftIds);
+    setShifts(
+      prev => [...prev.filter(s => !releaseSet.has(s.id)), ...withIds],
+      `Applied demand optimisation (+${withIds.length} / -${releaseShiftIds.length})`,
+      'bulk',
+    );
+  };
+
+
   const allShiftTemplates = [...defaultShiftTemplates, ...shiftTemplates];
 
   const centreOptions = [
