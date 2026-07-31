@@ -43,6 +43,8 @@ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DemandOptimizerTab } from '@/components/roster/DemandOptimizerTab';
 
 interface WeeklyOptimizationReportProps {
   shifts: Shift[];
@@ -54,6 +56,8 @@ interface WeeklyOptimizationReportProps {
   absences: StaffAbsence[];
   isOpen: boolean;
   onClose: () => void;
+  onApplyPlan?: (newShifts: Omit<Shift, 'id'>[], releaseShiftIds: string[]) => void;
+
 }
 
 interface RoomDayMetrics {
@@ -99,7 +103,8 @@ export function WeeklyOptimizationReport({
   analyticsData,
   absences,
   isOpen, 
-  onClose 
+  onClose,
+  onApplyPlan
 }: WeeklyOptimizationReportProps) {
   const centreShifts = shifts.filter(s => s.centreId === centre.id);
   const avgHourlyRate = staff.length > 0 
@@ -433,7 +438,24 @@ export function WeeklyOptimizationReport({
       size="4xl"
       showFooter={false}
     >
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList className="mb-3">
+          <TabsTrigger value="summary">Summary & insights</TabsTrigger>
+          <TabsTrigger value="optimize">Demand optimiser</TabsTrigger>
+        </TabsList>
+        <TabsContent value="optimize" className="mt-0">
+          <DemandOptimizerTab
+            shifts={shifts}
+            staff={staff}
+            centre={centre}
+            dates={dates}
+            analyticsData={analyticsData}
+            onApplyPlan={onApplyPlan}
+          />
+        </TabsContent>
+        <TabsContent value="summary" className="mt-0">
       <div className="space-y-4">
+
         {/* Key Metrics Overview */}
         <FormSection title="Key Metrics">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -757,7 +779,10 @@ export function WeeklyOptimizationReport({
               />
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </PrimaryOffCanvas>
+
   );
 }
 
