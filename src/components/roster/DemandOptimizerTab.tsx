@@ -120,7 +120,7 @@ export function DemandOptimizerTab({
 
   return (
     <div className="space-y-4">
-      <FormSection title="Optimisation inputs" description="Demand curves are interpolated to 15-minute intervals, converted into shift requirements using room ratios, then staffed by the Timefold solver.">
+      <FormSection title="Optimisation inputs">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Goal</Label>
@@ -208,7 +208,7 @@ export function DemandOptimizerTab({
             </div>
           </FormSection>
 
-          <FormSection title={`Proposed shifts (${proposals.length})`} description="Requirements the current roster does not cover. Selected rows are created when you apply.">
+          <FormSection title={`Proposed shifts (${proposals.length})`}>
             {proposals.length === 0 ? (
               <div className="text-sm text-muted-foreground flex items-center gap-2 py-4">
                 <CheckCircle2 className="h-4 w-4 text-success" /> Roster already covers every demand-driven requirement.
@@ -230,7 +230,7 @@ export function DemandOptimizerTab({
           </FormSection>
 
           {result.releaseCandidates.length > 0 && (
-            <FormSection title={`Surplus shifts (${result.releaseCandidates.length})`} description="Rostered shifts with no matching demand requirement. Select to release them.">
+            <FormSection title={`Surplus shifts (${result.releaseCandidates.length})`}>
               <ScrollArea className="max-h-64">
                 <div className="space-y-2 pr-2">
                   {result.releaseCandidates.map(rc => (
