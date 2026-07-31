@@ -35,7 +35,9 @@ import {
   convertEnvelopesToRosterShifts,
 } from '@/lib/demandShiftEngine';
 import { DemandCurveChart } from '@/components/roster/DemandCurveChart';
+import { DemandOptimizerTab } from '@/components/roster/DemandOptimizerTab';
 import { demandApi } from '@/lib/api/demandApi';
+
 import {
   scoreStaffForShift,
   batchAssignStaff,
