@@ -674,7 +674,12 @@ export function WeeklyOptimizationReport({
                                   <button
                                     type="button"
                                     title="View required vs scheduled detail"
-                                    onClick={() => setDrillSelection({ roomId: room.id, date: dateStr })}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDrillSelection({ roomId: room.id, date: dateStr });
+                                    }}
                                     className={cn(
                                     "inline-flex flex-col items-center rounded px-2 py-1 min-w-[50px] transition-colors hover:ring-2 hover:ring-primary/40 cursor-pointer",
                                     dayMetric.staffDiff > 0 && "bg-warning/10",

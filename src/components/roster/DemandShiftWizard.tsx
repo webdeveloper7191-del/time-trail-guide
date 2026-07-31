@@ -354,14 +354,46 @@ export function DemandShiftWizard({
       }
 
       setResult(genResult);
-      setRemovedIds(new Set());
+      // Coverage-aware de-dupe: mirror the Demand Optimiser's matching rule so
+      // the wizard never proposes a shift the roster already covers (>=60% overlap).
+      const toMin = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+      const usedShiftIds = new Set<string>();
+      const covered = new Set<string>();
+      genResult.shiftEnvelopes.forEach(env => {
+        const match = existingShifts
+          .filter(s =>
+            !s.isAbsent &&
+            !usedShiftIds.has(s.id) &&
+            s.roomId === env.roomId &&
+            s.date === env.date,
+          )
+          .map(s => {
+            const start = Math.max(toMin(s.startTime), toMin(env.startTime));
+            const end = Math.min(toMin(s.endTime), toMin(env.endTime));
+            const span = Math.max(1, toMin(env.endTime) - toMin(env.startTime));
+            return { s, ratio: Math.max(0, end - start) / span };
+          })
+          .filter(c => c.ratio >= 0.6)
+          .sort((a, b) => b.ratio - a.ratio)[0];
+        if (match) {
+          usedShiftIds.add(match.s.id);
+          covered.add(env.id);
+        }
+      });
+      setRemovedIds(covered);
       setAssignments(new Map());
       setStep('preview');
-      toast.success(`Generated ${genResult.shiftEnvelopes.length} shift envelopes`);
+      toast.success(
+        `Generated ${genResult.shiftEnvelopes.length} shift envelopes` +
+        (covered.size ? ` · ${covered.size} already covered by the roster (deselected)` : ''),
+      );
 
       // Auto-assign if enabled
       if (autoAssignEnabled && staff.length > 0) {
-        runAutoAssignment(genResult.shiftEnvelopes);
+        runAutoAssignment(genResult.shiftEnvelopes.filter(e => !covered.has(e.id)));
       }
     } catch (err) {
       console.error('Shift generation failed:', err);
@@ -369,7 +401,7 @@ export function DemandShiftWizard({
     } finally {
       setIsLoading(false);
     }
-  }, [centreRooms, selectedRoomId, demandData, effectiveDates, config, useApi, centreId, autoAssignEnabled, staff]);
+  }, [centreRooms, selectedRoomId, demandData, effectiveDates, config, useApi, centreId, autoAssignEnabled, staff, existingShifts]);
 
   const runAutoAssignment = useCallback((envelopes: ShiftEnvelope[]) => {
     if (staff.length === 0) {
