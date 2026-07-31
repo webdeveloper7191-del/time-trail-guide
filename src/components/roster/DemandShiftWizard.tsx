@@ -615,6 +615,31 @@ export function DemandShiftWizard({
     ];
   }, [step, handleGenerate, handleApply, result, removedIds, isLoading]);
 
+  const optimiserDates = useMemo(
+    () => effectiveDates.map(d => new Date(`${d}T00:00:00`)),
+    [effectiveDates],
+  );
+
+  const MODE_OPTIONS: { key: DemandMode; label: string; icon: React.ElementType; blurb: string; creates: string; releases: string }[] = [
+    {
+      key: 'generate',
+      label: 'Generate shifts from demand',
+      icon: Sparkles,
+      blurb: 'Builds a fresh set of shifts straight from the demand curve, then optionally auto-assigns staff.',
+      creates: 'Creates new draft/open shifts for every uncovered demand envelope',
+      releases: 'Never removes existing shifts',
+    },
+    {
+      key: 'optimise',
+      label: 'Demand optimiser',
+      icon: Gauge,
+      blurb: 'Compares the demand curve against your current roster and only changes what is out of balance.',
+      creates: 'Creates shifts for gaps only, filled permanent-first by the solver',
+      releases: 'Flags surplus shifts with no matching demand for release',
+    },
+  ];
+
+
   const keptCount = result ? result.shiftEnvelopes.length - removedIds.size : 0;
   const assignedCount = assignments.size;
 
