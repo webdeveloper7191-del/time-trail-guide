@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import MuiDialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
+import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -58,16 +60,40 @@ export function RoomDayDrillDownDialog({
   });
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="tracking-tight">
+    <MuiDialog
+      open
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      sx={{ zIndex: 2000 }}
+      PaperProps={{
+        sx: {
+          backgroundColor: 'hsl(var(--background))',
+          color: 'hsl(var(--foreground))',
+          borderRadius: '0.75rem',
+          border: '1px solid hsl(var(--border))',
+        },
+      }}
+      slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.6)' } } }}
+    >
+      <div className="relative p-6 space-y-4">
+        <IconButton
+          onClick={onClose}
+          size="small"
+          aria-label="Close"
+          sx={{ position: 'absolute', right: 12, top: 12, color: 'hsl(var(--muted-foreground))' }}
+        >
+          <X className="h-4 w-4" />
+        </IconButton>
+        <div className="pr-8">
+          <h2 className="text-lg font-semibold tracking-tight">
             {room?.name ?? 'Area'} · {dateLabel}
-          </DialogTitle>
-          <DialogDescription>
+          </h2>
+          <p className="text-sm text-muted-foreground">
             {room ? ageGroupLabels[room.ageGroup] : ''} — required vs scheduled staff, breach slots and contributing shifts.
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
+
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Tile icon={<Users className="h-4 w-4" />} label="Peak required" value={`${maxRequired}`} sub={`${slots.length} intervals`} />
@@ -167,8 +193,8 @@ export function RoomDayDrillDownDialog({
             </section>
           </div>
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </MuiDialog>
   );
 }
 
