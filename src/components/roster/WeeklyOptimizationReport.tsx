@@ -103,7 +103,8 @@ export function WeeklyOptimizationReport({
   analyticsData,
   absences,
   isOpen, 
-  onClose 
+  onClose,
+  onApplyPlan
 }: WeeklyOptimizationReportProps) {
   const centreShifts = shifts.filter(s => s.centreId === centre.id);
   const avgHourlyRate = staff.length > 0 
