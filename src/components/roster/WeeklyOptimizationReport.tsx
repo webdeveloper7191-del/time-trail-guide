@@ -43,6 +43,8 @@ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DemandOptimizerTab } from '@/components/roster/DemandOptimizerTab';
 
 interface WeeklyOptimizationReportProps {
   shifts: Shift[];
@@ -54,6 +56,8 @@ interface WeeklyOptimizationReportProps {
   absences: StaffAbsence[];
   isOpen: boolean;
   onClose: () => void;
+  onApplyPlan?: (newShifts: Omit<Shift, 'id'>[], releaseShiftIds: string[]) => void;
+
 }
 
 interface RoomDayMetrics {
