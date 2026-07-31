@@ -3,14 +3,28 @@
  * Converts 15-minute interval demand data + room ratios into optimized open shifts.
  */
 
+import { QualificationType } from '@/types/roster';
+
 export interface DemandInterval {
   time: string;          // HH:mm format
   minuteOfDay: number;   // 0–1439
   bookedChildren: number;
   predictedAttendance: number;
+  /** Historical attendance for the same room/slot (actuals) */
+  historicalAttendance: number;
+  /** Known child absences removed from demand */
+  childAbsences: number;
+  /** Children actually used to drive the ratio after blending + absences */
+  effectiveChildren: number;
   requiredStaff: number;
+  /** Portion of requiredStaff that must hold a qualification (Diploma/ECT) */
+  requiredQualifiedStaff: number;
   scheduledStaff: number;
-  surplus: number;       // scheduledStaff - requiredStaff
+  /** Rostered staff known to be absent (leave/sick) in this interval */
+  absentStaff: number;
+  /** scheduledStaff net of absences */
+  availableStaff: number;
+  surplus: number;       // availableStaff - requiredStaff
 }
 
 export interface RoomDemandProfile {
@@ -23,6 +37,8 @@ export interface RoomDemandProfile {
   requiredRatio: number; // children per educator
   intervals: DemandInterval[];
 }
+
+export type StaffTier = 'qualified' | 'support';
 
 export interface ShiftEnvelope {
   id: string;
@@ -37,6 +53,12 @@ export interface ShiftEnvelope {
   requiredStaff: number;     // peak required during this envelope
   averageDemand: number;     // avg children during envelope
   peakDemand: number;        // max children during envelope
+  /** Which tier of the ratio this shift covers */
+  tier: StaffTier;
+  /** Qualifications a staff member must hold to fill this shift */
+  requiredQualifications: QualificationType[];
+  /** Which pool the engine prefers first */
+  preferredPool: 'permanent' | 'casual' | 'any';
   priority: 'critical' | 'high' | 'normal' | 'low';
   source: 'demand-engine';
   color: string;             // for visual display
