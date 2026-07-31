@@ -30,6 +30,10 @@ const shiftHours = (s: Shift) => {
   return Math.max(0, (eh * 60 + em - (sh * 60 + sm) - (s.breakMinutes || 0))) / 60;
 };
 
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn('animate-pulse rounded bg-muted', className)} />
+);
+
 export function RoomDayDrillDownDialog({
   selection,
   onClose,
@@ -38,6 +42,20 @@ export function RoomDayDrillDownDialog({
   staff,
   analyticsData,
 }: RoomDayDrillDownDialogProps) {
+  const [computing, setComputing] = useState(false);
+
+  // Recompute whenever a new room/day is opened — show a skeleton while the
+  // interval breakdown, breach slots and contributing shifts are derived.
+  useEffect(() => {
+    if (!selection) {
+      setComputing(false);
+      return;
+    }
+    setComputing(true);
+    const t = window.setTimeout(() => setComputing(false), 250);
+    return () => window.clearTimeout(t);
+  }, [selection?.roomId, selection?.date]);
+
   const slots = useMemo(() => {
     if (!selection) return [];
     return analyticsData
@@ -58,6 +76,7 @@ export function RoomDayDrillDownDialog({
   const dateLabel = new Date(`${selection.date}T00:00:00`).toLocaleDateString('en-AU', {
     weekday: 'long', day: 'numeric', month: 'short',
   });
+
 
   return (
     <MuiDialog
