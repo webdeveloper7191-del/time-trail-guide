@@ -65,17 +65,24 @@ export function RoomDayDrillDownDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      sx={{ zIndex: 2000 }}
+      // Rendered inside the Radix Sheet subtree: portalling to <body> gets
+      // blocked by Radix's pointer-events lock and focus trap.
+      disablePortal
+      disableEnforceFocus
+      disableScrollLock
+      sx={{ zIndex: 2000, pointerEvents: 'auto' }}
       PaperProps={{
         sx: {
           backgroundColor: 'hsl(var(--background))',
           color: 'hsl(var(--foreground))',
           borderRadius: '0.75rem',
           border: '1px solid hsl(var(--border))',
+          pointerEvents: 'auto',
         },
       }}
-      slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.6)' } } }}
+      slotProps={{ backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.6)', pointerEvents: 'auto' } } }}
     >
+
       <div className="relative p-6 space-y-4">
         <IconButton
           onClick={onClose}
