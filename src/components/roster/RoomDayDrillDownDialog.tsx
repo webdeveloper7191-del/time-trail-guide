@@ -120,8 +120,37 @@ export function RoomDayDrillDownDialog({
           </p>
         </div>
 
-
+        {computing ? (
+          <div className="space-y-4" aria-busy="true" aria-live="polite">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="rounded-lg border border-border p-3 space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-32" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-40" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-28 rounded-full" />
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Computing breach slots and contributing shifts…</p>
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
           <Tile icon={<Users className="h-4 w-4" />} label="Peak required" value={`${maxRequired}`} sub={`${slots.length} intervals`} />
           <Tile icon={<Clock className="h-4 w-4" />} label="Hours scheduled" value={`${Math.round(totalHours * 10) / 10}h`} sub={`${daySlots.length} shift(s)`} />
           <Tile
