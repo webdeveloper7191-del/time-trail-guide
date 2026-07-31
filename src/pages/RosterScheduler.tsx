@@ -3023,6 +3023,8 @@ export default function RosterScheduler() {
         absences={staffAbsences}
         isOpen={showOptimizationReport}
         onClose={() => setShowOptimizationReport(false)}
+        onApplyPlan={handleApplyOptimizationPlan}
+
       />
 
       <NqfComplianceDashboard
