@@ -187,10 +187,13 @@ export function DemandShiftWizard({
   existingShifts,
   staff = [],
   onApplyShifts,
+  onApplyPlan,
   preSelectedRoomId,
 }: DemandShiftWizardProps) {
+  const [mode, setMode] = useState<DemandMode>('generate');
   const [step, setStep] = useState<WizardStep>('configure');
   const [selectedRoomId, setSelectedRoomId] = useState<string>(preSelectedRoomId || 'all');
+
 
   // Sync preSelectedRoomId when wizard opens
   useEffect(() => {
