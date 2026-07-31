@@ -50,9 +50,27 @@ const SHIFT_COLORS = [
 
 // ============= STEP 1: INTERPOLATION =============
 
+const EMPTY_INTERVAL = (min: number): DemandInterval => ({
+  time: minutesToTime(min),
+  minuteOfDay: min,
+  bookedChildren: 0,
+  predictedAttendance: 0,
+  historicalAttendance: 0,
+  childAbsences: 0,
+  effectiveChildren: 0,
+  requiredStaff: 0,
+  requiredQualifiedStaff: 0,
+  scheduledStaff: 0,
+  absentStaff: 0,
+  availableStaff: 0,
+  surplus: 0,
+});
+
 /**
- * Interpolates coarse demand data (4 time slots) into 15-minute intervals.
- * Uses smooth interpolation to create realistic demand curves.
+ * Interpolates coarse demand data into 15-minute intervals and derives the
+ * staffing requirement from:
+ *   ratio  ×  (bookings blended with attendance history, less child absences)
+ * plus the qualification split, with rostered-but-absent staff removed from supply.
  */
 function interpolateDemandToIntervals(
   demandData: DemandAnalyticsData[],
@@ -68,18 +86,7 @@ function interpolateDemandToIntervals(
   const roomDemand = demandData.filter(d => d.roomId === room.id && d.date === date);
   
   if (roomDemand.length === 0) {
-    // No demand data — generate empty intervals
-    for (let min = startMin; min < endMin; min += 15) {
-      intervals.push({
-        time: minutesToTime(min),
-        minuteOfDay: min,
-        bookedChildren: 0,
-        predictedAttendance: 0,
-        requiredStaff: 0,
-        scheduledStaff: 0,
-        surplus: 0,
-      });
-    }
+    for (let min = startMin; min < endMin; min += 15) intervals.push(EMPTY_INTERVAL(min));
     return intervals;
   }
   
@@ -98,15 +105,7 @@ function interpolateDemandToIntervals(
     const slot = slotMap.find(s => min >= s.startMin && min < s.endMin);
     
     if (!slot) {
-      intervals.push({
-        time: minutesToTime(min),
-        minuteOfDay: min,
-        bookedChildren: 0,
-        predictedAttendance: 0,
-        requiredStaff: 0,
-        scheduledStaff: 0,
-        surplus: 0,
-      });
+      intervals.push(EMPTY_INTERVAL(min));
       continue;
     }
     
@@ -115,7 +114,6 @@ function interpolateDemandToIntervals(
     const progressInSlot = (min - slot.startMin) / slotDuration;
     
     // Create a realistic curve: ramp up in first slot, peak mid-morning, taper off
-    // Use slot position within the day for shaping
     const hourOfDay = min / 60;
     let shapeFactor: number;
     
@@ -126,24 +124,77 @@ function interpolateDemandToIntervals(
     else if (hourOfDay < 16) shapeFactor = 0.7 + seededRandom(min + 2) * 0.15; // Afternoon
     else shapeFactor = 0.5 - (progressInSlot * 0.3);                   // Evening: tapering
     
+    // --- Booking signal -----------------------------------------------------
     const booked = Math.max(0, Math.round(d.bookedChildren * shapeFactor));
     const attendanceRate = config.attendanceRateOverride ?? (d.attendanceRate / 100);
     const predicted = Math.round(booked * attendanceRate);
     
-    // Step 2: Calculate required staff using ratio
-    const childCount = config.roundingStrategy === 'ceiling' ? booked : predicted;
-    const required = childCount > 0 ? Math.ceil(childCount / room.requiredRatio) : 0;
+    // --- Attendance history signal -----------------------------------------
+    const historical = Math.max(0, Math.round((d.historicalAttendance || 0) * shapeFactor));
     
+    // --- Child absences -----------------------------------------------------
+    const childAbsences = config.subtractChildAbsences
+      ? Math.max(0, Math.round((d.childAbsences || 0) * shapeFactor))
+      : 0;
+    
+    // --- Blend into the effective children count ---------------------------
+    let base: number;
+    switch (config.demandBasis) {
+      case 'booked':
+        base = booked;
+        break;
+      case 'predicted':
+        base = predicted;
+        break;
+      case 'historical':
+        base = historical || predicted;
+        break;
+      case 'blended':
+      default: {
+        const w = Math.min(1, Math.max(0, config.historicalWeight));
+        base = historical > 0
+          ? Math.round(predicted * (1 - w) + historical * w)
+          : predicted;
+        break;
+      }
+    }
+    // Legacy switch still honoured: 'ceiling' means never plan below bookings
+    if (config.roundingStrategy === 'ceiling') base = Math.max(base, predicted);
+    
+    const effectiveChildren = Math.max(0, base - childAbsences);
+    
+    // --- Ratio → required staff --------------------------------------------
+    const required = effectiveChildren > 0
+      ? Math.max(1, Math.ceil(effectiveChildren / room.requiredRatio))
+      : 0;
+    
+    // --- Qualification split -------------------------------------------------
+    const ratioQualified = Math.ceil(required * Math.min(1, Math.max(0, config.qualifiedStaffRatio)));
+    const requiredQualified = required > 0
+      ? Math.min(required, Math.max(room.minQualifiedStaff > 0 ? 1 : 0, ratioQualified))
+      : 0;
+    
+    // --- Supply: rostered staff net of absences -----------------------------
     const scheduled = Math.round(d.scheduledStaff * shapeFactor);
+    const absentStaff = config.honourStaffAbsences
+      ? (d.staffAbsences || []).filter(a => !a.roomId || a.roomId === room.id).length
+      : 0;
+    const availableStaff = Math.max(0, scheduled - absentStaff);
     
     intervals.push({
       time: minutesToTime(min),
       minuteOfDay: min,
       bookedChildren: booked,
       predictedAttendance: predicted,
-      requiredStaff: Math.max(required, childCount > 0 ? 1 : 0), // At least 1 if any children
+      historicalAttendance: historical,
+      childAbsences,
+      effectiveChildren,
+      requiredStaff: required,
+      requiredQualifiedStaff: requiredQualified,
       scheduledStaff: scheduled,
-      surplus: scheduled - required,
+      absentStaff,
+      availableStaff,
+      surplus: availableStaff - required,
     });
   }
   
@@ -190,6 +241,18 @@ function generateShiftEnvelopes(
   // Find the peak required staff across all intervals
   const peakRequired = Math.max(...intervals.map(i => i.requiredStaff), 0);
   if (peakRequired === 0) return envelopes;
+  
+  // The lowest layers must be filled by qualified staff (ratio + room minimum)
+  const peakQualified = Math.max(...intervals.map(i => i.requiredQualifiedStaff), 0);
+  const tierOf = (layer: number): 'qualified' | 'support' =>
+    layer < peakQualified ? 'qualified' : 'support';
+  const qualsFor = (layer: number) =>
+    tierOf(layer) === 'qualified'
+      ? Array.from(new Set([...config.baselineQualifications, ...config.qualifiedTierQualifications]))
+      : [...config.baselineQualifications];
+  // Deep coverage layers are the volatile ones → best served by the casual pool
+  const poolFor = (layer: number): 'permanent' | 'casual' | 'any' =>
+    !config.preferPermanentFirst ? 'any' : layer < Math.max(1, peakQualified) ? 'permanent' : 'any';
   
   // Generate shifts layer by layer (one per staff member needed)
   for (let layer = 0; layer < peakRequired; layer++) {
@@ -259,7 +322,10 @@ function generateShiftEnvelopes(
             requiredStaff: 1,
             averageDemand: Math.round(avgDemand * 10) / 10,
             peakDemand,
-            priority: layer === 0 ? 'critical' : durationMin >= 360 ? 'high' : 'normal',
+            tier: tierOf(layer),
+            requiredQualifications: qualsFor(layer) as ShiftEnvelope['requiredQualifications'],
+            preferredPool: poolFor(layer),
+            priority: tierOf(layer) === 'qualified' ? 'critical' : durationMin >= 360 ? 'high' : 'normal',
             source: 'demand-engine',
             color: SHIFT_COLORS[(colorIndex + layer) % SHIFT_COLORS.length],
           });
@@ -296,7 +362,10 @@ function generateShiftEnvelopes(
               requiredStaff: 1,
               averageDemand: 0,
               peakDemand: 0,
-              priority: layer === 0 ? 'critical' : 'high',
+              tier: tierOf(layer),
+              requiredQualifications: qualsFor(layer) as ShiftEnvelope['requiredQualifications'],
+              preferredPool: poolFor(layer),
+              priority: tierOf(layer) === 'qualified' ? 'critical' : 'high',
               source: 'demand-engine',
               color: SHIFT_COLORS[(colorIndex + layer) % SHIFT_COLORS.length],
             });
