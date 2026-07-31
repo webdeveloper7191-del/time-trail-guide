@@ -242,6 +242,18 @@ function generateShiftEnvelopes(
   const peakRequired = Math.max(...intervals.map(i => i.requiredStaff), 0);
   if (peakRequired === 0) return envelopes;
   
+  // The lowest layers must be filled by qualified staff (ratio + room minimum)
+  const peakQualified = Math.max(...intervals.map(i => i.requiredQualifiedStaff), 0);
+  const tierOf = (layer: number): 'qualified' | 'support' =>
+    layer < peakQualified ? 'qualified' : 'support';
+  const qualsFor = (layer: number) =>
+    tierOf(layer) === 'qualified'
+      ? Array.from(new Set([...config.baselineQualifications, ...config.qualifiedTierQualifications]))
+      : [...config.baselineQualifications];
+  // Deep coverage layers are the volatile ones → best served by the casual pool
+  const poolFor = (layer: number): 'permanent' | 'casual' | 'any' =>
+    !config.preferPermanentFirst ? 'any' : layer < Math.max(1, peakQualified) ? 'permanent' : 'any';
+  
   // Generate shifts layer by layer (one per staff member needed)
   for (let layer = 0; layer < peakRequired; layer++) {
     // Find contiguous blocks where this layer of staff is needed
