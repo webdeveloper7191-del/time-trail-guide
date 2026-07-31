@@ -60,10 +60,14 @@ interface DemandShiftWizardProps {
   existingShifts: Shift[];
   staff?: StaffMember[];
   onApplyShifts: (shifts: Omit<Shift, 'id'>[]) => void;
+  /** Required for Demand Optimiser mode (adds new shifts and releases surplus ones) */
+  onApplyPlan?: (newShifts: Omit<Shift, 'id'>[], releaseShiftIds: string[]) => void;
   preSelectedRoomId?: string;
 }
 
 type WizardStep = 'configure' | 'preview' | 'confirm';
+export type DemandMode = 'generate' | 'optimise';
+
 
 interface StaffAssignment {
   envelopeId: string;
