@@ -248,7 +248,10 @@ export function RoomDayDrillDownDialog({
             </section>
           </div>
         </ScrollArea>
+        </>
+        )}
       </div>
+
     </MuiDialog>
   );
 }
