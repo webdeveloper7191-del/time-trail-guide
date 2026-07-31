@@ -5,7 +5,7 @@ import {
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
   Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
   Save, Bookmark, Trash2, FolderOpen, CalendarIcon,
-  DollarSign, Scale, Check, Star,
+  DollarSign, Scale, Check, Star, Gauge,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
