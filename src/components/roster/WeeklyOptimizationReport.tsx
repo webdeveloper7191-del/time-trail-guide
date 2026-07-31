@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { StaffMember, Shift, Centre, Room, roleLabels, ageGroupLabels } from '@/types/roster';
 import { DemandAnalyticsData, StaffAbsence } from '@/types/demandAnalytics';
 import { 
@@ -45,6 +45,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DemandOptimizerTab } from '@/components/roster/DemandOptimizerTab';
+import { RoomDayDrillDownDialog, RoomDaySelection } from '@/components/roster/RoomDayDrillDownDialog';
 
 interface WeeklyOptimizationReportProps {
   shifts: Shift[];
@@ -106,6 +107,7 @@ export function WeeklyOptimizationReport({
   onClose,
   onApplyPlan
 }: WeeklyOptimizationReportProps) {
+  const [drillSelection, setDrillSelection] = useState<RoomDaySelection | null>(null);
   const centreShifts = shifts.filter(s => s.centreId === centre.id);
   const avgHourlyRate = staff.length > 0 
     ? staff.reduce((sum, s) => sum + s.hourlyRate, 0) / staff.length 
@@ -669,8 +671,12 @@ export function WeeklyOptimizationReport({
                               
                               return (
                                 <td key={idx} className="text-center p-2">
-                                  <div className={cn(
-                                    "inline-flex flex-col items-center rounded px-2 py-1 min-w-[50px]",
+                                  <button
+                                    type="button"
+                                    title="View required vs scheduled detail"
+                                    onClick={() => setDrillSelection({ roomId: room.id, date: dateStr })}
+                                    className={cn(
+                                    "inline-flex flex-col items-center rounded px-2 py-1 min-w-[50px] transition-colors hover:ring-2 hover:ring-primary/40 cursor-pointer",
                                     dayMetric.staffDiff > 0 && "bg-warning/10",
                                     dayMetric.staffDiff < 0 && "bg-destructive/10",
                                     dayMetric.staffDiff === 0 && "bg-success/10"
@@ -695,7 +701,7 @@ export function WeeklyOptimizationReport({
                                     {!dayMetric.ratioCompliant && (
                                       <AlertTriangle className="h-3 w-3 text-destructive mt-0.5" />
                                     )}
-                                  </div>
+                                  </button>
                                 </td>
                               );
                             })}
@@ -781,6 +787,14 @@ export function WeeklyOptimizationReport({
       </div>
         </TabsContent>
       </Tabs>
+      <RoomDayDrillDownDialog
+        selection={drillSelection}
+        onClose={() => setDrillSelection(null)}
+        room={centre.rooms.find(r => r.id === drillSelection?.roomId)}
+        shifts={centreShifts}
+        staff={staff}
+        analyticsData={analyticsData}
+      />
     </PrimaryOffCanvas>
 
   );
