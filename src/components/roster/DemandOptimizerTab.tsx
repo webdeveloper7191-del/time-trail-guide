@@ -349,6 +349,10 @@ function PlanRow({ item, checked, onToggle }: { item: OptimizationPlanItem; chec
             {item.date} · {formatTime12h(item.startTime)} – {formatTime12h(item.endTime)}
           </span>
           <Badge variant="outline" className={cn('text-[10px] capitalize', priorityTone[item.priority])}>{item.priority}</Badge>
+          <Badge variant="secondary" className="text-[10px] capitalize">{item.tier} tier</Badge>
+          {item.assignedPool && (
+            <Badge variant="outline" className="text-[10px] capitalize">{item.assignedPool}</Badge>
+          )}
         </div>
         <div className="text-xs text-muted-foreground mt-0.5">
           {item.workedHours}h · peak {item.peakDemand} · {item.assignedStaffName
