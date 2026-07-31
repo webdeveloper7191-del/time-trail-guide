@@ -5,7 +5,7 @@ import {
   BarChart3, ChevronRight, ChevronLeft, AlertTriangle, Building2,
   Zap, TrendingUp, Info, UserCheck, Loader2, Globe,
   Save, Bookmark, Trash2, FolderOpen, CalendarIcon,
-  DollarSign, Scale, Check, Star,
+  DollarSign, Scale, Check, Star, Gauge,
 } from 'lucide-react';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,9 @@ import {
   convertEnvelopesToRosterShifts,
 } from '@/lib/demandShiftEngine';
 import { DemandCurveChart } from '@/components/roster/DemandCurveChart';
+import { DemandOptimizerTab } from '@/components/roster/DemandOptimizerTab';
 import { demandApi } from '@/lib/api/demandApi';
+
 import {
   scoreStaffForShift,
   batchAssignStaff,
@@ -58,10 +60,14 @@ interface DemandShiftWizardProps {
   existingShifts: Shift[];
   staff?: StaffMember[];
   onApplyShifts: (shifts: Omit<Shift, 'id'>[]) => void;
+  /** Required for Demand Optimiser mode (adds new shifts and releases surplus ones) */
+  onApplyPlan?: (newShifts: Omit<Shift, 'id'>[], releaseShiftIds: string[]) => void;
   preSelectedRoomId?: string;
 }
 
 type WizardStep = 'configure' | 'preview' | 'confirm';
+export type DemandMode = 'generate' | 'optimise';
+
 
 interface StaffAssignment {
   envelopeId: string;
@@ -181,10 +187,13 @@ export function DemandShiftWizard({
   existingShifts,
   staff = [],
   onApplyShifts,
+  onApplyPlan,
   preSelectedRoomId,
 }: DemandShiftWizardProps) {
+  const [mode, setMode] = useState<DemandMode>('generate');
   const [step, setStep] = useState<WizardStep>('configure');
   const [selectedRoomId, setSelectedRoomId] = useState<string>(preSelectedRoomId || 'all');
+
 
   // Sync preSelectedRoomId when wizard opens
   useEffect(() => {
@@ -606,6 +615,31 @@ export function DemandShiftWizard({
     ];
   }, [step, handleGenerate, handleApply, result, removedIds, isLoading]);
 
+  const optimiserDates = useMemo(
+    () => effectiveDates.map(d => new Date(`${d}T00:00:00`)),
+    [effectiveDates],
+  );
+
+  const MODE_OPTIONS: { key: DemandMode; label: string; icon: React.ElementType; blurb: string; creates: string; releases: string }[] = [
+    {
+      key: 'generate',
+      label: 'Generate shifts from demand',
+      icon: Sparkles,
+      blurb: 'Builds a fresh set of shifts straight from the demand curve, then optionally auto-assigns staff.',
+      creates: 'Creates new draft/open shifts for every uncovered demand envelope',
+      releases: 'Never removes existing shifts',
+    },
+    {
+      key: 'optimise',
+      label: 'Demand optimiser',
+      icon: Gauge,
+      blurb: 'Compares the demand curve against your current roster and only changes what is out of balance.',
+      creates: 'Creates shifts for gaps only, filled permanent-first by the solver',
+      releases: 'Flags surplus shifts with no matching demand for release',
+    },
+  ];
+
+
   const keptCount = result ? result.shiftEnvelopes.length - removedIds.size : 0;
   const assignedCount = assignments.size;
 
@@ -613,13 +647,68 @@ export function DemandShiftWizard({
     <PrimaryOffCanvas
       open={open}
       onClose={onClose}
-      title="Generate Shifts from Demand"
+      title={mode === 'optimise' ? 'Demand Optimiser' : 'Generate Shifts from Demand'}
       icon={TrendingUp}
       width="4xl"
-      actions={actions}
+      actions={mode === 'optimise' ? [] : actions}
     >
+      {/* Mode selector */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4">
+        {MODE_OPTIONS.map(opt => {
+          const active = mode === opt.key;
+          const disabled = opt.key === 'optimise' && !onApplyPlan;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              disabled={disabled}
+              onClick={() => setMode(opt.key)}
+              className={cn(
+                'text-left rounded-lg border p-3 transition-colors',
+                active ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-border hover:bg-muted/40',
+                disabled && 'opacity-50 cursor-not-allowed',
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <opt.icon className={cn('h-4 w-4', active ? 'text-primary' : 'text-muted-foreground')} />
+                <span className="text-sm font-medium">{opt.label}</span>
+                {active && <Check className="h-3.5 w-3.5 text-primary ml-auto" />}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{opt.blurb}</p>
+              <div className="mt-2 space-y-1">
+                <p className="text-[11px] flex items-start gap-1.5">
+                  <Sparkles className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                  <span className="text-muted-foreground">{opt.creates}</span>
+                </p>
+                <p className="text-[11px] flex items-start gap-1.5">
+                  <Trash2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{opt.releases}</span>
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <Separator className="mb-4" />
+
+      {mode === 'optimise' ? (
+        <DemandOptimizerTab
+          shifts={existingShifts}
+          staff={staff}
+          centre={centre}
+          dates={optimiserDates}
+          analyticsData={demandData}
+          onApplyPlan={(newShifts, releaseIds) => {
+            onApplyPlan?.(newShifts, releaseIds);
+            onClose();
+          }}
+        />
+      ) : (
+        <>
       {/* Step indicator */}
       <div className="flex items-center gap-2 px-1 pb-4">
+
         {STEPS.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1.5">
             <button
@@ -1456,6 +1545,9 @@ export function DemandShiftWizard({
           )}
         </div>
       )}
+        </>
+      )}
     </PrimaryOffCanvas>
+
   );
 }

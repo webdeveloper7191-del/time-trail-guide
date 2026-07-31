@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import MuiDialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import { X } from 'lucide-react';
@@ -30,6 +30,10 @@ const shiftHours = (s: Shift) => {
   return Math.max(0, (eh * 60 + em - (sh * 60 + sm) - (s.breakMinutes || 0))) / 60;
 };
 
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn('animate-pulse rounded bg-muted', className)} />
+);
+
 export function RoomDayDrillDownDialog({
   selection,
   onClose,
@@ -38,6 +42,20 @@ export function RoomDayDrillDownDialog({
   staff,
   analyticsData,
 }: RoomDayDrillDownDialogProps) {
+  const [computing, setComputing] = useState(false);
+
+  // Recompute whenever a new room/day is opened — show a skeleton while the
+  // interval breakdown, breach slots and contributing shifts are derived.
+  useEffect(() => {
+    if (!selection) {
+      setComputing(false);
+      return;
+    }
+    setComputing(true);
+    const t = window.setTimeout(() => setComputing(false), 250);
+    return () => window.clearTimeout(t);
+  }, [selection?.roomId, selection?.date]);
+
   const slots = useMemo(() => {
     if (!selection) return [];
     return analyticsData
@@ -58,6 +76,7 @@ export function RoomDayDrillDownDialog({
   const dateLabel = new Date(`${selection.date}T00:00:00`).toLocaleDateString('en-AU', {
     weekday: 'long', day: 'numeric', month: 'short',
   });
+
 
   return (
     <MuiDialog
@@ -101,8 +120,37 @@ export function RoomDayDrillDownDialog({
           </p>
         </div>
 
-
+        {computing ? (
+          <div className="space-y-4" aria-busy="true" aria-live="polite">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} className="rounded-lg border border-border p-3 space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-32" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-40" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-28 rounded-full" />
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">Computing breach slots and contributing shifts…</p>
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+
           <Tile icon={<Users className="h-4 w-4" />} label="Peak required" value={`${maxRequired}`} sub={`${slots.length} intervals`} />
           <Tile icon={<Clock className="h-4 w-4" />} label="Hours scheduled" value={`${Math.round(totalHours * 10) / 10}h`} sub={`${daySlots.length} shift(s)`} />
           <Tile
@@ -200,7 +248,10 @@ export function RoomDayDrillDownDialog({
             </section>
           </div>
         </ScrollArea>
+        </>
+        )}
       </div>
+
     </MuiDialog>
   );
 }
