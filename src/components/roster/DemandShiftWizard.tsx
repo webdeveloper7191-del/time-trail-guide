@@ -1545,6 +1545,9 @@ export function DemandShiftWizard({
           )}
         </div>
       )}
+        </>
+      )}
     </PrimaryOffCanvas>
+
   );
 }
