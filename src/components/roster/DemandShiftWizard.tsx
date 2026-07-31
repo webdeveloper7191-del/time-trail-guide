@@ -647,13 +647,68 @@ export function DemandShiftWizard({
     <PrimaryOffCanvas
       open={open}
       onClose={onClose}
-      title="Generate Shifts from Demand"
+      title={mode === 'optimise' ? 'Demand Optimiser' : 'Generate Shifts from Demand'}
       icon={TrendingUp}
       width="4xl"
-      actions={actions}
+      actions={mode === 'optimise' ? [] : actions}
     >
+      {/* Mode selector */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4">
+        {MODE_OPTIONS.map(opt => {
+          const active = mode === opt.key;
+          const disabled = opt.key === 'optimise' && !onApplyPlan;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              disabled={disabled}
+              onClick={() => setMode(opt.key)}
+              className={cn(
+                'text-left rounded-lg border p-3 transition-colors',
+                active ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-border hover:bg-muted/40',
+                disabled && 'opacity-50 cursor-not-allowed',
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <opt.icon className={cn('h-4 w-4', active ? 'text-primary' : 'text-muted-foreground')} />
+                <span className="text-sm font-medium">{opt.label}</span>
+                {active && <Check className="h-3.5 w-3.5 text-primary ml-auto" />}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{opt.blurb}</p>
+              <div className="mt-2 space-y-1">
+                <p className="text-[11px] flex items-start gap-1.5">
+                  <Sparkles className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                  <span className="text-muted-foreground">{opt.creates}</span>
+                </p>
+                <p className="text-[11px] flex items-start gap-1.5">
+                  <Trash2 className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{opt.releases}</span>
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <Separator className="mb-4" />
+
+      {mode === 'optimise' ? (
+        <DemandOptimizerTab
+          shifts={existingShifts}
+          staff={staff}
+          centre={centre}
+          dates={optimiserDates}
+          analyticsData={demandData}
+          onApplyPlan={(newShifts, releaseIds) => {
+            onApplyPlan?.(newShifts, releaseIds);
+            onClose();
+          }}
+        />
+      ) : (
+        <>
       {/* Step indicator */}
       <div className="flex items-center gap-2 px-1 pb-4">
+
         {STEPS.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1.5">
             <button
