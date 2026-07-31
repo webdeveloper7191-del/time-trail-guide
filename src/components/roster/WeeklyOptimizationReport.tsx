@@ -774,7 +774,10 @@ export function WeeklyOptimizationReport({
               />
         </div>
       </div>
+        </TabsContent>
+      </Tabs>
     </PrimaryOffCanvas>
+
   );
 }
 
