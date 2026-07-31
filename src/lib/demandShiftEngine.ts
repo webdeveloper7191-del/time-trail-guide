@@ -322,7 +322,10 @@ function generateShiftEnvelopes(
             requiredStaff: 1,
             averageDemand: Math.round(avgDemand * 10) / 10,
             peakDemand,
-            priority: layer === 0 ? 'critical' : durationMin >= 360 ? 'high' : 'normal',
+            tier: tierOf(layer),
+            requiredQualifications: qualsFor(layer) as ShiftEnvelope['requiredQualifications'],
+            preferredPool: poolFor(layer),
+            priority: tierOf(layer) === 'qualified' ? 'critical' : durationMin >= 360 ? 'high' : 'normal',
             source: 'demand-engine',
             color: SHIFT_COLORS[(colorIndex + layer) % SHIFT_COLORS.length],
           });
@@ -359,7 +362,10 @@ function generateShiftEnvelopes(
               requiredStaff: 1,
               averageDemand: 0,
               peakDemand: 0,
-              priority: layer === 0 ? 'critical' : 'high',
+              tier: tierOf(layer),
+              requiredQualifications: qualsFor(layer) as ShiftEnvelope['requiredQualifications'],
+              preferredPool: poolFor(layer),
+              priority: tierOf(layer) === 'qualified' ? 'critical' : 'high',
               source: 'demand-engine',
               color: SHIFT_COLORS[(colorIndex + layer) % SHIFT_COLORS.length],
             });
