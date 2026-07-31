@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
@@ -61,6 +62,12 @@ export function DemandOptimizerTab({
   const [minShiftHours, setMinShiftHours] = useState(4);
   const [maxShiftHours, setMaxShiftHours] = useState(10);
   const [rounding, setRounding] = useState<'ceiling' | 'predicted'>('ceiling');
+  const [demandBasis, setDemandBasis] = useState<'booked' | 'predicted' | 'historical' | 'blended'>('blended');
+  const [historicalWeight, setHistoricalWeight] = useState(40);
+  const [qualifiedPercent, setQualifiedPercent] = useState(50);
+  const [subtractChildAbsences, setSubtractChildAbsences] = useState(true);
+  const [honourStaffAbsences, setHonourStaffAbsences] = useState(true);
+  const [preferPermanentFirst, setPreferPermanentFirst] = useState(true);
   const [solveSeconds, setSolveSeconds] = useState(10);
 
   const dateStrings = useMemo(() => dates.map(dateKey), [dates]);
@@ -80,6 +87,12 @@ export function DemandOptimizerTab({
           minShiftMinutes: minShiftHours * 60,
           maxShiftMinutes: maxShiftHours * 60,
           roundingStrategy: rounding,
+          demandBasis,
+          historicalWeight: historicalWeight / 100,
+          qualifiedStaffRatio: qualifiedPercent / 100,
+          subtractChildAbsences,
+          honourStaffAbsences,
+          preferPermanentFirst,
           optimizationGoal: goal === 'cost_minimization' ? 'cost' : goal === 'compliance_first' ? 'compliance' : 'balanced',
         },
         solverConfig: {
@@ -135,6 +148,18 @@ export function DemandOptimizerTab({
             </Select>
           </div>
           <div className="space-y-1.5">
+            <Label className="text-xs">Demand basis</Label>
+            <Select value={demandBasis} onValueChange={(v) => setDemandBasis(v as typeof demandBasis)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="booked">Bookings only</SelectItem>
+                <SelectItem value="predicted">Bookings x attendance rate</SelectItem>
+                <SelectItem value="historical">Attendance history</SelectItem>
+                <SelectItem value="blended">Blended (bookings + history)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
             <Label className="text-xs">Demand rounding</Label>
             <Select value={rounding} onValueChange={(v) => setRounding(v as 'ceiling' | 'predicted')}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -155,7 +180,32 @@ export function DemandOptimizerTab({
               onChange={(e) => setMaxShiftHours(Number(e.target.value) || 10)} />
           </div>
         </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">History weight (%)</Label>
+            <Input type="number" min={0} max={100} value={historicalWeight} className="h-9"
+              disabled={demandBasis !== 'blended'}
+              onChange={(e) => setHistoricalWeight(Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Qualified staff (%)</Label>
+            <Input type="number" min={0} max={100} value={qualifiedPercent} className="h-9"
+              onChange={(e) => setQualifiedPercent(Math.min(100, Math.max(0, Number(e.target.value) || 0)))} />
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 h-9">
+            <Label className="text-xs">Subtract child absences</Label>
+            <Switch checked={subtractChildAbsences} onCheckedChange={setSubtractChildAbsences} />
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 h-9">
+            <Label className="text-xs">Honour staff absences</Label>
+            <Switch checked={honourStaffAbsences} onCheckedChange={setHonourStaffAbsences} />
+          </div>
+        </div>
         <div className="flex items-end justify-between gap-3 mt-3">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 h-9">
+            <Label className="text-xs">Permanent pool first, then casual</Label>
+            <Switch checked={preferPermanentFirst} onCheckedChange={setPreferPermanentFirst} />
+          </div>
           <div className="space-y-1.5 w-40">
             <Label className="text-xs">Solver time (s)</Label>
             <Input type="number" min={1} max={60} value={solveSeconds} className="h-9"
@@ -202,6 +252,15 @@ export function DemandOptimizerTab({
               </Badge>
               <Badge variant="outline">{result.solution.solverTimeMs}ms · {result.solution.movesEvaluated.toLocaleString()} moves</Badge>
               <Badge variant="outline">{result.solution.workSavedMetrics.timeSavedMinutes} min of manual rostering saved</Badge>
+              <Badge variant="outline">
+                {result.metrics.qualifiedShiftsRequired} qualified-tier requirement(s)
+              </Badge>
+              <Badge variant="outline">
+                {result.metrics.permanentAssigned} permanent · {result.metrics.casualAssigned} casual/agency
+              </Badge>
+              <Badge variant="outline">
+                {result.metrics.childAbsencesConsidered} child · {result.metrics.staffAbsencesConsidered} staff absence(s) applied
+              </Badge>
               {result.metrics.unassigned > 0 && (
                 <Badge variant="destructive">{result.metrics.unassigned} requirement(s) unstaffed → open shifts</Badge>
               )}
