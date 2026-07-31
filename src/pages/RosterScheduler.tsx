@@ -3211,6 +3211,8 @@ export default function RosterScheduler() {
           const withIds = newShifts.map((s, i) => ({ ...s, id: `demand-gen-${Date.now()}-${i}` }));
           setShifts(prev => [...prev, ...withIds]);
         }}
+        onApplyPlan={handleApplyOptimizationPlan}
+
       />
 
       {/* Fill Open Shifts Confirmation Dialog */}
