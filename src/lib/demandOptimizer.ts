@@ -48,6 +48,12 @@ export interface OptimizationPlanItem {
   assignedStaffId?: string;
   assignedStaffName?: string;
   action: 'keep' | 'add' | 'add-open';
+  /** Ratio tier this requirement covers */
+  tier: 'qualified' | 'support';
+  /** Qualifications the filler must hold */
+  requiredQualifications: string[];
+  /** Which pool the assigned staff member came from */
+  assignedPool?: 'permanent' | 'casual';
   estimatedCost: number;
   violations: { constraintName: string; level: string; impact: number }[];
 }
@@ -85,6 +91,11 @@ export interface DemandOptimizationResult {
     coveragePercent: number;
     peakStaffRequired: number;
     coverageGaps: number;
+    qualifiedShiftsRequired: number;
+    permanentAssigned: number;
+    casualAssigned: number;
+    staffAbsencesConsidered: number;
+    childAbsencesConsidered: number;
   };
   config: DemandShiftConfig;
   solverConfig: TimefoldSolverConfig;
@@ -129,6 +140,7 @@ function overlapRatio(
 function toStaffEntities(
   staff: StaffMember[],
   centreId: string,
+  absenceDatesByStaff: Map<string, string[]> = new Map(),
 ): StaffPlanningEntity[] {
   return staff.map(s => ({
     id: s.id,
@@ -149,9 +161,12 @@ function toStaffEntities(
     preferredCentres: s.preferredCentres || [],
     defaultCentreId: s.defaultCentreId ?? centreId,
     willingToWorkMultipleLocations: s.willingToWorkMultipleLocations,
-    leavesDates: (s.timeOff || [])
-      .filter(t => t.status === 'approved')
-      .flatMap(t => expandDates(t.startDate, t.endDate)),
+    leavesDates: Array.from(new Set([
+      ...(s.timeOff || [])
+        .filter(t => t.status === 'approved')
+        .flatMap(t => expandDates(t.startDate, t.endDate)),
+      ...(absenceDatesByStaff.get(s.id) || []),
+    ])),
   }));
 }
 
@@ -210,23 +225,75 @@ export async function runDemandOptimization(
   const uncovered = matched.filter(m => !m.match);
 
   // ---- 3. Solve staffing for the uncovered requirements -------------------
-  const planningShifts: ShiftPlanningEntity[] = uncovered.map(({ env }) => {
-    const room = rooms.find(r => r.id === env.roomId);
-    return {
-      id: env.id,
-      shiftId: env.id,
-      date: env.date,
-      startTime: env.startTime,
-      endTime: env.endTime,
-      roomId: env.roomId,
-      centreId: env.centreId || centreId,
-      requiredQualifications: room && room.minQualifiedStaff > 0 ? ['diploma'] : [],
-      preferredRole: env.priority === 'critical' ? 'lead_educator' : undefined,
-    };
-  });
+  const planningShifts: ShiftPlanningEntity[] = uncovered.map(({ env }) => ({
+    id: env.id,
+    shiftId: env.id,
+    date: env.date,
+    startTime: env.startTime,
+    endTime: env.endTime,
+    roomId: env.roomId,
+    centreId: env.centreId || centreId,
+    requiredQualifications: env.requiredQualifications ?? [],
+    preferredRole: env.tier === 'qualified' ? 'lead_educator' : undefined,
+  }));
 
-  const staffEntities = toStaffEntities(staff, centreId);
-  const solution = await solveWithTimefold(solverCfg, planningShifts, staffEntities);
+  // Staff absences reported in demand analytics remove supply for that date
+  const absenceDatesByStaff = new Map<string, string[]>();
+  let staffAbsencesConsidered = 0;
+  if (config.honourStaffAbsences) {
+    demandData
+      .filter(d => dates.includes(d.date))
+      .forEach(d => {
+        (d.staffAbsences || []).forEach(a => {
+          const list = absenceDatesByStaff.get(a.staffId) || [];
+          if (!list.includes(a.date || d.date)) {
+            list.push(a.date || d.date);
+            staffAbsencesConsidered += 1;
+          }
+          absenceDatesByStaff.set(a.staffId, list);
+        });
+      });
+  }
+  const childAbsencesConsidered = demandData
+    .filter(d => dates.includes(d.date))
+    .reduce((sum, d) => sum + (d.childAbsences || 0), 0);
+
+  const allEntities = toStaffEntities(staff, centreId, absenceDatesByStaff);
+  const permanentPool = allEntities.filter(e => e.employmentType === 'permanent' && !e.isAgency);
+  const casualPool = allEntities.filter(e => e.employmentType === 'casual' || e.isAgency);
+  const poolOf = new Map<string, 'permanent' | 'casual'>([
+    ...permanentPool.map(e => [e.id, 'permanent'] as const),
+    ...casualPool.map(e => [e.id, 'casual'] as const),
+  ]);
+
+  // Pass 1 — permanent pool first (contracted hours before casual spend),
+  // Pass 2 — casual/agency pool for whatever the permanents could not cover.
+  let solution: TimefoldSolution;
+  if (config.preferPermanentFirst && permanentPool.length && casualPool.length) {
+    const first = await solveWithTimefold(solverCfg, planningShifts, permanentPool);
+    const leftoverIds = new Set(first.unassignedShifts);
+    const leftover = planningShifts.filter(p => leftoverIds.has(p.id));
+    const second = leftover.length
+      ? await solveWithTimefold(solverCfg, leftover, casualPool)
+      : null;
+    solution = second
+      ? {
+          ...first,
+          score: {
+            hardScore: first.score.hardScore + second.score.hardScore,
+            mediumScore: first.score.mediumScore + second.score.mediumScore,
+            softScore: first.score.softScore + second.score.softScore,
+            isFeasible: first.score.isFeasible && second.score.isFeasible,
+          },
+          assignments: [...first.assignments, ...second.assignments],
+          unassignedShifts: second.unassignedShifts,
+          solverTimeMs: first.solverTimeMs + second.solverTimeMs,
+          movesEvaluated: first.movesEvaluated + second.movesEvaluated,
+        }
+      : first;
+  } else {
+    solution = await solveWithTimefold(solverCfg, planningShifts, allEntities);
+  }
 
   const assignmentMap = new Map(solution.assignments.map(a => [a.shiftId, a]));
   const staffById = new Map(staff.map(s => [s.id, s]));
@@ -260,6 +327,9 @@ export async function runDemandOptimization(
       assignedStaffId: assignedStaff?.id,
       assignedStaffName: assignedStaff?.name,
       action: match ? 'keep' : assignedStaff ? 'add' : 'add-open',
+      tier: env.tier,
+      requiredQualifications: env.requiredQualifications ?? [],
+      assignedPool: assignedStaff ? poolOf.get(assignedStaff.id) : undefined,
       estimatedCost: Math.round(hours * rate),
       violations: (assignment?.constraintViolations || []).map(v => ({
         constraintName: v.constraintName,
@@ -326,6 +396,11 @@ export async function runDemandOptimization(
         : 100,
       peakStaffRequired: generation.summary.peakStaffRequired,
       coverageGaps: generation.summary.coverageGaps.length,
+      qualifiedShiftsRequired: planItems.filter(p => p.tier === 'qualified').length,
+      permanentAssigned: planItems.filter(p => p.assignedPool === 'permanent').length,
+      casualAssigned: planItems.filter(p => p.assignedPool === 'casual').length,
+      staffAbsencesConsidered,
+      childAbsencesConsidered,
     },
     config,
     solverConfig: solverCfg,
@@ -352,6 +427,7 @@ export function planItemsToShifts(
       isOpenShift: !i.assignedStaffId,
       isAIGenerated: true,
       aiGeneratedAt: new Date().toISOString(),
-      notes: `Demand-optimised (peak ${i.peakDemand}, avg ${i.averageDemand})`,
+      requiredQualifications: (i.requiredQualifications || []) as never,
+      notes: `Demand-optimised · ${i.tier} tier (peak ${i.peakDemand}, avg ${i.averageDemand})`,
     }));
 }
