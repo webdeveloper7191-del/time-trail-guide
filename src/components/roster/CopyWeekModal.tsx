@@ -714,7 +714,7 @@ export function CopyWeekModal({
                           <StyledSwitch
                             size="small"
                             checked={retention.retainCohorts[cohort]}
-                            onChange={(_, checked) =>
+                            onChange={(checked) =>
                               setRetention(r => ({
                                 ...r,
                                 retainCohorts: { ...r.retainCohorts, [cohort]: checked },
@@ -761,7 +761,7 @@ export function CopyWeekModal({
                   <StyledSwitch
                     size="small"
                     checked={retention.releaseOnLeaveOrRdo}
-                    onChange={(_, checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
+                    onChange={(checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
                   />
                 }
                 label={
