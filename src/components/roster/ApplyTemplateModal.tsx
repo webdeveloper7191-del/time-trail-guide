@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Shift, Room, ShiftTemplate, Centre, StaffMember } from '@/types/roster';
 import { RosterTemplate, TemplateMatchResult } from '@/types/rosterTemplates';
 import { format, addDays, startOfWeek } from 'date-fns';
@@ -31,7 +32,7 @@ interface ApplyTemplateModalProps {
 export function ApplyTemplateModal({
   open,
   onClose,
-  rosterTemplates,
+  rosterTemplates: allRosterTemplates,
   shiftTemplates,
   existingShifts,
   rooms: defaultRooms,
@@ -59,7 +60,31 @@ export function ApplyTemplateModal({
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
+  // Only show templates saved for the active location (fall back to all if none match).
+  const rosterTemplates = useMemo(() => {
+    const scoped = allRosterTemplates.filter(t => t.centreId === activeCentreId);
+    return scoped;
+  }, [allRosterTemplates, activeCentreId]);
+
   const selectedTemplate = rosterTemplates.find(t => t.id === selectedTemplateId);
+
+  // Reset the template when it no longer belongs to the active location.
+  useEffect(() => {
+    if (selectedTemplateId && !rosterTemplates.some(t => t.id === selectedTemplateId)) {
+      setSelectedTemplateId('');
+    }
+  }, [rosterTemplates, selectedTemplateId]);
+
+  // Reset all state when reopened.
+  useEffect(() => {
+    if (open) {
+      setActiveCentreId(centreId);
+      setSelectedTemplateId('');
+      setSelectedShifts(new Set());
+      setSkipExisting(true);
+      setApplyWithStaff(true);
+    }
+  }, [open, centreId]);
 
   const matchResults = useMemo((): TemplateMatchResult[] => {
     if (!selectedTemplate) return [];
@@ -122,16 +147,23 @@ export function ApplyTemplateModal({
     return templateShiftStaffId;
   };
 
-  const shiftsToAdd = matchResults.filter(r => r.action === 'add');
+  const shiftsToAdd = useMemo(() => matchResults.filter(r => r.action === 'add'), [matchResults]);
   const shiftsToSkip = matchResults.filter(r => r.action === 'skip');
 
+  // Explicit selection: every addable shift starts ticked.
+  useEffect(() => {
+    setSelectedShifts(new Set(shiftsToAdd.map(r => r.templateShift.id)));
+  }, [shiftsToAdd]);
+
+  const selectedAddable = shiftsToAdd.filter(r => selectedShifts.has(r.templateShift.id));
+  const assignedCount = selectedAddable.filter(
+    r => !!resolveStaffId(r.templateShift.staffId, r.date)
+  ).length;
+
   const handleApply = () => {
-    const newShifts: Omit<Shift, 'id'>[] = matchResults
-      .filter(r => r.action === 'add' || (!skipExisting && r.action === 'update'))
-      .filter(r => selectedShifts.size === 0 || selectedShifts.has(r.templateShift.id))
-      .map(result => {
-        const staffId = resolveStaffId(result.templateShift.staffId, result.date);
-        return {
+    const newShifts: Omit<Shift, 'id'>[] = selectedAddable.map(result => {
+      const staffId = resolveStaffId(result.templateShift.staffId, result.date);
+      return {
         staffId,
         centreId: activeCentreId,
         roomId: result.templateShift.roomId,
@@ -143,9 +175,12 @@ export function ApplyTemplateModal({
         isOpenShift: !staffId,
         notes: result.templateShift.notes,
       };
-      });
+    });
 
     onApply(newShifts);
+    toast.success(`${newShifts.length} shift${newShifts.length === 1 ? '' : 's'} added`, {
+      description: `${assignedCount} assigned to staff · ${shiftsToSkip.length} skipped`,
+    });
     onClose();
   };
 
@@ -180,10 +215,10 @@ export function ApplyTemplateModal({
       actions={[
         { label: 'Cancel', onClick: onClose, variant: 'outlined' },
         { 
-          label: `Apply ${shiftsToAdd.length} Shifts`, 
+          label: `Apply ${selectedAddable.length} Shift${selectedAddable.length === 1 ? '' : 's'}`, 
           onClick: handleApply, 
           variant: 'primary',
-          disabled: !selectedTemplate || shiftsToAdd.length === 0,
+          disabled: !selectedTemplate || selectedAddable.length === 0,
           icon: <Plus size={16} />
         },
       ]}
@@ -210,7 +245,7 @@ export function ApplyTemplateModal({
               <SelectContent>
                 {rosterTemplates.length === 0 ? (
                   <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                    No templates saved yet
+                    No templates saved for this location yet
                   </div>
                 ) : (
                   rosterTemplates.map(template => (
@@ -221,6 +256,9 @@ export function ApplyTemplateModal({
                         <Badge variant="secondary" className="ml-1 text-xs">
                           {template.shifts.length} shifts
                         </Badge>
+                        {template.shifts.some(s => !!s.staffId) && (
+                          <Badge variant="outline" className="text-xs">with staff</Badge>
+                        )}
                       </div>
                     </SelectItem>
                   ))
@@ -269,8 +307,13 @@ export function ApplyTemplateModal({
               <div className="flex items-center gap-4 p-4 bg-background border rounded-lg">
                 <div className="flex items-center gap-1.5 text-primary">
                   <Plus size={16} />
-                  <span className="text-sm font-medium">{shiftsToAdd.length} to add</span>
+                  <span className="text-sm font-medium">{selectedAddable.length} of {shiftsToAdd.length} to add</span>
                 </div>
+                {templateHasStaff && applyWithStaff && (
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="text-sm">{assignedCount} with staff</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Check size={16} />
                   <span className="text-sm">{shiftsToSkip.length} will be skipped</span>
@@ -295,7 +338,7 @@ export function ApplyTemplateModal({
                   <div className="divide-y divide-border">
                     {matchResults.map((result, idx) => {
                       const room = rooms.find(r => r.id === result.templateShift.roomId);
-                      const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
+                      const isSelected = selectedShifts.has(result.templateShift.id);
                       
                       return (
                         <div
