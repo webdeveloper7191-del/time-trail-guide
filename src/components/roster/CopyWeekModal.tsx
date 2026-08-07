@@ -80,6 +80,8 @@ interface ShiftPreview {
   original: Shift;
   newDate: string;
   conflict?: Shift;
+  retention: RetentionDecision;
+
   action: 'add' | 'skip' | 'overwrite';
   selected: boolean;
 }
