@@ -373,7 +373,7 @@ export function ApplyTemplateModal({
             <FormSection title="Shifts to Apply">
               <div className="bg-background rounded-lg border overflow-hidden">
                 {/* Table Header */}
-                <div className="grid grid-cols-[32px_1fr_24px_120px_100px_80px] items-center gap-3 px-4 py-2 bg-muted/50 border-b">
+                <div className="grid grid-cols-[32px_1fr_20px_104px_92px_170px_64px] items-center gap-3 px-4 py-2 bg-muted/50 border-b">
                   <div />
                   <span className="text-xs font-medium text-muted-foreground">Room</span>
                   <div />
@@ -393,7 +393,7 @@ export function ApplyTemplateModal({
                           key={idx}
                           onClick={() => result.action === 'add' && toggleShift(result.templateShift.id)}
                           className={cn(
-                            "grid grid-cols-[32px_1fr_24px_120px_100px_80px] items-center gap-3 px-4 py-3 transition-all",
+                            "grid grid-cols-[32px_1fr_20px_104px_92px_170px_64px] items-center gap-3 px-4 py-3 transition-all",
                             result.action === 'skip' ? "opacity-60" : "cursor-pointer hover:bg-primary/5",
                             result.action === 'add' && isSelected && "bg-primary/5"
                           )}
