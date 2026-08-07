@@ -801,6 +801,10 @@ export function CopyWeekModal({
                                 sx={{ height: 18, '& .MuiChip-label': { px: 0.75, fontSize: 10 } }}
                               />
                             )}
+                          </Stack>
+                        </Box>
+
+
 
                         
                         {preview.action === 'add' && (
