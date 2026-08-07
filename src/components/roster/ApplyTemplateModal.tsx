@@ -53,7 +53,16 @@ export function ApplyTemplateModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [skipExisting, setSkipExisting] = useState(true);
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
-  const [applyWithStaff, setApplyWithStaff] = useState(true);
+  const [staffMode, setStaffMode] = useState<RetentionMode>('keep_all');
+  const [retainCohorts, setRetainCohorts] = useState<Record<StaffCohort, boolean>>({
+    full_time: true,
+    part_time: true,
+    casual: false,
+    agency: false,
+  });
+  const [releaseOnLeaveOrRdo, setReleaseOnLeaveOrRdo] = useState(true);
+  /** Per-row manual staff override: templateShift.id -> staffId ('' = open shift). */
+  const [staffOverrides, setStaffOverrides] = useState<Record<string, string>>({});
 
   const staffById = useMemo(() => new Map(staff.map(s => [s.id, s])), [staff]);
 
