@@ -48,10 +48,21 @@ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CentreSelector } from './CentreSelector';
+import {
+  StaffRetentionRules,
+  StaffCohort,
+  RetentionDecision,
+  staffCohortLabels,
+  defaultRetentionRules,
+  evaluateRetention,
+  applyRetention,
+  summariseRetention,
+} from '@/lib/staffRetention';
 
 type PeriodType = 'week' | 'fortnight' | 'month' | 'custom';
 type ConflictHandling = 'skip' | 'overwrite' | 'merge';
-type StaffAssignment = 'keep' | 'unassign' | 'smart';
+
+
 
 interface CopyWeekModalProps {
   open: boolean;
@@ -69,6 +80,8 @@ interface ShiftPreview {
   original: Shift;
   newDate: string;
   conflict?: Shift;
+  retention: RetentionDecision;
+
   action: 'add' | 'skip' | 'overwrite';
   selected: boolean;
 }
@@ -105,7 +118,7 @@ export function CopyWeekModal({
 
   // Options
   const [conflictHandling, setConflictHandling] = useState<ConflictHandling>('skip');
-  const [staffAssignment, setStaffAssignment] = useState<StaffAssignment>('keep');
+  const [retention, setRetention] = useState<StaffRetentionRules>(defaultRetentionRules);
   const [copyDraftsOnly, setCopyDraftsOnly] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set(rooms.map(r => r.id)));
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
@@ -187,7 +200,10 @@ export function CopyWeekModal({
         const originalDate = new Date(shift.date);
         const newDate = addDays(originalDate, daysDiff);
         const newDateStr = format(newDate, 'yyyy-MM-dd');
-        
+
+        const staffMember = staff.find(s => s.id === shift.staffId);
+        const retentionDecision = evaluateRetention(staffMember, newDateStr, retention);
+
         // Check for conflicts in target
         const conflict = shifts.find(s => 
           s.centreId === activeCentreId &&
@@ -195,12 +211,15 @@ export function CopyWeekModal({
           s.date === newDateStr &&
           s.startTime === shift.startTime &&
           s.endTime === shift.endTime &&
-          (staffAssignment === 'keep' ? s.staffId === shift.staffId : true)
+          (retentionDecision.retained ? s.staffId === shift.staffId : true)
         );
         
         let action: ShiftPreview['action'] = 'add';
         if (conflict) {
           action = conflictHandling === 'skip' ? 'skip' : conflictHandling === 'overwrite' ? 'overwrite' : 'add';
+        }
+        if (retentionDecision.outcome === 'drop') {
+          action = 'skip';
         }
         
         const previewId = `${shift.id}-${newDateStr}`;
@@ -215,12 +234,19 @@ export function CopyWeekModal({
           conflict,
           action,
           selected: isSelected,
+          retention: retentionDecision,
         });
       });
     });
     
     return previews;
-  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, activeCentreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
+  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, staff, activeCentreId, conflictHandling, retention, selectAllMode, manualDeselected]);
+
+  const retentionSummary = useMemo(
+    () => summariseRetention(shiftPreviews.map(p => p.retention)),
+    [shiftPreviews],
+  );
+
 
   // Stats
   const stats = useMemo(() => {
@@ -241,21 +267,15 @@ export function CopyWeekModal({
           date: p.newDate,
           status: 'draft',
         };
-        
-        // Handle staff assignment
-        if (staffAssignment === 'unassign') {
-          newShift.staffId = '';
-          newShift.isOpenShift = true;
-        } else if (staffAssignment === 'smart') {
-          // Smart assignment could check availability - for now just keep
-          newShift.staffId = p.original.staffId;
-        }
-        
+
         // Remove id from spread
         const { id, ...shiftWithoutId } = newShift as Shift & { id?: string };
-        return shiftWithoutId;
-      });
-    
+
+        // Apply staff retention rules
+        return applyRetention(shiftWithoutId, p.retention);
+      })
+      .filter((s): s is Omit<Shift, 'id'> => s !== null);
+
     if (shiftsToCreate.length === 0) {
       toast.error('No shifts to copy');
       return;
@@ -264,7 +284,8 @@ export function CopyWeekModal({
     onCopy(shiftsToCreate);
     toast.success(`Copied ${shiftsToCreate.length} shift${shiftsToCreate.length > 1 ? 's' : ''}`);
     handleClose();
-  }, [shiftPreviews, staffAssignment, onCopy]);
+  }, [shiftPreviews, onCopy]);
+
 
   const handleClose = () => {
     setShowPreview(false);
@@ -647,49 +668,126 @@ export function CopyWeekModal({
               </ToggleButtonGroup>
             </Box>
 
-            {/* Staff Assignment */}
+            {/* Staff Retention */}
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <UserCheck className="h-4 w-4" />
-                Staff Assignment
+                Staff Retention
               </Typography>
               <ToggleButtonGroup
-                value={staffAssignment}
+                value={retention.mode}
                 exclusive
-                onChange={(_, v) => v && setStaffAssignment(v)}
+                onChange={(_, v) => v && setRetention(r => ({ ...r, mode: v }))}
                 size="small"
                 fullWidth
               >
-                <ToggleButton value="keep">
+                <ToggleButton value="keep_all">
                   <Stack alignItems="center" spacing={0.5}>
                     <Users className="h-4 w-4" />
-                    <Typography variant="caption">Keep Same</Typography>
+                    <Typography variant="caption">Keep all</Typography>
                   </Stack>
                 </ToggleButton>
-                <ToggleButton value="unassign">
+                <ToggleButton value="unassign_all">
                   <Stack alignItems="center" spacing={0.5}>
                     <Calendar className="h-4 w-4" />
-                    <Typography variant="caption">Make Open</Typography>
+                    <Typography variant="caption">Unassign all</Typography>
                   </Stack>
                 </ToggleButton>
-                <ToggleButton value="smart">
+                <ToggleButton value="by_type">
                   <Stack alignItems="center" spacing={0.5}>
-                    <Shuffle className="h-4 w-4" />
-                    <Typography variant="caption">Smart Assign</Typography>
+                    <Filter className="h-4 w-4" />
+                    <Typography variant="caption">Retain by type</Typography>
                   </Stack>
                 </ToggleButton>
               </ToggleButtonGroup>
-              {staffAssignment === 'unassign' && (
-                <Alert severity="info" sx={{ mt: 1 }} icon={false}>
-                  Copied shifts will become open shifts
-                </Alert>
+
+              {retention.mode === 'by_type' && (
+                <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    Keep the assigned staff member for these employment types
+                  </Typography>
+                  <Stack>
+                    {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
+                      <FormControlLabel
+                        key={cohort}
+                        control={
+                          <StyledSwitch
+                            size="small"
+                            checked={retention.retainCohorts[cohort]}
+                            onChange={(checked) =>
+                              setRetention(r => ({
+                                ...r,
+                                retainCohorts: { ...r.retainCohorts, [cohort]: checked },
+                              }))
+                            }
+                          />
+                        }
+                        label={
+                          <Typography variant="body2">
+                            {staffCohortLabels[cohort]}
+                          </Typography>
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Box>
               )}
-              {staffAssignment === 'smart' && (
+
+              {retention.mode !== 'keep_all' && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Shifts whose staff are not retained
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={retention.releaseOutcome}
+                    exclusive
+                    onChange={(_, v) => v && setRetention(r => ({ ...r, releaseOutcome: v }))}
+                    size="small"
+                    fullWidth
+                  >
+                    <ToggleButton value="open_shift">
+                      <Typography variant="caption">Become open shifts</Typography>
+                    </ToggleButton>
+                    <ToggleButton value="drop">
+                      <Typography variant="caption">Don't copy</Typography>
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+              )}
+
+              <FormControlLabel
+                sx={{ mt: 1 }}
+                control={
+                  <StyledSwitch
+                    size="small"
+                    checked={retention.releaseOnLeaveOrRdo}
+                    onChange={(checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    Also release staff on approved leave or an RDO in the target period
+                  </Typography>
+                }
+              />
+
+              {retentionSummary.released + retentionSummary.dropped > 0 && (
                 <Alert severity="info" sx={{ mt: 1 }} icon={false}>
-                  Will attempt to assign based on staff availability
+                  <Typography variant="caption">
+                    {retentionSummary.total} shifts: {retentionSummary.kept} keep staff,{' '}
+                    {retentionSummary.released > 0 && `${retentionSummary.released} released to open shifts`}
+                    {retentionSummary.released > 0 && retentionSummary.dropped > 0 && ', '}
+                    {retentionSummary.dropped > 0 && `${retentionSummary.dropped} not copied`}
+                    {Object.keys(retentionSummary.byCohort).length > 0 && (
+                      <> ({(Object.entries(retentionSummary.byCohort) as [StaffCohort, number][])
+                        .map(([c, n]) => `${n} ${staffCohortLabels[c].toLowerCase()}`)
+                        .join(', ')})</>
+                    )}
+                  </Typography>
                 </Alert>
               )}
             </Box>
+
           </>
         ) : (
           /* Preview Mode */
@@ -785,10 +883,26 @@ export function CopyWeekModal({
                             </Typography>
                             <Typography variant="caption" color="text.secondary">•</Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {staffAssignment === 'unassign' ? 'Open Shift' : getStaffName(preview.original.staffId)}
+                              {preview.retention.outcome === 'keep'
+                                ? getStaffName(preview.original.staffId)
+                                : preview.retention.outcome === 'drop'
+                                  ? 'Staff removed'
+                                  : 'Open Shift'}
                             </Typography>
+                            {!preview.retention.retained && preview.retention.reason && (
+                              <Chip
+                                label={preview.retention.reason}
+                                size="small"
+                                variant="outlined"
+                                color="warning"
+                                sx={{ height: 18, '& .MuiChip-label': { px: 0.75, fontSize: 10 } }}
+                              />
+                            )}
                           </Stack>
                         </Box>
+
+
+
                         
                         {preview.action === 'add' && (
                           <Chip label="Add" size="small" color="success" icon={<Check className="h-3 w-3" />} />
