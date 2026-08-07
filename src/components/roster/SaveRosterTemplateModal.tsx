@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
+import {
+  RetentionMode,
+  StaffCohort,
+  staffCohortLabels,
+  defaultRetentionRules,
+  evaluateRetention,
+} from '@/lib/staffRetention';
 
 interface SaveRosterTemplateModalProps {
   open: boolean;
@@ -49,6 +56,10 @@ export function SaveRosterTemplateModal({
   const [description, setDescription] = useState('');
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [includeStaffPreferences, setIncludeStaffPreferences] = useState(false);
+  const [retentionMode, setRetentionMode] = useState<RetentionMode>('unassign_all');
+  const [retainCohorts, setRetainCohorts] = useState<Record<StaffCohort, boolean>>(
+    defaultRetentionRules.retainCohorts,
+  );
 
   const areas = useMemo(() => {
     if (centres) {
@@ -79,6 +90,8 @@ export function SaveRosterTemplateModal({
     setName('');
     setDescription('');
     setIncludeStaffPreferences(false);
+    setRetentionMode('unassign_all');
+    setRetainCohorts(defaultRetentionRules.retainCohorts);
   }, [open, centreId]);
 
   useEffect(() => {
@@ -93,6 +106,22 @@ export function SaveRosterTemplateModal({
   );
 
   const staffById = useMemo(() => new Map(staff.map(s => [s.id, s])), [staff]);
+
+  const retentionFor = useMemo(
+    () => (shift: Shift) =>
+      evaluateRetention(staffById.get(shift.staffId), shift.date, {
+        mode: retentionMode,
+        retainCohorts,
+        releaseOutcome: 'open_shift',
+        releaseOnLeaveOrRdo: false,
+      }),
+    [staffById, retentionMode, retainCohorts],
+  );
+
+  const retainedStaffCount = useMemo(
+    () => relevantShifts.filter(s => retentionFor(s).retained).length,
+    [relevantShifts, retentionFor],
+  );
 
   const coveredDays = useMemo(
     () => new Set(relevantShifts.map(s => new Date(`${s.date}T00:00:00`).getDay())),
@@ -123,7 +152,8 @@ export function SaveRosterTemplateModal({
     if (!canSave) return;
 
     const templateShifts: RosterTemplateShift[] = relevantShifts.map((shift, idx) => {
-      const assigned = includeStaffPreferences ? staffById.get(shift.staffId) : undefined;
+      const assigned = staffById.get(shift.staffId);
+      const keepStaff = retentionFor(shift).retained;
       return {
         id: `ts-${Date.now()}-${idx}`,
         roomId: shift.roomId,
@@ -131,8 +161,9 @@ export function SaveRosterTemplateModal({
         startTime: shift.startTime,
         endTime: shift.endTime,
         breakMinutes: shift.breakMinutes,
-        staffRole: assigned ? roleLabels[assigned.role] : undefined,
-        requiredQualifications: assigned?.qualifications?.length
+        staffId: keepStaff ? shift.staffId : undefined,
+        staffRole: includeStaffPreferences && assigned ? roleLabels[assigned.role] : undefined,
+        requiredQualifications: includeStaffPreferences && assigned?.qualifications?.length
           ? assigned.qualifications.map(q => String(q))
           : undefined,
         notes: shift.notes,
@@ -144,6 +175,7 @@ export function SaveRosterTemplateModal({
         name: trimmedName,
         description: description.trim() || undefined,
         centreId: activeCentreId,
+        includesStaff: templateShifts.some(ts => !!ts.staffId),
         shifts: templateShifts,
       },
       duplicate?.id,
