@@ -205,12 +205,12 @@ export function ApplyTemplateModal({
 
   const selectedAddable = shiftsToAdd.filter(r => selectedShifts.has(r.templateShift.id));
   const assignedCount = selectedAddable.filter(
-    r => !!resolveStaffId(r.templateShift.staffId, r.date)
+    r => !!resolveStaffId(r.templateShift, r.date)
   ).length;
 
   const handleApply = () => {
     const newShifts: Omit<Shift, 'id'>[] = selectedAddable.map(result => {
-      const staffId = resolveStaffId(result.templateShift.staffId, result.date);
+      const staffId = resolveStaffId(result.templateShift, result.date);
       return {
         staffId,
         centreId: activeCentreId,
