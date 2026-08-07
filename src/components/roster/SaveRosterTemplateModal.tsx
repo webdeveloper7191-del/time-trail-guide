@@ -283,22 +283,76 @@ export function SaveRosterTemplateModal({
           )}
         </FormSection>
 
-        {/* Options */}
-        <FormSection title="Options">
-          <div className="bg-background rounded-lg border p-4">
-            <StyledSwitch
-              checked={includeStaffPreferences}
-              onChange={setIncludeStaffPreferences}
-              label="Include staff role preferences"
-              disabled={staff.length === 0}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {staff.length === 0
-                ? 'Staff details are unavailable for this period.'
-                : 'Stores the role and qualifications of the currently assigned staff member on each template shift, so re-applying suggests similar people.'}
-            </p>
+        {/* Staff */}
+        <FormSection
+          title="Staff on this template"
+          tooltip="Choose whether the template remembers who was rostered, and for which staff types"
+        >
+          <div className="bg-background rounded-lg border p-4 space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { value: 'unassign_all', label: 'Without staff', hint: 'Open shifts only' },
+                { value: 'keep_all', label: 'With all staff', hint: 'Remember everyone' },
+                { value: 'by_type', label: 'By staff type', hint: 'Choose cohorts' },
+              ] as { value: RetentionMode; label: string; hint: string }[]).map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setRetentionMode(opt.value)}
+                  disabled={staff.length === 0}
+                  className={cn(
+                    'rounded-lg border p-3 text-left transition-all disabled:opacity-50',
+                    retentionMode === opt.value
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50',
+                  )}
+                >
+                  <div className={cn('text-sm font-medium', retentionMode === opt.value && 'text-primary')}>
+                    {opt.label}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{opt.hint}</div>
+                </button>
+              ))}
+            </div>
+
+            {retentionMode === 'by_type' && (
+              <div className="space-y-2 pt-1">
+                {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
+                  <div key={cohort} className="flex items-center justify-between">
+                    <span className="text-sm">{staffCohortLabels[cohort]}</span>
+                    <StyledSwitch
+                      size="small"
+                      checked={retainCohorts[cohort]}
+                      onChange={(v) => setRetainCohorts(prev => ({ ...prev, [cohort]: v }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {retentionMode !== 'unassign_all' && (
+              <p className="text-xs text-muted-foreground">
+                {retainedStaffCount} of {relevantShifts.length} shifts will keep their assigned staff member;
+                the rest are saved as open shifts.
+              </p>
+            )}
+
+            <div className="border-t pt-3">
+              <StyledSwitch
+                checked={includeStaffPreferences}
+                onChange={setIncludeStaffPreferences}
+                label="Include staff role preferences"
+                disabled={staff.length === 0}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {staff.length === 0
+                  ? 'Staff details are unavailable for this period.'
+                  : 'Stores the role and qualifications of the assigned staff member on each template shift, so re-applying suggests similar people.'}
+              </p>
+            </div>
           </div>
         </FormSection>
+
 
         {/* Summary + preview */}
         <FormSection title="Summary">
