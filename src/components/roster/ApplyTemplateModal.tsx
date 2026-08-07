@@ -333,7 +333,7 @@ export function ApplyTemplateModal({
                   <div className="divide-y divide-border">
                     {matchResults.map((result, idx) => {
                       const room = rooms.find(r => r.id === result.templateShift.roomId);
-                      const isSelected = selectedShifts.size === 0 || selectedShifts.has(result.templateShift.id);
+                      const isSelected = selectedShifts.has(result.templateShift.id);
                       
                       return (
                         <div
