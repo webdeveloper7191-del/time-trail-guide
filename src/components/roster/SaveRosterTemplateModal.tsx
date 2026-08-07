@@ -1,13 +1,14 @@
-import { useState, useMemo } from 'react';
-import { Shift, Room, Centre } from '@/types/roster';
+import { useState, useMemo, useEffect } from 'react';
+import { Shift, Room, Centre, StaffMember, roleLabels } from '@/types/roster';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RosterTemplate, RosterTemplateShift } from '@/types/rosterTemplates';
 import { format } from 'date-fns';
-import { Save, FileText, Clock, Users } from 'lucide-react';
+import { Save, FileText, CalendarDays, LayoutGrid, AlertCircle } from 'lucide-react';
 import PrimaryOffCanvas, { OffCanvasAction } from '@/components/ui/off-canvas/PrimaryOffCanvas';
-import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
+import { FormSection, FormField } from '@/components/ui/off-canvas/FormSection';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { StyledSwitch } from '@/components/ui/StyledSwitch';
 import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
@@ -19,9 +20,17 @@ interface SaveRosterTemplateModalProps {
   rooms: Room[];
   centreId: string;
   centres?: Centre[];
+  staff?: StaffMember[];
+  existingTemplates?: RosterTemplate[];
   dates: Date[];
-  onSave: (template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  /** When `updateTemplateId` is provided the caller should overwrite that template instead of creating a new one. */
+  onSave: (
+    template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>,
+    updateTemplateId?: string,
+  ) => void;
 }
+
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function SaveRosterTemplateModal({
   open,
@@ -30,77 +39,135 @@ export function SaveRosterTemplateModal({
   rooms: defaultRooms,
   centreId,
   centres,
+  staff = [],
+  existingTemplates = [],
   dates,
-  onSave
+  onSave,
 }: SaveRosterTemplateModalProps) {
   const [activeCentreId, setActiveCentreId] = useState(centreId);
-  const rooms = useMemo(() => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const [includeStaffPreferences, setIncludeStaffPreferences] = useState(false);
+
+  const areas = useMemo(() => {
     if (centres) {
-      const centre = centres.find(c => c.id === activeCentreId);
-      return centre?.rooms || [];
+      return centres.find(c => c.id === activeCentreId)?.rooms || [];
     }
     return defaultRooms;
   }, [centres, activeCentreId, defaultRooms]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(rooms.map(r => r.id));
-  const [includeStaffPreferences, setIncludeStaffPreferences] = useState(false);
 
-  const relevantShifts = shifts.filter(s => 
-    s.centreId === activeCentreId && 
-    selectedRooms.includes(s.roomId) &&
-    dates.some(d => format(d, 'yyyy-MM-dd') === s.date)
+  // Shifts in the visible period for the active location, before area filtering.
+  const periodShifts = useMemo(() => {
+    const dateKeys = new Set(dates.map(d => format(d, 'yyyy-MM-dd')));
+    return shifts.filter(s => s.centreId === activeCentreId && dateKeys.has(s.date));
+  }, [shifts, activeCentreId, dates]);
+
+  const shiftCountByArea = useMemo(() => {
+    const counts: Record<string, number> = {};
+    periodShifts.forEach(s => {
+      counts[s.roomId] = (counts[s.roomId] || 0) + 1;
+    });
+    return counts;
+  }, [periodShifts]);
+
+  // Reset form state each time the panel opens, and keep the selection in sync
+  // with whichever location is active (auto-select areas that actually have shifts).
+  useEffect(() => {
+    if (!open) return;
+    setActiveCentreId(centreId);
+    setName('');
+    setDescription('');
+    setIncludeStaffPreferences(false);
+  }, [open, centreId]);
+
+  useEffect(() => {
+    if (!open) return;
+    const withShifts = areas.filter(a => (shiftCountByArea[a.id] || 0) > 0).map(a => a.id);
+    setSelectedAreas(withShifts.length > 0 ? withShifts : areas.map(a => a.id));
+  }, [open, activeCentreId, areas, shiftCountByArea]);
+
+  const relevantShifts = useMemo(
+    () => periodShifts.filter(s => selectedAreas.includes(s.roomId)),
+    [periodShifts, selectedAreas],
   );
 
-  const handleSave = () => {
-    if (!name.trim()) return;
+  const staffById = useMemo(() => new Map(staff.map(s => [s.id, s])), [staff]);
 
-    const templateShifts: RosterTemplateShift[] = relevantShifts.map(shift => {
-      const shiftDate = new Date(shift.date);
+  const coveredDays = useMemo(
+    () => new Set(relevantShifts.map(s => new Date(`${s.date}T00:00:00`).getDay())),
+    [relevantShifts],
+  );
+
+  const areasWithShifts = useMemo(
+    () => selectedAreas.filter(id => (shiftCountByArea[id] || 0) > 0).length,
+    [selectedAreas, shiftCountByArea],
+  );
+
+  const trimmedName = name.trim();
+  const duplicate = existingTemplates.find(
+    t => t.name.trim().toLowerCase() === trimmedName.toLowerCase() && t.centreId === activeCentreId,
+  );
+
+  const validationMessage = !trimmedName
+    ? 'Enter a template name to continue.'
+    : relevantShifts.length === 0
+      ? 'No shifts match the selected location, areas and dates — nothing to save.'
+      : duplicate
+        ? `A template named "${duplicate.name}" already exists for this location. Saving will overwrite it.`
+        : undefined;
+
+  const canSave = !!trimmedName && relevantShifts.length > 0;
+
+  const handleSave = () => {
+    if (!canSave) return;
+
+    const templateShifts: RosterTemplateShift[] = relevantShifts.map((shift, idx) => {
+      const assigned = includeStaffPreferences ? staffById.get(shift.staffId) : undefined;
       return {
-        id: `ts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `ts-${Date.now()}-${idx}`,
         roomId: shift.roomId,
-        dayOfWeek: shiftDate.getDay(),
+        dayOfWeek: new Date(`${shift.date}T00:00:00`).getDay(),
         startTime: shift.startTime,
         endTime: shift.endTime,
         breakMinutes: shift.breakMinutes,
+        staffRole: assigned ? roleLabels[assigned.role] : undefined,
+        requiredQualifications: assigned?.qualifications?.length
+          ? assigned.qualifications.map(q => String(q))
+          : undefined,
         notes: shift.notes,
       };
     });
 
-    onSave({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      centreId,
-      shifts: templateShifts,
-    });
+    onSave(
+      {
+        name: trimmedName,
+        description: description.trim() || undefined,
+        centreId: activeCentreId,
+        shifts: templateShifts,
+      },
+      duplicate?.id,
+    );
 
-    setName('');
-    setDescription('');
     onClose();
   };
 
-  const toggleRoom = (roomId: string) => {
-    setSelectedRooms(prev => 
-      prev.includes(roomId) 
-        ? prev.filter(id => id !== roomId)
-        : [...prev, roomId]
+  const toggleArea = (areaId: string) => {
+    setSelectedAreas(prev =>
+      prev.includes(areaId) ? prev.filter(id => id !== areaId) : [...prev, areaId],
     );
   };
 
-  const groupedShifts = rooms.reduce((acc, room) => {
-    acc[room.id] = relevantShifts.filter(s => s.roomId === room.id).length;
-    return acc;
-  }, {} as Record<string, number>);
+  const allSelected = areas.length > 0 && selectedAreas.length === areas.length;
 
   const actions: OffCanvasAction[] = [
     { label: 'Cancel', onClick: onClose, variant: 'outlined' },
-    { 
-      label: 'Save Template', 
-      onClick: handleSave, 
+    {
+      label: duplicate ? 'Update Template' : 'Save Template',
+      onClick: handleSave,
       variant: 'primary',
-      disabled: !name.trim() || relevantShifts.length === 0,
-      icon: <Save size={16} />
+      disabled: !canSave,
+      icon: <Save size={16} />,
     },
   ];
 
@@ -109,15 +176,19 @@ export function SaveRosterTemplateModal({
       open={open}
       onClose={onClose}
       title="Save as Roster Template"
-      description="Save the current week's shifts as a reusable template"
+      description="Save the current period's shifts as a reusable template"
       icon={Save}
       size="lg"
       actions={actions}
     >
       <div className="space-y-5">
-        {/* Template Details Section */}
+        {/* Template Details */}
         <FormSection title="Template Details">
-          <FormField label="Template Name" required>
+          <FormField
+            label="Template Name"
+            required
+            error={!trimmedName ? undefined : duplicate ? 'Name already in use — saving will overwrite it' : undefined}
+          >
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -137,54 +208,79 @@ export function SaveRosterTemplateModal({
           </FormField>
         </FormSection>
 
-        {/* Rooms Selection */}
-        <FormSection title="Include Rooms" tooltip="Select which rooms to include in this template">
-          {/* Location Selector */}
+        {/* Areas */}
+        <FormSection title="Include Areas" tooltip="Select which areas to include in this template">
           {centres && centres.length > 0 && (
             <div className="mb-3">
               <CentreSelector
                 centres={centres}
                 selectedCentreId={activeCentreId}
-                onCentreChange={(id) => {
-                  setActiveCentreId(id);
-                  setSelectedRooms([]);
-                }}
+                onCentreChange={setActiveCentreId}
                 label="Location"
               />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            {rooms.map(room => {
-              const isSelected = selectedRooms.includes(room.id);
-              return (
-                <div
-                  key={room.id}
-                  onClick={() => toggleRoom(room.id)}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                    isSelected 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border bg-background hover:border-primary/50"
-                  )}
+
+          {areas.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              This location has no areas configured yet.
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">
+                  {selectedAreas.length} of {areas.length} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setSelectedAreas(allSelected ? [] : areas.map(a => a.id))}
                 >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggleRoom(room.id)}
-                    className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-                  />
-                  <span className={cn(
-                    "text-sm",
-                    isSelected ? "font-semibold text-primary" : "text-foreground"
-                  )}>
-                    {room.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {groupedShifts[room.id] || 0} shifts
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                  {allSelected ? 'Clear all' : 'Select all'}
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {areas.map(area => {
+                  const isSelected = selectedAreas.includes(area.id);
+                  const count = shiftCountByArea[area.id] || 0;
+                  const isEmpty = count === 0;
+                  return (
+                    <button
+                      type="button"
+                      key={area.id}
+                      onClick={() => toggleArea(area.id)}
+                      className={cn(
+                        'flex items-center gap-2 p-3 rounded-lg border text-left transition-all',
+                        isSelected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border bg-background hover:border-primary/50',
+                        isEmpty && 'opacity-60',
+                      )}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        tabIndex={-1}
+                        aria-hidden
+                        className="pointer-events-none border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                      />
+                      <span
+                        className={cn(
+                          'text-sm truncate',
+                          isSelected ? 'font-semibold text-primary' : 'text-foreground',
+                        )}
+                      >
+                        {area.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                        {count} {count === 1 ? 'shift' : 'shifts'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </FormSection>
 
         {/* Options */}
@@ -194,11 +290,17 @@ export function SaveRosterTemplateModal({
               checked={includeStaffPreferences}
               onChange={setIncludeStaffPreferences}
               label="Include staff role preferences"
+              disabled={staff.length === 0}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              {staff.length === 0
+                ? 'Staff details are unavailable for this period.'
+                : 'Stores the role and qualifications of the currently assigned staff member on each template shift, so re-applying suggests similar people.'}
+            </p>
           </div>
         </FormSection>
 
-        {/* Summary */}
+        {/* Summary + preview */}
         <FormSection title="Summary">
           <div className="flex items-center gap-4 p-4 bg-background border rounded-lg">
             <div className="flex items-center gap-1.5">
@@ -206,14 +308,51 @@ export function SaveRosterTemplateModal({
               <span className="text-sm font-medium">{relevantShifts.length} shifts</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock size={16} className="text-primary" />
-              <span className="text-sm font-medium">{dates.length} days</span>
+              <CalendarDays size={16} className="text-primary" />
+              <span className="text-sm font-medium">{coveredDays.size} days</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Users size={16} className="text-primary" />
-              <span className="text-sm font-medium">{selectedRooms.length} rooms</span>
+              <LayoutGrid size={16} className="text-primary" />
+              <span className="text-sm font-medium">{areasWithShifts} areas</span>
             </div>
           </div>
+
+          {relevantShifts.length > 0 && (
+            <div className="rounded-lg border bg-background overflow-hidden">
+              <div className="grid grid-cols-7 border-b bg-muted/40">
+                {DAY_LABELS.map(d => (
+                  <div key={d} className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground text-center">
+                    {d}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {DAY_LABELS.map((d, dow) => {
+                  const count = relevantShifts.filter(
+                    s => new Date(`${s.date}T00:00:00`).getDay() === dow,
+                  ).length;
+                  return (
+                    <div
+                      key={d}
+                      className={cn(
+                        'px-2 py-2 text-center text-sm',
+                        count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      {count || '—'}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {validationMessage && (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <AlertCircle size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
+              <span>{validationMessage}</span>
+            </div>
+          )}
         </FormSection>
       </div>
     </PrimaryOffCanvas>
