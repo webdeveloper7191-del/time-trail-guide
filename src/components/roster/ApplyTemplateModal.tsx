@@ -307,8 +307,13 @@ export function ApplyTemplateModal({
               <div className="flex items-center gap-4 p-4 bg-background border rounded-lg">
                 <div className="flex items-center gap-1.5 text-primary">
                   <Plus size={16} />
-                  <span className="text-sm font-medium">{shiftsToAdd.length} to add</span>
+                  <span className="text-sm font-medium">{selectedAddable.length} of {shiftsToAdd.length} to add</span>
                 </div>
+                {templateHasStaff && applyWithStaff && (
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="text-sm">{assignedCount} with staff</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Check size={16} />
                   <span className="text-sm">{shiftsToSkip.length} will be skipped</span>
