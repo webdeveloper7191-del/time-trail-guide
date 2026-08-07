@@ -147,16 +147,23 @@ export function ApplyTemplateModal({
     return templateShiftStaffId;
   };
 
-  const shiftsToAdd = matchResults.filter(r => r.action === 'add');
+  const shiftsToAdd = useMemo(() => matchResults.filter(r => r.action === 'add'), [matchResults]);
   const shiftsToSkip = matchResults.filter(r => r.action === 'skip');
 
+  // Explicit selection: every addable shift starts ticked.
+  useEffect(() => {
+    setSelectedShifts(new Set(shiftsToAdd.map(r => r.templateShift.id)));
+  }, [shiftsToAdd]);
+
+  const selectedAddable = shiftsToAdd.filter(r => selectedShifts.has(r.templateShift.id));
+  const assignedCount = selectedAddable.filter(
+    r => !!resolveStaffId(r.templateShift.staffId, r.date)
+  ).length;
+
   const handleApply = () => {
-    const newShifts: Omit<Shift, 'id'>[] = matchResults
-      .filter(r => r.action === 'add' || (!skipExisting && r.action === 'update'))
-      .filter(r => selectedShifts.size === 0 || selectedShifts.has(r.templateShift.id))
-      .map(result => {
-        const staffId = resolveStaffId(result.templateShift.staffId, result.date);
-        return {
+    const newShifts: Omit<Shift, 'id'>[] = selectedAddable.map(result => {
+      const staffId = resolveStaffId(result.templateShift.staffId, result.date);
+      return {
         staffId,
         centreId: activeCentreId,
         roomId: result.templateShift.roomId,
@@ -168,9 +175,12 @@ export function ApplyTemplateModal({
         isOpenShift: !staffId,
         notes: result.templateShift.notes,
       };
-      });
+    });
 
     onApply(newShifts);
+    toast.success(`${newShifts.length} shift${newShifts.length === 1 ? '' : 's'} added`, {
+      description: `${assignedCount} assigned to staff · ${shiftsToSkip.length} skipped`,
+    });
     onClose();
   };
 
@@ -205,13 +215,14 @@ export function ApplyTemplateModal({
       actions={[
         { label: 'Cancel', onClick: onClose, variant: 'outlined' },
         { 
-          label: `Apply ${shiftsToAdd.length} Shifts`, 
+          label: `Apply ${selectedAddable.length} Shift${selectedAddable.length === 1 ? '' : 's'}`, 
           onClick: handleApply, 
           variant: 'primary',
-          disabled: !selectedTemplate || shiftsToAdd.length === 0,
+          disabled: !selectedTemplate || selectedAddable.length === 0,
           icon: <Plus size={16} />
         },
       ]}
+    >
     >
       <div className="space-y-5">
         {/* Location Selector */}
