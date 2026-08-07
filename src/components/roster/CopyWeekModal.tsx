@@ -648,49 +648,126 @@ export function CopyWeekModal({
               </ToggleButtonGroup>
             </Box>
 
-            {/* Staff Assignment */}
+            {/* Staff Retention */}
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <UserCheck className="h-4 w-4" />
-                Staff Assignment
+                Staff Retention
               </Typography>
               <ToggleButtonGroup
-                value={staffAssignment}
+                value={retention.mode}
                 exclusive
-                onChange={(_, v) => v && setStaffAssignment(v)}
+                onChange={(_, v) => v && setRetention(r => ({ ...r, mode: v }))}
                 size="small"
                 fullWidth
               >
-                <ToggleButton value="keep">
+                <ToggleButton value="keep_all">
                   <Stack alignItems="center" spacing={0.5}>
                     <Users className="h-4 w-4" />
-                    <Typography variant="caption">Keep Same</Typography>
+                    <Typography variant="caption">Keep all</Typography>
                   </Stack>
                 </ToggleButton>
-                <ToggleButton value="unassign">
+                <ToggleButton value="unassign_all">
                   <Stack alignItems="center" spacing={0.5}>
                     <Calendar className="h-4 w-4" />
-                    <Typography variant="caption">Make Open</Typography>
+                    <Typography variant="caption">Unassign all</Typography>
                   </Stack>
                 </ToggleButton>
-                <ToggleButton value="smart">
+                <ToggleButton value="by_type">
                   <Stack alignItems="center" spacing={0.5}>
-                    <Shuffle className="h-4 w-4" />
-                    <Typography variant="caption">Smart Assign</Typography>
+                    <Filter className="h-4 w-4" />
+                    <Typography variant="caption">Retain by type</Typography>
                   </Stack>
                 </ToggleButton>
               </ToggleButtonGroup>
-              {staffAssignment === 'unassign' && (
-                <Alert severity="info" sx={{ mt: 1 }} icon={false}>
-                  Copied shifts will become open shifts
-                </Alert>
+
+              {retention.mode === 'by_type' && (
+                <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    Keep the assigned staff member for these employment types
+                  </Typography>
+                  <Stack>
+                    {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
+                      <FormControlLabel
+                        key={cohort}
+                        control={
+                          <StyledSwitch
+                            size="small"
+                            checked={retention.retainCohorts[cohort]}
+                            onChange={(_, checked) =>
+                              setRetention(r => ({
+                                ...r,
+                                retainCohorts: { ...r.retainCohorts, [cohort]: checked },
+                              }))
+                            }
+                          />
+                        }
+                        label={
+                          <Typography variant="body2">
+                            {staffCohortLabels[cohort]}
+                          </Typography>
+                        }
+                      />
+                    ))}
+                  </Stack>
+                </Box>
               )}
-              {staffAssignment === 'smart' && (
+
+              {retention.mode !== 'keep_all' && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Shifts whose staff are not retained
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={retention.releaseOutcome}
+                    exclusive
+                    onChange={(_, v) => v && setRetention(r => ({ ...r, releaseOutcome: v }))}
+                    size="small"
+                    fullWidth
+                  >
+                    <ToggleButton value="open_shift">
+                      <Typography variant="caption">Become open shifts</Typography>
+                    </ToggleButton>
+                    <ToggleButton value="drop">
+                      <Typography variant="caption">Don't copy</Typography>
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+              )}
+
+              <FormControlLabel
+                sx={{ mt: 1 }}
+                control={
+                  <StyledSwitch
+                    size="small"
+                    checked={retention.releaseOnLeaveOrRdo}
+                    onChange={(_, checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    Also release staff on approved leave or an RDO in the target period
+                  </Typography>
+                }
+              />
+
+              {retentionSummary.released + retentionSummary.dropped > 0 && (
                 <Alert severity="info" sx={{ mt: 1 }} icon={false}>
-                  Will attempt to assign based on staff availability
+                  <Typography variant="caption">
+                    {retentionSummary.total} shifts: {retentionSummary.kept} keep staff,{' '}
+                    {retentionSummary.released > 0 && `${retentionSummary.released} released to open shifts`}
+                    {retentionSummary.released > 0 && retentionSummary.dropped > 0 && ', '}
+                    {retentionSummary.dropped > 0 && `${retentionSummary.dropped} not copied`}
+                    {Object.keys(retentionSummary.byCohort).length > 0 && (
+                      <> ({(Object.entries(retentionSummary.byCohort) as [StaffCohort, number][])
+                        .map(([c, n]) => `${n} ${staffCohortLabels[c].toLowerCase()}`)
+                        .join(', ')})</>
+                    )}
+                  </Typography>
                 </Alert>
               )}
             </Box>
+
           </>
         ) : (
           /* Preview Mode */
