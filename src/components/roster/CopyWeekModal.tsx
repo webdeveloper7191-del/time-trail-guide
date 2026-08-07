@@ -188,7 +188,10 @@ export function CopyWeekModal({
         const originalDate = new Date(shift.date);
         const newDate = addDays(originalDate, daysDiff);
         const newDateStr = format(newDate, 'yyyy-MM-dd');
-        
+
+        const staffMember = staff.find(s => s.id === shift.staffId);
+        const retentionDecision = evaluateRetention(staffMember, newDateStr, retention);
+
         // Check for conflicts in target
         const conflict = shifts.find(s => 
           s.centreId === activeCentreId &&
@@ -196,12 +199,15 @@ export function CopyWeekModal({
           s.date === newDateStr &&
           s.startTime === shift.startTime &&
           s.endTime === shift.endTime &&
-          (staffAssignment === 'keep' ? s.staffId === shift.staffId : true)
+          (retentionDecision.retained ? s.staffId === shift.staffId : true)
         );
         
         let action: ShiftPreview['action'] = 'add';
         if (conflict) {
           action = conflictHandling === 'skip' ? 'skip' : conflictHandling === 'overwrite' ? 'overwrite' : 'add';
+        }
+        if (retentionDecision.outcome === 'drop') {
+          action = 'skip';
         }
         
         const previewId = `${shift.id}-${newDateStr}`;
@@ -216,12 +222,19 @@ export function CopyWeekModal({
           conflict,
           action,
           selected: isSelected,
+          retention: retentionDecision,
         });
       });
     });
     
     return previews;
-  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, activeCentreId, conflictHandling, staffAssignment, selectAllMode, manualDeselected]);
+  }, [sourceShifts, targetDateRanges, sourceDateRange, shifts, staff, activeCentreId, conflictHandling, retention, selectAllMode, manualDeselected]);
+
+  const retentionSummary = useMemo(
+    () => summariseRetention(shiftPreviews.map(p => p.retention)),
+    [shiftPreviews],
+  );
+
 
   // Stats
   const stats = useMemo(() => {
