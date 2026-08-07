@@ -48,10 +48,20 @@ import { FormSection } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CentreSelector } from './CentreSelector';
+import {
+  StaffRetentionRules,
+  StaffCohort,
+  RetentionDecision,
+  staffCohortLabels,
+  defaultRetentionRules,
+  evaluateRetention,
+  applyRetention,
+  summariseRetention,
+} from '@/lib/staffRetention';
 
 type PeriodType = 'week' | 'fortnight' | 'month' | 'custom';
 type ConflictHandling = 'skip' | 'overwrite' | 'merge';
-type StaffAssignment = 'keep' | 'unassign' | 'smart';
+
 
 
 interface CopyWeekModalProps {
