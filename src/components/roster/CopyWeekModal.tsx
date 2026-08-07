@@ -706,26 +706,18 @@ export function CopyWeekModal({
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                     Keep the assigned staff member for these employment types
                   </Typography>
-                  <Stack>
+                  <Stack spacing={0.5}>
                     {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
-                      <FormControlLabel
+                      <StyledSwitch
                         key={cohort}
-                        control={
-                          <StyledSwitch
-                            size="small"
-                            checked={retention.retainCohorts[cohort]}
-                            onChange={(checked) =>
-                              setRetention(r => ({
-                                ...r,
-                                retainCohorts: { ...r.retainCohorts, [cohort]: checked },
-                              }))
-                            }
-                          />
-                        }
-                        label={
-                          <Typography variant="body2">
-                            {staffCohortLabels[cohort]}
-                          </Typography>
+                        size="small"
+                        label={staffCohortLabels[cohort]}
+                        checked={retention.retainCohorts[cohort]}
+                        onChange={(checked) =>
+                          setRetention(r => ({
+                            ...r,
+                            retainCohorts: { ...r.retainCohorts, [cohort]: checked },
+                          }))
                         }
                       />
                     ))}
@@ -755,21 +747,14 @@ export function CopyWeekModal({
                 </Box>
               )}
 
-              <FormControlLabel
-                sx={{ mt: 1 }}
-                control={
-                  <StyledSwitch
-                    size="small"
-                    checked={retention.releaseOnLeaveOrRdo}
-                    onChange={(checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    Also release staff on approved leave or an RDO in the target period
-                  </Typography>
-                }
+              <StyledSwitch
+                sx={{ mt: 1.5 }}
+                size="small"
+                label="Also release staff on approved leave or an RDO in the target period"
+                checked={retention.releaseOnLeaveOrRdo}
+                onChange={(checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
               />
+
 
               {retentionSummary.released + retentionSummary.dropped > 0 && (
                 <Alert severity="info" sx={{ mt: 1 }} icon={false}>
