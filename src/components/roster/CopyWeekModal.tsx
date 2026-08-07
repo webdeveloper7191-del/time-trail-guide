@@ -747,21 +747,14 @@ export function CopyWeekModal({
                 </Box>
               )}
 
-              <FormControlLabel
-                sx={{ mt: 1 }}
-                control={
-                  <StyledSwitch
-                    size="small"
-                    checked={retention.releaseOnLeaveOrRdo}
-                    onChange={(checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    Also release staff on approved leave or an RDO in the target period
-                  </Typography>
-                }
+              <StyledSwitch
+                sx={{ mt: 1.5 }}
+                size="small"
+                label="Also release staff on approved leave or an RDO in the target period"
+                checked={retention.releaseOnLeaveOrRdo}
+                onChange={(checked) => setRetention(r => ({ ...r, releaseOnLeaveOrRdo: checked }))}
               />
+
 
               {retentionSummary.released + retentionSummary.dropped > 0 && (
                 <Alert severity="info" sx={{ mt: 1 }} icon={false}>
