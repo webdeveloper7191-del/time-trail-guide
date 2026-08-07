@@ -158,12 +158,41 @@ export function ApplyTemplateModal({
 
   const templateHasStaff = !!selectedTemplate?.shifts.some(ts => !!ts.staffId);
 
-  /** Saved staff member for a template shift, unless blocked (leave/RDO) on the target date. */
-  const resolveStaffId = (templateShiftStaffId: string | undefined, date: string) => {
-    if (!applyWithStaff || !templateShiftStaffId || !date) return '';
-    const member = staffById.get(templateShiftStaffId);
-    if (member && isBlockedOnDate(member, date).blocked) return '';
-    return templateShiftStaffId;
+  const retentionRules = useMemo(
+    () => ({
+      mode: staffMode,
+      retainCohorts,
+      releaseOutcome: 'open_shift' as const,
+      releaseOnLeaveOrRdo,
+    }),
+    [staffMode, retainCohorts, releaseOnLeaveOrRdo],
+  );
+
+  /**
+   * Staff for a template shift: manual override wins, otherwise the saved staff member
+   * subject to the retention rules (cohort + leave/RDO).
+   */
+  const resolveStaffId = (templateShift: { id: string; staffId?: string }, date: string) => {
+    const override = staffOverrides[templateShift.id];
+    if (override !== undefined) {
+      if (!override) return '';
+      const member = staffById.get(override);
+      if (member && releaseOnLeaveOrRdo && isBlockedOnDate(member, date).blocked) return '';
+      return override;
+    }
+    if (!templateShift.staffId || !date) return '';
+    const member = staffById.get(templateShift.staffId);
+    const decision = evaluateRetention(member, date, retentionRules);
+    return decision.retained ? templateShift.staffId : '';
+  };
+
+  /** Why a saved staff member was dropped, for the row hint. */
+  const releaseReason = (templateShift: { id: string; staffId?: string }, date: string) => {
+    if (staffOverrides[templateShift.id] !== undefined) return undefined;
+    if (!templateShift.staffId || !date) return undefined;
+    const member = staffById.get(templateShift.staffId);
+    const decision = evaluateRetention(member, date, retentionRules);
+    return decision.retained ? undefined : decision.reason;
   };
 
   const shiftsToAdd = useMemo(() => matchResults.filter(r => r.action === 'add'), [matchResults]);
