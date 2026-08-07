@@ -13,7 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
-import { isBlockedOnDate } from '@/lib/staffRetention';
+import {
+  isBlockedOnDate,
+  evaluateRetention,
+  staffCohortLabels,
+  resolveStaffCohort,
+  type RetentionMode,
+  type StaffCohort,
+} from '@/lib/staffRetention';
 
 interface ApplyTemplateModalProps {
   open: boolean;
@@ -53,7 +60,16 @@ export function ApplyTemplateModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [skipExisting, setSkipExisting] = useState(true);
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
-  const [applyWithStaff, setApplyWithStaff] = useState(true);
+  const [staffMode, setStaffMode] = useState<RetentionMode>('keep_all');
+  const [retainCohorts, setRetainCohorts] = useState<Record<StaffCohort, boolean>>({
+    full_time: true,
+    part_time: true,
+    casual: false,
+    agency: false,
+  });
+  const [releaseOnLeaveOrRdo, setReleaseOnLeaveOrRdo] = useState(true);
+  /** Per-row manual staff override: templateShift.id -> staffId ('' = open shift). */
+  const [staffOverrides, setStaffOverrides] = useState<Record<string, string>>({});
 
   const staffById = useMemo(() => new Map(staff.map(s => [s.id, s])), [staff]);
 
@@ -82,7 +98,10 @@ export function ApplyTemplateModal({
       setSelectedTemplateId('');
       setSelectedShifts(new Set());
       setSkipExisting(true);
-      setApplyWithStaff(true);
+      setStaffMode('keep_all');
+      setRetainCohorts({ full_time: true, part_time: true, casual: false, agency: false });
+      setReleaseOnLeaveOrRdo(true);
+      setStaffOverrides({});
     }
   }, [open, centreId]);
 
@@ -139,12 +158,41 @@ export function ApplyTemplateModal({
 
   const templateHasStaff = !!selectedTemplate?.shifts.some(ts => !!ts.staffId);
 
-  /** Saved staff member for a template shift, unless blocked (leave/RDO) on the target date. */
-  const resolveStaffId = (templateShiftStaffId: string | undefined, date: string) => {
-    if (!applyWithStaff || !templateShiftStaffId || !date) return '';
-    const member = staffById.get(templateShiftStaffId);
-    if (member && isBlockedOnDate(member, date).blocked) return '';
-    return templateShiftStaffId;
+  const retentionRules = useMemo(
+    () => ({
+      mode: staffMode,
+      retainCohorts,
+      releaseOutcome: 'open_shift' as const,
+      releaseOnLeaveOrRdo,
+    }),
+    [staffMode, retainCohorts, releaseOnLeaveOrRdo],
+  );
+
+  /**
+   * Staff for a template shift: manual override wins, otherwise the saved staff member
+   * subject to the retention rules (cohort + leave/RDO).
+   */
+  const resolveStaffId = (templateShift: { id: string; staffId?: string }, date: string) => {
+    const override = staffOverrides[templateShift.id];
+    if (override !== undefined) {
+      if (!override) return '';
+      const member = staffById.get(override);
+      if (member && releaseOnLeaveOrRdo && isBlockedOnDate(member, date).blocked) return '';
+      return override;
+    }
+    if (!templateShift.staffId || !date) return '';
+    const member = staffById.get(templateShift.staffId);
+    const decision = evaluateRetention(member, date, retentionRules);
+    return decision.retained ? templateShift.staffId : '';
+  };
+
+  /** Why a saved staff member was dropped, for the row hint. */
+  const releaseReason = (templateShift: { id: string; staffId?: string }, date: string) => {
+    if (staffOverrides[templateShift.id] !== undefined) return undefined;
+    if (!templateShift.staffId || !date) return undefined;
+    const member = staffById.get(templateShift.staffId);
+    const decision = evaluateRetention(member, date, retentionRules);
+    return decision.retained ? undefined : decision.reason;
   };
 
   const shiftsToAdd = useMemo(() => matchResults.filter(r => r.action === 'add'), [matchResults]);
@@ -157,12 +205,12 @@ export function ApplyTemplateModal({
 
   const selectedAddable = shiftsToAdd.filter(r => selectedShifts.has(r.templateShift.id));
   const assignedCount = selectedAddable.filter(
-    r => !!resolveStaffId(r.templateShift.staffId, r.date)
+    r => !!resolveStaffId(r.templateShift, r.date)
   ).length;
 
   const handleApply = () => {
     const newShifts: Omit<Shift, 'id'>[] = selectedAddable.map(result => {
-      const staffId = resolveStaffId(result.templateShift.staffId, result.date);
+      const staffId = resolveStaffId(result.templateShift, result.date);
       return {
         staffId,
         centreId: activeCentreId,
@@ -286,20 +334,60 @@ export function ApplyTemplateModal({
                 </div>
               </div>
 
-              {templateHasStaff && (
-                <div className="bg-background rounded-lg border p-4 mt-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={applyWithStaff}
-                      onCheckedChange={(checked) => setApplyWithStaff(checked as boolean)}
-                    />
-                    <span className="text-sm">Apply with saved staff assignments</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Staff on approved leave or an RDO for the target date are left as open shifts.
+              <div className="bg-background rounded-lg border p-4 mt-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Staff on applied shifts</p>
+                  <p className="text-xs text-muted-foreground">
+                    Choose which saved assignments carry over. Anything not kept becomes an open shift,
+                    and you can still change any individual row below.
                   </p>
                 </div>
-              )}
+
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: 'unassign_all', label: 'Without staff' },
+                    { value: 'keep_all', label: 'With all staff' },
+                    { value: 'by_type', label: 'By staff type' },
+                  ] as { value: RetentionMode; label: string }[]).map(opt => (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      size="sm"
+                      variant={staffMode === opt.value ? 'default' : 'outline'}
+                      onClick={() => setStaffMode(opt.value)}
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+
+                {staffMode === 'by_type' && (
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
+                      <label key={cohort} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={retainCohorts[cohort]}
+                          onCheckedChange={(checked) =>
+                            setRetainCohorts(prev => ({ ...prev, [cohort]: checked as boolean }))
+                          }
+                        />
+                        {staffCohortLabels[cohort]}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {staffMode !== 'unassign_all' && (
+                  <label className="flex items-center gap-2 text-sm pt-1">
+                    <Checkbox
+                      checked={releaseOnLeaveOrRdo}
+                      onCheckedChange={(checked) => setReleaseOnLeaveOrRdo(checked as boolean)}
+                    />
+                    Release staff on approved leave or an RDO for the target date
+                  </label>
+                )}
+              </div>
+
             </FormSection>
 
             {/* Summary */}
@@ -309,7 +397,7 @@ export function ApplyTemplateModal({
                   <Plus size={16} />
                   <span className="text-sm font-medium">{selectedAddable.length} of {shiftsToAdd.length} to add</span>
                 </div>
-                {templateHasStaff && applyWithStaff && (
+                {assignedCount > 0 && (
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <span className="text-sm">{assignedCount} with staff</span>
                   </div>
@@ -325,12 +413,13 @@ export function ApplyTemplateModal({
             <FormSection title="Shifts to Apply">
               <div className="bg-background rounded-lg border overflow-hidden">
                 {/* Table Header */}
-                <div className="grid grid-cols-[32px_1fr_24px_120px_100px_80px] items-center gap-3 px-4 py-2 bg-muted/50 border-b">
+                <div className="grid grid-cols-[32px_1fr_20px_104px_92px_170px_64px] items-center gap-3 px-4 py-2 bg-muted/50 border-b">
                   <div />
                   <span className="text-xs font-medium text-muted-foreground">Room</span>
                   <div />
                   <span className="text-xs font-medium text-muted-foreground">Date</span>
                   <span className="text-xs font-medium text-muted-foreground">Time</span>
+                  <span className="text-xs font-medium text-muted-foreground">Staff</span>
                   <span className="text-xs font-medium text-muted-foreground text-right">Status</span>
                 </div>
                 
@@ -345,7 +434,7 @@ export function ApplyTemplateModal({
                           key={idx}
                           onClick={() => result.action === 'add' && toggleShift(result.templateShift.id)}
                           className={cn(
-                            "grid grid-cols-[32px_1fr_24px_120px_100px_80px] items-center gap-3 px-4 py-3 transition-all",
+                            "grid grid-cols-[32px_1fr_20px_104px_92px_170px_64px] items-center gap-3 px-4 py-3 transition-all",
                             result.action === 'skip' ? "opacity-60" : "cursor-pointer hover:bg-primary/5",
                             result.action === 'add' && isSelected && "bg-primary/5"
                           )}
@@ -374,14 +463,46 @@ export function ApplyTemplateModal({
                           </span>
                           <span className="text-sm text-muted-foreground">
                             {result.templateShift.startTime} - {result.templateShift.endTime}
-                            {(() => {
-                              const sid = resolveStaffId(result.templateShift.staffId, result.date);
-                              const member = sid ? staffById.get(sid) : undefined;
-                              return member ? (
-                                <span className="block text-[11px] text-primary">{member.name}</span>
-                              ) : null;
-                            })()}
                           </span>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {result.action === 'add' ? (
+                              <>
+                                <Select
+                                  value={resolveStaffId(result.templateShift, result.date) || '__open__'}
+                                  onValueChange={(value) =>
+                                    setStaffOverrides(prev => ({
+                                      ...prev,
+                                      [result.templateShift.id]: value === '__open__' ? '' : value,
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Open shift" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover z-50">
+                                    <SelectItem value="__open__">Open shift</SelectItem>
+                                    {staff.map(s => (
+                                      <SelectItem key={s.id} value={s.id}>
+                                        {s.name}
+                                        {resolveStaffCohort(s)
+                                          ? ` · ${staffCohortLabels[resolveStaffCohort(s)!]}`
+                                          : ''}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {(() => {
+                                  const reason = releaseReason(result.templateShift, result.date);
+                                  return reason ? (
+                                    <span className="block text-[11px] text-muted-foreground mt-1">{reason}</span>
+                                  ) : null;
+                                })()}
+                              </>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
+
                           <div className="flex justify-end">
                             <Badge 
                               variant={result.action === 'add' && isSelected ? 'default' : 'secondary'}
