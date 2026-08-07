@@ -13,7 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
-import { isBlockedOnDate } from '@/lib/staffRetention';
+import {
+  isBlockedOnDate,
+  evaluateRetention,
+  staffCohortLabels,
+  resolveStaffCohort,
+  type RetentionMode,
+  type StaffCohort,
+} from '@/lib/staffRetention';
 
 interface ApplyTemplateModalProps {
   open: boolean;
