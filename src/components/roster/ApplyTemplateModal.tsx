@@ -334,20 +334,60 @@ export function ApplyTemplateModal({
                 </div>
               </div>
 
-              {templateHasStaff && (
-                <div className="bg-background rounded-lg border p-4 mt-3">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={applyWithStaff}
-                      onCheckedChange={(checked) => setApplyWithStaff(checked as boolean)}
-                    />
-                    <span className="text-sm">Apply with saved staff assignments</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Staff on approved leave or an RDO for the target date are left as open shifts.
+              <div className="bg-background rounded-lg border p-4 mt-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">Staff on applied shifts</p>
+                  <p className="text-xs text-muted-foreground">
+                    Choose which saved assignments carry over. Anything not kept becomes an open shift,
+                    and you can still change any individual row below.
                   </p>
                 </div>
-              )}
+
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { value: 'unassign_all', label: 'Without staff' },
+                    { value: 'keep_all', label: 'With all staff' },
+                    { value: 'by_type', label: 'By staff type' },
+                  ] as { value: RetentionMode; label: string }[]).map(opt => (
+                    <Button
+                      key={opt.value}
+                      type="button"
+                      size="sm"
+                      variant={staffMode === opt.value ? 'default' : 'outline'}
+                      onClick={() => setStaffMode(opt.value)}
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+
+                {staffMode === 'by_type' && (
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
+                      <label key={cohort} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={retainCohorts[cohort]}
+                          onCheckedChange={(checked) =>
+                            setRetainCohorts(prev => ({ ...prev, [cohort]: checked as boolean }))
+                          }
+                        />
+                        {staffCohortLabels[cohort]}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {staffMode !== 'unassign_all' && (
+                  <label className="flex items-center gap-2 text-sm pt-1">
+                    <Checkbox
+                      checked={releaseOnLeaveOrRdo}
+                      onCheckedChange={(checked) => setReleaseOnLeaveOrRdo(checked as boolean)}
+                    />
+                    Release staff on approved leave or an RDO for the target date
+                  </label>
+                )}
+              </div>
+
             </FormSection>
 
             {/* Summary */}
