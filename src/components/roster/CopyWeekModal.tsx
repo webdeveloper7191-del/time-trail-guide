@@ -706,26 +706,18 @@ export function CopyWeekModal({
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                     Keep the assigned staff member for these employment types
                   </Typography>
-                  <Stack>
+                  <Stack spacing={0.5}>
                     {(Object.keys(staffCohortLabels) as StaffCohort[]).map(cohort => (
-                      <FormControlLabel
+                      <StyledSwitch
                         key={cohort}
-                        control={
-                          <StyledSwitch
-                            size="small"
-                            checked={retention.retainCohorts[cohort]}
-                            onChange={(checked) =>
-                              setRetention(r => ({
-                                ...r,
-                                retainCohorts: { ...r.retainCohorts, [cohort]: checked },
-                              }))
-                            }
-                          />
-                        }
-                        label={
-                          <Typography variant="body2">
-                            {staffCohortLabels[cohort]}
-                          </Typography>
+                        size="small"
+                        label={staffCohortLabels[cohort]}
+                        checked={retention.retainCohorts[cohort]}
+                        onChange={(checked) =>
+                          setRetention(r => ({
+                            ...r,
+                            retainCohorts: { ...r.retainCohorts, [cohort]: checked },
+                          }))
                         }
                       />
                     ))}
