@@ -1382,7 +1382,21 @@ export default function RosterScheduler() {
   };
 
   // Template handlers
-  const handleSaveRosterTemplate = (template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveRosterTemplate = (
+    template: Omit<RosterTemplate, 'id' | 'createdAt' | 'updatedAt'>,
+    updateTemplateId?: string,
+  ) => {
+    if (updateTemplateId) {
+      setRosterTemplates(prev =>
+        prev.map(t =>
+          t.id === updateTemplateId
+            ? { ...t, ...template, updatedAt: new Date().toISOString() }
+            : t,
+        ),
+      );
+      toast.success(`Template "${template.name}" updated`);
+      return;
+    }
     const newTemplate: RosterTemplate = {
       ...template,
       id: `template-${Date.now()}`,
