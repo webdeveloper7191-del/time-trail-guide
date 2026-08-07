@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Shift, Room, ShiftTemplate, Centre } from '@/types/roster';
+import { Shift, Room, ShiftTemplate, Centre, StaffMember } from '@/types/roster';
 import { RosterTemplate, TemplateMatchResult } from '@/types/rosterTemplates';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { FileStack, Check, Plus, ArrowRight, Layers } from 'lucide-react';
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CentreSelector } from './CentreSelector';
 import { cn } from '@/lib/utils';
+import { isBlockedOnDate } from '@/lib/staffRetention';
 
 interface ApplyTemplateModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface ApplyTemplateModalProps {
   rooms: Room[];
   centreId: string;
   centres?: Centre[];
+  staff?: StaffMember[];
   currentDate: Date;
   onApply: (shifts: Omit<Shift, 'id'>[]) => void;
 }
@@ -35,6 +37,7 @@ export function ApplyTemplateModal({
   rooms: defaultRooms,
   centreId,
   centres,
+  staff = [],
   currentDate,
   onApply
 }: ApplyTemplateModalProps) {
@@ -49,6 +52,9 @@ export function ApplyTemplateModal({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [skipExisting, setSkipExisting] = useState(true);
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
+  const [applyWithStaff, setApplyWithStaff] = useState(true);
+
+  const staffById = useMemo(() => new Map(staff.map(s => [s.id, s])), [staff]);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -106,6 +112,16 @@ export function ApplyTemplateModal({
     });
   }, [selectedTemplate, dates, existingShifts, activeCentreId, skipExisting]);
 
+  const templateHasStaff = !!selectedTemplate?.shifts.some(ts => !!ts.staffId);
+
+  /** Saved staff member for a template shift, unless blocked (leave/RDO) on the target date. */
+  const resolveStaffId = (templateShiftStaffId: string | undefined, date: string) => {
+    if (!applyWithStaff || !templateShiftStaffId || !date) return '';
+    const member = staffById.get(templateShiftStaffId);
+    if (member && isBlockedOnDate(member, date).blocked) return '';
+    return templateShiftStaffId;
+  };
+
   const shiftsToAdd = matchResults.filter(r => r.action === 'add');
   const shiftsToSkip = matchResults.filter(r => r.action === 'skip');
 
@@ -113,8 +129,10 @@ export function ApplyTemplateModal({
     const newShifts: Omit<Shift, 'id'>[] = matchResults
       .filter(r => r.action === 'add' || (!skipExisting && r.action === 'update'))
       .filter(r => selectedShifts.size === 0 || selectedShifts.has(r.templateShift.id))
-      .map(result => ({
-        staffId: '',
+      .map(result => {
+        const staffId = resolveStaffId(result.templateShift.staffId, result.date);
+        return {
+        staffId,
         centreId: activeCentreId,
         roomId: result.templateShift.roomId,
         date: result.date,
@@ -122,9 +140,10 @@ export function ApplyTemplateModal({
         endTime: result.templateShift.endTime,
         breakMinutes: result.templateShift.breakMinutes,
         status: 'draft' as const,
-        isOpenShift: true,
+        isOpenShift: !staffId,
         notes: result.templateShift.notes,
-      }));
+      };
+      });
 
     onApply(newShifts);
     onClose();
@@ -228,6 +247,21 @@ export function ApplyTemplateModal({
                   <Button variant="ghost" size="sm" onClick={deselectAll}>Deselect All</Button>
                 </div>
               </div>
+
+              {templateHasStaff && (
+                <div className="bg-background rounded-lg border p-4 mt-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={applyWithStaff}
+                      onCheckedChange={(checked) => setApplyWithStaff(checked as boolean)}
+                    />
+                    <span className="text-sm">Apply with saved staff assignments</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Staff on approved leave or an RDO for the target date are left as open shifts.
+                  </p>
+                </div>
+              )}
             </FormSection>
 
             {/* Summary */}
@@ -297,6 +331,13 @@ export function ApplyTemplateModal({
                           </span>
                           <span className="text-sm text-muted-foreground">
                             {result.templateShift.startTime} - {result.templateShift.endTime}
+                            {(() => {
+                              const sid = resolveStaffId(result.templateShift.staffId, result.date);
+                              const member = sid ? staffById.get(sid) : undefined;
+                              return member ? (
+                                <span className="block text-[11px] text-primary">{member.name}</span>
+                              ) : null;
+                            })()}
                           </span>
                           <div className="flex justify-end">
                             <Badge 

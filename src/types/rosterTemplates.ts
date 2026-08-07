@@ -7,6 +7,8 @@ export interface RosterTemplateShift {
   startTime: string;
   endTime: string;
   breakMinutes: number;
+  /** Saved staff assignment (when the template was saved "with staff"). */
+  staffId?: string;
   staffRole?: string;
   requiredQualifications?: string[];
   notes?: string;
@@ -18,6 +20,8 @@ export interface RosterTemplate {
   description?: string;
   centreId: string;
   shifts: RosterTemplateShift[];
+  /** True when at least one shift carries a saved staff assignment. */
+  includesStaff?: boolean;
   createdAt: string;
   updatedAt: string;
 }

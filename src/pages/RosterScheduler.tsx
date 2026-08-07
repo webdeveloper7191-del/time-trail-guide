@@ -3069,6 +3069,7 @@ export default function RosterScheduler() {
       />
 
       <ApplyTemplateModal
+        staff={allStaff}
         open={showApplyTemplateModal}
         onClose={() => setShowApplyTemplateModal(false)}
         rosterTemplates={rosterTemplates}
