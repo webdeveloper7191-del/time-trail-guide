@@ -462,14 +462,46 @@ export function ApplyTemplateModal({
                           </span>
                           <span className="text-sm text-muted-foreground">
                             {result.templateShift.startTime} - {result.templateShift.endTime}
-                            {(() => {
-                              const sid = resolveStaffId(result.templateShift.staffId, result.date);
-                              const member = sid ? staffById.get(sid) : undefined;
-                              return member ? (
-                                <span className="block text-[11px] text-primary">{member.name}</span>
-                              ) : null;
-                            })()}
                           </span>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            {result.action === 'add' ? (
+                              <>
+                                <Select
+                                  value={resolveStaffId(result.templateShift, result.date) || '__open__'}
+                                  onValueChange={(value) =>
+                                    setStaffOverrides(prev => ({
+                                      ...prev,
+                                      [result.templateShift.id]: value === '__open__' ? '' : value,
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue placeholder="Open shift" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover z-50">
+                                    <SelectItem value="__open__">Open shift</SelectItem>
+                                    {staff.map(s => (
+                                      <SelectItem key={s.id} value={s.id}>
+                                        {s.name}
+                                        {resolveStaffCohort(s)
+                                          ? ` · ${staffCohortLabels[resolveStaffCohort(s)!]}`
+                                          : ''}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {(() => {
+                                  const reason = releaseReason(result.templateShift, result.date);
+                                  return reason ? (
+                                    <span className="block text-[11px] text-muted-foreground mt-1">{reason}</span>
+                                  ) : null;
+                                })()}
+                              </>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </div>
+
                           <div className="flex justify-end">
                             <Badge 
                               variant={result.action === 'add' && isSelected ? 'default' : 'secondary'}
