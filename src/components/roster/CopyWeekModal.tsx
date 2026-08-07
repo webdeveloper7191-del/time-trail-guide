@@ -53,6 +53,7 @@ type PeriodType = 'week' | 'fortnight' | 'month' | 'custom';
 type ConflictHandling = 'skip' | 'overwrite' | 'merge';
 type StaffAssignment = 'keep' | 'unassign' | 'smart';
 
+
 interface CopyWeekModalProps {
   open: boolean;
   onClose: () => void;
