@@ -786,10 +786,22 @@ export function CopyWeekModal({
                             </Typography>
                             <Typography variant="caption" color="text.secondary">•</Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {staffAssignment === 'unassign' ? 'Open Shift' : getStaffName(preview.original.staffId)}
+                              {preview.retention.outcome === 'keep'
+                                ? getStaffName(preview.original.staffId)
+                                : preview.retention.outcome === 'drop'
+                                  ? 'Staff removed'
+                                  : 'Open Shift'}
                             </Typography>
-                          </Stack>
-                        </Box>
+                            {!preview.retention.retained && preview.retention.reason && (
+                              <Chip
+                                label={preview.retention.reason}
+                                size="small"
+                                variant="outlined"
+                                color="warning"
+                                sx={{ height: 18, '& .MuiChip-label': { px: 0.75, fontSize: 10 } }}
+                              />
+                            )}
+
                         
                         {preview.action === 'add' && (
                           <Chip label="Add" size="small" color="success" icon={<Check className="h-3 w-3" />} />
