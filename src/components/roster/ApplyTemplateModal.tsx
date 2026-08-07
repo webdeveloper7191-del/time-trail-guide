@@ -60,7 +60,31 @@ export function ApplyTemplateModal({
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
+  // Only show templates saved for the active location (fall back to all if none match).
+  const rosterTemplates = useMemo(() => {
+    const scoped = allRosterTemplates.filter(t => t.centreId === activeCentreId);
+    return scoped;
+  }, [allRosterTemplates, activeCentreId]);
+
   const selectedTemplate = rosterTemplates.find(t => t.id === selectedTemplateId);
+
+  // Reset the template when it no longer belongs to the active location.
+  useEffect(() => {
+    if (selectedTemplateId && !rosterTemplates.some(t => t.id === selectedTemplateId)) {
+      setSelectedTemplateId('');
+    }
+  }, [rosterTemplates, selectedTemplateId]);
+
+  // Reset all state when reopened.
+  useEffect(() => {
+    if (open) {
+      setActiveCentreId(centreId);
+      setSelectedTemplateId('');
+      setSelectedShifts(new Set());
+      setSkipExisting(true);
+      setApplyWithStaff(true);
+    }
+  }, [open, centreId]);
 
   const matchResults = useMemo((): TemplateMatchResult[] => {
     if (!selectedTemplate) return [];
