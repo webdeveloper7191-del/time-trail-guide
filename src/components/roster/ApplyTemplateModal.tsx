@@ -419,6 +419,7 @@ export function ApplyTemplateModal({
                   <div />
                   <span className="text-xs font-medium text-muted-foreground">Date</span>
                   <span className="text-xs font-medium text-muted-foreground">Time</span>
+                  <span className="text-xs font-medium text-muted-foreground">Staff</span>
                   <span className="text-xs font-medium text-muted-foreground text-right">Status</span>
                 </div>
                 
