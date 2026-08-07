@@ -223,7 +223,6 @@ export function ApplyTemplateModal({
         },
       ]}
     >
-    >
       <div className="space-y-5">
         {/* Location Selector */}
         {centres && centres.length > 0 && (
