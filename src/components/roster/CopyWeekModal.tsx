@@ -242,21 +242,15 @@ export function CopyWeekModal({
           date: p.newDate,
           status: 'draft',
         };
-        
-        // Handle staff assignment
-        if (staffAssignment === 'unassign') {
-          newShift.staffId = '';
-          newShift.isOpenShift = true;
-        } else if (staffAssignment === 'smart') {
-          // Smart assignment could check availability - for now just keep
-          newShift.staffId = p.original.staffId;
-        }
-        
+
         // Remove id from spread
         const { id, ...shiftWithoutId } = newShift as Shift & { id?: string };
-        return shiftWithoutId;
-      });
-    
+
+        // Apply staff retention rules
+        return applyRetention(shiftWithoutId, p.retention);
+      })
+      .filter((s): s is Omit<Shift, 'id'> => s !== null);
+
     if (shiftsToCreate.length === 0) {
       toast.error('No shifts to copy');
       return;
@@ -265,7 +259,8 @@ export function CopyWeekModal({
     onCopy(shiftsToCreate);
     toast.success(`Copied ${shiftsToCreate.length} shift${shiftsToCreate.length > 1 ? 's' : ''}`);
     handleClose();
-  }, [shiftPreviews, staffAssignment, onCopy]);
+  }, [shiftPreviews, onCopy]);
+
 
   const handleClose = () => {
     setShowPreview(false);
