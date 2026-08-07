@@ -397,7 +397,7 @@ export function ApplyTemplateModal({
                   <Plus size={16} />
                   <span className="text-sm font-medium">{selectedAddable.length} of {shiftsToAdd.length} to add</span>
                 </div>
-                {templateHasStaff && applyWithStaff && (
+                {assignedCount > 0 && (
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <span className="text-sm">{assignedCount} with staff</span>
                   </div>
