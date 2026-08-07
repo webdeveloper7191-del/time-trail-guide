@@ -3062,6 +3062,8 @@ export default function RosterScheduler() {
         rooms={selectedCentre.rooms}
         centreId={selectedCentreId}
         centres={mockCentres}
+        staff={allStaff}
+        existingTemplates={rosterTemplates}
         dates={dates}
         onSave={handleSaveRosterTemplate}
       />
