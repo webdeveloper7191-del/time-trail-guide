@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Shift, Room, ShiftTemplate, Centre, StaffMember } from '@/types/roster';
 import { RosterTemplate, TemplateMatchResult } from '@/types/rosterTemplates';
 import { format, addDays, startOfWeek } from 'date-fns';
@@ -31,7 +32,7 @@ interface ApplyTemplateModalProps {
 export function ApplyTemplateModal({
   open,
   onClose,
-  rosterTemplates,
+  rosterTemplates: allRosterTemplates,
   shiftTemplates,
   existingShifts,
   rooms: defaultRooms,
