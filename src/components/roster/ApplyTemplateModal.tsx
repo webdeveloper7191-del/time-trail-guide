@@ -98,7 +98,10 @@ export function ApplyTemplateModal({
       setSelectedTemplateId('');
       setSelectedShifts(new Set());
       setSkipExisting(true);
-      setApplyWithStaff(true);
+      setStaffMode('keep_all');
+      setRetainCohorts({ full_time: true, part_time: true, casual: false, agency: false });
+      setReleaseOnLeaveOrRdo(true);
+      setStaffOverrides({});
     }
   }, [open, centreId]);
 
