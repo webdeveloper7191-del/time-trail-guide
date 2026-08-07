@@ -245,7 +245,7 @@ export function ApplyTemplateModal({
               <SelectContent>
                 {rosterTemplates.length === 0 ? (
                   <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                    No templates saved yet
+                    No templates saved for this location yet
                   </div>
                 ) : (
                   rosterTemplates.map(template => (
@@ -256,6 +256,9 @@ export function ApplyTemplateModal({
                         <Badge variant="secondary" className="ml-1 text-xs">
                           {template.shifts.length} shifts
                         </Badge>
+                        {template.shifts.some(s => !!s.staffId) && (
+                          <Badge variant="outline" className="text-xs">with staff</Badge>
+                        )}
                       </div>
                     </SelectItem>
                   ))
