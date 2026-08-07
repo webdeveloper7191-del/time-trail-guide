@@ -106,7 +106,7 @@ export function CopyWeekModal({
 
   // Options
   const [conflictHandling, setConflictHandling] = useState<ConflictHandling>('skip');
-  const [staffAssignment, setStaffAssignment] = useState<StaffAssignment>('keep');
+  const [retention, setRetention] = useState<StaffRetentionRules>(defaultRetentionRules);
   const [copyDraftsOnly, setCopyDraftsOnly] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set(rooms.map(r => r.id)));
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
