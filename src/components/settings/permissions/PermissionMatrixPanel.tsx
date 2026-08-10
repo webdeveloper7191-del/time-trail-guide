@@ -135,9 +135,25 @@ export function PermissionMatrixPanel() {
                   className="pl-8 w-[200px]"
                 />
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowAllSubs(v => !v);
+                  setExpanded({});
+                }}
+              >
+                {showAllSubs ? (
+                  <ChevronRight className="h-4 w-4 mr-1.5" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 mr-1.5" />
+                )}
+                {showAllSubs ? 'Collapse all' : 'Expand all'}
+              </Button>
               <Button variant="outline" size="sm" onClick={exportCsv}>
                 <Download className="h-4 w-4 mr-1.5" /> Export
               </Button>
+
               <Button
                 variant="outline"
                 size="sm"
