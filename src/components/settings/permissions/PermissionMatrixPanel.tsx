@@ -475,12 +475,30 @@ export function PermissionMatrixPanel() {
                               subs.map(sub => {
                                 const key = subKey(m.id, sub.id);
                                 const subOn = roleMatrix[key] ?? [];
-                                const subAllOn = sub.actions.every(a => subOn.includes(a));
+                                const subPlanActions = sub.actions.filter(a =>
+                                  planAllowsSub(tier, m.id, sub.id, a),
+                                );
+                                const subLocked = subPlanActions.length === 0;
+                                const subAllOn =
+                                  !subLocked && subPlanActions.every(a => subOn.includes(a));
+                                const subTierNeeded = requiredSubTier(
+                                  m.id,
+                                  sub.id,
+                                  sub.actions[0] ?? 'view',
+                                );
                                 return (
                                   <tr key={key} className="border-b bg-muted/10 hover:bg-muted/20">
                                     <td className="px-4 py-2 pl-12">
-                                      <div className="text-[13px] font-medium text-foreground/90">
-                                        {sub.label}
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[13px] font-medium text-foreground/90">
+                                          {sub.label}
+                                        </span>
+                                        {subLocked && (
+                                          <Badge variant="outline" className="text-[10px] gap-1">
+                                            <Lock className="h-2.5 w-2.5" />
+                                            {subTierNeeded ? planLabel(subTierNeeded) : 'Locked'}
+                                          </Badge>
+                                        )}
                                       </div>
                                       <div className="text-[11px] text-muted-foreground">
                                         {sub.description}
@@ -490,9 +508,15 @@ export function PermissionMatrixPanel() {
                                     {ALL_ACTIONS.map(a => {
                                       const applicable = sub.actions.includes(a);
                                       const parentAllows = m.actions.includes(a);
+                                      const entitled = planAllowsSub(tier, m.id, sub.id, a);
+                                      const needs = requiredSubTier(m.id, sub.id, a);
                                       return (
                                         <td key={a} className="px-2 py-2 text-center">
-                                          {applicable && parentAllows ? (
+                                          {!(applicable && parentAllows) ? (
+                                            <span className="text-muted-foreground/30 text-xs">
+                                              —
+                                            </span>
+                                          ) : entitled ? (
                                             <Checkbox
                                               className="h-3.5 w-3.5"
                                               checked={subOn.includes(a)}
@@ -507,9 +531,10 @@ export function PermissionMatrixPanel() {
                                               aria-label={`${actionLabels[a]} ${m.label} — ${sub.label}`}
                                             />
                                           ) : (
-                                            <span className="text-muted-foreground/30 text-xs">
-                                              —
-                                            </span>
+                                            <LockedCell
+                                              small
+                                              needs={needs ? planLabel(needs) : 'Enterprise'}
+                                            />
                                           )}
                                         </td>
                                       );
@@ -518,19 +543,21 @@ export function PermissionMatrixPanel() {
                                       <Button
                                         variant="ghost"
                                         size="sm"
+                                        disabled={subLocked}
                                         className="h-6 text-[11px] text-muted-foreground"
                                         onClick={() =>
                                           permissionsStore.setSubActions(
                                             roleId,
                                             m.id,
                                             sub.id,
-                                            subAllOn ? [] : sub.actions,
+                                            subAllOn ? [] : subPlanActions,
                                           )
                                         }
                                       >
                                         {subAllOn ? 'Clear' : 'Grant all'}
                                       </Button>
                                     </td>
+
                                   </tr>
                                 );
                               })}
