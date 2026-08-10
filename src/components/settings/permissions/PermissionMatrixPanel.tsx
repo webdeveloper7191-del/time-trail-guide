@@ -6,7 +6,28 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronDown, ChevronRight, Download, RotateCcw, Search, ShieldCheck } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  MoreHorizontal,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
+
 import { toast } from 'sonner';
 import {
   ALL_ACTIONS,
@@ -31,18 +52,39 @@ export function PermissionMatrixPanel() {
   const role = roles.find(r => r.id === roleId) ?? roles[0];
   const roleMatrix = matrix[roleId] ?? {};
 
+  const query = search.trim().toLowerCase();
+
+  const matchesModule = (id: string, label: string, description: string) =>
+    !query || label.toLowerCase().includes(query) || description.toLowerCase().includes(query);
+
   const modules = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = query;
     return PERMISSION_MODULES.filter(
       m =>
         !q ||
         m.label.toLowerCase().includes(q) ||
         m.description.toLowerCase().includes(q) ||
-        getSubPermissions(m.id).some(s => s.label.toLowerCase().includes(q)),
+        getSubPermissions(m.id).some(
+          s =>
+            s.label.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+        ),
     );
-  }, [search]);
+  }, [query]);
 
-  const isOpen = (moduleId: string) => expanded[moduleId] ?? showAllSubs;
+  /** Sub-permissions visible for a module given the current search. */
+  const visibleSubs = (moduleId: string, moduleLabel: string, moduleDescription: string) => {
+    const subs = getSubPermissions(moduleId);
+    if (!query || matchesModule(moduleId, moduleLabel, moduleDescription)) return subs;
+    return subs.filter(
+      s =>
+        s.label.toLowerCase().includes(query) || s.description.toLowerCase().includes(query),
+    );
+  };
+
+  // While searching, matching sub-permissions are revealed automatically.
+  const isOpen = (moduleId: string) =>
+    query ? true : (expanded[moduleId] ?? showAllSubs);
+
 
   const grantedCount = PERMISSION_MODULES.reduce(
     (sum, m) =>
@@ -60,7 +102,32 @@ export function PermissionMatrixPanel() {
     0,
   );
 
+  const bulkAllRoles = (
+    moduleId: string,
+    label: string,
+    actions: PermissionAction[],
+    on: boolean,
+  ) => {
+    permissionsStore.setModuleForAllRoles(moduleId, on, actions);
+    toast.success(
+      `${label} ${on ? 'enabled' : 'disabled'} (with sub-permissions) for all ${roles.length} roles`,
+    );
+  };
+
+  const bulkAction = (
+    moduleId: string,
+    label: string,
+    action: PermissionAction,
+    on: boolean,
+  ) => {
+    permissionsStore.setActionForAllRoles(moduleId, action, on);
+    toast.success(
+      `${actionLabels[action]} ${on ? 'granted on' : 'removed from'} ${label} for all ${roles.length} roles`,
+    );
+  };
+
   const setAll = (moduleId: string, actions: PermissionAction[], on: boolean) => {
+
     permissionsStore.setModuleActions(roleId, moduleId, on ? actions : []);
   };
 
@@ -131,8 +198,9 @@ export function PermissionMatrixPanel() {
                 <Input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Find module…"
-                  className="pl-8 w-[200px]"
+                  placeholder="Search modules or sub-permissions…"
+                  className="pl-8 w-[260px]"
+
                 />
               </div>
               <Button
@@ -214,7 +282,7 @@ export function PermissionMatrixPanel() {
                       {groupModules.map(m => {
                         const granted = roleMatrix[m.id] ?? [];
                         const allOn = m.actions.every(a => granted.includes(a));
-                        const subs = getSubPermissions(m.id);
+                        const subs = visibleSubs(m.id, m.label, m.description);
                         const open = isOpen(m.id);
                         const subGranted = subs.reduce(
                           (s, sub) => s + (roleMatrix[subKey(m.id, sub.id)]?.length ?? 0),
@@ -282,15 +350,70 @@ export function PermissionMatrixPanel() {
                                 );
                               })}
                               <td className="px-3 py-2.5 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
-                                  onClick={() => setAll(m.id, m.actions, !allOn)}
-                                >
-                                  {allOn ? 'Clear' : 'Grant all'}
-                                </Button>
+                                <div className="flex items-center justify-end gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
+                                    onClick={() => setAll(m.id, m.actions, !allOn)}
+                                  >
+                                    {allOn ? 'Clear' : 'Grant all'}
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        aria-label={`Bulk actions for ${m.label}`}
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-64 bg-popover z-50">
+                                      <DropdownMenuLabel className="text-xs">
+                                        Apply to all {roles.length} roles
+                                      </DropdownMenuLabel>
+                                      <DropdownMenuItem
+                                        onClick={() => bulkAllRoles(m.id, m.label, m.actions, true)}
+                                      >
+                                        <Users className="h-4 w-4 mr-2" />
+                                        Enable module + sub-permissions
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => bulkAllRoles(m.id, m.label, m.actions, false)}
+                                      >
+                                        <Users className="h-4 w-4 mr-2" />
+                                        Disable module + sub-permissions
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuLabel className="text-xs">
+                                        Single action, all roles
+                                      </DropdownMenuLabel>
+                                      {m.actions.map(a => (
+                                        <DropdownMenuSub key={a}>
+                                          <DropdownMenuSubTrigger>
+                                            {actionLabels[a]}
+                                          </DropdownMenuSubTrigger>
+                                          <DropdownMenuSubContent className="bg-popover z-50">
+                                            <DropdownMenuItem
+                                              onClick={() => bulkAction(m.id, m.label, a, true)}
+                                            >
+                                              Enable for all roles
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={() => bulkAction(m.id, m.label, a, false)}
+                                            >
+                                              Disable for all roles
+                                            </DropdownMenuItem>
+                                          </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+                                      ))}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </td>
+
                             </tr>
                             {open &&
                               subs.map(sub => {
