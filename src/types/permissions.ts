@@ -444,10 +444,14 @@ const S = (
 
 export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
   dashboard: [
+    S('tenant-admin-view', 'Tenant Admin dashboard', 'Organisation-wide KPIs, location performance and governance alerts.', ['view', 'export']),
+    S('location-admin-view', 'Location Admin dashboard', 'Daily coverage, approvals and ratio alerts for assigned locations.', ['view', 'export']),
+    S('staff-view', 'Staff dashboard', 'Personal hours, upcoming shifts, leave balances and self-service actions.', ['view']),
     S('kpis', 'KPI tiles', 'Headline coverage, cost and attendance tiles.', ['view', 'export']),
     S('alerts', 'Alerts & exceptions feed', 'Ratio breaches, unfilled shifts and overdue tasks.', ['view']),
     S('org-wide', 'Cross-location view', 'See figures for every location, not just assigned ones.', ['view', 'export']),
   ],
+
   roster: [
     S('shifts', 'Shifts', 'Create, edit, delete and move individual shifts.', ['view', 'create', 'edit', 'delete', 'export']),
     S('open-shifts', 'Open shifts', 'Publish, claim, approve claims and fill open shifts.', ['view', 'create', 'edit', 'delete', 'approve', 'assign']),
