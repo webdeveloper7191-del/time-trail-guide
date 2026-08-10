@@ -344,7 +344,22 @@ export function PermissionMatrixPanel() {
                                     <span className="w-4" />
                                   )}
                                   <div>
-                                    <div className="font-medium">{m.label}</div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium">{m.label}</span>
+                                      {moduleTier && moduleTier !== 'essentials' && (
+                                        <Badge
+                                          variant={moduleLocked ? 'outline' : 'secondary'}
+                                          className="text-[10px] gap-1"
+                                        >
+                                          {moduleLocked ? (
+                                            <Lock className="h-2.5 w-2.5" />
+                                          ) : (
+                                            <Sparkles className="h-2.5 w-2.5" />
+                                          )}
+                                          {planLabel(moduleTier)}
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <div className="text-xs text-muted-foreground">
                                       {m.description}
                                     </div>
@@ -364,9 +379,13 @@ export function PermissionMatrixPanel() {
                               </td>
                               {ALL_ACTIONS.map(a => {
                                 const applicable = m.actions.includes(a);
+                                const entitled = planAllows(tier, m.id, a);
+                                const needs = requiredTier(m.id, a);
                                 return (
                                   <td key={a} className="px-2 py-2.5 text-center">
-                                    {applicable ? (
+                                    {!applicable ? (
+                                      <span className="text-muted-foreground/40 text-xs">—</span>
+                                    ) : entitled ? (
                                       <Checkbox
                                         checked={granted.includes(a)}
                                         onCheckedChange={() =>
@@ -375,11 +394,12 @@ export function PermissionMatrixPanel() {
                                         aria-label={`${actionLabels[a]} ${m.label}`}
                                       />
                                     ) : (
-                                      <span className="text-muted-foreground/40 text-xs">—</span>
+                                      <LockedCell needs={needs ? planLabel(needs) : 'Enterprise'} />
                                     )}
                                   </td>
                                 );
                               })}
+
                               <td className="px-3 py-2.5 text-right">
                                 <div className="flex items-center justify-end gap-0.5">
                                   <Button
