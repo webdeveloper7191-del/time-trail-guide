@@ -31,18 +31,39 @@ export function PermissionMatrixPanel() {
   const role = roles.find(r => r.id === roleId) ?? roles[0];
   const roleMatrix = matrix[roleId] ?? {};
 
+  const query = search.trim().toLowerCase();
+
+  const matchesModule = (id: string, label: string, description: string) =>
+    !query || label.toLowerCase().includes(query) || description.toLowerCase().includes(query);
+
   const modules = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = query;
     return PERMISSION_MODULES.filter(
       m =>
         !q ||
         m.label.toLowerCase().includes(q) ||
         m.description.toLowerCase().includes(q) ||
-        getSubPermissions(m.id).some(s => s.label.toLowerCase().includes(q)),
+        getSubPermissions(m.id).some(
+          s =>
+            s.label.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+        ),
     );
-  }, [search]);
+  }, [query]);
 
-  const isOpen = (moduleId: string) => expanded[moduleId] ?? showAllSubs;
+  /** Sub-permissions visible for a module given the current search. */
+  const visibleSubs = (moduleId: string, moduleLabel: string, moduleDescription: string) => {
+    const subs = getSubPermissions(moduleId);
+    if (!query || matchesModule(moduleId, moduleLabel, moduleDescription)) return subs;
+    return subs.filter(
+      s =>
+        s.label.toLowerCase().includes(query) || s.description.toLowerCase().includes(query),
+    );
+  };
+
+  // While searching, matching sub-permissions are revealed automatically.
+  const isOpen = (moduleId: string) =>
+    query ? true : (expanded[moduleId] ?? showAllSubs);
+
 
   const grantedCount = PERMISSION_MODULES.reduce(
     (sum, m) =>
