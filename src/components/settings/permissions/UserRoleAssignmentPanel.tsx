@@ -70,9 +70,12 @@ export function UserRoleAssignmentPanel() {
                 <td className="px-4 py-2.5 text-muted-foreground">{s.position}</td>
                 <td className="px-4 py-2.5">
                   <Badge variant="outline" className="text-[10px]">
-                    {s.employmentType ?? '—'}
+                    {s.currentPayCondition
+                      ? employmentTypeLabels[s.currentPayCondition.employmentType]
+                      : '—'}
                   </Badge>
                 </td>
+
                 <td className="px-4 py-2.5">
                   <Select
                     value={assignments[s.id] ?? 'employee'}
