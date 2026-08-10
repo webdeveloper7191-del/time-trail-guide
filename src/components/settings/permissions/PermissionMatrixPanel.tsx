@@ -409,6 +409,7 @@ export function PermissionMatrixPanel() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
+                                    disabled={moduleLocked}
                                     className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
                                     onClick={() => setAll(m.id, m.actions, !allOn)}
                                   >
