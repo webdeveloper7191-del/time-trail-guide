@@ -142,9 +142,25 @@ export function PermissionMatrixPanel() {
   };
 
   const setAll = (moduleId: string, actions: PermissionAction[], on: boolean) => {
-
-    permissionsStore.setModuleActions(roleId, moduleId, on ? actions : []);
+    // Never grant something the current subscription plan does not include.
+    const allowed = actions.filter(a => planAllows(tier, moduleId, a));
+    permissionsStore.setModuleActions(roleId, moduleId, on ? allowed : []);
   };
+
+  /** Cell shown when the plan does not include this action. */
+  const LockedCell = ({ needs, small }: { needs: string; small?: boolean }) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-help text-muted-foreground/60">
+          <Lock className={small ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[220px]">
+        Included from the {needs} plan. Upgrade to grant this permission.
+      </TooltipContent>
+    </Tooltip>
+  );
+
 
   const exportCsv = () => {
     const header = ['Module', 'Sub-permission', 'Group', 'Scope', ...ALL_ACTIONS.map(a => actionLabels[a])];
