@@ -60,9 +60,11 @@ export function RolesPanel() {
           <CardTitle className="text-base">Roles</CardTitle>
           <CardDescription>
             System roles ship with a sensible baseline. Clone one to create a tailored role.
+            {' '}Custom roles on {plan.label}: {customCount} of{' '}
+            {roleCap === null ? 'unlimited' : roleCap}.
           </CardDescription>
         </div>
-        <Button size="sm" onClick={() => setOpen(true)}>
+        <Button size="sm" onClick={() => setOpen(true)} disabled={atCap}>
           <Plus className="h-4 w-4 mr-1.5" /> New role
         </Button>
       </CardHeader>
