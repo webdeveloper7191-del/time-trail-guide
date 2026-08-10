@@ -134,12 +134,12 @@ type Audience = 'all' | 'tenant-admin' | 'location-admin' | 'staff';
 
 // Reports a staff member can see about themselves
 const STAFF_REPORT_IDS = new Set([
-  'ts-weekly-summary', 'ts-late-punctuality', 'ts-break-compliance', 'wf-availability-scheduled', 'fairness',
+  'ts-weekly-summary', 'ts-late-punctuality', 'ts-break-compliance', 'wf-availability', 'fairness',
 ]);
 
 // Reports scoped to running a single location day-to-day
 const LOCATION_ADMIN_MODULES = new Set(['roster', 'timesheets', 'locations']);
-const LOCATION_ADMIN_EXTRA_IDS = new Set(['wf-qualification-expiry', 'wf-onboarding-completion', 'pay-labour-cost']);
+const LOCATION_ADMIN_EXTRA_IDS = new Set(['wf-qualifications', 'wf-onboarding-completion', 'pay-labour-cost']);
 
 function audiencesFor(item: ReportItem): Exclude<Audience, 'all'>[] {
   const list: Exclude<Audience, 'all'>[] = ['tenant-admin'];
