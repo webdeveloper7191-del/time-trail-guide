@@ -129,6 +129,44 @@ const reportItems: ReportItem[] = [
   { id: 'pay-casual-perm', title: 'Casual vs Permanent Cost', description: 'Cost comparison between casual and permanent employment types', category: 'report', module: 'payroll', icon: UserCheck, tags: ['casual', 'permanent', 'comparison'], component: CasualVsPermanentReport },
 ];
 
+// ---- Audience (persona) categorisation -------------------------------------
+type Audience = 'all' | 'tenant-admin' | 'location-admin' | 'staff';
+
+// Reports a staff member can see about themselves
+const STAFF_REPORT_IDS = new Set([
+  'ts-weekly-summary', 'ts-late-punctuality', 'ts-break-compliance', 'wf-availability-scheduled', 'fairness',
+]);
+
+// Reports scoped to running a single location day-to-day
+const LOCATION_ADMIN_MODULES = new Set(['roster', 'timesheets', 'locations']);
+const LOCATION_ADMIN_EXTRA_IDS = new Set(['wf-qualification-expiry', 'wf-onboarding-completion', 'pay-labour-cost']);
+
+function audiencesFor(item: ReportItem): Exclude<Audience, 'all'>[] {
+  const list: Exclude<Audience, 'all'>[] = ['tenant-admin'];
+  if (LOCATION_ADMIN_MODULES.has(item.module) || LOCATION_ADMIN_EXTRA_IDS.has(item.id)) list.push('location-admin');
+  if (STAFF_REPORT_IDS.has(item.id)) list.push('staff');
+  return list;
+}
+
+const audienceTabs: { id: Audience; label: string }[] = [
+  { id: 'all', label: 'All audiences' },
+  { id: 'tenant-admin', label: 'Tenant Admin' },
+  { id: 'location-admin', label: 'Location Admin' },
+  { id: 'staff', label: 'Staff' },
+];
+
+const moduleLabels: Record<ReportItem['module'], string> = {
+  roster: 'Roster & Scheduling',
+  timesheets: 'Timesheets & Attendance',
+  workforce: 'Workforce & People',
+  locations: 'Locations & Compliance',
+  payroll: 'Payroll & Awards',
+};
+
+const moduleOrder: ReportItem['module'][] = ['roster', 'timesheets', 'workforce', 'locations', 'payroll'];
+
+
+
 const summaryCards = [
   { label: 'Avg Utilisation', value: `${reportSummaryMetrics.avgUtilisation}%`, icon: Users, trend: '+2.3%' },
   { label: 'Overtime Hours', value: `${reportSummaryMetrics.totalOvertimeHours}h`, icon: Clock, trend: '-4h', negative: true },
