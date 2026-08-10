@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Lock, Search, ShieldCheck } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Lock, Search, ShieldCheck, ChevronRight, Check, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ALL_ACTIONS,
@@ -29,133 +31,238 @@ interface Props {
 
 export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
   const [query, setQuery] = useState('');
+  const [grantedOnly, setGrantedOnly] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setLabel(role?.label ?? '');
     setDescription(role?.description ?? '');
     setQuery('');
+    setEditing(false);
+    setGrantedOnly(true);
+    setExpanded({});
   }, [role?.id, open]);
 
   const grants = role ? matrix[role.id] ?? {} : {};
 
-  const modules = useMemo(() => {
+  const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return PERMISSION_MODULES.map(m => {
-      const subs = getSubPermissions(m.id);
+    const byGroup = new Map<string, Array<{ module: typeof PERMISSION_MODULES[number]; subs: ReturnType<typeof getSubPermissions> }>>();
+
+    for (const m of PERMISSION_MODULES) {
+      const moduleGranted = grants[m.id] ?? [];
+      const allSubs = getSubPermissions(m.id);
       const matchModule = !q || m.label.toLowerCase().includes(q);
-      const visibleSubs = q && !matchModule ? subs.filter(s => s.label.toLowerCase().includes(q)) : subs;
-      return { module: m, subs: visibleSubs, visible: matchModule || visibleSubs.length > 0 };
-    }).filter(x => x.visible);
-  }, [query]);
+
+      let subs = matchModule ? allSubs : allSubs.filter(s => s.label.toLowerCase().includes(q));
+      if (grantedOnly) subs = subs.filter(s => (grants[subKey(m.id, s.id)] ?? []).length > 0);
+
+      const hasAnything = moduleGranted.length > 0 || subs.length > 0;
+      if (grantedOnly && !hasAnything) continue;
+      if (q && !matchModule && subs.length === 0) continue;
+
+      const list = byGroup.get(m.group) ?? [];
+      list.push({ module: m, subs });
+      byGroup.set(m.group, list);
+    }
+    return [...byGroup.entries()];
+  }, [query, grantedOnly, grants]);
 
   if (!role) return null;
 
   const totalActions = PERMISSION_MODULES.reduce((s, m) => s + (grants[m.id]?.length ?? 0), 0);
   const modulesWithAccess = PERMISSION_MODULES.filter(m => (grants[m.id]?.length ?? 0) > 0).length;
+  const noAccessCount = PERMISSION_MODULES.length - modulesWithAccess;
 
   const save = () => {
     const name = label.trim();
     if (!name) return;
     permissionsStore.updateRole(role.id, { label: name, description: description.trim() });
     toast.success('Role updated');
-    onOpenChange(false);
+    setEditing(false);
   };
 
-  const renderActions = (actions: PermissionAction[], granted: PermissionAction[]) => (
-    <div className="flex flex-wrap gap-1">
-      {ALL_ACTIONS.filter(a => actions.includes(a)).map(a => (
-        <Badge
-          key={a}
-          variant={granted.includes(a) ? 'default' : 'outline'}
-          className={granted.includes(a) ? 'text-[10px]' : 'text-[10px] text-muted-foreground opacity-60'}
-        >
-          {actionLabels[a]}
-        </Badge>
-      ))}
-      {actions.length === 0 && <span className="text-xs text-muted-foreground">—</span>}
-    </div>
-  );
+  const actionChips = (actions: PermissionAction[], granted: PermissionAction[]) => {
+    const shown = ALL_ACTIONS.filter(a => actions.includes(a) && (!grantedOnly || granted.includes(a)));
+    if (shown.length === 0) {
+      return <span className="text-xs text-muted-foreground">No permissions</span>;
+    }
+    return (
+      <div className="flex flex-wrap gap-1">
+        {shown.map(a => {
+          const on = granted.includes(a);
+          return (
+            <span
+              key={a}
+              className={
+                on
+                  ? 'inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium'
+                  : 'inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 text-[10px] text-muted-foreground'
+              }
+            >
+              {on ? <Check className="h-2.5 w-2.5" /> : <X className="h-2.5 w-2.5" />}
+              {actionLabels[a]}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[560px] sm:max-w-[560px] flex flex-col">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            {role.label}
-            {role.system ? (
-              <Badge variant="outline" className="text-[10px] gap-1">
-                <Lock className="h-3 w-3" /> System
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-[10px]">Custom</Badge>
-            )}
-          </SheetTitle>
-          <SheetDescription>
-            {modulesWithAccess} of {PERMISSION_MODULES.length} modules · {totalActions} module-level permissions.
-            {role.system && ' System roles are read-only — clone one to tailor access.'}
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent side="right" className="w-[600px] sm:max-w-[600px] flex flex-col p-0">
+        <div className="px-6 pt-6 pb-4 border-b">
+          <SheetHeader className="space-y-2">
+            <SheetTitle className="flex items-center gap-2 text-lg">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              {role.label}
+              {role.system ? (
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <Lock className="h-3 w-3" /> System
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="text-[10px]">Custom</Badge>
+              )}
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+              {role.description}
+              {role.system && ' System roles are read-only — clone one to tailor access.'}
+            </SheetDescription>
+          </SheetHeader>
 
-        <div className="space-y-4 mt-4 flex-1 min-h-0 flex flex-col">
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            {[
+              { label: 'Modules with access', value: `${modulesWithAccess}/${PERMISSION_MODULES.length}` },
+              { label: 'Permissions granted', value: totalActions },
+              { label: 'Modules blocked', value: noAccessCount },
+            ].map(s => (
+              <div key={s.label} className="rounded-lg border bg-muted/30 px-3 py-2">
+                <div className="text-base font-semibold leading-tight">{s.value}</div>
+                <div className="text-[10px] text-muted-foreground">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
           {!role.system && (
-            <div className="space-y-3 rounded-lg border p-3">
-              <div className="space-y-1.5">
-                <Label>Role name</Label>
-                <Input value={label} onChange={e => setLabel(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Description</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
-              </div>
-              <Button size="sm" onClick={save} disabled={!label.trim()}>Save changes</Button>
+            <div className="mt-3">
+              {editing ? (
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Role name</Label>
+                    <Input value={label} onChange={e => setLabel(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Description</Label>
+                    <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={save} disabled={!label.trim()}>Save changes</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit role details
+                </Button>
+              )}
             </div>
           )}
+        </div>
 
-          <div className="relative">
+        <div className="px-6 py-3 border-b flex items-center gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              className="pl-8"
-              placeholder="Filter modules or sub-permissions"
+              className="pl-8 h-9"
+              placeholder="Search modules or sub-permissions"
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
           </div>
-
-          <ScrollArea className="flex-1 pr-3">
-            <div className="space-y-3">
-              {modules.map(({ module, subs }) => {
-                const granted = grants[module.id] ?? [];
-                return (
-                  <div key={module.id} className="rounded-lg border p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-medium">{module.label}</div>
-                        <div className="text-xs text-muted-foreground">{module.group} · {module.scope} scope</div>
-                      </div>
-                      {granted.length === 0 && (
-                        <Badge variant="outline" className="text-[10px] text-muted-foreground">No access</Badge>
-                      )}
-                    </div>
-                    {renderActions(module.actions, granted)}
-                    {subs.length > 0 && (
-                      <div className="pl-3 border-l space-y-2 mt-2">
-                        {subs.map(sub => (
-                          <div key={sub.id} className="space-y-1">
-                            <div className="text-xs font-medium">{sub.label}</div>
-                            {renderActions(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground whitespace-nowrap">
+            <Switch checked={grantedOnly} onCheckedChange={setGrantedOnly} />
+            Granted only
+          </label>
         </div>
+
+        <ScrollArea className="flex-1">
+          <div className="px-6 py-4 space-y-5">
+            {groups.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {grantedOnly
+                  ? 'This role has no granted permissions matching your search. Turn off “Granted only” to see everything.'
+                  : 'Nothing matches your search.'}
+              </p>
+            )}
+            {groups.map(([group, items]) => (
+              <section key={group} className="space-y-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group}
+                </h3>
+                <div className="rounded-lg border divide-y">
+                  {items.map(({ module, subs }) => {
+                    const granted = grants[module.id] ?? [];
+                    const isOpen = expanded[module.id] ?? false;
+                    const grantedSubs = subs.filter(s => (grants[subKey(module.id, s.id)] ?? []).length > 0).length;
+                    return (
+                      <Collapsible
+                        key={module.id}
+                        open={isOpen}
+                        onOpenChange={v => setExpanded(p => ({ ...p, [module.id]: v }))}
+                      >
+                        <div className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{module.label}</div>
+                              <div className="text-[11px] text-muted-foreground">{module.scope} scope</div>
+                            </div>
+                            {granted.length === 0 ? (
+                              <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">
+                                No access
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px] shrink-0">
+                                {granted.length} of {module.actions.length}
+                              </Badge>
+                            )}
+                          </div>
+                          {actionChips(module.actions, granted)}
+                          {subs.length > 0 && (
+                            <>
+                              <CollapsibleTrigger asChild>
+                                <button className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                                  <ChevronRight
+                                    className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+                                  />
+                                  {isOpen ? 'Hide' : 'Show'} {subs.length} sub-permission{subs.length > 1 ? 's' : ''}
+                                  {!grantedOnly && ` · ${grantedSubs} granted`}
+                                </button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="pl-3 border-l space-y-2.5 mt-2">
+                                  {subs.map(sub => (
+                                    <div key={sub.id} className="space-y-1">
+                                      <div className="text-xs font-medium">{sub.label}</div>
+                                      {actionChips(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
+                                    </div>
+                                  ))}
+                                </div>
+                              </CollapsibleContent>
+                            </>
+                          )}
+                        </div>
+                      </Collapsible>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </ScrollArea>
       </SheetContent>
     </Sheet>
   );
