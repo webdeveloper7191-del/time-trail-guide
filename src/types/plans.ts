@@ -98,6 +98,8 @@ const ESSENTIALS: TierDelta = {
     settings: ['view', 'edit'],
     permissions: ['view', 'edit', 'assign'],
     'employee-portal': true,
+    unavailability: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
+    contracts: ['view', 'create', 'edit', 'export'],
   },
 };
 
@@ -105,6 +107,8 @@ const ESSENTIALS: TierDelta = {
 const GROWTH: TierDelta = {
   modules: {
     demand: true,
+    unavailability: true,
+    contracts: ['view', 'create', 'edit', 'delete', 'approve', 'export', 'assign'],
     'pay-conditions': true,
     forms: true,
     performance: true,
@@ -135,6 +139,13 @@ const GROWTH: TierDelta = {
     'locations::optimisation': true,
     'compliance::fatigue': true,
     'permissions::roles': true,
+    'unavailability::recurring': true,
+    'unavailability::config': true,
+    'contracts::send': true,
+    'contracts::sign': true,
+    'contracts::countersign': true,
+    'contracts::variations': true,
+    'contracts::audit': true,
   },
 };
 
@@ -143,6 +154,7 @@ const ENTERPRISE: TierDelta = {
   modules: {
     agency: true,
     recruitment: true,
+    contracts: true,
     settings: true,
     permissions: true,
   },
@@ -154,6 +166,8 @@ const ENTERPRISE: TierDelta = {
     'settings::security': true,
     'settings::audit': true,
     'permissions::elevate': true,
+    'contracts::config': true,
+    'unavailability::override': true,
   },
 };
 
