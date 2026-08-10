@@ -60,27 +60,85 @@ export const permissionsStore = {
     permissionsStore.saveMatrix(matrix);
   },
 
+  /** Parent module toggle — cascades down to every sub-permission. */
   toggleAction: (roleId: string, moduleId: string, action: PermissionAction) => {
     const matrix = permissionsStore.getMatrix();
-    const current = matrix[roleId]?.[moduleId] ?? [];
+    const roleMatrix = { ...(matrix[roleId] ?? {}) };
+    const current = roleMatrix[moduleId] ?? [];
     const has = current.includes(action);
     let next = has ? current.filter(a => a !== action) : [...current, action];
     // Any non-view grant implies view.
     if (!has && action !== 'view' && !next.includes('view')) next = ['view', ...next];
     if (has && action === 'view') next = [];
-    permissionsStore.saveMatrix({
-      ...matrix,
-      [roleId]: { ...(matrix[roleId] ?? {}), [moduleId]: next },
-    });
+    roleMatrix[moduleId] = next;
+
+    for (const sub of getSubPermissions(moduleId)) {
+      const key = subKey(moduleId, sub.id);
+      const subCurrent = roleMatrix[key] ?? [];
+      // Only keep sub grants that are still allowed by the parent.
+      let subNext = subCurrent.filter(a => next.includes(a));
+      if (!has && sub.actions.includes(action)) {
+        // Granting on the parent switches the action on everywhere below it.
+        subNext = [...new Set([...subNext, action])];
+        if (action !== 'view' && sub.actions.includes('view')) subNext = [...new Set(['view' as PermissionAction, ...subNext])];
+      }
+      roleMatrix[key] = subNext;
+    }
+
+    permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
 
+  /** Sub-permission toggle — implies the same action on the parent module. */
+  toggleSubAction: (
+    roleId: string,
+    moduleId: string,
+    subId: string,
+    action: PermissionAction,
+  ) => {
+    const matrix = permissionsStore.getMatrix();
+    const roleMatrix = { ...(matrix[roleId] ?? {}) };
+    const key = subKey(moduleId, subId);
+    const current = roleMatrix[key] ?? [];
+    const has = current.includes(action);
+    let next = has ? current.filter(a => a !== action) : [...current, action];
+    if (!has && action !== 'view' && !next.includes('view')) next = ['view', ...next];
+    if (has && action === 'view') next = [];
+    roleMatrix[key] = next;
+
+    if (!has) {
+      // Parent must allow anything granted below it.
+      const parent = roleMatrix[moduleId] ?? [];
+      const parentNext = [...new Set([...parent, ...next])];
+      roleMatrix[moduleId] = parentNext;
+    }
+
+    permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
+  },
+
+  /** Set the whole module (and all its sub-permissions) at once. */
   setModuleActions: (roleId: string, moduleId: string, actions: PermissionAction[]) => {
     const matrix = permissionsStore.getMatrix();
-    permissionsStore.saveMatrix({
-      ...matrix,
-      [roleId]: { ...(matrix[roleId] ?? {}), [moduleId]: actions },
-    });
+    const roleMatrix = { ...(matrix[roleId] ?? {}), [moduleId]: actions };
+    for (const sub of getSubPermissions(moduleId)) {
+      roleMatrix[subKey(moduleId, sub.id)] = sub.actions.filter(a => actions.includes(a));
+    }
+    permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
+
+  setSubActions: (
+    roleId: string,
+    moduleId: string,
+    subId: string,
+    actions: PermissionAction[],
+  ) => {
+    const matrix = permissionsStore.getMatrix();
+    const roleMatrix = { ...(matrix[roleId] ?? {}), [subKey(moduleId, subId)]: actions };
+    if (actions.length) {
+      roleMatrix[moduleId] = [...new Set([...(roleMatrix[moduleId] ?? []), ...actions])];
+    }
+    permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
+  },
+
 
   resetToDefaults: () => {
     write(ROLES_KEY, DEFAULT_ROLES);
