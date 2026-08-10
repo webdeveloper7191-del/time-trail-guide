@@ -576,14 +576,75 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
 export const getSubPermissions = (moduleId: string): SubPermission[] =>
   SUB_PERMISSIONS[moduleId] ?? [];
 
+/** Sub-areas that must stay closed for a role even though the parent module is granted. */
+const SUB_DENY: Record<string, string[]> = {
+  employee: [
+    'timesheets::team',
+    'timesheets::approval',
+    'timesheets::unlock',
+    'timesheets::payroll-export',
+    'timesheets::policy',
+    'leave::team-requests',
+    'leave::approval',
+    'leave::adjustments',
+    'leave::config',
+    'workforce::pay-conditions',
+    'workforce::locations',
+    'workforce::onboarding',
+    'workforce::bulk-actions',
+    'workforce::termination',
+    'workforce::profiles',
+    'roster::templates',
+    'roster::auto-schedule',
+    'roster::costs',
+    'roster::agency-dispatch',
+    'performance::reviews',
+    'performance::lms-courses',
+    'performance::lms-enrolment',
+    'performance::lms-reporting',
+  ],
+  supervisor: [
+    'timesheets::unlock',
+    'timesheets::payroll-export',
+    'timesheets::policy',
+    'roster::agency-dispatch',
+    'roster::costs',
+  ],
+  'agency-partner': [
+    'roster::templates',
+    'roster::auto-schedule',
+    'roster::costs',
+    'roster::assignment',
+    'roster::constraints',
+    'roster::open-shifts',
+    'roster::publish',
+    'roster::swaps',
+    'timesheets::team',
+    'timesheets::breaks',
+    'timesheets::exceptions',
+    'timesheets::approval',
+    'timesheets::leave-marking',
+    'timesheets::unlock',
+    'timesheets::payroll-export',
+    'timesheets::policy',
+    'agency::applications',
+    'agency::credentials',
+    'agency::role-mapping',
+    'agency::assignment',
+  ],
+  scheduler: ['roster::constraints'],
+};
+
 /** Seed every sub-permission from its parent module grant in the baseline matrix. */
 function withSubDefaults(base: PermissionMatrix): PermissionMatrix {
   const out: PermissionMatrix = {};
   for (const [roleId, modules] of Object.entries(base)) {
+    const denied = new Set(SUB_DENY[roleId] ?? []);
     const next: Record<string, PermissionAction[]> = { ...modules };
     for (const [moduleId, granted] of Object.entries(modules)) {
       for (const sub of getSubPermissions(moduleId)) {
-        next[subKey(moduleId, sub.id)] = sub.actions.filter(a => granted.includes(a));
+        const key = subKey(moduleId, sub.id);
+        next[key] = denied.has(key) ? [] : sub.actions.filter(a => granted.includes(a));
       }
     }
     out[roleId] = next;
@@ -592,4 +653,5 @@ function withSubDefaults(base: PermissionMatrix): PermissionMatrix {
 }
 
 export const DEFAULT_MATRIX: PermissionMatrix = withSubDefaults(BASE_MATRIX);
+
 
