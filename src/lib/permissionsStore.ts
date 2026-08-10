@@ -142,8 +142,59 @@ export const permissionsStore = {
     permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
 
+  /**
+   * Bulk: enable or disable a module (and every sub-permission below it) for
+   * every role at once. When `actions` is omitted the module's full action set
+   * is used for "enable".
+   */
+  setModuleForAllRoles: (
+    moduleId: string,
+    on: boolean,
+    actions: PermissionAction[] = [],
+  ) => {
+    const matrix = { ...permissionsStore.getMatrix() };
+    const next = on ? actions : [];
+    for (const role of permissionsStore.getRoles()) {
+      const roleMatrix = { ...(matrix[role.id] ?? {}), [moduleId]: next };
+      for (const sub of getSubPermissions(moduleId)) {
+        roleMatrix[subKey(moduleId, sub.id)] = sub.actions.filter(a => next.includes(a));
+      }
+      matrix[role.id] = roleMatrix;
+    }
+    permissionsStore.saveMatrix(matrix);
+  },
 
-  resetToDefaults: () => {
+  /** Bulk: turn a single action on/off for a module (and children) in every role. */
+  setActionForAllRoles: (moduleId: string, action: PermissionAction, on: boolean) => {
+    const matrix = { ...permissionsStore.getMatrix() };
+    for (const role of permissionsStore.getRoles()) {
+      const roleMatrix = { ...(matrix[role.id] ?? {}) };
+      const current = roleMatrix[moduleId] ?? [];
+      let next: PermissionAction[];
+      if (on) {
+        next = [...new Set([...current, action])];
+        if (action !== 'view') next = [...new Set(['view' as PermissionAction, ...next])];
+      } else {
+        next = action === 'view' ? [] : current.filter(a => a !== action);
+      }
+      roleMatrix[moduleId] = next;
+      for (const sub of getSubPermissions(moduleId)) {
+        const key = subKey(moduleId, sub.id);
+        let subNext = (roleMatrix[key] ?? []).filter(a => next.includes(a));
+        if (on && sub.actions.includes(action)) {
+          subNext = [...new Set([...subNext, action])];
+          if (action !== 'view' && sub.actions.includes('view')) {
+            subNext = [...new Set(['view' as PermissionAction, ...subNext])];
+          }
+        }
+        roleMatrix[key] = subNext;
+      }
+      matrix[role.id] = roleMatrix;
+    }
+    permissionsStore.saveMatrix(matrix);
+  },
+
+
     write(ROLES_KEY, DEFAULT_ROLES);
     write(MATRIX_KEY, DEFAULT_MATRIX);
   },
