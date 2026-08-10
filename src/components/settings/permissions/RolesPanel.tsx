@@ -11,17 +11,31 @@ import { Plus, Trash2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PERMISSION_MODULES } from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
+import { usePlan } from '@/lib/planStore';
 
 export function RolesPanel() {
   const { roles, matrix } = usePermissionsStore();
+  const { plan } = usePlan();
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
   const [copyFrom, setCopyFrom] = useState('none');
 
+  const customCount = roles.filter(r => !r.system).length;
+  const roleCap = plan.limits.customRoles;
+  const atCap = roleCap !== null && customCount >= roleCap;
+
   const create = () => {
     const name = label.trim();
     if (!name) return;
+    if (atCap) {
+      toast.error(
+        roleCap === 0
+          ? `Custom roles are not included in the ${plan.label} plan`
+          : `The ${plan.label} plan allows ${roleCap} custom roles`,
+      );
+      return;
+    }
     const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     if (roles.some(r => r.id === id)) {
       toast.error('A role with that name already exists');
@@ -37,6 +51,7 @@ export function RolesPanel() {
     setDescription('');
     setCopyFrom('none');
   };
+
 
   return (
     <Card>
