@@ -491,8 +491,6 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
   unavailability: [
     S('own', 'Own unavailability', 'Submit and manage the user’s own unavailability.', ['view', 'create', 'edit', 'delete']),
     S('team', 'Team unavailability', 'View and manage unavailability for the user’s people.', ['view', 'create', 'edit', 'delete', 'export']),
-    S('recurring', 'Recurring patterns', 'Weekly / cyclical unavailability patterns and cycle anchors.', ['view', 'create', 'edit', 'delete']),
-    S('blackout', 'Blackout dates', 'One-off unavailable dates and date ranges.', ['view', 'create', 'edit', 'delete']),
     S('approval', 'Unavailability approval', 'Approve or decline submitted unavailability.', ['view', 'approve']),
     S('override', 'Override on roster', 'Schedule a person despite recorded unavailability.', ['view', 'edit', 'approve']),
     S('config', 'Unavailability rules', 'Notice periods, limits and blackout policy.', ['view', 'configure']),
@@ -537,7 +535,6 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
   locations: [
     S('locations', 'Locations', 'Create and edit locations and their core settings.', ['view', 'create', 'edit', 'delete']),
     S('areas', 'Areas / rooms', 'Areas, capacities and area-level settings.', ['view', 'create', 'edit', 'delete']),
-    S('ratios', 'Staffing ratios', 'Attendance bands and ratio configuration.', ['view', 'edit', 'configure']),
     S('budgets', 'Budgets', 'Labour budgets and cost thresholds per location.', ['view', 'edit', 'configure']),
     S('hours', 'Operating hours & closures', 'Opening hours, public holidays and closure days.', ['view', 'edit']),
     S('optimisation', 'Optimisation thresholds', 'Triggers for area combining and demand smoothing.', ['view', 'configure']),

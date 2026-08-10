@@ -139,7 +139,6 @@ const GROWTH: TierDelta = {
     'locations::optimisation': true,
     'compliance::fatigue': true,
     'permissions::roles': true,
-    'unavailability::recurring': true,
     'unavailability::config': true,
     'contracts::send': true,
     'contracts::sign': true,
