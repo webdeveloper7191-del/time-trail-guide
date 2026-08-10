@@ -9,7 +9,8 @@ import {
   subKey,
 
 } from '@/types/permissions';
-import { PlanTier, planAllows, planAllowsSub } from '@/types/plans';
+import { PlanTier } from '@/types/plans';
+import { planAllows, planAllowsSub } from '@/lib/planEntitlementsStore';
 import { planStore } from '@/lib/planStore';
 
 const ROLES_KEY = 'rai.permissions.roles.v1';

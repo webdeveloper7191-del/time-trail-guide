@@ -10,8 +10,6 @@ import {
   PlanTier,
   isAtLeast,
   planLabel,
-  planModuleActions,
-  requiredModuleTier,
 } from '@/types/plans';
 import { PERMISSION_MODULES, moduleGroups } from '@/types/permissions';
 import { usePlan } from '@/lib/planStore';
