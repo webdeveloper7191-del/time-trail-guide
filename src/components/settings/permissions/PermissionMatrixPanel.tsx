@@ -21,12 +21,15 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
+  Lock,
   MoreHorizontal,
   RotateCcw,
   Search,
   ShieldCheck,
+  Sparkles,
   Users,
 } from 'lucide-react';
+
 
 import { toast } from 'sonner';
 import {
