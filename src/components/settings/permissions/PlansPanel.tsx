@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -127,8 +127,8 @@ export function PlansPanel() {
                   const groupRows = rows.filter(r => r.group === group);
                   if (!groupRows.length) return null;
                   return (
-                    <>
-                      <tr key={group} className="bg-muted/30">
+                    <Fragment key={group}>
+                      <tr className="bg-muted/30">
                         <td
                           colSpan={PLAN_ORDER.length + 1}
                           className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
@@ -159,7 +159,7 @@ export function PlansPanel() {
                           ))}
                         </tr>
                       ))}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
