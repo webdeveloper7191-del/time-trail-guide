@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Download, RotateCcw, Search, ShieldCheck } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, RotateCcw, Search, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ALL_ACTIONS,
@@ -14,7 +14,9 @@ import {
   PermissionAction,
   actionDescriptions,
   actionLabels,
+  getSubPermissions,
   moduleGroups,
+  subKey,
 } from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { cn } from '@/lib/utils';
@@ -23,6 +25,8 @@ export function PermissionMatrixPanel() {
   const { roles, matrix } = usePermissionsStore();
   const [roleId, setRoleId] = useState(roles[0]?.id ?? 'owner');
   const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [showAllSubs, setShowAllSubs] = useState(false);
 
   const role = roles.find(r => r.id === roleId) ?? roles[0];
   const roleMatrix = matrix[roleId] ?? {};
@@ -30,30 +34,62 @@ export function PermissionMatrixPanel() {
   const modules = useMemo(() => {
     const q = search.trim().toLowerCase();
     return PERMISSION_MODULES.filter(
-      m => !q || m.label.toLowerCase().includes(q) || m.description.toLowerCase().includes(q),
+      m =>
+        !q ||
+        m.label.toLowerCase().includes(q) ||
+        m.description.toLowerCase().includes(q) ||
+        getSubPermissions(m.id).some(s => s.label.toLowerCase().includes(q)),
     );
   }, [search]);
 
+  const isOpen = (moduleId: string) => showAllSubs || !!expanded[moduleId];
+
   const grantedCount = PERMISSION_MODULES.reduce(
-    (sum, m) => sum + (roleMatrix[m.id]?.length ?? 0),
+    (sum, m) =>
+      sum +
+      (roleMatrix[m.id]?.length ?? 0) +
+      getSubPermissions(m.id).reduce(
+        (s, sub) => s + (roleMatrix[subKey(m.id, sub.id)]?.length ?? 0),
+        0,
+      ),
     0,
   );
-  const totalCount = PERMISSION_MODULES.reduce((sum, m) => sum + m.actions.length, 0);
+  const totalCount = PERMISSION_MODULES.reduce(
+    (sum, m) =>
+      sum + m.actions.length + getSubPermissions(m.id).reduce((s, sub) => s + sub.actions.length, 0),
+    0,
+  );
 
   const setAll = (moduleId: string, actions: PermissionAction[], on: boolean) => {
     permissionsStore.setModuleActions(roleId, moduleId, on ? actions : []);
   };
 
   const exportCsv = () => {
-    const header = ['Module', 'Group', 'Scope', ...ALL_ACTIONS.map(a => actionLabels[a])];
-    const rows = PERMISSION_MODULES.map(m => [
-      m.label,
-      m.group,
-      m.scope,
-      ...ALL_ACTIONS.map(a =>
-        !m.actions.includes(a) ? 'n/a' : (roleMatrix[m.id] ?? []).includes(a) ? 'Yes' : 'No',
-      ),
-    ]);
+    const header = ['Module', 'Sub-permission', 'Group', 'Scope', ...ALL_ACTIONS.map(a => actionLabels[a])];
+    const rows: string[][] = [];
+    PERMISSION_MODULES.forEach(m => {
+      rows.push([
+        m.label,
+        '(module)',
+        m.group,
+        m.scope,
+        ...ALL_ACTIONS.map(a =>
+          !m.actions.includes(a) ? 'n/a' : (roleMatrix[m.id] ?? []).includes(a) ? 'Yes' : 'No',
+        ),
+      ]);
+      getSubPermissions(m.id).forEach(sub => {
+        const granted = roleMatrix[subKey(m.id, sub.id)] ?? [];
+        rows.push([
+          m.label,
+          sub.label,
+          m.group,
+          m.scope,
+          ...ALL_ACTIONS.map(a =>
+            !sub.actions.includes(a) ? 'n/a' : granted.includes(a) ? 'Yes' : 'No',
+          ),
+        ]);
+      });
+    });
     const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
@@ -63,6 +99,7 @@ export function PermissionMatrixPanel() {
     URL.revokeObjectURL(url);
     toast.success('Permission matrix exported');
   };
+
 
   return (
     <div className="space-y-4">
