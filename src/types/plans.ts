@@ -139,7 +139,6 @@ const GROWTH: TierDelta = {
     'reports::agency-reports': true,
     'reports::builder': true,
     'reports::scheduled': true,
-    'reports::location-scope': true,
     'locations::budgets': true,
     'locations::optimisation': true,
     'compliance::fatigue': true,
