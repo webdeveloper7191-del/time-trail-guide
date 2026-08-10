@@ -207,6 +207,17 @@ as $$
   where t.id = _tenant_id;
 $$;  -- NULL result = unlimited
 
+-- Remaining custom-role slots. NULL max = unlimited -> a large sentinel so
+-- policy checks stay simple.
+create or replace function public.custom_role_slots_left(_tenant_id uuid)
+returns int
+language sql stable security definer set search_path = public
+as $$
+  select coalesce(public.plan_limit(_tenant_id, 'custom_roles'), 2147483647)
+       - (select count(*)::int from public.roles r
+          where r.tenant_id = _tenant_id and r.is_system = false);
+$$;
+
 -- ---------------------------------------------------------------------
 -- 4. RLS policies
 -- ---------------------------------------------------------------------
