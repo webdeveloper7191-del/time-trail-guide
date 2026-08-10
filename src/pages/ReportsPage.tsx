@@ -129,6 +129,44 @@ const reportItems: ReportItem[] = [
   { id: 'pay-casual-perm', title: 'Casual vs Permanent Cost', description: 'Cost comparison between casual and permanent employment types', category: 'report', module: 'payroll', icon: UserCheck, tags: ['casual', 'permanent', 'comparison'], component: CasualVsPermanentReport },
 ];
 
+// ---- Audience (persona) categorisation -------------------------------------
+type Audience = 'all' | 'tenant-admin' | 'location-admin' | 'staff';
+
+// Reports a staff member can see about themselves
+const STAFF_REPORT_IDS = new Set([
+  'ts-weekly-summary', 'ts-late-punctuality', 'ts-break-compliance', 'wf-availability', 'fairness',
+]);
+
+// Reports scoped to running a single location day-to-day
+const LOCATION_ADMIN_MODULES = new Set(['roster', 'timesheets', 'locations']);
+const LOCATION_ADMIN_EXTRA_IDS = new Set(['wf-qualifications', 'wf-onboarding-completion', 'pay-labour-cost']);
+
+function audiencesFor(item: ReportItem): Exclude<Audience, 'all'>[] {
+  const list: Exclude<Audience, 'all'>[] = ['tenant-admin'];
+  if (LOCATION_ADMIN_MODULES.has(item.module) || LOCATION_ADMIN_EXTRA_IDS.has(item.id)) list.push('location-admin');
+  if (STAFF_REPORT_IDS.has(item.id)) list.push('staff');
+  return list;
+}
+
+const audienceTabs: { id: Audience; label: string }[] = [
+  { id: 'all', label: 'All audiences' },
+  { id: 'tenant-admin', label: 'Tenant Admin' },
+  { id: 'location-admin', label: 'Location Admin' },
+  { id: 'staff', label: 'Staff' },
+];
+
+const moduleLabels: Record<ReportItem['module'], string> = {
+  roster: 'Roster & Scheduling',
+  timesheets: 'Timesheets & Attendance',
+  workforce: 'Workforce & People',
+  locations: 'Locations & Compliance',
+  payroll: 'Payroll & Awards',
+};
+
+const moduleOrder: ReportItem['module'][] = ['roster', 'timesheets', 'workforce', 'locations', 'payroll'];
+
+
+
 const summaryCards = [
   { label: 'Avg Utilisation', value: `${reportSummaryMetrics.avgUtilisation}%`, icon: Users, trend: '+2.3%' },
   { label: 'Overtime Hours', value: `${reportSummaryMetrics.totalOvertimeHours}h`, icon: Clock, trend: '-4h', negative: true },
@@ -140,11 +178,14 @@ const summaryCards = [
 
 export default function ReportsPage() {
   const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
+  const [audience, setAudience] = useState<Audience>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const { toggleFavourite, isFavourite, favourites } = useReportFavourites();
 
   const filteredItems = reportItems.filter(item => {
+    const matchesAudience = audience === 'all' || audiencesFor(item).includes(audience);
+    if (!matchesAudience) return false;
     if (activeCategory === 'favourites') return isFavourite(item.id);
     const matchesCategory = activeCategory === 'all' || 
       (activeCategory === 'dashboards' && item.category === 'dashboard') ||
@@ -167,6 +208,11 @@ export default function ReportsPage() {
     if (aFav !== bFav) return aFav - bFav;
     return a.title.localeCompare(b.title);
   });
+
+  const groupedItems = moduleOrder
+    .map(m => ({ module: m, items: sortedItems.filter(i => i.module === m) }))
+    .filter(g => g.items.length > 0);
+
 
   const selectedItem = reportItems.find(r => r.id === selectedReport);
 
@@ -276,58 +322,91 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Report grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedItems.map((item) => (
-              <Card
-                key={item.id}
-                className={cn(
-                  'border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group relative',
-                  isFavourite(item.id) && 'ring-1 ring-amber-200/50'
-                )}
-                onClick={() => setSelectedReport(item.id)}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-3 right-3 h-7 w-7 p-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => { e.stopPropagation(); toggleFavourite(item.id); }}
-                >
-                  <Star className={cn('h-3.5 w-3.5', isFavourite(item.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
-                </Button>
-                {isFavourite(item.id) && (
-                  <div className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  </div>
-                )}
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center">
-                      <item.icon className="h-4.5 w-4.5 text-accent-foreground" />
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-medium">
-                      {item.category}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-sm font-semibold mt-3 group-hover:text-primary transition-colors">
-                    {item.title}
-                  </CardTitle>
-                  <CardDescription className="text-xs leading-relaxed">
-                    {item.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0 pb-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    {item.tags.map(tag => (
-                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Audience filter */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Audience</span>
+            <Tabs value={audience} onValueChange={(v) => setAudience(v as Audience)}>
+              <TabsList className="h-8">
+                {audienceTabs.map(a => (
+                  <TabsTrigger key={a.id} value={a.id} className="text-xs px-3">{a.label}</TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            <span className="text-xs text-muted-foreground">{sortedItems.length} items</span>
           </div>
+
+
+          {/* Report grid, grouped by category */}
+          {groupedItems.length === 0 && (
+            <p className="text-sm text-muted-foreground">No reports match the current filters.</p>
+          )}
+          {groupedItems.map((group) => (
+            <div key={group.module} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">{moduleLabels[group.module]}</h2>
+                <Badge variant="secondary" className="text-[10px]">{group.items.length}</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {group.items.map((item) => (
+                  <Card
+                    key={item.id}
+                    className={cn(
+                      'border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group relative',
+                      isFavourite(item.id) && 'ring-1 ring-amber-200/50'
+                    )}
+                    onClick={() => setSelectedReport(item.id)}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-3 right-3 h-7 w-7 p-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); toggleFavourite(item.id); }}
+                    >
+                      <Star className={cn('h-3.5 w-3.5', isFavourite(item.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
+                    </Button>
+                    {isFavourite(item.id) && (
+                      <div className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity">
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      </div>
+                    )}
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center">
+                          <item.icon className="h-4.5 w-4.5 text-accent-foreground" />
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-medium">
+                          {item.category}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-sm font-semibold mt-3 group-hover:text-primary transition-colors">
+                        {item.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs leading-relaxed">
+                        {item.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 pb-4 space-y-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.tags.map(tag => (
+                          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {audiencesFor(item).map(a => (
+                          <Badge key={a} variant="outline" className="text-[9px] uppercase tracking-wider">
+                            {audienceTabs.find(t => t.id === a)?.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+
         </div>
       </main>
     </div>

@@ -1,7 +1,7 @@
-import TimesheetAdmin from './TimesheetAdmin';
+import DashboardHub from './DashboardHub';
 
 const Index = () => {
-  return <TimesheetAdmin />;
+  return <DashboardHub />;
 };
 
 export default Index;
