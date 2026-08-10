@@ -178,11 +178,14 @@ const summaryCards = [
 
 export default function ReportsPage() {
   const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
+  const [audience, setAudience] = useState<Audience>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const { toggleFavourite, isFavourite, favourites } = useReportFavourites();
 
   const filteredItems = reportItems.filter(item => {
+    const matchesAudience = audience === 'all' || audiencesFor(item).includes(audience);
+    if (!matchesAudience) return false;
     if (activeCategory === 'favourites') return isFavourite(item.id);
     const matchesCategory = activeCategory === 'all' || 
       (activeCategory === 'dashboards' && item.category === 'dashboard') ||
@@ -205,6 +208,11 @@ export default function ReportsPage() {
     if (aFav !== bFav) return aFav - bFav;
     return a.title.localeCompare(b.title);
   });
+
+  const groupedItems = moduleOrder
+    .map(m => ({ module: m, items: sortedItems.filter(i => i.module === m) }))
+    .filter(g => g.items.length > 0);
+
 
   const selectedItem = reportItems.find(r => r.id === selectedReport);
 
