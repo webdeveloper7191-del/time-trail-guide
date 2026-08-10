@@ -312,7 +312,11 @@ export function PermissionMatrixPanel() {
                       </tr>
                       {groupModules.map(m => {
                         const granted = roleMatrix[m.id] ?? [];
-                        const allOn = m.actions.every(a => granted.includes(a));
+                        const planActions = planModuleActions(tier, m.id);
+                        const moduleTier = requiredModuleTier(m.id);
+                        const moduleLocked = planActions.length === 0;
+                        const allOn =
+                          planActions.length > 0 && planActions.every(a => granted.includes(a));
                         const subs = visibleSubs(m.id, m.label, m.description);
                         const open = isOpen(m.id);
                         const subGranted = subs.reduce(
