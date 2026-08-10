@@ -10,7 +10,7 @@ import {
   subActionUniverse,
 } from '@/types/plans';
 
-const KEY = 'rai.plan.entitlements.v1';
+const KEY = 'rai.plan.entitlements.v2';
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
