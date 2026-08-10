@@ -1,13 +1,18 @@
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ShieldCheck, Grid3X3, Users, BadgeCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, Grid3X3, Users, BadgeCheck, Gem } from 'lucide-react';
 import { PermissionMatrixPanel } from '@/components/settings/permissions/PermissionMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
+import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
+import { usePlan } from '@/lib/planStore';
+
 
 export default function UserPermissions() {
   const [tab, setTab] = useState('matrix');
+  const { plan } = usePlan();
   return (
     <div className="min-h-screen flex w-full bg-background">
       <AdminSidebar />
@@ -17,10 +22,16 @@ export default function UserPermissions() {
             <ShieldCheck className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Users &amp; Permissions</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight">Users &amp; Permissions</h1>
+              <Badge variant="secondary" className="gap-1">
+                <Gem className="h-3 w-3" /> {plan.label} plan
+              </Badge>
+            </div>
             <p className="text-sm text-muted-foreground">
               Define what every role can view, create, edit, delete, approve, export, assign and
-              configure across each module — then assign people to a role.
+              configure across each module — then assign people to a role. Access is granted only
+              where the role and the subscription plan agree.
             </p>
           </div>
         </header>
@@ -36,6 +47,9 @@ export default function UserPermissions() {
             <TabsTrigger value="users" className="gap-1.5">
               <Users className="h-3.5 w-3.5" /> User assignment
             </TabsTrigger>
+            <TabsTrigger value="plans" className="gap-1.5">
+              <Gem className="h-3.5 w-3.5" /> Plans &amp; entitlements
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="matrix" className="mt-4">
             <PermissionMatrixPanel />
@@ -46,8 +60,12 @@ export default function UserPermissions() {
           <TabsContent value="users" className="mt-4">
             <UserRoleAssignmentPanel />
           </TabsContent>
+          <TabsContent value="plans" className="mt-4">
+            <PlansPanel />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
   );
 }
+

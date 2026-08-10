@@ -9,6 +9,8 @@ import {
   subKey,
 
 } from '@/types/permissions';
+import { PlanTier, planAllows, planAllowsSub } from '@/types/plans';
+import { planStore } from '@/lib/planStore';
 
 const ROLES_KEY = 'rai.permissions.roles.v1';
 const MATRIX_KEY = 'rai.permissions.matrix.v2';
@@ -220,13 +222,20 @@ export function usePermissionsStore() {
   };
 }
 
+/**
+ * Effective permission = what the role grants AND what the subscription plan
+ * sells. Both must be true.
+ */
 export function can(
   matrix: PermissionMatrix,
   roleId: string,
   moduleId: string,
   action: PermissionAction,
+  tier: PlanTier = planStore.getTier(),
 ) {
-  return (matrix[roleId]?.[moduleId] ?? []).includes(action);
+  return (
+    (matrix[roleId]?.[moduleId] ?? []).includes(action) && planAllows(tier, moduleId, action)
+  );
 }
 
 export function canSub(
@@ -235,6 +244,11 @@ export function canSub(
   moduleId: string,
   subId: string,
   action: PermissionAction,
+  tier: PlanTier = planStore.getTier(),
 ) {
-  return (matrix[roleId]?.[subKey(moduleId, subId)] ?? []).includes(action);
+  return (
+    (matrix[roleId]?.[subKey(moduleId, subId)] ?? []).includes(action) &&
+    planAllowsSub(tier, moduleId, subId, action)
+  );
 }
+
