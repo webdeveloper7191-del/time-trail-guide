@@ -635,6 +635,19 @@ export const getSubPermissions = (moduleId: string): SubPermission[] =>
 /** Sub-areas that must stay closed for a role even though the parent module is granted. */
 const SUB_DENY: Record<string, string[]> = {
   employee: [
+    'dashboard::tenant-admin-view',
+    'dashboard::location-admin-view',
+    'dashboard::org-wide',
+    'reports::tenant-scope',
+    'reports::location-scope',
+    'reports::roster-reports',
+    'reports::timesheet-reports',
+    'reports::workforce-reports',
+    'reports::location-reports',
+    'reports::payroll',
+    'reports::agency-reports',
+    'reports::builder',
+    'reports::scheduled',
     'timesheets::team',
     'timesheets::approval',
     'timesheets::unlock',
@@ -671,6 +684,11 @@ const SUB_DENY: Record<string, string[]> = {
     'contracts::config',
   ],
   supervisor: [
+    'dashboard::tenant-admin-view',
+    'dashboard::org-wide',
+    'reports::tenant-scope',
+    'reports::payroll',
+    'reports::agency-reports',
     'timesheets::unlock',
     'timesheets::payroll-export',
     'timesheets::policy',
@@ -680,6 +698,13 @@ const SUB_DENY: Record<string, string[]> = {
     'contracts::templates',
   ],
   'agency-partner': [
+    'dashboard::tenant-admin-view',
+    'dashboard::location-admin-view',
+    'dashboard::org-wide',
+    'reports::tenant-scope',
+    'reports::payroll',
+    'reports::workforce-reports',
+    'reports::location-reports',
     'roster::templates',
     'roster::auto-schedule',
     'roster::costs',
@@ -701,7 +726,7 @@ const SUB_DENY: Record<string, string[]> = {
     'agency::role-mapping',
     'agency::assignment',
   ],
-  scheduler: ['roster::constraints'],
+  scheduler: ['roster::constraints', 'dashboard::tenant-admin-view', 'reports::tenant-scope', 'reports::payroll'],
 };
 
 /** Seed every sub-permission from its parent module grant in the baseline matrix. */
