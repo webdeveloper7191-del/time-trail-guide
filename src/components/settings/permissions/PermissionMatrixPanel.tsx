@@ -186,8 +186,8 @@ export function PermissionMatrixPanel() {
                   const groupModules = modules.filter(m => m.group === group);
                   if (!groupModules.length) return null;
                   return (
-                    <>
-                      <tr key={group} className="bg-muted/30">
+                    <Fragment key={group}>
+                      <tr className="bg-muted/30">
                         <td
                           colSpan={ALL_ACTIONS.length + 3}
                           className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
@@ -198,51 +198,154 @@ export function PermissionMatrixPanel() {
                       {groupModules.map(m => {
                         const granted = roleMatrix[m.id] ?? [];
                         const allOn = m.actions.every(a => granted.includes(a));
+                        const subs = getSubPermissions(m.id);
+                        const open = isOpen(m.id);
+                        const subGranted = subs.reduce(
+                          (s, sub) => s + (roleMatrix[subKey(m.id, sub.id)]?.length ?? 0),
+                          0,
+                        );
+                        const subTotal = subs.reduce((s, sub) => s + sub.actions.length, 0);
                         return (
-                          <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20">
-                            <td className="px-4 py-2.5">
-                              <div className="font-medium">{m.label}</div>
-                              <div className="text-xs text-muted-foreground">{m.description}</div>
-                            </td>
-                            <td className="px-2 py-2.5">
-                              <Badge variant="outline" className="text-[10px]">
-                                {m.scope}
-                              </Badge>
-                            </td>
-                            {ALL_ACTIONS.map(a => {
-                              const applicable = m.actions.includes(a);
-                              return (
-                                <td key={a} className="px-2 py-2.5 text-center">
-                                  {applicable ? (
-                                    <Checkbox
-                                      checked={granted.includes(a)}
-                                      onCheckedChange={() =>
-                                        permissionsStore.toggleAction(roleId, m.id, a)
+                          <Fragment key={m.id}>
+                            <tr className="border-b hover:bg-muted/20">
+                              <td className="px-4 py-2.5">
+                                <div className="flex items-start gap-1.5">
+                                  {subs.length > 0 ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setExpanded(p => ({ ...p, [m.id]: !isOpen(m.id) }))
                                       }
-                                      aria-label={`${actionLabels[a]} ${m.label}`}
-                                    />
+                                      className="mt-0.5 text-muted-foreground hover:text-foreground"
+                                      aria-label={open ? 'Collapse' : 'Expand'}
+                                    >
+                                      {open ? (
+                                        <ChevronDown className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4" />
+                                      )}
+                                    </button>
                                   ) : (
-                                    <span className="text-muted-foreground/40 text-xs">—</span>
+                                    <span className="w-4" />
                                   )}
-                                </td>
-                              );
-                            })}
-                            <td className="px-3 py-2.5 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
-                                onClick={() => setAll(m.id, m.actions, !allOn)}
-                              >
-                                {allOn ? 'Clear' : 'Grant all'}
-                              </Button>
-                            </td>
-                          </tr>
+                                  <div>
+                                    <div className="font-medium">{m.label}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {m.description}
+                                    </div>
+                                    {subs.length > 0 && (
+                                      <div className="text-[11px] text-muted-foreground/80 mt-0.5">
+                                        {subs.length} sub-permissions · {subGranted}/{subTotal}{' '}
+                                        granted
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-2 py-2.5">
+                                <Badge variant="outline" className="text-[10px]">
+                                  {m.scope}
+                                </Badge>
+                              </td>
+                              {ALL_ACTIONS.map(a => {
+                                const applicable = m.actions.includes(a);
+                                return (
+                                  <td key={a} className="px-2 py-2.5 text-center">
+                                    {applicable ? (
+                                      <Checkbox
+                                        checked={granted.includes(a)}
+                                        onCheckedChange={() =>
+                                          permissionsStore.toggleAction(roleId, m.id, a)
+                                        }
+                                        aria-label={`${actionLabels[a]} ${m.label}`}
+                                      />
+                                    ) : (
+                                      <span className="text-muted-foreground/40 text-xs">—</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                              <td className="px-3 py-2.5 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
+                                  onClick={() => setAll(m.id, m.actions, !allOn)}
+                                >
+                                  {allOn ? 'Clear' : 'Grant all'}
+                                </Button>
+                              </td>
+                            </tr>
+                            {open &&
+                              subs.map(sub => {
+                                const key = subKey(m.id, sub.id);
+                                const subOn = roleMatrix[key] ?? [];
+                                const subAllOn = sub.actions.every(a => subOn.includes(a));
+                                return (
+                                  <tr key={key} className="border-b bg-muted/10 hover:bg-muted/20">
+                                    <td className="px-4 py-2 pl-12">
+                                      <div className="text-[13px] font-medium text-foreground/90">
+                                        {sub.label}
+                                      </div>
+                                      <div className="text-[11px] text-muted-foreground">
+                                        {sub.description}
+                                      </div>
+                                    </td>
+                                    <td className="px-2 py-2" />
+                                    {ALL_ACTIONS.map(a => {
+                                      const applicable = sub.actions.includes(a);
+                                      const parentAllows = m.actions.includes(a);
+                                      return (
+                                        <td key={a} className="px-2 py-2 text-center">
+                                          {applicable && parentAllows ? (
+                                            <Checkbox
+                                              className="h-3.5 w-3.5"
+                                              checked={subOn.includes(a)}
+                                              onCheckedChange={() =>
+                                                permissionsStore.toggleSubAction(
+                                                  roleId,
+                                                  m.id,
+                                                  sub.id,
+                                                  a,
+                                                )
+                                              }
+                                              aria-label={`${actionLabels[a]} ${m.label} — ${sub.label}`}
+                                            />
+                                          ) : (
+                                            <span className="text-muted-foreground/30 text-xs">
+                                              —
+                                            </span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                    <td className="px-3 py-2 text-right">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 text-[11px] text-muted-foreground"
+                                        onClick={() =>
+                                          permissionsStore.setSubActions(
+                                            roleId,
+                                            m.id,
+                                            sub.id,
+                                            subAllOn ? [] : sub.actions,
+                                          )
+                                        }
+                                      >
+                                        {subAllOn ? 'Clear' : 'Grant all'}
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </Fragment>
                         );
                       })}
-                    </>
+                    </Fragment>
                   );
                 })}
+
               </tbody>
             </table>
           </div>
