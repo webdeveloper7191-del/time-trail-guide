@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ShieldCheck, Grid3X3, Users, BadgeCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ShieldCheck, Grid3X3, Users, BadgeCheck, Gem } from 'lucide-react';
 import { PermissionMatrixPanel } from '@/components/settings/permissions/PermissionMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
+import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
+import { usePlan } from '@/lib/planStore';
+
 
 export default function UserPermissions() {
   const [tab, setTab] = useState('matrix');
