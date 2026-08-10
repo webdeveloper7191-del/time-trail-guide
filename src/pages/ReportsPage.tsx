@@ -336,58 +336,77 @@ export default function ReportsPage() {
           </div>
 
 
-          {/* Report grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedItems.map((item) => (
-              <Card
-                key={item.id}
-                className={cn(
-                  'border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group relative',
-                  isFavourite(item.id) && 'ring-1 ring-amber-200/50'
-                )}
-                onClick={() => setSelectedReport(item.id)}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-3 right-3 h-7 w-7 p-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => { e.stopPropagation(); toggleFavourite(item.id); }}
-                >
-                  <Star className={cn('h-3.5 w-3.5', isFavourite(item.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
-                </Button>
-                {isFavourite(item.id) && (
-                  <div className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  </div>
-                )}
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center">
-                      <item.icon className="h-4.5 w-4.5 text-accent-foreground" />
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-medium">
-                      {item.category}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-sm font-semibold mt-3 group-hover:text-primary transition-colors">
-                    {item.title}
-                  </CardTitle>
-                  <CardDescription className="text-xs leading-relaxed">
-                    {item.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0 pb-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    {item.tags.map(tag => (
-                      <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Report grid, grouped by category */}
+          {groupedItems.length === 0 && (
+            <p className="text-sm text-muted-foreground">No reports match the current filters.</p>
+          )}
+          {groupedItems.map((group) => (
+            <div key={group.module} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">{moduleLabels[group.module]}</h2>
+                <Badge variant="secondary" className="text-[10px]">{group.items.length}</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {group.items.map((item) => (
+                  <Card
+                    key={item.id}
+                    className={cn(
+                      'border-border/60 hover:border-primary/30 hover:shadow-sm transition-all cursor-pointer group relative',
+                      isFavourite(item.id) && 'ring-1 ring-amber-200/50'
+                    )}
+                    onClick={() => setSelectedReport(item.id)}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-3 right-3 h-7 w-7 p-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); toggleFavourite(item.id); }}
+                    >
+                      <Star className={cn('h-3.5 w-3.5', isFavourite(item.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
+                    </Button>
+                    {isFavourite(item.id) && (
+                      <div className="absolute top-3 right-3 group-hover:opacity-0 transition-opacity">
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                      </div>
+                    )}
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center">
+                          <item.icon className="h-4.5 w-4.5 text-accent-foreground" />
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-medium">
+                          {item.category}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-sm font-semibold mt-3 group-hover:text-primary transition-colors">
+                        {item.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs leading-relaxed">
+                        {item.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 pb-4 space-y-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.tags.map(tag => (
+                          <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {audiencesFor(item).map(a => (
+                          <Badge key={a} variant="outline" className="text-[9px] uppercase tracking-wider">
+                            {audienceTabs.find(t => t.id === a)?.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+
         </div>
       </main>
     </div>
