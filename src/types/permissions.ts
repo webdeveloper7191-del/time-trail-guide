@@ -112,6 +112,23 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     scope: 'Location',
   },
   {
+    id: 'unavailability',
+    label: 'Unavailability & Availability',
+    group: 'People',
+    description: 'Recurring unavailability, one-off blackout dates, availability patterns and approvals.',
+    actions: ['view', 'create', 'edit', 'delete', 'approve', 'export', 'configure'],
+    scope: 'Location',
+  },
+  {
+    id: 'contracts',
+    label: 'Contracts & Documents',
+    group: 'People',
+    description: 'Employment contracts, letters and policy documents with digital signing.',
+    actions: ['view', 'create', 'edit', 'delete', 'approve', 'export', 'assign', 'configure'],
+    scope: 'Tenant',
+  },
+  {
+
     id: 'workforce',
     label: 'Workforce',
     group: 'People',
