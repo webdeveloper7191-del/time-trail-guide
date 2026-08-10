@@ -42,7 +42,7 @@ export function PermissionMatrixPanel() {
     );
   }, [search]);
 
-  const isOpen = (moduleId: string) => showAllSubs || !!expanded[moduleId];
+  const isOpen = (moduleId: string) => expanded[moduleId] ?? showAllSubs;
 
   const grantedCount = PERMISSION_MODULES.reduce(
     (sum, m) =>
