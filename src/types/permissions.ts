@@ -444,10 +444,14 @@ const S = (
 
 export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
   dashboard: [
+    S('tenant-admin-view', 'Tenant Admin dashboard', 'Organisation-wide KPIs, location performance and governance alerts.', ['view', 'export']),
+    S('location-admin-view', 'Location Admin dashboard', 'Daily coverage, approvals and ratio alerts for assigned locations.', ['view', 'export']),
+    S('staff-view', 'Staff dashboard', 'Personal hours, upcoming shifts, leave balances and self-service actions.', ['view']),
     S('kpis', 'KPI tiles', 'Headline coverage, cost and attendance tiles.', ['view', 'export']),
     S('alerts', 'Alerts & exceptions feed', 'Ratio breaches, unfilled shifts and overdue tasks.', ['view']),
     S('org-wide', 'Cross-location view', 'See figures for every location, not just assigned ones.', ['view', 'export']),
   ],
+
   roster: [
     S('shifts', 'Shifts', 'Create, edit, delete and move individual shifts.', ['view', 'create', 'edit', 'delete', 'export']),
     S('open-shifts', 'Open shifts', 'Publish, claim, approve claims and fill open shifts.', ['view', 'create', 'edit', 'delete', 'approve', 'assign']),
@@ -540,13 +544,19 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
     S('optimisation', 'Optimisation thresholds', 'Triggers for area combining and demand smoothing.', ['view', 'configure']),
   ],
   reports: [
-    S('operational', 'Operational reports', 'Coverage, attendance and roster reports.', ['view', 'export']),
-    S('labour-cost', 'Labour cost reports', 'Cost, budget variance and overtime spend.', ['view', 'export']),
-    S('payroll', 'Payroll reports', 'Pay runs, allowances and payroll reconciliation.', ['view', 'export']),
-    S('people', 'People reports', 'Headcount, turnover, leave and compliance reporting.', ['view', 'export']),
+    S('roster-reports', 'Roster & scheduling reports', 'Utilisation, coverage gaps, fill rate, fairness and demand vs actuals.', ['view', 'export']),
+    S('timesheet-reports', 'Timesheet & attendance reports', 'Weekly summaries, punctuality, breaks, exceptions and approval SLA.', ['view', 'export']),
+    S('workforce-reports', 'Workforce & people reports', 'Headcount, FTE, turnover, onboarding, qualifications and skills.', ['view', 'export']),
+    S('location-reports', 'Location & compliance reports', 'Budget vs actuals, area utilisation, ratio compliance and violations.', ['view', 'export']),
+    S('payroll', 'Payroll & labour cost reports', 'Pay runs, allowances, overtime spend and payroll reconciliation.', ['view', 'export']),
+    S('agency-reports', 'Agency reports', 'Agency usage, cost and partner performance.', ['view', 'export']),
+    S('tenant-scope', 'Tenant-wide report access', 'Run reports across every location in the organisation.', ['view', 'export']),
+    S('location-scope', 'Location-scoped report access', 'Run reports limited to assigned locations.', ['view', 'export']),
+    S('self-scope', 'Own-data reports', 'Staff-level reports limited to the signed-in person.', ['view', 'export']),
     S('builder', 'Custom report builder', 'Build, save and share custom reports.', ['view', 'create', 'edit', 'delete']),
     S('scheduled', 'Scheduled exports', 'Recurring emailed or delivered exports.', ['view', 'create', 'edit', 'delete']),
   ],
+
   forms: [
     S('templates', 'Form templates', 'Build and version form templates.', ['view', 'create', 'edit', 'delete']),
     S('submissions', 'Submissions', 'View and manage submitted forms.', ['view', 'create', 'edit', 'delete', 'export']),
@@ -625,6 +635,19 @@ export const getSubPermissions = (moduleId: string): SubPermission[] =>
 /** Sub-areas that must stay closed for a role even though the parent module is granted. */
 const SUB_DENY: Record<string, string[]> = {
   employee: [
+    'dashboard::tenant-admin-view',
+    'dashboard::location-admin-view',
+    'dashboard::org-wide',
+    'reports::tenant-scope',
+    'reports::location-scope',
+    'reports::roster-reports',
+    'reports::timesheet-reports',
+    'reports::workforce-reports',
+    'reports::location-reports',
+    'reports::payroll',
+    'reports::agency-reports',
+    'reports::builder',
+    'reports::scheduled',
     'timesheets::team',
     'timesheets::approval',
     'timesheets::unlock',
@@ -661,6 +684,11 @@ const SUB_DENY: Record<string, string[]> = {
     'contracts::config',
   ],
   supervisor: [
+    'dashboard::tenant-admin-view',
+    'dashboard::org-wide',
+    'reports::tenant-scope',
+    'reports::payroll',
+    'reports::agency-reports',
     'timesheets::unlock',
     'timesheets::payroll-export',
     'timesheets::policy',
@@ -670,6 +698,13 @@ const SUB_DENY: Record<string, string[]> = {
     'contracts::templates',
   ],
   'agency-partner': [
+    'dashboard::tenant-admin-view',
+    'dashboard::location-admin-view',
+    'dashboard::org-wide',
+    'reports::tenant-scope',
+    'reports::payroll',
+    'reports::workforce-reports',
+    'reports::location-reports',
     'roster::templates',
     'roster::auto-schedule',
     'roster::costs',
@@ -691,7 +726,7 @@ const SUB_DENY: Record<string, string[]> = {
     'agency::role-mapping',
     'agency::assignment',
   ],
-  scheduler: ['roster::constraints'],
+  scheduler: ['roster::constraints', 'dashboard::tenant-admin-view', 'reports::tenant-scope', 'reports::payroll'],
 };
 
 /** Seed every sub-permission from its parent module grant in the baseline matrix. */
