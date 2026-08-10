@@ -10,17 +10,23 @@ import {
   PlanTier,
   isAtLeast,
   planLabel,
-  planModuleActions,
-  requiredModuleTier,
 } from '@/types/plans';
 import { PERMISSION_MODULES, moduleGroups } from '@/types/permissions';
 import { usePlan } from '@/lib/planStore';
+import {
+  planCoverage,
+  planModuleActions,
+  requiredModuleTier,
+  usePlanEntitlements,
+} from '@/lib/planEntitlementsStore';
+import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
 import { cn } from '@/lib/utils';
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
 export function PlansPanel() {
   const { tier, setTier } = usePlan();
+  const entitlements = usePlanEntitlements();
 
   const rows = useMemo(
     () =>
@@ -31,7 +37,7 @@ export function PlansPanel() {
         needs: requiredModuleTier(m.id),
         included: PLAN_ORDER.map(t => planModuleActions(t, m.id).length > 0),
       })),
-    [],
+    [entitlements],
   );
 
   return (
@@ -62,6 +68,13 @@ export function PlansPanel() {
                     </li>
                   ))}
                 </ul>
+                <div className="rounded-md border p-2 text-[11px] text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {planCoverage(t).granted}
+                  </span>{' '}
+                  of {planCoverage(t).total} capabilities included
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 rounded-md border p-2 text-[11px]">
                   <div>
                     <div className="text-muted-foreground">Locations</div>
@@ -167,6 +180,8 @@ export function PlansPanel() {
           </div>
         </CardContent>
       </Card>
+
+      <PlanEntitlementMatrixPanel />
     </div>
   );
 }

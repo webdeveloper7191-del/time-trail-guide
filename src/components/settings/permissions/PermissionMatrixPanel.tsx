@@ -44,20 +44,22 @@ import {
 } from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
+import { planLabel } from '@/types/plans';
 import {
   planAllows,
   planAllowsSub,
-  planLabel,
   planModuleActions,
   requiredModuleTier,
   requiredSubTier,
   requiredTier,
-} from '@/types/plans';
+  usePlanEntitlements,
+} from '@/lib/planEntitlementsStore';
 import { cn } from '@/lib/utils';
 
 export function PermissionMatrixPanel() {
   const { roles, matrix } = usePermissionsStore();
   const { tier } = usePlan();
+  usePlanEntitlements(); // re-render when plan entitlements change
   const [roleId, setRoleId] = useState(roles[0]?.id ?? 'owner');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
