@@ -13,12 +13,20 @@ import {
 } from '@/types/plans';
 import { PERMISSION_MODULES, moduleGroups } from '@/types/permissions';
 import { usePlan } from '@/lib/planStore';
+import {
+  planCoverage,
+  planModuleActions,
+  requiredModuleTier,
+  usePlanEntitlements,
+} from '@/lib/planEntitlementsStore';
+import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
 import { cn } from '@/lib/utils';
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
 export function PlansPanel() {
   const { tier, setTier } = usePlan();
+  const entitlements = usePlanEntitlements();
 
   const rows = useMemo(
     () =>
@@ -29,7 +37,7 @@ export function PlansPanel() {
         needs: requiredModuleTier(m.id),
         included: PLAN_ORDER.map(t => planModuleActions(t, m.id).length > 0),
       })),
-    [],
+    [entitlements],
   );
 
   return (

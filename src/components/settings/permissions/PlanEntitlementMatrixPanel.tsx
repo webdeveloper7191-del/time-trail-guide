@@ -26,7 +26,6 @@ import { toast } from 'sonner';
 import {
   ALL_ACTIONS,
   PERMISSION_MODULES,
-  PermissionAction,
   actionDescriptions,
   actionLabels,
   getSubPermissions,
@@ -432,6 +431,3 @@ export function PlanEntitlementMatrixPanel() {
     </Card>
   );
 }
-
-type PermissionActionAlias = PermissionAction;
-export type { PermissionActionAlias };
