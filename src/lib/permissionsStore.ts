@@ -177,3 +177,13 @@ export function can(
 ) {
   return (matrix[roleId]?.[moduleId] ?? []).includes(action);
 }
+
+export function canSub(
+  matrix: PermissionMatrix,
+  roleId: string,
+  moduleId: string,
+  subId: string,
+  action: PermissionAction,
+) {
+  return (matrix[roleId]?.[subKey(moduleId, subId)] ?? []).includes(action);
+}
