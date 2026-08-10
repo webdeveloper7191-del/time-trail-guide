@@ -102,7 +102,32 @@ export function PermissionMatrixPanel() {
     0,
   );
 
+  const bulkAllRoles = (
+    moduleId: string,
+    label: string,
+    actions: PermissionAction[],
+    on: boolean,
+  ) => {
+    permissionsStore.setModuleForAllRoles(moduleId, on, actions);
+    toast.success(
+      `${label} ${on ? 'enabled' : 'disabled'} (with sub-permissions) for all ${roles.length} roles`,
+    );
+  };
+
+  const bulkAction = (
+    moduleId: string,
+    label: string,
+    action: PermissionAction,
+    on: boolean,
+  ) => {
+    permissionsStore.setActionForAllRoles(moduleId, action, on);
+    toast.success(
+      `${actionLabels[action]} ${on ? 'granted on' : 'removed from'} ${label} for all ${roles.length} roles`,
+    );
+  };
+
   const setAll = (moduleId: string, actions: PermissionAction[], on: boolean) => {
+
     permissionsStore.setModuleActions(roleId, moduleId, on ? actions : []);
   };
 
