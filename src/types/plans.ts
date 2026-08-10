@@ -183,7 +183,7 @@ const subActions = (moduleId: string, subId: string) =>
   getSubPermissions(moduleId).find(s => s.id === subId)?.actions ?? [];
 
 /** Resolved module actions for a tier (cumulative across lower tiers). */
-export function planModuleActions(tier: PlanTier, moduleId: string): PermissionAction[] {
+export function defaultPlanModuleActions(tier: PlanTier, moduleId: string): PermissionAction[] {
   const all = moduleActions(moduleId);
   const out = new Set<PermissionAction>();
   for (const t of PLAN_ORDER) {
@@ -195,7 +195,7 @@ export function planModuleActions(tier: PlanTier, moduleId: string): PermissionA
 }
 
 /** Resolved sub-permission actions for a tier. Ungated subs inherit the module. */
-export function planSubActions(
+export function defaultPlanSubActions(
   tier: PlanTier,
   moduleId: string,
   subId: string,
@@ -203,7 +203,7 @@ export function planSubActions(
   const all = subActions(moduleId, subId);
   const key = subKey(moduleId, subId);
   if (!gatedSubs.has(key)) {
-    const parent = planModuleActions(tier, moduleId);
+    const parent = defaultPlanModuleActions(tier, moduleId);
     return all.filter(a => parent.includes(a));
   }
   const out = new Set<PermissionAction>();
@@ -212,40 +212,38 @@ export function planSubActions(
     if (grant) expand(grant, all).forEach(a => out.add(a));
     if (t === tier) break;
   }
-  const parent = planModuleActions(tier, moduleId);
+  const parent = defaultPlanModuleActions(tier, moduleId);
   return all.filter(a => out.has(a) && parent.includes(a));
 }
 
-export const planAllows = (tier: PlanTier, moduleId: string, action: PermissionAction) =>
-  planModuleActions(tier, moduleId).includes(action);
+/* ------------------------------------------------------------------ */
+/* Editable entitlement matrix                                          */
+/* ------------------------------------------------------------------ */
 
-export const planAllowsSub = (
-  tier: PlanTier,
-  moduleId: string,
-  subId: string,
-  action: PermissionAction,
-) => planSubActions(tier, moduleId, subId).includes(action);
+/** key = moduleId, or `module::sub` for a sub-permission. */
+export type PlanEntitlements = Record<string, PermissionAction[]>;
+export type PlanEntitlementMatrix = Record<PlanTier, PlanEntitlements>;
 
-/** Lowest tier that unlocks a module action — `null` when nothing unlocks it. */
-export function requiredTier(moduleId: string, action: PermissionAction): PlanTier | null {
-  for (const t of PLAN_ORDER) if (planAllows(t, moduleId, action)) return t;
-  return null;
+/** The shipped baseline, flattened so every key can be edited per tier. */
+export function buildDefaultEntitlements(): PlanEntitlementMatrix {
+  const out = {} as PlanEntitlementMatrix;
+  for (const t of PLAN_ORDER) {
+    const ent: PlanEntitlements = {};
+    for (const m of PERMISSION_MODULES) {
+      ent[m.id] = defaultPlanModuleActions(t, m.id);
+      for (const sub of getSubPermissions(m.id)) {
+        ent[subKey(m.id, sub.id)] = defaultPlanSubActions(t, m.id, sub.id);
+      }
+    }
+    out[t] = ent;
+  }
+  return out;
 }
 
-export function requiredSubTier(
-  moduleId: string,
-  subId: string,
-  action: PermissionAction,
-): PlanTier | null {
-  for (const t of PLAN_ORDER) if (planAllowsSub(t, moduleId, subId, action)) return t;
-  return null;
-}
-
-/** Lowest tier that unlocks a module at all (any action). */
-export function requiredModuleTier(moduleId: string): PlanTier | null {
-  for (const t of PLAN_ORDER) if (planModuleActions(t, moduleId).length) return t;
-  return null;
-}
+/** Actions a module/sub supports at all (the editable universe). */
+export const moduleActionUniverse = (moduleId: string) => moduleActions(moduleId);
+export const subActionUniverse = (moduleId: string, subId: string) => subActions(moduleId, subId);
 
 export const isGatedModule = (moduleId: string) => gatedModules.has(moduleId);
 export const isGatedSub = (moduleId: string, subId: string) => gatedSubs.has(subKey(moduleId, subId));
+
