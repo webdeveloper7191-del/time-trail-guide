@@ -322,6 +322,20 @@ export default function ReportsPage() {
             </div>
           </div>
 
+          {/* Audience filter */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Audience</span>
+            <Tabs value={audience} onValueChange={(v) => setAudience(v as Audience)}>
+              <TabsList className="h-8">
+                {audienceTabs.map(a => (
+                  <TabsTrigger key={a.id} value={a.id} className="text-xs px-3">{a.label}</TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            <span className="text-xs text-muted-foreground">{sortedItems.length} items</span>
+          </div>
+
+
           {/* Report grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedItems.map((item) => (
