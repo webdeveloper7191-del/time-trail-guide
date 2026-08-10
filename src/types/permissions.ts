@@ -279,7 +279,7 @@ export const DEFAULT_ROLES: RoleDefinition[] = [
 const A = (...a: PermissionAction[]) => a;
 
 /** Baseline matrix. Any module/role pair not listed = no access. */
-export const DEFAULT_MATRIX: PermissionMatrix = {
+const BASE_MATRIX: PermissionMatrix = {
   owner: Object.fromEntries(PERMISSION_MODULES.map(m => [m.id, [...m.actions]])),
   'hr-manager': {
     dashboard: A('view', 'export'),
