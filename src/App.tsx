@@ -33,6 +33,7 @@ import ReportsPage from "./pages/ReportsPage";
 import LeaveAccrualsHub from "./pages/LeaveAccrualsHub";
 import LeaveHub from "./pages/LeaveHub";
 import MasterDataHub from "./pages/MasterDataHub";
+import UserPermissions from "./pages/UserPermissions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,8 @@ const App = () => {
                   <Route path="/leave-accruals" element={<LeaveAccrualsHub />} />
                   <Route path="/leave" element={<LeaveHub />} />
                   <Route path="/settings/master-data" element={<MasterDataHub />} />
+                  <Route path="/settings/permissions" element={<UserPermissions />} />
+
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
