@@ -152,8 +152,9 @@ export function PermissionMatrixPanel() {
                 <Input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Find module…"
-                  className="pl-8 w-[200px]"
+                  placeholder="Search modules or sub-permissions…"
+                  className="pl-8 w-[260px]"
+
                 />
               </div>
               <Button
