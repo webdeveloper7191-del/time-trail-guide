@@ -95,7 +95,12 @@ export const permissionsStore = {
 
 export function usePermissionsStore() {
   const [, force] = useState(0);
-  useEffect(() => permissionsStore.subscribe(() => force(n => n + 1)), []);
+  useEffect(() => {
+    const unsub = permissionsStore.subscribe(() => force(n => n + 1));
+    return () => {
+      unsub();
+    };
+  }, []);
   return {
     roles: permissionsStore.getRoles(),
     matrix: permissionsStore.getMatrix(),
