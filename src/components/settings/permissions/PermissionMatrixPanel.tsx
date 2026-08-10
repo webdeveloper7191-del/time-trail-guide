@@ -304,15 +304,70 @@ export function PermissionMatrixPanel() {
                                 );
                               })}
                               <td className="px-3 py-2.5 text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
-                                  onClick={() => setAll(m.id, m.actions, !allOn)}
-                                >
-                                  {allOn ? 'Clear' : 'Grant all'}
-                                </Button>
+                                <div className="flex items-center justify-end gap-0.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn('h-7 text-xs', allOn && 'text-muted-foreground')}
+                                    onClick={() => setAll(m.id, m.actions, !allOn)}
+                                  >
+                                    {allOn ? 'Clear' : 'Grant all'}
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        aria-label={`Bulk actions for ${m.label}`}
+                                      >
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-64 bg-popover z-50">
+                                      <DropdownMenuLabel className="text-xs">
+                                        Apply to all {roles.length} roles
+                                      </DropdownMenuLabel>
+                                      <DropdownMenuItem
+                                        onClick={() => bulkAllRoles(m.id, m.label, m.actions, true)}
+                                      >
+                                        <Users className="h-4 w-4 mr-2" />
+                                        Enable module + sub-permissions
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => bulkAllRoles(m.id, m.label, m.actions, false)}
+                                      >
+                                        <Users className="h-4 w-4 mr-2" />
+                                        Disable module + sub-permissions
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuLabel className="text-xs">
+                                        Single action, all roles
+                                      </DropdownMenuLabel>
+                                      {m.actions.map(a => (
+                                        <DropdownMenuSub key={a}>
+                                          <DropdownMenuSubTrigger>
+                                            {actionLabels[a]}
+                                          </DropdownMenuSubTrigger>
+                                          <DropdownMenuSubContent className="bg-popover z-50">
+                                            <DropdownMenuItem
+                                              onClick={() => bulkAction(m.id, m.label, a, true)}
+                                            >
+                                              Enable for all roles
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={() => bulkAction(m.id, m.label, a, false)}
+                                            >
+                                              Disable for all roles
+                                            </DropdownMenuItem>
+                                          </DropdownMenuSubContent>
+                                        </DropdownMenuSub>
+                                      ))}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </td>
+
                             </tr>
                             {open &&
                               subs.map(sub => {
