@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { mockStaff } from '@/data/mockStaffData';
+import { employmentTypeLabels } from '@/types/staff';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 
 export function UserRoleAssignmentPanel() {
