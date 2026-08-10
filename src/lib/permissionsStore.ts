@@ -194,7 +194,7 @@ export const permissionsStore = {
     permissionsStore.saveMatrix(matrix);
   },
 
-
+  resetToDefaults: () => {
     write(ROLES_KEY, DEFAULT_ROLES);
     write(MATRIX_KEY, DEFAULT_MATRIX);
   },
