@@ -6,7 +6,28 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronDown, ChevronRight, Download, RotateCcw, Search, ShieldCheck } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  MoreHorizontal,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
+
 import { toast } from 'sonner';
 import {
   ALL_ACTIONS,
