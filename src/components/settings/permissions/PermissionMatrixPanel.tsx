@@ -43,10 +43,21 @@ import {
   subKey,
 } from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
+import { usePlan } from '@/lib/planStore';
+import {
+  planAllows,
+  planAllowsSub,
+  planLabel,
+  planModuleActions,
+  requiredModuleTier,
+  requiredSubTier,
+  requiredTier,
+} from '@/types/plans';
 import { cn } from '@/lib/utils';
 
 export function PermissionMatrixPanel() {
   const { roles, matrix } = usePermissionsStore();
+  const { tier } = usePlan();
   const [roleId, setRoleId] = useState(roles[0]?.id ?? 'owner');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -54,6 +65,7 @@ export function PermissionMatrixPanel() {
 
   const role = roles.find(r => r.id === roleId) ?? roles[0];
   const roleMatrix = matrix[roleId] ?? {};
+
 
   const query = search.trim().toLowerCase();
 
