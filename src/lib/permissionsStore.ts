@@ -11,7 +11,7 @@ import {
 } from '@/types/permissions';
 
 const ROLES_KEY = 'rai.permissions.roles.v1';
-const MATRIX_KEY = 'rai.permissions.matrix.v1';
+const MATRIX_KEY = 'rai.permissions.matrix.v2';
 const ASSIGN_KEY = 'rai.permissions.assignments.v1';
 
 type Listener = () => void;
