@@ -64,6 +64,9 @@ export default function UserPermissions() {
             <TabsTrigger value="plans" className="gap-1.5">
               <Gem className="h-3.5 w-3.5" /> Plans &amp; entitlements
             </TabsTrigger>
+            <TabsTrigger value="billing" className="gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" /> Billing
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="matrix" className="mt-4">
             <PermissionMatrixPanel />
@@ -77,10 +80,15 @@ export default function UserPermissions() {
           <TabsContent value="plans" className="mt-4">
             <PlansPanel />
           </TabsContent>
+          <TabsContent value="billing" className="mt-4">
+            <BillingPanel />
+          </TabsContent>
         </Tabs>
       </main>
       <UpgradeDialog />
+      <CheckoutDialog />
     </div>
   );
 }
+
 
