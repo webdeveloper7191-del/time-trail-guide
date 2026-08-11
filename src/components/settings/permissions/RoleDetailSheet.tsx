@@ -42,7 +42,8 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     setDescription(role?.description ?? '');
     setQuery('');
     setEditing(false);
-    setGrantedOnly(true);
+    // Custom roles open in "show everything" mode so rights can be granted.
+    setGrantedOnly(role?.system ?? true);
     setExpanded({});
   }, [role?.id, open]);
 
