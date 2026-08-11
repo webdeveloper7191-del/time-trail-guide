@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, Lock, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   PLANS,
   PLAN_ORDER,
@@ -20,13 +19,15 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
-import { upgradePrompt } from '@/lib/upgradePrompt';
+
+import { PRICE_PER_USER, checkout, formatMoney } from '@/lib/billingStore';
 import { cn } from '@/lib/utils';
+
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
 export function PlansPanel() {
-  const { tier, setTier } = usePlan();
+  const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
 
   const rows = useMemo(
@@ -59,8 +60,15 @@ export function PlansPanel() {
                   )}
                 </div>
                 <CardDescription>{p.tagline}</CardDescription>
+                <div className="pt-1">
+                  <span className="text-2xl font-semibold tracking-tight">
+                    {formatMoney(PRICE_PER_USER[t])}
+                  </span>
+                  <span className="text-xs text-muted-foreground"> / user / month</span>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
+
                 <ul className="space-y-1.5">
                   {p.highlights.map(h => (
                     <li key={h} className="flex gap-2 text-xs text-muted-foreground">
@@ -98,25 +106,15 @@ export function PlansPanel() {
                   className="w-full"
                   variant={current ? 'outline' : 'default'}
                   disabled={current}
-                  onClick={() => {
-                    if (!isAtLeast(tier, t)) {
-                      upgradePrompt.open({
-                        needs: t,
-                        feature: `${p.label} plan`,
-                        source: 'plans-panel',
-                      });
-                      return;
-                    }
-                    setTier(t);
-                    toast.success(`Subscription set to ${p.label}`);
-                  }}
+                  onClick={() => checkout.open({ tier: t, source: 'plans-panel' })}
                 >
                   {current
                     ? 'Current plan'
                     : isAtLeast(tier, t)
-                      ? `Downgrade to ${p.label}`
+                      ? `Switch to ${p.label}`
                       : `Upgrade to ${p.label}`}
                 </Button>
+
               </CardContent>
             </Card>
           );

@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, Grid3X3, Users, BadgeCheck, Gem } from 'lucide-react';
+import { ShieldCheck, Grid3X3, Users, BadgeCheck, Gem, CreditCard } from 'lucide-react';
 import { PermissionMatrixPanel } from '@/components/settings/permissions/PermissionMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
+import { BillingPanel } from '@/components/settings/billing/BillingPanel';
+import { CheckoutDialog } from '@/components/settings/billing/CheckoutDialog';
 import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
 import { UpgradeDialog } from '@/components/settings/permissions/UpgradeDialog';
 import { usePlan } from '@/lib/planStore';
+
 
 
 export default function UserPermissions() {
@@ -61,6 +64,9 @@ export default function UserPermissions() {
             <TabsTrigger value="plans" className="gap-1.5">
               <Gem className="h-3.5 w-3.5" /> Plans &amp; entitlements
             </TabsTrigger>
+            <TabsTrigger value="billing" className="gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" /> Billing
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="matrix" className="mt-4">
             <PermissionMatrixPanel />
@@ -74,10 +80,15 @@ export default function UserPermissions() {
           <TabsContent value="plans" className="mt-4">
             <PlansPanel />
           </TabsContent>
+          <TabsContent value="billing" className="mt-4">
+            <BillingPanel />
+          </TabsContent>
         </Tabs>
       </main>
       <UpgradeDialog />
+      <CheckoutDialog />
     </div>
   );
 }
+
 
