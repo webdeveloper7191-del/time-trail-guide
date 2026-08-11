@@ -20,6 +20,7 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
+import { upgradePrompt } from '@/lib/upgradePrompt';
 import { cn } from '@/lib/utils';
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
@@ -98,6 +99,14 @@ export function PlansPanel() {
                   variant={current ? 'outline' : 'default'}
                   disabled={current}
                   onClick={() => {
+                    if (!isAtLeast(tier, t)) {
+                      upgradePrompt.open({
+                        needs: t,
+                        feature: `${p.label} plan`,
+                        source: 'plans-panel',
+                      });
+                      return;
+                    }
                     setTier(t);
                     toast.success(`Subscription set to ${p.label}`);
                   }}
