@@ -308,7 +308,13 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                                   {subs.map(sub => (
                                     <div key={sub.id} className="space-y-1">
                                       <div className="text-xs font-medium">{sub.label}</div>
-                                      {actionGrid(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
+                                      {actionGrid(
+                                        sub.actions,
+                                        grants[subKey(module.id, sub.id)] ?? [],
+                                        canEditRights
+                                          ? a => permissionsStore.toggleSubAction(role.id, module.id, sub.id, a)
+                                          : undefined,
+                                      )}
                                     </div>
                                   ))}
                                 </div>
