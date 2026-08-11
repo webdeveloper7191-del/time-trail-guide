@@ -107,25 +107,15 @@ export function PlansPanel() {
                   className="w-full"
                   variant={current ? 'outline' : 'default'}
                   disabled={current}
-                  onClick={() => {
-                    if (!isAtLeast(tier, t)) {
-                      upgradePrompt.open({
-                        needs: t,
-                        feature: `${p.label} plan`,
-                        source: 'plans-panel',
-                      });
-                      return;
-                    }
-                    setTier(t);
-                    toast.success(`Subscription set to ${p.label}`);
-                  }}
+                  onClick={() => checkout.open({ tier: t, source: 'plans-panel' })}
                 >
                   {current
                     ? 'Current plan'
                     : isAtLeast(tier, t)
-                      ? `Downgrade to ${p.label}`
+                      ? `Switch to ${p.label}`
                       : `Upgrade to ${p.label}`}
                 </Button>
+
               </CardContent>
             </Card>
           );
