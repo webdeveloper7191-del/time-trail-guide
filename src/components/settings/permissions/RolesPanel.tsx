@@ -74,15 +74,15 @@ export function RolesPanel() {
       toast.error('A role with that name already exists');
       return;
     }
-    permissionsStore.addRole(
-      { id, label: name, description: description.trim(), system: false },
-      copyFrom === 'none' ? undefined : copyFrom,
-    );
-    toast.success(`Role "${name}" created`);
+    const newRole: RoleDefinition = { id, label: name, description: description.trim(), system: false };
+    permissionsStore.addRole(newRole, copyFrom === 'none' ? undefined : copyFrom);
+    toast.success(`Role "${name}" created — you can now edit its permissions`);
     setOpen(false);
     setLabel('');
     setDescription('');
     setCopyFrom('none');
+    // Drop straight into the editable detail panel for the new custom role.
+    setDetailRole(newRole);
   };
 
   const renderRole = (r: RoleDefinition) => {

@@ -42,7 +42,8 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     setDescription(role?.description ?? '');
     setQuery('');
     setEditing(false);
-    setGrantedOnly(true);
+    // Custom roles open in "show everything" mode so rights can be granted.
+    setGrantedOnly(role?.system ?? true);
     setExpanded({});
   }, [role?.id, open]);
 
@@ -85,38 +86,49 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     setEditing(false);
   };
 
+  const canEditRights = !role.system;
+
   // Fixed-column action grid: every row uses the same column order so states
-  // line up vertically and can be scanned at a glance.
-  const actionGrid = (actions: PermissionAction[], granted: PermissionAction[]) => (
+  // line up vertically and can be scanned at a glance. For custom roles each
+  // applicable cell is a toggle.
+  const actionGrid = (
+    actions: PermissionAction[],
+    granted: PermissionAction[],
+    onToggle?: (a: PermissionAction) => void,
+  ) => (
     <div className="grid grid-cols-4 gap-1 sm:grid-cols-8">
       {ALL_ACTIONS.map(a => {
         const applicable = actions.includes(a);
         const on = applicable && granted.includes(a);
-        return (
-          <span
-            key={a}
-            title={
-              !applicable
-                ? `${actionLabels[a]} — not applicable`
-                : on
-                  ? `${actionLabels[a]} — granted`
-                  : `${actionLabels[a]} — denied`
-            }
-            className={
-              'flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-[10px] font-medium ' +
-              (!applicable
-                ? 'bg-muted/40 text-muted-foreground/40'
-                : on
-                  ? 'bg-primary/10 text-primary'
-                  : 'border border-dashed border-border text-muted-foreground/70')
-            }
-          >
+        const interactive = applicable && !!onToggle;
+        const className =
+          'flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-[10px] font-medium ' +
+          (!applicable
+            ? 'bg-muted/40 text-muted-foreground/40'
+            : on
+              ? 'bg-primary/10 text-primary'
+              : 'border border-dashed border-border text-muted-foreground/70') +
+          (interactive ? ' hover:ring-1 hover:ring-primary/40 cursor-pointer transition-shadow' : '');
+        const title = !applicable
+          ? `${actionLabels[a]} — not applicable`
+          : `${actionLabels[a]} — ${on ? 'granted' : 'denied'}${onToggle ? ' (click to toggle)' : ''}`;
+        const inner = (
+          <>
             {applicable ? (
               on ? <Check className="h-2.5 w-2.5 shrink-0" /> : <X className="h-2.5 w-2.5 shrink-0" />
             ) : (
               <Minus className="h-2.5 w-2.5 shrink-0" />
             )}
             <span className="truncate">{actionLabels[a]}</span>
+          </>
+        );
+        return interactive ? (
+          <button key={a} type="button" title={title} className={className} onClick={() => onToggle!(a)}>
+            {inner}
+          </button>
+        ) : (
+          <span key={a} title={title} className={className}>
+            {inner}
           </span>
         );
       })}
@@ -150,7 +162,9 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
             </SheetTitle>
             <SheetDescription className="text-xs">
               {role.description}
-              {role.system && ' System roles are read-only — clone one to tailor access.'}
+              {role.system
+                ? ' System roles are read-only — clone one to tailor access.'
+                : ' Click any action chip to grant or revoke it for this role.'}
             </SheetDescription>
           </SheetHeader>
 
@@ -274,7 +288,13 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                               )}
                             </div>
                           </div>
-                          {actionGrid(module.actions, granted)}
+                          {actionGrid(
+                            module.actions,
+                            granted,
+                            canEditRights
+                              ? a => permissionsStore.toggleAction(role.id, module.id, a)
+                              : undefined,
+                          )}
                           {subs.length > 0 && (
                             <>
                               <CollapsibleTrigger asChild>
@@ -291,7 +311,13 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                                   {subs.map(sub => (
                                     <div key={sub.id} className="space-y-1">
                                       <div className="text-xs font-medium">{sub.label}</div>
-                                      {actionGrid(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
+                                      {actionGrid(
+                                        sub.actions,
+                                        grants[subKey(module.id, sub.id)] ?? [],
+                                        canEditRights
+                                          ? a => permissionsStore.toggleSubAction(role.id, module.id, sub.id, a)
+                                          : undefined,
+                                      )}
                                     </div>
                                   ))}
                                 </div>
