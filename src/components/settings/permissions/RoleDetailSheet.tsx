@@ -209,6 +209,27 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
           </label>
         </div>
 
+        <div className="px-6 py-2 border-b flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-primary/10 text-primary">
+              <Check className="h-2.5 w-2.5" />
+            </span>
+            Granted
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded border border-dashed">
+              <X className="h-2.5 w-2.5" />
+            </span>
+            Denied
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-muted/40 text-muted-foreground/40">
+              <Minus className="h-2.5 w-2.5" />
+            </span>
+            Not applicable
+          </span>
+        </div>
+
         <ScrollArea className="flex-1">
           <div className="px-6 py-4 space-y-5">
             {groups.length === 0 && (
