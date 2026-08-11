@@ -285,7 +285,13 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                               )}
                             </div>
                           </div>
-                          {actionGrid(module.actions, granted)}
+                          {actionGrid(
+                            module.actions,
+                            granted,
+                            canEditRights
+                              ? a => permissionsStore.toggleAction(role.id, module.id, a)
+                              : undefined,
+                          )}
                           {subs.length > 0 && (
                             <>
                               <CollapsibleTrigger asChild>
