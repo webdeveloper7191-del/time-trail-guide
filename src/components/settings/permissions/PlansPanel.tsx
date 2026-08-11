@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, Lock, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   PLANS,
   PLAN_ORDER,
@@ -20,7 +19,7 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
-import { upgradePrompt } from '@/lib/upgradePrompt';
+
 import { PRICE_PER_USER, checkout, formatMoney } from '@/lib/billingStore';
 import { cn } from '@/lib/utils';
 
@@ -28,7 +27,7 @@ import { cn } from '@/lib/utils';
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
 export function PlansPanel() {
-  const { tier, setTier } = usePlan();
+  const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
 
   const rows = useMemo(
