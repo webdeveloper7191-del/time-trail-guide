@@ -270,7 +270,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                                   {subs.map(sub => (
                                     <div key={sub.id} className="space-y-1">
                                       <div className="text-xs font-medium">{sub.label}</div>
-                                      {actionChips(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
+                                      {actionGrid(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
                                     </div>
                                   ))}
                                 </div>
