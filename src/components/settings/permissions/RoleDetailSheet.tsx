@@ -162,7 +162,9 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
             </SheetTitle>
             <SheetDescription className="text-xs">
               {role.description}
-              {role.system && ' System roles are read-only — clone one to tailor access.'}
+              {role.system
+                ? ' System roles are read-only — clone one to tailor access.'
+                : ' Click any action chip to grant or revoke it for this role.'}
             </SheetDescription>
           </SheetHeader>
 
