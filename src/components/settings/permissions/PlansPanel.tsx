@@ -59,8 +59,15 @@ export function PlansPanel() {
                   )}
                 </div>
                 <CardDescription>{p.tagline}</CardDescription>
+                <div className="pt-1">
+                  <span className="text-2xl font-semibold tracking-tight">
+                    {formatMoney(PRICE_PER_USER[t])}
+                  </span>
+                  <span className="text-xs text-muted-foreground"> / user / month</span>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
+
                 <ul className="space-y-1.5">
                   {p.highlights.map(h => (
                     <li key={h} className="flex gap-2 text-xs text-muted-foreground">
