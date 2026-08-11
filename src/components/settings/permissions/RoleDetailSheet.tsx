@@ -85,38 +85,49 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     setEditing(false);
   };
 
+  const canEditRights = !role.system;
+
   // Fixed-column action grid: every row uses the same column order so states
-  // line up vertically and can be scanned at a glance.
-  const actionGrid = (actions: PermissionAction[], granted: PermissionAction[]) => (
+  // line up vertically and can be scanned at a glance. For custom roles each
+  // applicable cell is a toggle.
+  const actionGrid = (
+    actions: PermissionAction[],
+    granted: PermissionAction[],
+    onToggle?: (a: PermissionAction) => void,
+  ) => (
     <div className="grid grid-cols-4 gap-1 sm:grid-cols-8">
       {ALL_ACTIONS.map(a => {
         const applicable = actions.includes(a);
         const on = applicable && granted.includes(a);
-        return (
-          <span
-            key={a}
-            title={
-              !applicable
-                ? `${actionLabels[a]} — not applicable`
-                : on
-                  ? `${actionLabels[a]} — granted`
-                  : `${actionLabels[a]} — denied`
-            }
-            className={
-              'flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-[10px] font-medium ' +
-              (!applicable
-                ? 'bg-muted/40 text-muted-foreground/40'
-                : on
-                  ? 'bg-primary/10 text-primary'
-                  : 'border border-dashed border-border text-muted-foreground/70')
-            }
-          >
+        const interactive = applicable && !!onToggle;
+        const className =
+          'flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-[10px] font-medium ' +
+          (!applicable
+            ? 'bg-muted/40 text-muted-foreground/40'
+            : on
+              ? 'bg-primary/10 text-primary'
+              : 'border border-dashed border-border text-muted-foreground/70') +
+          (interactive ? ' hover:ring-1 hover:ring-primary/40 cursor-pointer transition-shadow' : '');
+        const title = !applicable
+          ? `${actionLabels[a]} — not applicable`
+          : `${actionLabels[a]} — ${on ? 'granted' : 'denied'}${onToggle ? ' (click to toggle)' : ''}`;
+        const inner = (
+          <>
             {applicable ? (
               on ? <Check className="h-2.5 w-2.5 shrink-0" /> : <X className="h-2.5 w-2.5 shrink-0" />
             ) : (
               <Minus className="h-2.5 w-2.5 shrink-0" />
             )}
             <span className="truncate">{actionLabels[a]}</span>
+          </>
+        );
+        return interactive ? (
+          <button key={a} type="button" title={title} className={className} onClick={() => onToggle!(a)}>
+            {inner}
+          </button>
+        ) : (
+          <span key={a} title={title} className={className}>
+            {inner}
           </span>
         );
       })}
