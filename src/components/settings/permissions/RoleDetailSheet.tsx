@@ -240,17 +240,20 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                               <div className="text-sm font-medium truncate">{module.label}</div>
                               <div className="text-[11px] text-muted-foreground">{module.scope} scope</div>
                             </div>
-                            {granted.length === 0 ? (
-                              <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">
-                                No access
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-[10px] shrink-0">
-                                {granted.length} of {module.actions.length}
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {coverageBar(granted.length, module.actions.length)}
+                              {granted.length === 0 ? (
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                  No access
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {granted.length} of {module.actions.length}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          {actionChips(module.actions, granted)}
+                          {actionGrid(module.actions, granted)}
                           {subs.length > 0 && (
                             <>
                               <CollapsibleTrigger asChild>
