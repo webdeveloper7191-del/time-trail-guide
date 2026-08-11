@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -7,12 +7,21 @@ import { PermissionMatrixPanel } from '@/components/settings/permissions/Permiss
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
+import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
+import { UpgradeDialog } from '@/components/settings/permissions/UpgradeDialog';
 import { usePlan } from '@/lib/planStore';
 
 
 export default function UserPermissions() {
   const [tab, setTab] = useState('matrix');
   const { plan } = usePlan();
+
+  // The upgrade dialog's "Compare plans" action deep-links to the plans tab.
+  useEffect(() => {
+    const open = () => setTab('plans');
+    window.addEventListener('rai:open-plans', open);
+    return () => window.removeEventListener('rai:open-plans', open);
+  }, []);
   return (
     <div className="min-h-screen flex w-full bg-background">
       <AdminSidebar />
@@ -35,6 +44,8 @@ export default function UserPermissions() {
             </p>
           </div>
         </header>
+
+        <UpgradeBanner />
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
@@ -65,6 +76,7 @@ export default function UserPermissions() {
           </TabsContent>
         </Tabs>
       </main>
+      <UpgradeDialog />
     </div>
   );
 }

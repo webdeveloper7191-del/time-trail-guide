@@ -44,7 +44,7 @@ import {
 } from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
-import { planLabel } from '@/types/plans';
+import { planLabel, PlanTier } from '@/types/plans';
 import {
   planAllows,
   planAllowsSub,
@@ -54,6 +54,7 @@ import {
   requiredTier,
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
+import { upgradePrompt } from '@/lib/upgradePrompt';
 import { cn } from '@/lib/utils';
 
 export function PermissionMatrixPanel() {
@@ -149,19 +150,37 @@ export function PermissionMatrixPanel() {
     permissionsStore.setModuleActions(roleId, moduleId, on ? allowed : []);
   };
 
-  /** Cell shown when the plan does not include this action. */
-  const LockedCell = ({ needs, small }: { needs: string; small?: boolean }) => (
+  /** Cell shown when the plan does not include this action — promotes the upgrade. */
+  const LockedCell = ({
+    needs,
+    small,
+    feature,
+    moduleId,
+  }: {
+    needs: PlanTier;
+    small?: boolean;
+    feature: string;
+    moduleId: string;
+  }) => (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="inline-flex cursor-help text-muted-foreground/60">
+        <button
+          type="button"
+          aria-label={`${feature} requires the ${planLabel(needs)} plan — view upgrade`}
+          onClick={() =>
+            upgradePrompt.open({ needs, feature, moduleId, source: 'permission-matrix' })
+          }
+          className="inline-flex text-muted-foreground/60 hover:text-primary transition-colors"
+        >
           <Lock className={small ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-        </span>
+        </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-[220px]">
-        Included from the {needs} plan. Upgrade to grant this permission.
+        Included from the {planLabel(needs)} plan. Click to see what upgrading unlocks.
       </TooltipContent>
     </Tooltip>
   );
+
 
 
   const exportCsv = () => {
@@ -400,7 +419,11 @@ export function PermissionMatrixPanel() {
                                         aria-label={`${actionLabels[a]} ${m.label}`}
                                       />
                                     ) : (
-                                      <LockedCell needs={needs ? planLabel(needs) : 'Enterprise'} />
+                                      <LockedCell
+                                        needs={needs ?? 'enterprise'}
+                                        moduleId={m.id}
+                                        feature={`${m.label} — ${actionLabels[a]}`}
+                                      />
                                     )}
                                   </td>
                                 );
@@ -535,7 +558,9 @@ export function PermissionMatrixPanel() {
                                           ) : (
                                             <LockedCell
                                               small
-                                              needs={needs ? planLabel(needs) : 'Enterprise'}
+                                              needs={needs ?? 'enterprise'}
+                                              moduleId={m.id}
+                                              feature={`${m.label} — ${sub.label} — ${actionLabels[a]}`}
                                             />
                                           )}
                                         </td>
