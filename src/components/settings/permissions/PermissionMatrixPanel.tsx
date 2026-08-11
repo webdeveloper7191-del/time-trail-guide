@@ -44,7 +44,7 @@ import {
 } from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
-import { planLabel } from '@/types/plans';
+import { planLabel, PlanTier } from '@/types/plans';
 import {
   planAllows,
   planAllowsSub,
@@ -54,6 +54,7 @@ import {
   requiredTier,
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
+import { upgradePrompt } from '@/lib/upgradePrompt';
 import { cn } from '@/lib/utils';
 
 export function PermissionMatrixPanel() {
@@ -418,7 +419,11 @@ export function PermissionMatrixPanel() {
                                         aria-label={`${actionLabels[a]} ${m.label}`}
                                       />
                                     ) : (
-                                      <LockedCell needs={needs ? planLabel(needs) : 'Enterprise'} />
+                                      <LockedCell
+                                        needs={needs ?? 'enterprise'}
+                                        moduleId={m.id}
+                                        feature={`${m.label} — ${actionLabels[a]}`}
+                                      />
                                     )}
                                   </td>
                                 );
@@ -553,7 +558,9 @@ export function PermissionMatrixPanel() {
                                           ) : (
                                             <LockedCell
                                               small
-                                              needs={needs ? planLabel(needs) : 'Enterprise'}
+                                              needs={needs ?? 'enterprise'}
+                                              moduleId={m.id}
+                                              feature={`${m.label} — ${sub.label} — ${actionLabels[a]}`}
                                             />
                                           )}
                                         </td>
