@@ -21,7 +21,9 @@ import {
 } from '@/lib/planEntitlementsStore';
 import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
 import { upgradePrompt } from '@/lib/upgradePrompt';
+import { PRICE_PER_USER, checkout, formatMoney } from '@/lib/billingStore';
 import { cn } from '@/lib/utils';
+
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
