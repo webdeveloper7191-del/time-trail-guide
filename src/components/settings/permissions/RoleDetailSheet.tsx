@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Lock, Search, ShieldCheck, ChevronRight, Check, Pencil, X } from 'lucide-react';
+import { Lock, Search, ShieldCheck, ChevronRight, Check, Pencil, X, Minus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ALL_ACTIONS,
@@ -85,32 +85,52 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     setEditing(false);
   };
 
-  const actionChips = (actions: PermissionAction[], granted: PermissionAction[]) => {
-    const shown = ALL_ACTIONS.filter(a => actions.includes(a) && (!grantedOnly || granted.includes(a)));
-    if (shown.length === 0) {
-      return <span className="text-xs text-muted-foreground">No permissions</span>;
-    }
-    return (
-      <div className="flex flex-wrap gap-1">
-        {shown.map(a => {
-          const on = granted.includes(a);
-          return (
-            <span
-              key={a}
-              className={
-                on
-                  ? 'inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium'
-                  : 'inline-flex items-center gap-1 rounded-md border border-dashed px-1.5 py-0.5 text-[10px] text-muted-foreground'
-              }
-            >
-              {on ? <Check className="h-2.5 w-2.5" /> : <X className="h-2.5 w-2.5" />}
-              {actionLabels[a]}
-            </span>
-          );
-        })}
-      </div>
-    );
-  };
+  // Fixed-column action grid: every row uses the same column order so states
+  // line up vertically and can be scanned at a glance.
+  const actionGrid = (actions: PermissionAction[], granted: PermissionAction[]) => (
+    <div className="grid grid-cols-4 gap-1 sm:grid-cols-8">
+      {ALL_ACTIONS.map(a => {
+        const applicable = actions.includes(a);
+        const on = applicable && granted.includes(a);
+        return (
+          <span
+            key={a}
+            title={
+              !applicable
+                ? `${actionLabels[a]} — not applicable`
+                : on
+                  ? `${actionLabels[a]} — granted`
+                  : `${actionLabels[a]} — denied`
+            }
+            className={
+              'flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 text-[10px] font-medium ' +
+              (!applicable
+                ? 'bg-muted/40 text-muted-foreground/40'
+                : on
+                  ? 'bg-primary/10 text-primary'
+                  : 'border border-dashed border-border text-muted-foreground/70')
+            }
+          >
+            {applicable ? (
+              on ? <Check className="h-2.5 w-2.5 shrink-0" /> : <X className="h-2.5 w-2.5 shrink-0" />
+            ) : (
+              <Minus className="h-2.5 w-2.5 shrink-0" />
+            )}
+            <span className="truncate">{actionLabels[a]}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+
+  const coverageBar = (granted: number, total: number) => (
+    <div className="h-1 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
+      <div
+        className={granted === 0 ? 'h-full bg-muted-foreground/30' : 'h-full bg-primary'}
+        style={{ width: `${total ? (granted / total) * 100 : 0}%` }}
+      />
+    </div>
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -189,6 +209,27 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
           </label>
         </div>
 
+        <div className="px-6 py-2 border-b flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-primary/10 text-primary">
+              <Check className="h-2.5 w-2.5" />
+            </span>
+            Granted
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded border border-dashed">
+              <X className="h-2.5 w-2.5" />
+            </span>
+            Denied
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded bg-muted/40 text-muted-foreground/40">
+              <Minus className="h-2.5 w-2.5" />
+            </span>
+            Not applicable
+          </span>
+        </div>
+
         <ScrollArea className="flex-1">
           <div className="px-6 py-4 space-y-5">
             {groups.length === 0 && (
@@ -220,17 +261,20 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                               <div className="text-sm font-medium truncate">{module.label}</div>
                               <div className="text-[11px] text-muted-foreground">{module.scope} scope</div>
                             </div>
-                            {granted.length === 0 ? (
-                              <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">
-                                No access
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-[10px] shrink-0">
-                                {granted.length} of {module.actions.length}
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {coverageBar(granted.length, module.actions.length)}
+                              {granted.length === 0 ? (
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                  No access
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {granted.length} of {module.actions.length}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          {actionChips(module.actions, granted)}
+                          {actionGrid(module.actions, granted)}
                           {subs.length > 0 && (
                             <>
                               <CollapsibleTrigger asChild>
@@ -247,7 +291,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
                                   {subs.map(sub => (
                                     <div key={sub.id} className="space-y-1">
                                       <div className="text-xs font-medium">{sub.label}</div>
-                                      {actionChips(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
+                                      {actionGrid(sub.actions, grants[subKey(module.id, sub.id)] ?? [])}
                                     </div>
                                   ))}
                                 </div>
