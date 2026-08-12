@@ -55,12 +55,13 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 import { upgradePrompt } from '@/lib/upgradePrompt';
+import { ModuleRow } from './ModuleRow';
 import { cn } from '@/lib/utils';
 
 export function PermissionMatrixPanel() {
   const { roles, matrix } = usePermissionsStore();
   const { tier } = usePlan();
-  usePlanEntitlements(); // re-render when plan entitlements change
+  const entitlements = usePlanEntitlements(); // re-render when plan entitlements change
   const [roleId, setRoleId] = useState(roles[0]?.id ?? 'owner');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -98,6 +99,15 @@ export function PermissionMatrixPanel() {
         s.label.toLowerCase().includes(query) || s.description.toLowerCase().includes(query),
     );
   };
+
+  /** Stable per-module sub-permission lists so memoised rows keep identity. */
+  const subsByModule = useMemo(() => {
+    const map: Record<string, ReturnType<typeof getSubPermissions>> = {};
+    for (const m of PERMISSION_MODULES) map[m.id] = visibleSubs(m.id, m.label, m.description);
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+  const subsFor = (m: (typeof PERMISSION_MODULES)[number]) => subsByModule[m.id] ?? [];
 
   // While searching, matching sub-permissions are revealed automatically.
   const isOpen = (moduleId: string) =>
