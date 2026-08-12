@@ -152,7 +152,7 @@ export function prorationPreview(
   const daysInPeriod = current.cycle === 'annual' ? 365 : 30;
   const msLeft = new Date(current.renewsOn).getTime() - now.getTime();
   const daysRemaining = Math.max(0, Math.min(daysInPeriod, Math.round(msLeft / 86_400_000)));
-  const fraction = daysInPeriod === 0 ? 0 : daysRemaining / daysInPeriod;
+  const fraction = daysRemaining / daysInPeriod;
 
   const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats).subtotal;
   const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats).subtotal;
