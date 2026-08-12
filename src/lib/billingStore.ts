@@ -120,9 +120,101 @@ function write(next: BillingState) {
   emit();
 }
 
+/* ------------------------------------------------------------------ */
+/* Proration preview (Stripe-style subscription update)                 */
+/* ------------------------------------------------------------------ */
+
+export interface ProrationPreview {
+  /** Unused time credited back from the current subscription. */
+  credit: number;
+  /** Cost of the new subscription for the remainder of the period. */
+  charge: number;
+  /** charge - credit, before tax. Negative means credit balance. */
+  subtotal: number;
+  tax: number;
+  /** Amount charged now (0 when the result is a credit). */
+  dueToday: number;
+  /** Credit carried to the next invoice when the change is a downgrade. */
+  creditBalance: number;
+  daysRemaining: number;
+  daysInPeriod: number;
+  /** Recurring total on the next invoice under the new configuration. */
+  nextInvoiceTotal: number;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+export function prorationPreview(
+  current: Pick<BillingState, 'tier' | 'cycle' | 'seats' | 'renewsOn'>,
+  next: { tier: PlanTier; cycle: BillingCycle; seats: number },
+  now: Date = new Date(),
+): ProrationPreview {
+  const daysInPeriod = current.cycle === 'annual' ? 365 : 30;
+  const msLeft = new Date(current.renewsOn).getTime() - now.getTime();
+  const daysRemaining = Math.max(0, Math.min(daysInPeriod, Math.round(msLeft / 86_400_000)));
+  const fraction = daysRemaining / daysInPeriod;
+
+  const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats).subtotal;
+  const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats).subtotal;
+
+  const credit = round2(currentPeriod * fraction);
+  const charge = round2(nextPeriod * fraction);
+  const subtotal = round2(charge - credit);
+  const tax = round2(Math.max(0, subtotal) * 0.1);
+  const dueToday = round2(Math.max(0, subtotal + tax));
+  const creditBalance = subtotal < 0 ? round2(-subtotal) : 0;
+
+  return {
+    credit,
+    charge,
+    subtotal,
+    tax,
+    dueToday,
+    creditBalance,
+    daysRemaining,
+    daysInPeriod,
+    nextInvoiceTotal: invoiceTotal(next.tier, next.cycle, next.seats).total,
+  };
+}
+
 export const billingStore = {
   get: read,
   update: (patch: Partial<BillingState>) => write({ ...read(), ...patch }),
+  /** Applies a subscription change against the card already on file. */
+  confirmUpdate: (args: {
+    tier: PlanTier;
+    cycle: BillingCycle;
+    seats: number;
+    proration: ProrationPreview;
+  }) => {
+    const state = read();
+    const cycleChanged = args.cycle !== state.cycle;
+    const invoices = [...state.invoices];
+    if (args.proration.dueToday > 0 || args.proration.creditBalance > 0) {
+      invoices.unshift({
+        id: `in_${Math.random().toString(36).slice(2, 10)}`,
+        date: new Date().toISOString(),
+        description: `Proration · ${PLANS[args.tier].label} · ${args.seats} users${
+          cycleChanged ? ` · ${args.cycle === 'annual' ? 'Annual' : 'Monthly'}` : ''
+        }`,
+        amount: args.proration.dueToday > 0 ? args.proration.dueToday : args.proration.creditBalance,
+        status: args.proration.dueToday > 0 ? 'paid' : 'refunded',
+      });
+    }
+    write({
+      ...state,
+      status: 'active',
+      tier: args.tier,
+      cycle: args.cycle,
+      seats: args.seats,
+      cancelAtPeriodEnd: false,
+      // Cycle changes restart the billing period; otherwise the date holds.
+      renewsOn: cycleChanged
+        ? addMonths(new Date(), args.cycle === 'annual' ? 12 : 1).toISOString()
+        : state.renewsOn,
+      invoices: invoices.slice(0, 24),
+    });
+  },
   /** Simulates a completed Stripe Checkout session. */
   confirmCheckout: (args: {
     tier: PlanTier;

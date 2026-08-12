@@ -12,7 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CreditCard, Lock, Loader2, ShieldCheck, Minus, Plus, CheckCircle2 } from 'lucide-react';
+import {
+  CreditCard,
+  Lock,
+  Loader2,
+  ShieldCheck,
+  Minus,
+  Plus,
+  CheckCircle2,
+  ArrowRight,
+  Info,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, PlanTier } from '@/types/plans';
 import { usePlan } from '@/lib/planStore';
@@ -25,6 +35,7 @@ import {
   invoiceTotal,
   useCheckout,
   CURRENCY,
+  prorationPreview,
 } from '@/lib/billingStore';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +79,9 @@ export function CheckoutDialog() {
   const [promo, setPromo] = useState('');
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  /** 'update' reviews a change against the card on file; 'payment' collects a card. */
+  const [mode, setMode] = useState<'update' | 'payment'>('payment');
+  const [snapshot, setSnapshot] = useState(() => billingStore.get());
 
   useEffect(() => {
     if (!context) return;
@@ -84,16 +98,47 @@ export function CheckoutDialog() {
     setPromo('');
     setProcessing(false);
     setDone(false);
+    setSnapshot(current);
+    const canUpdate =
+      current.status === 'active' && !!current.paymentMethod && context.source !== 'payment-method';
+    setMode(canUpdate ? 'update' : 'payment');
   }, [context]);
 
   const plan = PLANS[tier];
   const totals = useMemo(() => invoiceTotal(tier, cycle, seats), [tier, cycle, seats]);
+  const proration = useMemo(
+    () => prorationPreview(snapshot, { tier, cycle, seats }),
+    [snapshot, tier, cycle, seats],
+  );
+  const unchanged =
+    mode === 'update' &&
+    tier === snapshot.tier &&
+    cycle === snapshot.cycle &&
+    seats === snapshot.seats;
 
   const cardValid = digits(card).length >= 15;
   const expiryValid = digits(expiry).length === 4;
   const cvcValid = digits(cvc).length >= 3;
   const canPay =
     !!email.trim() && !!name.trim() && cardValid && expiryValid && cvcValid && seats > 0;
+
+  const applyUpdate = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      billingStore.confirmUpdate({ tier, cycle, seats, proration });
+      setTier(tier);
+      setProcessing(false);
+      setDone(true);
+      toast.success(`Subscription updated to ${plan.label}`, {
+        description:
+          proration.dueToday > 0
+            ? `${formatMoney(proration.dueToday)} ${CURRENCY} charged to your card on file.`
+            : proration.creditBalance > 0
+              ? `${formatMoney(proration.creditBalance)} credit applied to your next invoice.`
+              : 'No charge today.',
+      });
+    }, 1200);
+  };
 
   const pay = () => {
     setProcessing(true);
@@ -130,10 +175,12 @@ export function CheckoutDialog() {
           <div className="p-8 text-center space-y-3">
             <CheckCircle2 className="h-10 w-10 mx-auto text-primary" />
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Payment successful</h2>
+              <h2 className="text-lg font-semibold tracking-tight">
+                {mode === 'update' ? 'Subscription updated' : 'Payment successful'}
+              </h2>
               <p className="text-sm text-muted-foreground">
                 {plan.label} is now active for {seats} users. A receipt was sent to{' '}
-                <span className="text-foreground">{email}</span>.
+                <span className="text-foreground">{email || snapshot.billingEmail}</span>.
               </p>
             </div>
             <Button onClick={() => checkout.close()}>Back to billing</Button>
@@ -144,7 +191,7 @@ export function CheckoutDialog() {
             <aside className="bg-muted/40 border-r p-6 space-y-4">
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Subscribe to
+                  {mode === 'update' ? 'Update subscription' : 'Subscribe to'}
                 </p>
                 <h2 className="text-lg font-semibold tracking-tight">{plan.label}</h2>
                 <p className="text-xs text-muted-foreground">{plan.tagline}</p>
@@ -246,7 +293,127 @@ export function CheckoutDialog() {
               </p>
             </aside>
 
-            {/* Payment details */}
+            {/* Review the requested change against the card on file */}
+            {mode === 'update' ? (
+              <section className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold tracking-tight">Review your change</h3>
+                  <Badge variant="secondary" className="gap-1 text-[10px]">
+                    <Lock className="h-3 w-3" /> Secured by Stripe
+                  </Badge>
+                </div>
+
+                <div className="rounded-md border divide-y text-sm">
+                  {([
+                    ['Plan', PLANS[snapshot.tier].label, plan.label],
+                    ['Users', String(snapshot.seats), String(seats)],
+                    [
+                      'Billing cycle',
+                      snapshot.cycle === 'annual' ? 'Annual' : 'Monthly',
+                      cycle === 'annual' ? 'Annual' : 'Monthly',
+                    ],
+                  ] as [string, string, string][]).map(([label, from, to]) => (
+                    <div key={label} className="flex items-center justify-between gap-3 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                      <span className="flex items-center gap-2">
+                        <span className={cn(from !== to && 'text-muted-foreground line-through')}>
+                          {from}
+                        </span>
+                        {from !== to && (
+                          <>
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="font-medium">{to}</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-medium">Proration</h4>
+                  <dl className="rounded-md border p-3 space-y-1.5 text-sm">
+                    <div className="flex justify-between text-muted-foreground">
+                      <dt>Unused time on current plan</dt>
+                      <dd className="text-foreground">-{formatMoney(proration.credit)}</dd>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <dt>
+                        New plan · {proration.daysRemaining} of {proration.daysInPeriod} days
+                      </dt>
+                      <dd className="text-foreground">{formatMoney(proration.charge)}</dd>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <dt>GST (10%)</dt>
+                      <dd className="text-foreground">{formatMoney(proration.tax)}</dd>
+                    </div>
+                    <Separator className="my-1.5" />
+                    <div className="flex justify-between font-semibold">
+                      <dt>Due today</dt>
+                      <dd>
+                        {formatMoney(proration.dueToday)}{' '}
+                        <span className="text-xs">{CURRENCY}</span>
+                      </dd>
+                    </div>
+                    {proration.creditBalance > 0 && (
+                      <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                        <Info className="h-3.5 w-3.5 shrink-0 mt-px" />
+                        {formatMoney(proration.creditBalance)} credit will be applied to your next
+                        invoice.
+                      </p>
+                    )}
+                  </dl>
+                </div>
+
+                <div className="rounded-md border p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">
+                      {snapshot.paymentMethod?.brand} •••• {snapshot.paymentMethod?.last4}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      exp {String(snapshot.paymentMethod?.expMonth ?? 0).padStart(2, '0')}/
+                      {String(snapshot.paymentMethod?.expYear ?? '').slice(-2)}
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setMode('payment')}>
+                    Use another card
+                  </Button>
+                </div>
+
+                <Button
+                  className="w-full gap-2"
+                  disabled={processing || unchanged}
+                  onClick={applyUpdate}
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Updating…
+                    </>
+                  ) : unchanged ? (
+                    'No changes to confirm'
+                  ) : proration.dueToday > 0 ? (
+                    <>
+                      <Lock className="h-3.5 w-3.5" /> Confirm and pay{' '}
+                      {formatMoney(proration.dueToday)}
+                    </>
+                  ) : (
+                    'Confirm update'
+                  )}
+                </Button>
+
+                <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-px" />
+                  Your next invoice of {formatMoney(proration.nextInvoiceTotal)} {CURRENCY} is due{' '}
+                  {new Date(snapshot.renewsOn).toLocaleDateString('en-AU', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                  . This is a demo — no card is charged.
+                </p>
+              </section>
+            ) : (
             <section className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold tracking-tight">Payment details</h3>
@@ -349,6 +516,7 @@ export function CheckoutDialog() {
                 This is a demo checkout — no card is charged and no card data leaves this browser.
               </p>
             </section>
+            )}
           </div>
         )}
       </DialogContent>
