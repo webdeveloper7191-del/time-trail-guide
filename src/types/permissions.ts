@@ -240,6 +240,15 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     actions: ['view', 'create', 'edit', 'export'],
     scope: 'Self',
   },
+  {
+    id: 'kiosk',
+    label: 'Kiosk & Time Clock',
+    group: 'Operations',
+    description:
+      'On-site kiosk devices: pairing, PIN / QR / face verification, clocking, offline sync and kiosk audit.',
+    actions: ['view', 'create', 'edit', 'delete', 'approve', 'export', 'assign', 'configure'],
+    scope: 'Location',
+  },
 ];
 
 export const DEFAULT_ROLES: RoleDefinition[] = [
