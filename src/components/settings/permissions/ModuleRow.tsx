@@ -79,7 +79,7 @@ export interface ModuleRowProps {
   open: boolean;
   roleCount: number;
   /** Bumped whenever plan entitlements change so memoised rows refresh. */
-  entitlementsVersion: number;
+  entitlementsVersion: unknown;
   onToggleOpen: (moduleId: string) => void;
   onSetAll: (moduleId: string, actions: PermissionAction[], on: boolean) => void;
   onBulkAllRoles: (
