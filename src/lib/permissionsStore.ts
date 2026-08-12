@@ -13,8 +13,8 @@ import { PlanTier } from '@/types/plans';
 import { planAllows, planAllowsSub } from '@/lib/planEntitlementsStore';
 import { planStore } from '@/lib/planStore';
 
-const ROLES_KEY = 'rai.permissions.roles.v1';
-const MATRIX_KEY = 'rai.permissions.matrix.v4';
+const ROLES_KEY = 'rai.permissions.roles.v2';
+const MATRIX_KEY = 'rai.permissions.matrix.v5';
 const ASSIGN_KEY = 'rai.permissions.assignments.v1';
 
 type Listener = () => void;
