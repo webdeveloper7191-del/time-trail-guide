@@ -30,17 +30,42 @@ export function RolesPanel() {
 
   const userCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const roleId of Object.values(assignments)) counts[roleId] = (counts[roleId] ?? 0) + 1;
+    for (const list of Object.values(assignments)) {
+      for (const roleId of new Set(list.map(a => a.roleId))) {
+        counts[roleId] = (counts[roleId] ?? 0) + 1;
+      }
+    }
     return counts;
   }, [assignments]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return roles;
-    return roles.filter(
-      r => r.label.toLowerCase().includes(q) || r.description.toLowerCase().includes(q),
-    );
-  }, [roles, query]);
+    return roles.filter(r => {
+      if (r.label.toLowerCase().includes(q) || r.description.toLowerCase().includes(q)) return true;
+      // Also search what the role can actually do, e.g. "approve payroll".
+      const grants = matrix[r.id] ?? {};
+      return PERMISSION_MODULES.some(m => {
+        const moduleMatch = (text: string) =>
+          `${m.label} ${text}`.toLowerCase().includes(q) ||
+          q.split(/\s+/).every(t => `${m.label} ${text}`.toLowerCase().includes(t));
+        const moduleActions = grants[m.id] ?? [];
+        if (
+          moduleActions.length &&
+          moduleActions.some(a => moduleMatch(actionLabels[a]))
+        )
+          return true;
+        return getSubPermissions(m.id).some(sub => {
+          const acts = grants[subKey(m.id, sub.id)] ?? [];
+          return (
+            acts.length &&
+            acts.some(a => moduleMatch(`${sub.label} ${actionLabels[a]}`))
+          );
+        });
+      });
+    });
+  }, [roles, query, matrix]);
+
 
   const openCreate = (fromRoleId?: string) => {
     if (atCap) {
