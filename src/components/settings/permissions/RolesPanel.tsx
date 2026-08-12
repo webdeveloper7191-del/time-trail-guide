@@ -187,11 +187,12 @@ export function RolesPanel() {
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              className="pl-8 h-9 w-56"
-              placeholder="Search roles"
+              className="pl-8 h-9 w-72"
+              placeholder="Search roles or permissions (e.g. approve payroll)"
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
+
           </div>
           <Button size="sm" onClick={() => openCreate()} disabled={atCap}>
             <Plus className="h-4 w-4 mr-1.5" /> New role
