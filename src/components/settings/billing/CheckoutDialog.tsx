@@ -12,7 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CreditCard, Lock, Loader2, ShieldCheck, Minus, Plus, CheckCircle2 } from 'lucide-react';
+import {
+  CreditCard,
+  Lock,
+  Loader2,
+  ShieldCheck,
+  Minus,
+  Plus,
+  CheckCircle2,
+  ArrowRight,
+  Info,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, PlanTier } from '@/types/plans';
 import { usePlan } from '@/lib/planStore';
@@ -25,6 +35,7 @@ import {
   invoiceTotal,
   useCheckout,
   CURRENCY,
+  prorationPreview,
 } from '@/lib/billingStore';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +79,9 @@ export function CheckoutDialog() {
   const [promo, setPromo] = useState('');
   const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  /** 'update' reviews a change against the card on file; 'payment' collects a card. */
+  const [mode, setMode] = useState<'update' | 'payment'>('payment');
+  const [snapshot, setSnapshot] = useState(() => billingStore.get());
 
   useEffect(() => {
     if (!context) return;
@@ -84,16 +98,47 @@ export function CheckoutDialog() {
     setPromo('');
     setProcessing(false);
     setDone(false);
+    setSnapshot(current);
+    const canUpdate =
+      current.status === 'active' && !!current.paymentMethod && context.source !== 'payment-method';
+    setMode(canUpdate ? 'update' : 'payment');
   }, [context]);
 
   const plan = PLANS[tier];
   const totals = useMemo(() => invoiceTotal(tier, cycle, seats), [tier, cycle, seats]);
+  const proration = useMemo(
+    () => prorationPreview(snapshot, { tier, cycle, seats }),
+    [snapshot, tier, cycle, seats],
+  );
+  const unchanged =
+    mode === 'update' &&
+    tier === snapshot.tier &&
+    cycle === snapshot.cycle &&
+    seats === snapshot.seats;
 
   const cardValid = digits(card).length >= 15;
   const expiryValid = digits(expiry).length === 4;
   const cvcValid = digits(cvc).length >= 3;
   const canPay =
     !!email.trim() && !!name.trim() && cardValid && expiryValid && cvcValid && seats > 0;
+
+  const applyUpdate = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      billingStore.confirmUpdate({ tier, cycle, seats, proration });
+      setTier(tier);
+      setProcessing(false);
+      setDone(true);
+      toast.success(`Subscription updated to ${plan.label}`, {
+        description:
+          proration.dueToday > 0
+            ? `${formatMoney(proration.dueToday)} ${CURRENCY} charged to your card on file.`
+            : proration.creditBalance > 0
+              ? `${formatMoney(proration.creditBalance)} credit applied to your next invoice.`
+              : 'No charge today.',
+      });
+    }, 1200);
+  };
 
   const pay = () => {
     setProcessing(true);
