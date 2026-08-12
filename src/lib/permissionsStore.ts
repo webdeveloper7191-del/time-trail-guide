@@ -16,21 +16,45 @@ import { planStore } from '@/lib/planStore';
 const ROLES_KEY = 'rai.permissions.roles.v2';
 const MATRIX_KEY = 'rai.permissions.matrix.v5';
 const ASSIGN_KEY = 'rai.permissions.assignments.v1';
+const ASSIGN_V2_KEY = 'rai.permissions.assignments.v2';
+
+/**
+ * A person can hold several roles, each optionally scoped to one location
+ * (`locationId: null` means "everywhere"). Effective access is the union.
+ */
+export interface RoleAssignment {
+  roleId: string;
+  /** null = all locations the person belongs to. */
+  locationId: string | null;
+}
+export type RoleAssignments = Record<string, RoleAssignment[]>;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
+
+/**
+ * Snapshot cache. Reading localStorage + JSON.parse on every render made the
+ * permission matrix re-parse the whole store on each toggle; caching keeps
+ * object identity stable so memoised rows can bail out of re-rendering.
+ */
+const cache = new Map<string, unknown>();
 const emit = () => listeners.forEach(l => l());
 
 function read<T>(key: string, fallback: T): T {
+  if (cache.has(key)) return cache.get(key) as T;
+  let value = fallback;
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    if (raw) value = JSON.parse(raw) as T;
   } catch {
-    return fallback;
+    value = fallback;
   }
+  cache.set(key, value);
+  return value;
 }
 
 function write<T>(key: string, value: T) {
+  cache.set(key, value);
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -39,15 +63,77 @@ function write<T>(key: string, value: T) {
   emit();
 }
 
+/** One-time migration of the legacy single-role map to multi-role assignments. */
+function readAssignments(): RoleAssignments {
+  if (cache.has(ASSIGN_V2_KEY)) return cache.get(ASSIGN_V2_KEY) as RoleAssignments;
+  let value: RoleAssignments = {};
+  try {
+    const raw = localStorage.getItem(ASSIGN_V2_KEY);
+    if (raw) {
+      value = JSON.parse(raw) as RoleAssignments;
+    } else {
+      const legacy = localStorage.getItem(ASSIGN_KEY);
+      if (legacy) {
+        const map = JSON.parse(legacy) as Record<string, string>;
+        value = Object.fromEntries(
+          Object.entries(map).map(([staffId, roleId]) => [staffId, [{ roleId, locationId: null }]]),
+        );
+      }
+    }
+  } catch {
+    value = {};
+  }
+  cache.set(ASSIGN_V2_KEY, value);
+  return value;
+}
+
 export const permissionsStore = {
   getRoles: (): RoleDefinition[] => read(ROLES_KEY, DEFAULT_ROLES),
   getMatrix: (): PermissionMatrix => read(MATRIX_KEY, DEFAULT_MATRIX),
-  /** staffId -> roleId */
-  getAssignments: (): Record<string, string> => read(ASSIGN_KEY, {}),
+  /** staffId -> role assignments (multi-role, optionally location scoped) */
+  getAssignments: (): RoleAssignments => readAssignments(),
 
   saveRoles: (roles: RoleDefinition[]) => write(ROLES_KEY, roles),
   saveMatrix: (matrix: PermissionMatrix) => write(MATRIX_KEY, matrix),
-  saveAssignments: (a: Record<string, string>) => write(ASSIGN_KEY, a),
+  saveAssignments: (a: RoleAssignments) => write(ASSIGN_V2_KEY, a),
+
+  /** Replace every assignment for one person. */
+  setStaffAssignments: (staffId: string, list: RoleAssignment[]) => {
+    const next = { ...permissionsStore.getAssignments() };
+    if (list.length) next[staffId] = list;
+    else delete next[staffId];
+    permissionsStore.saveAssignments(next);
+  },
+
+  /** Add a role (optionally location scoped) to many people at once. */
+  bulkAssign: (
+    staffIds: string[],
+    roleId: string,
+    locationId: string | null,
+    mode: 'add' | 'replace' = 'add',
+  ) => {
+    const next = { ...permissionsStore.getAssignments() };
+    for (const id of staffIds) {
+      const current = mode === 'replace' ? [] : (next[id] ?? []);
+      if (current.some(a => a.roleId === roleId && a.locationId === locationId)) continue;
+      next[id] = [...current, { roleId, locationId }];
+    }
+    permissionsStore.saveAssignments(next);
+  },
+
+  /** Remove a role (optionally location scoped) from many people at once. */
+  bulkUnassign: (staffIds: string[], roleId: string, locationId: string | null | 'any' = 'any') => {
+    const next = { ...permissionsStore.getAssignments() };
+    for (const id of staffIds) {
+      const list = (next[id] ?? []).filter(
+        a => !(a.roleId === roleId && (locationId === 'any' || a.locationId === locationId)),
+      );
+      if (list.length) next[id] = list;
+      else delete next[id];
+    }
+    permissionsStore.saveAssignments(next);
+  },
+
 
   addRole: (role: RoleDefinition, copyFromRoleId?: string) => {
     const roles = permissionsStore.getRoles();
@@ -214,6 +300,30 @@ export const permissionsStore = {
   },
 };
 
+/** Roles that apply to a person, optionally narrowed to one location. */
+export function rolesForStaff(
+  assignments: RoleAssignments,
+  staffId: string,
+  locationId?: string | null,
+): string[] {
+  const list = assignments[staffId] ?? [];
+  const scoped = locationId
+    ? list.filter(a => a.locationId === null || a.locationId === locationId)
+    : list;
+  return [...new Set(scoped.map(a => a.roleId))];
+}
+
+/** Union of the grants of every role a person holds (in a location context). */
+export function unionActions(
+  matrix: PermissionMatrix,
+  roleIds: string[],
+  key: string,
+): PermissionAction[] {
+  const set = new Set<PermissionAction>();
+  for (const roleId of roleIds) for (const a of matrix[roleId]?.[key] ?? []) set.add(a);
+  return [...set];
+}
+
 export function usePermissionsStore() {
   const [, force] = useState(0);
   useEffect(() => {
@@ -228,6 +338,7 @@ export function usePermissionsStore() {
     assignments: permissionsStore.getAssignments(),
   };
 }
+
 
 /**
  * Effective permission = what the role grants AND what the subscription plan
