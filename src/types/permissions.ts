@@ -329,6 +329,7 @@ const BASE_MATRIX: PermissionMatrix = {
     settings: A('view'),
     permissions: A('view', 'assign'),
     'employee-portal': A('view'),
+    kiosk: A('view', 'export', 'configure'),
   },
   'location-manager': {
     dashboard: A('view', 'export'),
@@ -351,6 +352,7 @@ const BASE_MATRIX: PermissionMatrix = {
     'master-data': A('view'),
     settings: A('view'),
     'employee-portal': A('view'),
+    kiosk: A('view', 'create', 'edit', 'delete', 'approve', 'export', 'assign', 'configure'),
   },
   scheduler: {
     dashboard: A('view'),
@@ -368,6 +370,7 @@ const BASE_MATRIX: PermissionMatrix = {
     agency: A('view', 'assign'),
     'master-data': A('view'),
     'employee-portal': A('view'),
+    kiosk: A('view'),
   },
   payroll: {
     dashboard: A('view', 'export'),
@@ -384,6 +387,7 @@ const BASE_MATRIX: PermissionMatrix = {
     'master-data': A('view', 'create', 'edit'),
     settings: A('view', 'edit', 'configure'),
     'employee-portal': A('view'),
+    kiosk: A('view', 'edit', 'approve', 'export'),
   },
   supervisor: {
     dashboard: A('view'),
@@ -400,6 +404,7 @@ const BASE_MATRIX: PermissionMatrix = {
     performance: A('view', 'create', 'edit'),
     recognition: A('view', 'create'),
     'employee-portal': A('view'),
+    kiosk: A('view', 'create', 'edit', 'approve', 'assign'),
   },
   employee: {
     'employee-portal': A('view', 'create', 'edit', 'export'),
@@ -412,12 +417,14 @@ const BASE_MATRIX: PermissionMatrix = {
     performance: A('view', 'create', 'edit'),
     recognition: A('view', 'create'),
     workforce: A('view', 'edit'),
+    kiosk: A('view', 'create'),
   },
   'agency-partner': {
     roster: A('view'),
     agency: A('view', 'create', 'edit'),
     forms: A('view', 'create'),
     timesheets: A('view', 'create'),
+    kiosk: A('view', 'create'),
   },
 };
 
@@ -491,6 +498,7 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
     S('leave-marking', 'Leave day marking', 'Mark a day as leave and pick the leave type.', ['view', 'create', 'edit']),
     S('payroll-export', 'Payroll export', 'Export approved timesheets to payroll.', ['view', 'export']),
     S('policy', 'Timesheet policy', 'Rounding, variance flags and compliance defaults.', ['view', 'configure']),
+    S('kiosk-capture', 'Kiosk-captured time', 'Review, adjust and approve punches captured on a kiosk device.', ['view', 'edit', 'approve', 'export']),
   ],
   leave: [
     S('own-requests', 'Own leave requests', 'Submit and manage the user’s own leave.', ['view', 'create', 'edit', 'delete']),
@@ -635,6 +643,20 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
     S('swaps', 'Shift swaps & open shifts', 'Offer, claim and swap shifts.', ['view', 'create', 'edit']),
     S('profile', 'My profile & documents', 'Update own details, bank, tax and documents.', ['view', 'edit']),
     S('learning', 'My learning & tasks', 'Own courses, forms and assigned tasks.', ['view', 'create', 'edit']),
+    S('kiosk-clocking', 'Kiosk clock in / out', 'Clock on and off at a shared on-site kiosk using PIN, QR or face verification.', ['view', 'create', 'edit']),
+  ],
+  kiosk: [
+    S('devices', 'Kiosk devices', 'Register, rename, pair and retire kiosk devices for a location.', ['view', 'create', 'edit', 'delete', 'export']),
+    S('pairing', 'Device pairing & tokens', 'Issue, rotate and revoke kiosk pairing codes and device tokens.', ['view', 'create', 'edit', 'delete']),
+    S('clocking', 'Kiosk clocking', 'Clock staff on and off at the kiosk.', ['view', 'create', 'edit']),
+    S('pin-management', 'Staff PINs', 'Issue and reset the PINs staff use to clock at a kiosk.', ['view', 'create', 'edit', 'delete']),
+    S('face-verification', 'Face verification', 'Enrol, review and clear face-verification templates and match failures.', ['view', 'create', 'edit', 'delete', 'approve']),
+    S('supervisor-override', 'Supervisor override', 'Authorise a clock event the kiosk rejected (late, wrong location, failed match).', ['view', 'create', 'approve']),
+    S('offline-sync', 'Offline queue & sync', 'View and resolve punches queued while the kiosk was offline.', ['view', 'edit', 'approve']),
+    S('exceptions', 'Kiosk exceptions', 'Buddy-punch alerts, duplicate scans and missed clock-outs raised by the kiosk.', ['view', 'edit', 'approve', 'export']),
+    S('assignment', 'Device to location / area', 'Assign kiosk devices to locations and areas.', ['view', 'assign']),
+    S('audit', 'Kiosk audit trail', 'Device, photo and geolocation evidence for every kiosk event.', ['view', 'export']),
+    S('settings', 'Kiosk configuration', 'Clock methods, photo requirements, geofence radius, timeout and branding.', ['view', 'configure']),
   ],
 };
 
@@ -691,6 +713,15 @@ const SUB_DENY: Record<string, string[]> = {
     'contracts::variations',
     'contracts::audit',
     'contracts::config',
+    'kiosk::devices',
+    'kiosk::pairing',
+    'kiosk::pin-management',
+    'kiosk::supervisor-override',
+    'kiosk::offline-sync',
+    'kiosk::exceptions',
+    'kiosk::assignment',
+    'kiosk::audit',
+    'kiosk::settings',
   ],
   supervisor: [
     'dashboard::tenant-admin-view',
@@ -705,6 +736,8 @@ const SUB_DENY: Record<string, string[]> = {
     'roster::costs',
     'contracts::config',
     'contracts::templates',
+    'kiosk::pairing',
+    'kiosk::settings',
   ],
   'agency-partner': [
     'dashboard::tenant-admin-view',
@@ -734,8 +767,18 @@ const SUB_DENY: Record<string, string[]> = {
     'agency::credentials',
     'agency::role-mapping',
     'agency::assignment',
+    'kiosk::devices',
+    'kiosk::pairing',
+    'kiosk::pin-management',
+    'kiosk::face-verification',
+    'kiosk::supervisor-override',
+    'kiosk::offline-sync',
+    'kiosk::exceptions',
+    'kiosk::assignment',
+    'kiosk::audit',
+    'kiosk::settings',
   ],
-  scheduler: ['roster::constraints', 'dashboard::tenant-admin-view', 'reports::tenant-scope', 'reports::payroll'],
+  scheduler: ['kiosk::pairing', 'kiosk::pin-management', 'kiosk::settings', 'roster::constraints', 'dashboard::tenant-admin-view', 'reports::tenant-scope', 'reports::payroll'],
 };
 
 /** Seed every sub-permission from its parent module grant in the baseline matrix. */
