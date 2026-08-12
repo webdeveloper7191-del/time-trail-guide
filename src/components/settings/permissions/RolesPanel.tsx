@@ -9,7 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Plus, Trash2, Lock, Search, Copy, Eye, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { PERMISSION_MODULES, RoleDefinition } from '@/types/permissions';
+import {
+  PERMISSION_MODULES,
+  RoleDefinition,
+  actionLabels,
+  getSubPermissions,
+  subKey,
+} from '@/types/permissions';
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
 import { RoleDetailSheet } from './RoleDetailSheet';
