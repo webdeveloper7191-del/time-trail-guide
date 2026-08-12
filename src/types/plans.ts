@@ -34,6 +34,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       'Timesheets, breaks, exceptions and approvals',
       'Leave requests, balances and staff profiles',
       'Employee portal with clock in / out',
+      'On-site kiosk time clock with PIN and QR clocking',
     ],
     limits: { locations: 3, staff: 100, customRoles: 0, apiCredentials: 0 },
   },
@@ -47,6 +48,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       'RDO / ADO / TOIL accruals and payroll export',
       'Report builder, scheduled exports, forms, performance',
       'Custom roles and bulk workforce actions',
+      'Kiosk face verification, overrides and exception handling',
     ],
     limits: { locations: 25, staff: 1000, customRoles: 10, apiCredentials: 2 },
   },
@@ -59,6 +61,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       'Recruitment pipeline and cross-location org-wide reporting',
       'Third-party integrations, SSO/security and audit trail',
       'Unlimited locations, staff and custom roles',
+      'Kiosk offline sync and full kiosk audit evidence',
     ],
     limits: { locations: null, staff: null, customRoles: null, apiCredentials: null },
   },
@@ -100,6 +103,7 @@ const ESSENTIALS: TierDelta = {
     'employee-portal': true,
     unavailability: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
     contracts: ['view', 'create', 'edit', 'export'],
+    kiosk: ['view', 'create', 'edit', 'delete', 'export', 'assign', 'configure'],
   },
 };
 
@@ -120,6 +124,7 @@ const GROWTH: TierDelta = {
     workforce: true,
     permissions: ['view', 'create', 'edit', 'delete', 'assign'],
     settings: ['view', 'edit', 'configure'],
+    kiosk: true,
   },
   subs: {
     'roster::auto-schedule': true,
@@ -149,6 +154,10 @@ const GROWTH: TierDelta = {
     'contracts::countersign': true,
     'contracts::variations': true,
     'contracts::audit': true,
+    'kiosk::face-verification': true,
+    'kiosk::supervisor-override': true,
+    'kiosk::exceptions': true,
+    'timesheets::kiosk-capture': true,
   },
 };
 
@@ -173,6 +182,8 @@ const ENTERPRISE: TierDelta = {
     'permissions::elevate': true,
     'contracts::config': true,
     'unavailability::override': true,
+    'kiosk::audit': true,
+    'kiosk::offline-sync': true,
   },
 };
 
