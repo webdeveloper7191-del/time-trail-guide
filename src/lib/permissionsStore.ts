@@ -300,6 +300,30 @@ export const permissionsStore = {
   },
 };
 
+/** Roles that apply to a person, optionally narrowed to one location. */
+export function rolesForStaff(
+  assignments: RoleAssignments,
+  staffId: string,
+  locationId?: string | null,
+): string[] {
+  const list = assignments[staffId] ?? [];
+  const scoped = locationId
+    ? list.filter(a => a.locationId === null || a.locationId === locationId)
+    : list;
+  return [...new Set(scoped.map(a => a.roleId))];
+}
+
+/** Union of the grants of every role a person holds (in a location context). */
+export function unionActions(
+  matrix: PermissionMatrix,
+  roleIds: string[],
+  key: string,
+): PermissionAction[] {
+  const set = new Set<PermissionAction>();
+  for (const roleId of roleIds) for (const a of matrix[roleId]?.[key] ?? []) set.add(a);
+  return [...set];
+}
+
 export function usePermissionsStore() {
   const [, force] = useState(0);
   useEffect(() => {
@@ -314,6 +338,7 @@ export function usePermissionsStore() {
     assignments: permissionsStore.getAssignments(),
   };
 }
+
 
 /**
  * Effective permission = what the role grants AND what the subscription plan
