@@ -254,6 +254,19 @@ export function CheckoutPanel() {
         <>
           {/* Order summary */}
           <section className="rounded-lg border bg-background p-4 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold tracking-tight">Order summary</h3>
+              <span
+                className={cn(
+                  'flex items-center gap-1 text-[11px] transition-opacity',
+                  recalculating ? 'text-primary opacity-100' : 'text-muted-foreground opacity-70',
+                )}
+              >
+                <RefreshCw className={cn('h-3 w-3', recalculating && 'animate-spin')} />
+                {recalculating ? 'Recalculating…' : 'Updates live'}
+              </span>
+            </div>
+
             <div className="flex rounded-md border p-0.5 text-xs">
               {(['monthly', 'annual'] as BillingCycle[]).map(c => (
                 <button
