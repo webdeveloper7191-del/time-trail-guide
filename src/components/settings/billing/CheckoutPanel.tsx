@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, PlanTier } from '@/types/plans';
@@ -35,8 +36,11 @@ import {
   useCheckout,
   CURRENCY,
   prorationPreview,
+  taxRuleFor,
 } from '@/lib/billingStore';
+import { InvoiceHistorySection } from '@/components/settings/billing/InvoiceHistorySection';
 import { cn } from '@/lib/utils';
+
 
 const digits = (v: string) => v.replace(/\D/g, '');
 
