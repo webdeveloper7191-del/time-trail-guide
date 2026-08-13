@@ -382,7 +382,15 @@ export function CheckoutPanel() {
 
           {mode === 'update' ? (
             <section className="rounded-lg border bg-background p-4 space-y-4">
-              <h3 className="text-sm font-semibold tracking-tight">Review your change</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold tracking-tight">Review your change</h3>
+                {recalculating && (
+                  <span className="flex items-center gap-1 text-[11px] text-primary">
+                    <RefreshCw className="h-3 w-3 animate-spin" /> Recalculating…
+                  </span>
+                )}
+              </div>
+
 
               <div className="rounded-md border divide-y text-sm">
                 {(
