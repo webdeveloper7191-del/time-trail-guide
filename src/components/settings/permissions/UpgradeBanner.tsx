@@ -7,7 +7,6 @@ import { PLANS, PLAN_ORDER, PlanTier, planRank } from '@/types/plans';
 import { planModuleActions, planSubActions, usePlanEntitlements } from '@/lib/planEntitlementsStore';
 import { usePlan } from '@/lib/planStore';
 import { openUpgradeFlow } from '@/lib/upgradeFlow';
-import { upgradePrompt } from '@/lib/upgradePrompt';
 
 /**
  * Promotes the next tier from the top of the Users & Permissions page:

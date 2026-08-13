@@ -34,7 +34,6 @@ import {
   requiredTier,
 } from '@/lib/planEntitlementsStore';
 import { openUpgradeFlow } from '@/lib/upgradeFlow';
-import { upgradePrompt } from '@/lib/upgradePrompt';
 import { cn } from '@/lib/utils';
 
 /** Cell shown when the plan does not include this action — promotes the upgrade. */

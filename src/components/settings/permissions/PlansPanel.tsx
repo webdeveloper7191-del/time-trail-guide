@@ -106,7 +106,13 @@ export function PlansPanel() {
                   className="w-full"
                   variant={current ? 'outline' : 'default'}
                   disabled={current}
-                  onClick={() => checkout.open({ tier: t, source: 'plans-panel' })}
+                  onClick={() =>
+                    openCheckoutFlow({
+                      needs: t,
+                      feature: `${p.label} plan`,
+                      source: 'plans-panel',
+                    })
+                  }
                 >
                   {current
                     ? 'Current plan'
