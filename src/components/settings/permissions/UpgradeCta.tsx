@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Gem, Lock } from 'lucide-react';
 import { PlanTier, PLANS, isAtLeast } from '@/types/plans';
 import { usePlan } from '@/lib/planStore';
-import { upgradePrompt } from '@/lib/upgradePrompt';
+import { BillingCycle } from '@/lib/billingStore';
+import { openUpgradeFlow } from '@/lib/upgradeFlow';
 import { cn } from '@/lib/utils';
 
 interface UpgradeCtaProps {
@@ -13,6 +14,12 @@ interface UpgradeCtaProps {
   /** Where this CTA lives, for interest reporting. */
   source: string;
   moduleId?: string;
+  /** Seats to prefill in checkout; defaults to the current subscription. */
+  seats?: number;
+  /** Billing cycle to prefill; defaults to the current subscription. */
+  cycle?: BillingCycle;
+  /** Skip the offer panel and open checkout directly. */
+  skipOffer?: boolean;
   label?: string;
   size?: 'sm' | 'default';
   variant?: 'default' | 'outline' | 'ghost' | 'secondary';
@@ -22,14 +29,18 @@ interface UpgradeCtaProps {
 }
 
 /**
- * Single upgrade entry point for every module. Opens the global upgrade side
- * panel and logs the interest so demand per capability can be reported.
+ * Single upgrade entry point for every module. Routes through the shared
+ * `openUpgradeFlow` handler so the side panel is always prefilled with the
+ * same context (source module, plan, seats, cycle) and the interest is logged.
  */
 export function UpgradeCta({
   needs,
   feature,
   source,
   moduleId,
+  seats,
+  cycle,
+  skipOffer,
   label,
   size = 'sm',
   variant = 'default',
@@ -45,7 +56,7 @@ export function UpgradeCta({
       size={size}
       variant={variant}
       className={cn('gap-1.5', className)}
-      onClick={() => upgradePrompt.open({ needs, feature, source, moduleId })}
+      onClick={() => openUpgradeFlow({ needs, feature, source, moduleId, seats, cycle, skipOffer })}
     >
       {variant === 'default' ? (
         <Gem className="h-3.5 w-3.5" />
@@ -56,3 +67,4 @@ export function UpgradeCta({
     </Button>
   );
 }
+
