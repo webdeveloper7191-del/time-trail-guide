@@ -435,7 +435,7 @@ export function CheckoutPanel() {
                     <dd className="text-foreground">{formatMoney(proration.charge)}</dd>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <dt>GST (10%)</dt>
+                    <dt>{taxRule.label}</dt>
                     <dd className="text-foreground">{formatMoney(proration.tax)}</dd>
                   </div>
                   <Separator className="my-1.5" />
