@@ -112,16 +112,32 @@ export function CheckoutPanel() {
   }, [context]);
 
   const plan = PLANS[tier];
-  const totals = useMemo(() => invoiceTotal(tier, cycle, seats), [tier, cycle, seats]);
-  const proration = useMemo(
-    () => prorationPreview(snapshot, { tier, cycle, seats }),
-    [snapshot, tier, cycle, seats],
+  /** Tax follows the billing country, so the breakdown reacts to billing details too. */
+  const taxRule = taxRuleFor(country);
+  const totals = useMemo(
+    () => invoiceTotal(tier, cycle, seats, taxRule.rate),
+    [tier, cycle, seats, taxRule.rate],
   );
+  const proration = useMemo(
+    () => prorationPreview(snapshot, { tier, cycle, seats }, new Date(), taxRule.rate),
+    [snapshot, tier, cycle, seats, taxRule.rate],
+  );
+
+  // Flash a "recalculating" hint whenever an input that moves the numbers changes.
+  const [recalculating, setRecalculating] = useState(false);
+  useEffect(() => {
+    if (!context) return;
+    setRecalculating(true);
+    const t = setTimeout(() => setRecalculating(false), 400);
+    return () => clearTimeout(t);
+  }, [context, tier, cycle, seats, taxRule.rate]);
+
   const unchanged =
     mode === 'update' &&
     tier === snapshot.tier &&
     cycle === snapshot.cycle &&
     seats === snapshot.seats;
+
 
   const cardValid = digits(card).length >= 15;
   const expiryValid = digits(expiry).length === 4;
