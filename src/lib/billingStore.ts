@@ -168,19 +168,20 @@ export function prorationPreview(
   current: Pick<BillingState, 'tier' | 'cycle' | 'seats' | 'renewsOn'>,
   next: { tier: PlanTier; cycle: BillingCycle; seats: number },
   now: Date = new Date(),
+  taxRate: number = DEFAULT_TAX_RATE,
 ): ProrationPreview {
   const daysInPeriod = current.cycle === 'annual' ? 365 : 30;
   const msLeft = new Date(current.renewsOn).getTime() - now.getTime();
   const daysRemaining = Math.max(0, Math.min(daysInPeriod, Math.round(msLeft / 86_400_000)));
   const fraction = daysRemaining / daysInPeriod;
 
-  const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats).subtotal;
-  const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats).subtotal;
+  const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats, taxRate).subtotal;
+  const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats, taxRate).subtotal;
 
   const credit = round2(currentPeriod * fraction);
   const charge = round2(nextPeriod * fraction);
   const subtotal = round2(charge - credit);
-  const tax = round2(Math.max(0, subtotal) * 0.1);
+  const tax = round2(Math.max(0, subtotal) * taxRate);
   const dueToday = round2(Math.max(0, subtotal + tax));
   const creditBalance = subtotal < 0 ? round2(-subtotal) : 0;
 
@@ -193,9 +194,10 @@ export function prorationPreview(
     creditBalance,
     daysRemaining,
     daysInPeriod,
-    nextInvoiceTotal: invoiceTotal(next.tier, next.cycle, next.seats).total,
+    nextInvoiceTotal: invoiceTotal(next.tier, next.cycle, next.seats, taxRate).total,
   };
 }
+
 
 export const billingStore = {
   get: read,
