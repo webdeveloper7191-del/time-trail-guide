@@ -172,8 +172,10 @@ export function CheckoutPanel() {
         tier,
         cycle,
         seats,
+        taxRate: taxRule.rate,
         billingEmail: email.trim(),
         companyName: company.trim(),
+
         paymentMethod: {
           brand: brandOf(card),
           last4: digits(card).slice(-4),
