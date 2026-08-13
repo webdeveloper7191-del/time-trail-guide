@@ -1,0 +1,523 @@
+import { useEffect, useMemo, useState } from 'react';
+import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  CreditCard,
+  Lock,
+  ShieldCheck,
+  Minus,
+  Plus,
+  CheckCircle2,
+  ArrowRight,
+  Info,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { PLANS, PlanTier } from '@/types/plans';
+import { usePlan } from '@/lib/planStore';
+import {
+  BillingCycle,
+  PRICE_PER_USER,
+  billingStore,
+  checkout,
+  formatMoney,
+  invoiceTotal,
+  useCheckout,
+  CURRENCY,
+  prorationPreview,
+} from '@/lib/billingStore';
+import { cn } from '@/lib/utils';
+
+const digits = (v: string) => v.replace(/\D/g, '');
+
+const formatCard = (v: string) =>
+  digits(v)
+    .slice(0, 16)
+    .replace(/(.{4})/g, '$1 ')
+    .trim();
+
+const formatExpiry = (v: string) => {
+  const d = digits(v).slice(0, 4);
+  return d.length <= 2 ? d : `${d.slice(0, 2)} / ${d.slice(2)}`;
+};
+
+const brandOf = (num: string) => {
+  const d = digits(num);
+  if (d.startsWith('4')) return 'Visa';
+  if (/^5[1-5]/.test(d)) return 'Mastercard';
+  if (/^3[47]/.test(d)) return 'Amex';
+  return 'Card';
+};
+
+const COUNTRIES = ['Australia', 'New Zealand', 'United Kingdom', 'United States', 'Singapore'];
+
+/**
+ * Stripe-style checkout, rendered as a right-aligned side panel so it can be
+ * opened from any module without stealing the whole screen.
+ */
+export function CheckoutPanel() {
+  const { context } = useCheckout();
+  const { setTier } = usePlan();
+
+  const [tier, setLocalTier] = useState<PlanTier>('growth');
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const [seats, setSeats] = useState(25);
+  const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+  const [name, setName] = useState('');
+  const [card, setCard] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [country, setCountry] = useState('Australia');
+  const [promo, setPromo] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [done, setDone] = useState(false);
+  /** 'update' reviews a change against the card on file; 'payment' collects a card. */
+  const [mode, setMode] = useState<'update' | 'payment'>('payment');
+  const [snapshot, setSnapshot] = useState(() => billingStore.get());
+
+  useEffect(() => {
+    if (!context) return;
+    const current = billingStore.get();
+    setLocalTier(context.tier);
+    setCycle(context.cycle ?? current.cycle);
+    setSeats(context.seats ?? current.seats);
+    setEmail(current.billingEmail);
+    setCompany(current.companyName);
+    setName(current.paymentMethod?.name ?? '');
+    setCard('');
+    setExpiry('');
+    setCvc('');
+    setPromo('');
+    setProcessing(false);
+    setDone(false);
+    setSnapshot(current);
+    const canUpdate =
+      current.status === 'active' && !!current.paymentMethod && context.source !== 'payment-method';
+    setMode(canUpdate ? 'update' : 'payment');
+  }, [context]);
+
+  const plan = PLANS[tier];
+  const totals = useMemo(() => invoiceTotal(tier, cycle, seats), [tier, cycle, seats]);
+  const proration = useMemo(
+    () => prorationPreview(snapshot, { tier, cycle, seats }),
+    [snapshot, tier, cycle, seats],
+  );
+  const unchanged =
+    mode === 'update' &&
+    tier === snapshot.tier &&
+    cycle === snapshot.cycle &&
+    seats === snapshot.seats;
+
+  const cardValid = digits(card).length >= 15;
+  const expiryValid = digits(expiry).length === 4;
+  const cvcValid = digits(cvc).length >= 3;
+  const canPay =
+    !!email.trim() && !!name.trim() && cardValid && expiryValid && cvcValid && seats > 0;
+
+  const applyUpdate = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      billingStore.confirmUpdate({ tier, cycle, seats, proration });
+      setTier(tier);
+      setProcessing(false);
+      setDone(true);
+      toast.success(`Subscription updated to ${plan.label}`, {
+        description:
+          proration.dueToday > 0
+            ? `${formatMoney(proration.dueToday)} ${CURRENCY} charged to your card on file.`
+            : proration.creditBalance > 0
+              ? `${formatMoney(proration.creditBalance)} credit applied to your next invoice.`
+              : 'No charge today.',
+      });
+    }, 1200);
+  };
+
+  const pay = () => {
+    setProcessing(true);
+    // Simulated Stripe Checkout session — no live charge is made.
+    setTimeout(() => {
+      const d = digits(expiry);
+      billingStore.confirmCheckout({
+        tier,
+        cycle,
+        seats,
+        billingEmail: email.trim(),
+        companyName: company.trim(),
+        paymentMethod: {
+          brand: brandOf(card),
+          last4: digits(card).slice(-4),
+          expMonth: Number(d.slice(0, 2)),
+          expYear: 2000 + Number(d.slice(2)),
+          name: name.trim(),
+        },
+      });
+      setTier(tier);
+      setProcessing(false);
+      setDone(true);
+      toast.success(`Subscribed to ${plan.label}`, {
+        description: `${seats} users · ${formatMoney(totals.total)} ${CURRENCY} charged.`,
+      });
+    }, 1400);
+  };
+
+  const footerActions = done
+    ? [{ label: 'Done', onClick: () => checkout.close(), variant: 'primary' as const }]
+    : mode === 'update'
+      ? [
+          { label: 'Cancel', onClick: () => checkout.close(), variant: 'outlined' as const },
+          {
+            label: unchanged
+              ? 'No changes to confirm'
+              : proration.dueToday > 0
+                ? `Confirm and pay ${formatMoney(proration.dueToday)}`
+                : 'Confirm update',
+            onClick: applyUpdate,
+            variant: 'primary' as const,
+            disabled: unchanged,
+            loading: processing,
+          },
+        ]
+      : [
+          { label: 'Cancel', onClick: () => checkout.close(), variant: 'outlined' as const },
+          {
+            label: `Pay ${formatMoney(totals.total)}`,
+            onClick: pay,
+            variant: 'primary' as const,
+            disabled: !canPay,
+            loading: processing,
+          },
+        ];
+
+  return (
+    <PrimaryOffCanvas
+      open={!!context}
+      onClose={() => checkout.close()}
+      title={mode === 'update' ? 'Update subscription' : `Subscribe to ${plan.label}`}
+      description={plan.tagline}
+      icon={CreditCard}
+      size="lg"
+      isBackground
+      actions={footerActions}
+      headerActions={
+        <Badge variant="secondary" className="gap-1 text-[10px]">
+          <Lock className="h-3 w-3" /> Secured by Stripe
+        </Badge>
+      }
+    >
+      {done ? (
+        <div className="py-10 text-center space-y-3">
+          <CheckCircle2 className="h-10 w-10 mx-auto text-primary" />
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">
+              {mode === 'update' ? 'Subscription updated' : 'Payment successful'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {plan.label} is now active for {seats} users. A receipt was sent to{' '}
+              <span className="text-foreground">{email || snapshot.billingEmail}</span>.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Order summary */}
+          <section className="rounded-lg border bg-background p-4 space-y-4">
+            <div className="flex rounded-md border p-0.5 text-xs">
+              {(['monthly', 'annual'] as BillingCycle[]).map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCycle(c)}
+                  className={cn(
+                    'flex-1 rounded-[4px] px-2 py-1.5 capitalize transition-colors',
+                    cycle === c
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {c}
+                  {c === 'annual' && ' · 2 months free'}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Users</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSeats(s => Math.max(1, s - 1))}
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </Button>
+                <Input
+                  value={seats}
+                  onChange={e => setSeats(Math.max(1, Number(digits(e.target.value)) || 1))}
+                  className="h-8 text-center"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setSeats(s => s + 1)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <dl className="space-y-1.5 text-sm">
+              <div className="flex justify-between text-muted-foreground">
+                <dt>
+                  {formatMoney(PRICE_PER_USER[tier])} × {seats} users × {totals.months} month
+                  {totals.months === 1 ? '' : 's'}
+                </dt>
+                <dd className="text-foreground">{formatMoney(totals.subtotal)}</dd>
+              </div>
+              <div className="flex justify-between text-muted-foreground">
+                <dt>GST (10%)</dt>
+                <dd className="text-foreground">{formatMoney(totals.tax)}</dd>
+              </div>
+              <Separator className="my-2" />
+              <div className="flex justify-between font-semibold">
+                <dt>Total due today</dt>
+                <dd>
+                  {formatMoney(totals.total)} <span className="text-xs">{CURRENCY}</span>
+                </dd>
+              </div>
+            </dl>
+
+            <div className="flex gap-2">
+              <Input
+                value={promo}
+                onChange={e => setPromo(e.target.value.toUpperCase())}
+                placeholder="Promo code"
+                className="h-8 text-xs"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() =>
+                  toast.info(
+                    promo ? `Code “${promo}” will be validated at checkout` : 'Enter a code',
+                  )
+                }
+              >
+                Apply
+              </Button>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">
+              Renews {cycle === 'annual' ? 'yearly' : 'monthly'}. Adding users mid-cycle is prorated
+              automatically.
+            </p>
+          </section>
+
+          {mode === 'update' ? (
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <h3 className="text-sm font-semibold tracking-tight">Review your change</h3>
+
+              <div className="rounded-md border divide-y text-sm">
+                {(
+                  [
+                    ['Plan', PLANS[snapshot.tier].label, plan.label],
+                    ['Users', String(snapshot.seats), String(seats)],
+                    [
+                      'Billing cycle',
+                      snapshot.cycle === 'annual' ? 'Annual' : 'Monthly',
+                      cycle === 'annual' ? 'Annual' : 'Monthly',
+                    ],
+                  ] as [string, string, string][]
+                ).map(([label, from, to]) => (
+                  <div key={label} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                    <span className="flex items-center gap-2">
+                      <span className={cn(from !== to && 'text-muted-foreground line-through')}>
+                        {from}
+                      </span>
+                      {from !== to && (
+                        <>
+                          <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="font-medium">{to}</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-medium">Proration</h4>
+                <dl className="rounded-md border p-3 space-y-1.5 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>Unused time on current plan</dt>
+                    <dd className="text-foreground">-{formatMoney(proration.credit)}</dd>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>
+                      New plan · {proration.daysRemaining} of {proration.daysInPeriod} days
+                    </dt>
+                    <dd className="text-foreground">{formatMoney(proration.charge)}</dd>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <dt>GST (10%)</dt>
+                    <dd className="text-foreground">{formatMoney(proration.tax)}</dd>
+                  </div>
+                  <Separator className="my-1.5" />
+                  <div className="flex justify-between font-semibold">
+                    <dt>Due today</dt>
+                    <dd>
+                      {formatMoney(proration.dueToday)} <span className="text-xs">{CURRENCY}</span>
+                    </dd>
+                  </div>
+                  {proration.creditBalance > 0 && (
+                    <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                      <Info className="h-3.5 w-3.5 shrink-0 mt-px" />
+                      {formatMoney(proration.creditBalance)} credit will be applied to your next
+                      invoice.
+                    </p>
+                  )}
+                </dl>
+              </div>
+
+              <div className="rounded-md border p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">
+                    {snapshot.paymentMethod?.brand} •••• {snapshot.paymentMethod?.last4}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    exp {String(snapshot.paymentMethod?.expMonth ?? 0).padStart(2, '0')}/
+                    {String(snapshot.paymentMethod?.expYear ?? '').slice(-2)}
+                  </span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setMode('payment')}>
+                  Use another card
+                </Button>
+              </div>
+
+              <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-px" />
+                Your next invoice of {formatMoney(proration.nextInvoiceTotal)} {CURRENCY} is due{' '}
+                {new Date(snapshot.renewsOn).toLocaleDateString('en-AU', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                . This is a demo — no card is charged.
+              </p>
+            </section>
+          ) : (
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <h3 className="text-sm font-semibold tracking-tight">Payment details</h3>
+
+              <div className="grid gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Billing email</Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="accounts@company.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Company name</Label>
+                  <Input
+                    value={company}
+                    onChange={e => setCompany(e.target.value)}
+                    placeholder="Acme Care Group Pty Ltd"
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Card information</Label>
+                  <div className="rounded-md border divide-y">
+                    <div className="relative">
+                      <Input
+                        value={card}
+                        onChange={e => setCard(formatCard(e.target.value))}
+                        placeholder="1234 1234 1234 1234"
+                        inputMode="numeric"
+                        className="border-0 rounded-b-none focus-visible:ring-0 pr-16"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">
+                        {card ? brandOf(card) : <CreditCard className="h-4 w-4" />}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 divide-x">
+                      <Input
+                        value={expiry}
+                        onChange={e => setExpiry(formatExpiry(e.target.value))}
+                        placeholder="MM / YY"
+                        inputMode="numeric"
+                        className="border-0 rounded-none rounded-bl-md focus-visible:ring-0"
+                      />
+                      <Input
+                        value={cvc}
+                        onChange={e => setCvc(digits(e.target.value).slice(0, 4))}
+                        placeholder="CVC"
+                        inputMode="numeric"
+                        className="border-0 rounded-none rounded-br-md focus-visible:ring-0"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Name on card</Label>
+                  <Input
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder="Jane Smith"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Country</Label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-px" />
+                This is a demo checkout — no card is charged and no card data leaves this browser.
+              </p>
+            </section>
+          )}
+        </>
+      )}
+    </PrimaryOffCanvas>
+  );
+}
+
+/** @deprecated Kept so existing imports keep working — now renders a side panel. */
+export const CheckoutDialog = CheckoutPanel;

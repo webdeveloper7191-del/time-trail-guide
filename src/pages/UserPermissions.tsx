@@ -8,9 +8,7 @@ import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { BillingPanel } from '@/components/settings/billing/BillingPanel';
-import { CheckoutDialog } from '@/components/settings/billing/CheckoutDialog';
 import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
-import { UpgradeDialog } from '@/components/settings/permissions/UpgradeDialog';
 import { usePlan } from '@/lib/planStore';
 
 
@@ -85,8 +83,6 @@ export default function UserPermissions() {
           </TabsContent>
         </Tabs>
       </main>
-      <UpgradeDialog />
-      <CheckoutDialog />
     </div>
   );
 }

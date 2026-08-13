@@ -38,6 +38,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+import { GlobalUpgradeSurfaces } from "@/components/settings/billing/GlobalUpgradeSurfaces";
+
 const App = () => {
   useEffect(() => startScheduledExportRunner(), []);
   return (
@@ -81,6 +83,7 @@ const App = () => {
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                <GlobalUpgradeSurfaces />
               </BrowserRouter>
             </TooltipProvider>
           </OvertimeRulesProvider>
