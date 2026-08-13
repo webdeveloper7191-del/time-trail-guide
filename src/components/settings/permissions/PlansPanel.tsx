@@ -20,7 +20,9 @@ import {
 } from '@/lib/planEntitlementsStore';
 import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
 
-import { PRICE_PER_USER, checkout, formatMoney } from '@/lib/billingStore';
+import { PRICE_PER_USER, formatMoney } from '@/lib/billingStore';
+import { openCheckoutFlow } from '@/lib/upgradeFlow';
+
 import { cn } from '@/lib/utils';
 
 
