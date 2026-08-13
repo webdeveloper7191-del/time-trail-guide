@@ -296,7 +296,11 @@ export interface CheckoutContext {
   cycle?: BillingCycle;
   seats?: number;
   source?: string;
+  /** Capability that triggered the flow, shown for continuity with the offer. */
+  feature?: string;
+  moduleId?: string;
 }
+
 
 let checkoutContext: CheckoutContext | null = null;
 const checkoutListeners = new Set<() => void>();
