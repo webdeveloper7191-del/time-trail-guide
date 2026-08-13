@@ -245,9 +245,11 @@ export const billingStore = {
     paymentMethod: PaymentMethod;
     billingEmail: string;
     companyName: string;
+    taxRate?: number;
   }) => {
     const state = read();
-    const { total, months } = invoiceTotal(args.tier, args.cycle, args.seats);
+    const { total, months } = invoiceTotal(args.tier, args.cycle, args.seats, args.taxRate);
+
     const invoice: Invoice = {
       id: `in_${Math.random().toString(36).slice(2, 10)}`,
       date: new Date().toISOString(),
