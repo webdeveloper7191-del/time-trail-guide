@@ -550,21 +550,10 @@ export function CheckoutPanel() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Country</Label>
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map(c => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Tax is charged for {country} at {taxRule.label.toLowerCase()} — change the billing
+                  country in the order summary to update the total.
+                </p>
               </div>
 
               <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
@@ -573,8 +562,11 @@ export function CheckoutPanel() {
               </p>
             </section>
           )}
+
+          <InvoiceHistorySection />
         </>
       )}
+
     </PrimaryOffCanvas>
   );
 }
