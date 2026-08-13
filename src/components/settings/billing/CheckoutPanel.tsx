@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PLANS, PlanTier } from '@/types/plans';
@@ -35,8 +36,11 @@ import {
   useCheckout,
   CURRENCY,
   prorationPreview,
+  taxRuleFor,
 } from '@/lib/billingStore';
+import { InvoiceHistorySection } from '@/components/settings/billing/InvoiceHistorySection';
 import { cn } from '@/lib/utils';
+
 
 const digits = (v: string) => v.replace(/\D/g, '');
 
@@ -108,16 +112,32 @@ export function CheckoutPanel() {
   }, [context]);
 
   const plan = PLANS[tier];
-  const totals = useMemo(() => invoiceTotal(tier, cycle, seats), [tier, cycle, seats]);
-  const proration = useMemo(
-    () => prorationPreview(snapshot, { tier, cycle, seats }),
-    [snapshot, tier, cycle, seats],
+  /** Tax follows the billing country, so the breakdown reacts to billing details too. */
+  const taxRule = taxRuleFor(country);
+  const totals = useMemo(
+    () => invoiceTotal(tier, cycle, seats, taxRule.rate),
+    [tier, cycle, seats, taxRule.rate],
   );
+  const proration = useMemo(
+    () => prorationPreview(snapshot, { tier, cycle, seats }, new Date(), taxRule.rate),
+    [snapshot, tier, cycle, seats, taxRule.rate],
+  );
+
+  // Flash a "recalculating" hint whenever an input that moves the numbers changes.
+  const [recalculating, setRecalculating] = useState(false);
+  useEffect(() => {
+    if (!context) return;
+    setRecalculating(true);
+    const t = setTimeout(() => setRecalculating(false), 400);
+    return () => clearTimeout(t);
+  }, [context, tier, cycle, seats, taxRule.rate]);
+
   const unchanged =
     mode === 'update' &&
     tier === snapshot.tier &&
     cycle === snapshot.cycle &&
     seats === snapshot.seats;
+
 
   const cardValid = digits(card).length >= 15;
   const expiryValid = digits(expiry).length === 4;
@@ -152,8 +172,10 @@ export function CheckoutPanel() {
         tier,
         cycle,
         seats,
+        taxRate: taxRule.rate,
         billingEmail: email.trim(),
         companyName: company.trim(),
+
         paymentMethod: {
           brand: brandOf(card),
           last4: digits(card).slice(-4),
@@ -232,6 +254,19 @@ export function CheckoutPanel() {
         <>
           {/* Order summary */}
           <section className="rounded-lg border bg-background p-4 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold tracking-tight">Order summary</h3>
+              <span
+                className={cn(
+                  'flex items-center gap-1 text-[11px] transition-opacity',
+                  recalculating ? 'text-primary opacity-100' : 'text-muted-foreground opacity-70',
+                )}
+              >
+                <RefreshCw className={cn('h-3 w-3', recalculating && 'animate-spin')} />
+                {recalculating ? 'Recalculating…' : 'Updates live'}
+              </span>
+            </div>
+
             <div className="flex rounded-md border p-0.5 text-xs">
               {(['monthly', 'annual'] as BillingCycle[]).map(c => (
                 <button
@@ -278,6 +313,22 @@ export function CheckoutPanel() {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label className="text-xs">Billing country</Label>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map(c => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Separator />
 
             <dl className="space-y-1.5 text-sm">
@@ -289,9 +340,10 @@ export function CheckoutPanel() {
                 <dd className="text-foreground">{formatMoney(totals.subtotal)}</dd>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <dt>GST (10%)</dt>
+                <dt>{taxRule.label}</dt>
                 <dd className="text-foreground">{formatMoney(totals.tax)}</dd>
               </div>
+
               <Separator className="my-2" />
               <div className="flex justify-between font-semibold">
                 <dt>Total due today</dt>
@@ -330,7 +382,15 @@ export function CheckoutPanel() {
 
           {mode === 'update' ? (
             <section className="rounded-lg border bg-background p-4 space-y-4">
-              <h3 className="text-sm font-semibold tracking-tight">Review your change</h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold tracking-tight">Review your change</h3>
+                {recalculating && (
+                  <span className="flex items-center gap-1 text-[11px] text-primary">
+                    <RefreshCw className="h-3 w-3 animate-spin" /> Recalculating…
+                  </span>
+                )}
+              </div>
+
 
               <div className="rounded-md border divide-y text-sm">
                 {(
@@ -375,7 +435,7 @@ export function CheckoutPanel() {
                     <dd className="text-foreground">{formatMoney(proration.charge)}</dd>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <dt>GST (10%)</dt>
+                    <dt>{taxRule.label}</dt>
                     <dd className="text-foreground">{formatMoney(proration.tax)}</dd>
                   </div>
                   <Separator className="my-1.5" />
@@ -490,21 +550,10 @@ export function CheckoutPanel() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Country</Label>
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map(c => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Tax is charged for {country} at {taxRule.label.toLowerCase()} — change the billing
+                  country in the order summary to update the total.
+                </p>
               </div>
 
               <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
@@ -513,8 +562,11 @@ export function CheckoutPanel() {
               </p>
             </section>
           )}
+
+          <InvoiceHistorySection />
         </>
       )}
+
     </PrimaryOffCanvas>
   );
 }

@@ -20,7 +20,9 @@ import {
 } from '@/lib/planEntitlementsStore';
 import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
 
-import { PRICE_PER_USER, checkout, formatMoney } from '@/lib/billingStore';
+import { PRICE_PER_USER, formatMoney } from '@/lib/billingStore';
+import { openCheckoutFlow } from '@/lib/upgradeFlow';
+
 import { cn } from '@/lib/utils';
 
 
@@ -106,7 +108,13 @@ export function PlansPanel() {
                   className="w-full"
                   variant={current ? 'outline' : 'default'}
                   disabled={current}
-                  onClick={() => checkout.open({ tier: t, source: 'plans-panel' })}
+                  onClick={() =>
+                    openCheckoutFlow({
+                      needs: t,
+                      feature: `${p.label} plan`,
+                      source: 'plans-panel',
+                    })
+                  }
                 >
                   {current
                     ? 'Current plan'

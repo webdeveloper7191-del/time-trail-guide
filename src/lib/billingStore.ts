@@ -32,13 +32,33 @@ export const unitRate = (tier: PlanTier, cycle: BillingCycle) =>
     ? (PRICE_PER_USER[tier] * ANNUAL_MONTHS_CHARGED) / 12
     : PRICE_PER_USER[tier];
 
+/** Tax applied per billing country. Drives the live checkout breakdown. */
+export const TAX_RULES: Record<string, { label: string; rate: number }> = {
+  Australia: { label: 'GST (10%)', rate: 0.1 },
+  'New Zealand': { label: 'GST (15%)', rate: 0.15 },
+  'United Kingdom': { label: 'VAT (20%)', rate: 0.2 },
+  'United States': { label: 'Sales tax', rate: 0 },
+  Singapore: { label: 'GST (9%)', rate: 0.09 },
+};
+
+export const DEFAULT_TAX_RATE = 0.1;
+
+export const taxRuleFor = (country?: string) =>
+  (country && TAX_RULES[country]) || { label: 'GST (10%)', rate: DEFAULT_TAX_RATE };
+
 /** What Stripe would charge on each invoice for this configuration. */
-export function invoiceTotal(tier: PlanTier, cycle: BillingCycle, seats: number) {
+export function invoiceTotal(
+  tier: PlanTier,
+  cycle: BillingCycle,
+  seats: number,
+  taxRate: number = DEFAULT_TAX_RATE,
+) {
   const months = cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1;
   const subtotal = PRICE_PER_USER[tier] * seats * months;
-  const tax = Math.round(subtotal * 0.1 * 100) / 100; // GST 10%
-  return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100, months };
+  const tax = Math.round(subtotal * taxRate * 100) / 100;
+  return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100, months, taxRate };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Subscription state                                                   */
@@ -148,19 +168,20 @@ export function prorationPreview(
   current: Pick<BillingState, 'tier' | 'cycle' | 'seats' | 'renewsOn'>,
   next: { tier: PlanTier; cycle: BillingCycle; seats: number },
   now: Date = new Date(),
+  taxRate: number = DEFAULT_TAX_RATE,
 ): ProrationPreview {
   const daysInPeriod = current.cycle === 'annual' ? 365 : 30;
   const msLeft = new Date(current.renewsOn).getTime() - now.getTime();
   const daysRemaining = Math.max(0, Math.min(daysInPeriod, Math.round(msLeft / 86_400_000)));
   const fraction = daysRemaining / daysInPeriod;
 
-  const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats).subtotal;
-  const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats).subtotal;
+  const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats, taxRate).subtotal;
+  const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats, taxRate).subtotal;
 
   const credit = round2(currentPeriod * fraction);
   const charge = round2(nextPeriod * fraction);
   const subtotal = round2(charge - credit);
-  const tax = round2(Math.max(0, subtotal) * 0.1);
+  const tax = round2(Math.max(0, subtotal) * taxRate);
   const dueToday = round2(Math.max(0, subtotal + tax));
   const creditBalance = subtotal < 0 ? round2(-subtotal) : 0;
 
@@ -173,9 +194,10 @@ export function prorationPreview(
     creditBalance,
     daysRemaining,
     daysInPeriod,
-    nextInvoiceTotal: invoiceTotal(next.tier, next.cycle, next.seats).total,
+    nextInvoiceTotal: invoiceTotal(next.tier, next.cycle, next.seats, taxRate).total,
   };
 }
+
 
 export const billingStore = {
   get: read,
@@ -223,9 +245,11 @@ export const billingStore = {
     paymentMethod: PaymentMethod;
     billingEmail: string;
     companyName: string;
+    taxRate?: number;
   }) => {
     const state = read();
-    const { total, months } = invoiceTotal(args.tier, args.cycle, args.seats);
+    const { total, months } = invoiceTotal(args.tier, args.cycle, args.seats, args.taxRate);
+
     const invoice: Invoice = {
       id: `in_${Math.random().toString(36).slice(2, 10)}`,
       date: new Date().toISOString(),
@@ -272,7 +296,11 @@ export interface CheckoutContext {
   cycle?: BillingCycle;
   seats?: number;
   source?: string;
+  /** Capability that triggered the flow, shown for continuity with the offer. */
+  feature?: string;
+  moduleId?: string;
 }
+
 
 let checkoutContext: CheckoutContext | null = null;
 const checkoutListeners = new Set<() => void>();

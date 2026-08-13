@@ -33,7 +33,7 @@ import {
   requiredSubTier,
   requiredTier,
 } from '@/lib/planEntitlementsStore';
-import { upgradePrompt } from '@/lib/upgradePrompt';
+import { openUpgradeFlow } from '@/lib/upgradeFlow';
 import { cn } from '@/lib/utils';
 
 /** Cell shown when the plan does not include this action — promotes the upgrade. */
@@ -55,7 +55,7 @@ function LockedCell({
           type="button"
           aria-label={`${feature} requires the ${planLabel(needs)} plan — view upgrade`}
           onClick={() =>
-            upgradePrompt.open({ needs, feature, moduleId, source: 'permission-matrix' })
+            openUpgradeFlow({ needs, feature, moduleId, source: 'permission-matrix' })
           }
           className="inline-flex text-muted-foreground/60 hover:text-primary transition-colors"
         >

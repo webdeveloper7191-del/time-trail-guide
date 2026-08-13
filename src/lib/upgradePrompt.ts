@@ -18,7 +18,12 @@ export interface UpgradeContext {
   /** Where the prompt fired from (matrix cell, banner, role sheet...). */
   source: string;
   moduleId?: string;
+  /** Seats prefilled into checkout when the user continues. */
+  seats?: number;
+  /** Billing cycle prefilled into checkout when the user continues. */
+  cycle?: 'monthly' | 'annual';
 }
+
 
 export interface UpgradeInterestEvent extends UpgradeContext {
   at: string;

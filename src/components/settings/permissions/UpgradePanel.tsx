@@ -9,7 +9,8 @@ import { PERMISSION_MODULES, getSubPermissions } from '@/types/permissions';
 import { planModuleActions, planSubActions, usePlanEntitlements } from '@/lib/planEntitlementsStore';
 import { usePlan } from '@/lib/planStore';
 import { upgradePrompt, useUpgradePrompt } from '@/lib/upgradePrompt';
-import { checkout } from '@/lib/billingStore';
+import { openCheckoutFlow } from '@/lib/upgradeFlow';
+import { InvoiceHistorySection } from '@/components/settings/billing/InvoiceHistorySection';
 
 /** Everything the target tier adds on top of the current tier. */
 function useUnlockDelta(fromRank: number, toTier: string) {
@@ -80,7 +81,14 @@ export function UpgradePanel() {
           onClick: () => {
             if (context) upgradePrompt.requestUpgrade(context);
             close();
-            checkout.open({ tier: target, source: context?.source ?? 'upgrade-panel' });
+            openCheckoutFlow({
+              needs: target,
+              feature: context?.feature ?? plan.label,
+              source: context?.source ?? 'upgrade-panel',
+              moduleId: context?.moduleId,
+              seats: context?.seats,
+              cycle: context?.cycle,
+            });
           },
         },
       ]}
@@ -120,6 +128,8 @@ export function UpgradePanel() {
           </li>
         ))}
       </ul>
+
+      <InvoiceHistorySection limit={3} />
 
       <Button
         variant="ghost"

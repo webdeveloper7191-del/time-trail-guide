@@ -6,7 +6,7 @@ import { PERMISSION_MODULES, getSubPermissions } from '@/types/permissions';
 import { PLANS, PLAN_ORDER, PlanTier, planRank } from '@/types/plans';
 import { planModuleActions, planSubActions, usePlanEntitlements } from '@/lib/planEntitlementsStore';
 import { usePlan } from '@/lib/planStore';
-import { upgradePrompt } from '@/lib/upgradePrompt';
+import { openUpgradeFlow } from '@/lib/upgradeFlow';
 
 /**
  * Promotes the next tier from the top of the Users & Permissions page:
@@ -76,7 +76,7 @@ export function UpgradeBanner() {
         size="sm"
         className="gap-1.5 shrink-0"
         onClick={() =>
-          upgradePrompt.open({
+          openUpgradeFlow({
             needs: next,
             feature: `${stats.locked} locked permissions`,
             source: 'permissions-banner',
