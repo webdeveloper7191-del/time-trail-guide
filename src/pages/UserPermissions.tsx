@@ -8,9 +8,9 @@ import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { BillingPanel } from '@/components/settings/billing/BillingPanel';
-import { CheckoutDialog } from '@/components/settings/billing/CheckoutDialog';
+import { CheckoutPanel } from '@/components/settings/billing/CheckoutPanel';
 import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
-import { UpgradeDialog } from '@/components/settings/permissions/UpgradeDialog';
+import { UpgradePanel } from '@/components/settings/permissions/UpgradePanel';
 import { usePlan } from '@/lib/planStore';
 
 
@@ -85,8 +85,8 @@ export default function UserPermissions() {
           </TabsContent>
         </Tabs>
       </main>
-      <UpgradeDialog />
-      <CheckoutDialog />
+      <UpgradePanel />
+      <CheckoutPanel />
     </div>
   );
 }

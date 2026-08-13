@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Gem, Lock } from 'lucide-react';
-import { PlanTier, PLANS, hasPlan } from '@/types/plans';
+import { PlanTier, PLANS, isAtLeast } from '@/types/plans';
 import { usePlan } from '@/lib/planStore';
 import { upgradePrompt } from '@/lib/upgradePrompt';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,7 @@ export function UpgradeCta({
   hideWhenEntitled = true,
 }: UpgradeCtaProps) {
   const { tier } = usePlan();
-  const entitled = hasPlan(tier, needs);
+  const entitled = isAtLeast(tier, needs);
   if (entitled && hideWhenEntitled) return null;
 
   return (
