@@ -313,6 +313,22 @@ export function CheckoutPanel() {
               </div>
             </div>
 
+            <div className="space-y-1.5">
+              <Label className="text-xs">Billing country</Label>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map(c => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Separator />
 
             <dl className="space-y-1.5 text-sm">
@@ -324,9 +340,10 @@ export function CheckoutPanel() {
                 <dd className="text-foreground">{formatMoney(totals.subtotal)}</dd>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <dt>GST (10%)</dt>
+                <dt>{taxRule.label}</dt>
                 <dd className="text-foreground">{formatMoney(totals.tax)}</dd>
               </div>
+
               <Separator className="my-2" />
               <div className="flex justify-between font-semibold">
                 <dt>Total due today</dt>
