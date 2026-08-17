@@ -27,9 +27,11 @@ interface Props {
   matrix: PermissionMatrix;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** System admin view: default (system) roles become editable. */
+  allowSystemEdit?: boolean;
 }
 
-export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
+export function RoleDetailSheet({ role, matrix, open, onOpenChange, allowSystemEdit = false }: Props) {
   const [query, setQuery] = useState('');
   const [grantedOnly, setGrantedOnly] = useState(true);
   const [editing, setEditing] = useState(false);
