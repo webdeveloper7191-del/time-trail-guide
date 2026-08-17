@@ -18,7 +18,6 @@ import {
   requiredModuleTier,
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
-import { PlanEntitlementMatrixPanel } from './PlanEntitlementMatrixPanel';
 
 import { PRICE_PER_USER, formatMoney } from '@/lib/billingStore';
 import { openCheckoutFlow } from '@/lib/upgradeFlow';
@@ -195,8 +194,6 @@ export function PlansPanel() {
           </div>
         </CardContent>
       </Card>
-
-      <PlanEntitlementMatrixPanel />
     </div>
   );
 }
