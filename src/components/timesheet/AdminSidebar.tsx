@@ -20,6 +20,7 @@ import {
   Database,
   Handshake,
   ShieldCheck,
+  Gem,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ const navItems = [
   { icon: Database, label: 'Master Data', to: '/settings/master-data' },
   { icon: Handshake, label: 'Agency Partners', to: '/settings/agency-partners' },
   { icon: ShieldCheck, label: 'Users & Permissions', to: '/settings/permissions' },
+  { icon: Gem, label: 'Plans & Entitlements', to: '/admin/platform' },
 ];
 
 export function AdminSidebar() {
