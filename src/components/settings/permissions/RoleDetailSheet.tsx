@@ -96,7 +96,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     granted: PermissionAction[],
     onToggle?: (a: PermissionAction) => void,
   ) => (
-    <div className="grid grid-cols-4 gap-1 sm:grid-cols-8">
+    <div className="grid grid-cols-3 gap-1 sm:grid-cols-5">
       {ALL_ACTIONS.map(a => {
         const applicable = actions.includes(a);
         const on = applicable && granted.includes(a);

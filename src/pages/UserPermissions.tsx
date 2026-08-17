@@ -39,10 +39,11 @@ export default function UserPermissions() {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Define what every role can view, create, edit, delete, approve, export, assign and
-              configure across each module — then assign people to a role. Access is granted only
-              where the role and the subscription plan agree.
+              Define what every role can view, manage, approve, export and configure across each
+              module — then assign people to a role. Access is granted only where the role and the
+              subscription plan agree.
             </p>
+
           </div>
         </header>
 
