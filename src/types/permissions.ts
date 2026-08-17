@@ -1,45 +1,61 @@
 export type PermissionAction =
   | 'view'
+  | 'manage'
+  | 'approve'
+  | 'export'
+  | 'configure';
+
+/** Actions used before the matrix was simplified. Still accepted when reading stored data. */
+export type LegacyPermissionAction =
   | 'create'
   | 'edit'
   | 'delete'
-  | 'approve'
-  | 'export'
-  | 'assign'
-  | 'configure';
+  | 'assign';
+
+const LEGACY_ACTION_MAP: Record<LegacyPermissionAction, PermissionAction> = {
+  create: 'manage',
+  edit: 'manage',
+  delete: 'manage',
+  assign: 'manage',
+};
+
+/** Map any stored (possibly legacy) action list onto the reduced action set. */
+export function normalizeActions(
+  actions: (PermissionAction | LegacyPermissionAction | string)[] | undefined | null,
+): PermissionAction[] {
+  if (!actions) return [];
+  const out: PermissionAction[] = [];
+  for (const raw of actions) {
+    const mapped = (LEGACY_ACTION_MAP as Record<string, PermissionAction>)[raw] ?? (raw as PermissionAction);
+    if (ALL_ACTIONS.includes(mapped) && !out.includes(mapped)) out.push(mapped);
+  }
+  return out;
+}
 
 export const ALL_ACTIONS: PermissionAction[] = [
   'view',
-  'create',
-  'edit',
-  'delete',
+  'manage',
   'approve',
   'export',
-  'assign',
   'configure',
 ];
 
 export const actionLabels: Record<PermissionAction, string> = {
   view: 'View',
-  create: 'Create',
-  edit: 'Edit',
-  delete: 'Delete',
+  manage: 'Manage',
   approve: 'Approve',
   export: 'Export',
-  assign: 'Assign',
   configure: 'Configure',
 };
 
 export const actionDescriptions: Record<PermissionAction, string> = {
   view: 'Read records and open screens in this module.',
-  create: 'Add new records (shifts, staff, templates, requests…).',
-  edit: 'Change existing records the user can view.',
-  delete: 'Permanently remove or archive records.',
+  manage: 'Create, edit, delete and assign records in this module.',
   approve: 'Sign off items in a workflow (timesheets, leave, pay changes).',
   export: 'Download data as CSV / Excel / PDF.',
-  assign: 'Allocate people to work, tasks, courses or locations.',
   configure: 'Change module-level rules, defaults and integrations.',
 };
+
 
 export type ModuleGroup =
   | 'Operations'
