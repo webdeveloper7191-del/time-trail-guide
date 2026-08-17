@@ -51,7 +51,7 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
 
   const customCount = roles.filter(r => !r.system).length;
   const roleCap = plan.limits.customRoles;
-  const atCap = roleCap !== null && customCount >= roleCap;
+  const atCap = !isSystemScope && roleCap !== null && customCount >= roleCap;
 
   const userCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -124,7 +124,12 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
       toast.error('A role with that name already exists');
       return;
     }
-    const newRole: RoleDefinition = { id, label: name, description: description.trim(), system: false };
+    const newRole: RoleDefinition = {
+      id,
+      label: name,
+      description: description.trim(),
+      system: isSystemScope,
+    };
     permissionsStore.addRole(newRole, copyFrom === 'none' ? undefined : copyFrom);
     toast.success(`Role "${name}" created — you can now edit its permissions`);
     setOpen(false);
@@ -178,12 +183,10 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
                 <Eye className="h-4 w-4 mr-2" />{' '}
                 {r.system && !isSystemScope ? 'View permissions' : 'Edit permissions'}
               </DropdownMenuItem>
-              {!isSystemScope && (
-                <DropdownMenuItem onClick={() => openCreate(r.id)}>
-                  <Copy className="h-4 w-4 mr-2" /> Clone role
-                </DropdownMenuItem>
-              )}
-              {!r.system && (
+              <DropdownMenuItem onClick={() => openCreate(r.id)}>
+                <Copy className="h-4 w-4 mr-2" /> Clone role
+              </DropdownMenuItem>
+              {(!r.system || isSystemScope) && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={() => {
@@ -213,11 +216,10 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
             onChange={e => setQuery(e.target.value)}
           />
         </div>
-        {!isSystemScope && (
-          <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
-            <Plus className="h-4 w-4 mr-1.5" /> New Custom Role
-          </Button>
-        )}
+        <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
+          <Plus className="h-4 w-4 mr-1.5" />
+          {isSystemScope ? 'New Default Role' : 'New Custom Role'}
+        </Button>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden bg-card">
@@ -247,7 +249,7 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
 
       <p className="text-xs text-muted-foreground">
         {isSystemScope
-          ? 'These default roles ship with every tenant. Editing them changes the baseline permissions new tenants start from.'
+          ? 'These default roles ship with every tenant. Adding or editing them changes the baseline permissions new tenants start from.'
           : `Default roles are read-only — clone one to create a tailored role. Custom roles on ${plan.label}: ${customCount} of ${roleCap === null ? 'unlimited' : roleCap}.`}
       </p>
 
@@ -263,9 +265,11 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-[420px] sm:max-w-[420px]">
           <SheetHeader>
-            <SheetTitle>New role</SheetTitle>
+            <SheetTitle>{isSystemScope ? 'New default role' : 'New role'}</SheetTitle>
             <SheetDescription>
-              Create a custom role, optionally starting from an existing role's permissions.
+              {isSystemScope
+                ? 'Create a default role available to every tenant, optionally starting from an existing role\'s permissions.'
+                : "Create a custom role, optionally starting from an existing role's permissions."}
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 mt-6">
