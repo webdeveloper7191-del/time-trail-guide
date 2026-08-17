@@ -70,7 +70,7 @@ export default function UserPermissions() {
               to="/admin/platform"
               className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-2"
             >
-              <Gem className="h-4 w-4" /> Plans &amp; entitlements (system admin)
+              <Gem className="h-4 w-4" /> Plan catalogue &amp; default roles (system admin)
             </Link>
           </div>
 
