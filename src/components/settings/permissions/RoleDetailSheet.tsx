@@ -88,7 +88,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange, allowSystemE
     setEditing(false);
   };
 
-  const canEditRights = !role.system;
+  const canEditRights = !role.system || allowSystemEdit;
 
   // Fixed-column action grid: every row uses the same column order so states
   // line up vertically and can be scanned at a glance. For custom roles each
