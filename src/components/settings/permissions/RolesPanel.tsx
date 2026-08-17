@@ -210,9 +210,11 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
             onChange={e => setQuery(e.target.value)}
           />
         </div>
-        <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
-          <Plus className="h-4 w-4 mr-1.5" /> New Custom Role
-        </Button>
+        {!isSystemScope && (
+          <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
+            <Plus className="h-4 w-4 mr-1.5" /> New Custom Role
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden bg-card">
