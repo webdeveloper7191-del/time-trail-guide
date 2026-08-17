@@ -116,109 +116,116 @@ export function RolesPanel() {
     setDetailRole(newRole);
   };
 
-  const renderRole = (r: RoleDefinition) => {
-    const modulesWithAccess = PERMISSION_MODULES.filter(
-      m => (matrix[r.id]?.[m.id]?.length ?? 0) > 0,
-    ).length;
-    const actionCount = PERMISSION_MODULES.reduce(
-      (s, m) => s + (matrix[r.id]?.[m.id]?.length ?? 0),
-      0,
-    );
+  const renderRow = (r: RoleDefinition) => {
+    const assigned = userCounts[r.id] ?? 0;
     return (
-      <div key={r.id} className="flex items-start justify-between gap-4 rounded-lg border p-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{r.label}</span>
-            {r.system ? (
-              <Badge variant="outline" className="text-[10px] gap-1">
-                <Lock className="h-3 w-3" /> System
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-[10px]">Custom</Badge>
-            )}
-            <Badge variant="outline" className="text-[10px] gap-1">
-              <Users className="h-3 w-3" /> {userCounts[r.id] ?? 0}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground max-w-2xl">{r.description}</p>
-          <p className="text-xs text-muted-foreground">
-            {modulesWithAccess} of {PERMISSION_MODULES.length} modules · {actionCount} permissions
-          </p>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => setDetailRole(r)}>
-            <Eye className="h-4 w-4 mr-1.5" /> View
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => openCreate(r.id)} title="Clone role">
-            <Copy className="h-4 w-4" />
-          </Button>
-          {!r.system && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                permissionsStore.deleteRole(r.id);
-                toast.success('Role deleted');
-              }}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+      <tr key={r.id} className="border-b border-border last:border-0 even:bg-muted/30 hover:bg-muted/50 transition-colors">
+        <td className="px-4 py-3 border-r border-border align-middle">
+          <button
+            className="font-medium text-left hover:text-primary transition-colors"
+            onClick={() => setDetailRole(r)}
+          >
+            {r.label}
+          </button>
+        </td>
+        <td className="px-4 py-3 border-r border-border align-middle text-muted-foreground max-w-md truncate">
+          {r.description || '—'}
+        </td>
+        <td className="px-4 py-3 border-r border-border align-middle">
+          {r.system ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 text-muted-foreground" /> Default Role
+            </span>
+          ) : (
+            <span>Custom Role</span>
           )}
-        </div>
-      </div>
+        </td>
+        <td className="px-4 py-3 border-r border-border align-middle">
+          {assigned ? (
+            <Badge variant="secondary" className="rounded-full px-2.5">{assigned}</Badge>
+          ) : (
+            <span className="text-muted-foreground">–</span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-right align-middle">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setDetailRole(r)}>
+                <Eye className="h-4 w-4 mr-2" /> {r.system ? 'View permissions' : 'Edit permissions'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openCreate(r.id)}>
+                <Copy className="h-4 w-4 mr-2" /> Clone role
+              </DropdownMenuItem>
+              {!r.system && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    permissionsStore.deleteRole(r.id);
+                    toast.success('Role deleted');
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete role
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </td>
+      </tr>
     );
   };
 
-  const systemRoles = filtered.filter(r => r.system);
-  const customRoles = filtered.filter(r => !r.system);
-
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-4">
-        <div>
-          <CardTitle className="text-base">Roles</CardTitle>
-          <CardDescription>
-            System roles ship with a sensible baseline and are read-only. Clone one to create a
-            tailored role. Custom roles on {plan.label}: {customCount} of{' '}
-            {roleCap === null ? 'unlimited' : roleCap}.
-          </CardDescription>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            className="pl-9 h-10 rounded-lg"
+            placeholder="Search Role"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              className="pl-8 h-9 w-72"
-              placeholder="Search roles or permissions (e.g. approve payroll)"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
+        <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
+          <Plus className="h-4 w-4 mr-1.5" /> New Custom Role
+        </Button>
+      </div>
 
-          </div>
-          <Button size="sm" onClick={() => openCreate()} disabled={atCap}>
-            <Plus className="h-4 w-4 mr-1.5" /> New role
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <section className="space-y-2">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            System admin roles ({systemRoles.length})
-          </h3>
-          {systemRoles.length ? systemRoles.map(renderRole) : (
-            <p className="text-xs text-muted-foreground">No system roles match your search.</p>
-          )}
-        </section>
-        <section className="space-y-2">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Custom roles ({customRoles.length})
-          </h3>
-          {customRoles.length ? customRoles.map(renderRole) : (
-            <p className="text-xs text-muted-foreground">
-              No custom roles yet — clone a system role to get started.
-            </p>
-          )}
-        </section>
-      </CardContent>
+      <div className="rounded-lg border border-border overflow-hidden bg-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/60 text-left">
+              <th className="px-4 py-3 font-medium border-r border-border">Name</th>
+              <th className="px-4 py-3 font-medium border-r border-border">Description</th>
+              <th className="px-4 py-3 font-medium border-r border-border">Type of Role</th>
+              <th className="px-4 py-3 font-medium border-r border-border">Assigned To</th>
+              <th className="px-4 py-3 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length ? (
+              filtered.map(renderRow)
+            ) : (
+              <tr>
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                  No roles match your search.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Default roles are read-only — clone one to create a tailored role. Custom roles on{' '}
+        {plan.label}: {customCount} of {roleCap === null ? 'unlimited' : roleCap}.
+      </p>
+
 
       <RoleDetailSheet
         role={detailRole}
