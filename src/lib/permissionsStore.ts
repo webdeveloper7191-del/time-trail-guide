@@ -145,9 +145,15 @@ export const permissionsStore = {
     });
   },
 
-  updateRole: (roleId: string, patch: Partial<Omit<RoleDefinition, 'id' | 'system'>>) => {
+  updateRole: (
+    roleId: string,
+    patch: Partial<Omit<RoleDefinition, 'id' | 'system'>>,
+    allowSystem = false,
+  ) => {
     permissionsStore.saveRoles(
-      permissionsStore.getRoles().map(r => (r.id === roleId && !r.system ? { ...r, ...patch } : r)),
+      permissionsStore
+        .getRoles()
+        .map(r => (r.id === roleId && (allowSystem || !r.system) ? { ...r, ...patch } : r)),
     );
   },
 
