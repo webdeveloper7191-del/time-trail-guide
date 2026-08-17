@@ -23,14 +23,13 @@ import { usePlan } from '@/lib/planStore';
 export default function UserPermissions() {
   const [tab, setTab] = useState('roles');
   const { plan } = usePlan();
-  const navigate = useNavigate();
 
-  // "Compare plans" now lives in the system-admin platform view.
+  // Plan comparison + upgrade live with the tenant.
   useEffect(() => {
-    const open = () => navigate('/admin/platform');
+    const open = () => setTab('plans');
     window.addEventListener('rai:open-plans', open);
     return () => window.removeEventListener('rai:open-plans', open);
-  }, [navigate]);
+  }, []);
 
 
   return (
