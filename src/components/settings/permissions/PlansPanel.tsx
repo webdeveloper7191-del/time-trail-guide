@@ -27,7 +27,16 @@ import { cn } from '@/lib/utils';
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
-export function PlansPanel() {
+interface PlansPanelProps {
+  /**
+   * `tenant` (default) — shows the tenant's current plan and upgrade actions.
+   * `admin` — catalogue configuration only, no purchase/upgrade CTAs.
+   */
+  mode?: 'tenant' | 'admin';
+}
+
+export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
+  const isAdmin = mode === 'admin';
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
 
@@ -48,7 +57,7 @@ export function PlansPanel() {
       <div className="grid gap-3 md:grid-cols-3">
         {PLAN_ORDER.map(t => {
           const p = PLANS[t];
-          const current = t === tier;
+          const current = !isAdmin && t === tier;
           return (
             <Card key={t} className={cn(current && 'border-primary ring-1 ring-primary/30')}>
               <CardHeader className="pb-3">
@@ -103,24 +112,30 @@ export function PlansPanel() {
                     <div className="font-medium">{fmt(p.limits.apiCredentials)}</div>
                   </div>
                 </div>
-                <Button
-                  className="w-full"
-                  variant={current ? 'outline' : 'default'}
-                  disabled={current}
-                  onClick={() =>
-                    openCheckoutFlow({
-                      needs: t,
-                      feature: `${p.label} plan`,
-                      source: 'plans-panel',
-                    })
-                  }
-                >
-                  {current
-                    ? 'Current plan'
-                    : isAtLeast(tier, t)
-                      ? `Switch to ${p.label}`
-                      : `Upgrade to ${p.label}`}
-                </Button>
+                {isAdmin ? (
+                  <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
+                    Catalogue definition. Tenants subscribe from Users &amp; Permissions → Plans.
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant={current ? 'outline' : 'default'}
+                    disabled={current}
+                    onClick={() =>
+                      openCheckoutFlow({
+                        needs: t,
+                        feature: `${p.label} plan`,
+                        source: 'plans-panel',
+                      })
+                    }
+                  >
+                    {current
+                      ? 'Current plan'
+                      : isAtLeast(tier, t)
+                        ? `Switch to ${p.label}`
+                        : `Upgrade to ${p.label}`}
+                  </Button>
+                )}
 
               </CardContent>
             </Card>

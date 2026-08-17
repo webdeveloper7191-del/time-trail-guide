@@ -26,8 +26,21 @@ import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
 import { RoleDetailSheet } from './RoleDetailSheet';
 
-export function RolesPanel() {
-  const { roles, matrix, assignments } = usePermissionsStore();
+interface RolesPanelProps {
+  /**
+   * `tenant` (default) — org admins manage their custom roles.
+   * `system` — platform admins define the default roles shipped to every tenant.
+   */
+  scope?: 'tenant' | 'system';
+}
+
+export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
+  const isSystemScope = scope === 'system';
+  const { roles: allRoles, matrix, assignments } = usePermissionsStore();
+  const roles = useMemo(
+    () => (isSystemScope ? allRoles.filter(r => r.system) : allRoles),
+    [allRoles, isSystemScope],
+  );
   const { plan } = usePlan();
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('');
@@ -162,11 +175,14 @@ export function RolesPanel() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setDetailRole(r)}>
-                <Eye className="h-4 w-4 mr-2" /> {r.system ? 'View permissions' : 'Edit permissions'}
+                <Eye className="h-4 w-4 mr-2" />{' '}
+                {r.system && !isSystemScope ? 'View permissions' : 'Edit permissions'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openCreate(r.id)}>
-                <Copy className="h-4 w-4 mr-2" /> Clone role
-              </DropdownMenuItem>
+              {!isSystemScope && (
+                <DropdownMenuItem onClick={() => openCreate(r.id)}>
+                  <Copy className="h-4 w-4 mr-2" /> Clone role
+                </DropdownMenuItem>
+              )}
               {!r.system && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -197,9 +213,11 @@ export function RolesPanel() {
             onChange={e => setQuery(e.target.value)}
           />
         </div>
-        <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
-          <Plus className="h-4 w-4 mr-1.5" /> New Custom Role
-        </Button>
+        {!isSystemScope && (
+          <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
+            <Plus className="h-4 w-4 mr-1.5" /> New Custom Role
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden bg-card">
@@ -228,13 +246,15 @@ export function RolesPanel() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Default roles are read-only — clone one to create a tailored role. Custom roles on{' '}
-        {plan.label}: {customCount} of {roleCap === null ? 'unlimited' : roleCap}.
+        {isSystemScope
+          ? 'These default roles ship with every tenant. Editing them changes the baseline permissions new tenants start from.'
+          : `Default roles are read-only — clone one to create a tailored role. Custom roles on ${plan.label}: ${customCount} of ${roleCap === null ? 'unlimited' : roleCap}.`}
       </p>
 
 
       <RoleDetailSheet
         role={detailRole}
+        allowSystemEdit={isSystemScope}
         matrix={matrix}
         open={!!detailRole}
         onOpenChange={v => !v && setDetailRole(null)}

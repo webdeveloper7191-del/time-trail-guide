@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,21 +16,22 @@ import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PermissionMatrixPanel } from '@/components/settings/permissions/PermissionMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
+import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { BillingPanel } from '@/components/settings/billing/BillingPanel';
 import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
 import { usePlan } from '@/lib/planStore';
 
 export default function UserPermissions() {
-  const [tab, setTab] = useState('roles');
+  const routeState = useLocation().state as { tab?: string } | null;
+  const [tab, setTab] = useState(routeState?.tab ?? 'roles');
   const { plan } = usePlan();
-  const navigate = useNavigate();
 
-  // "Compare plans" now lives in the system-admin platform view.
+  // Plan comparison + upgrade live with the tenant.
   useEffect(() => {
-    const open = () => navigate('/admin/platform');
+    const open = () => setTab('plans');
     window.addEventListener('rai:open-plans', open);
     return () => window.removeEventListener('rai:open-plans', open);
-  }, [navigate]);
+  }, []);
 
 
   return (
@@ -70,7 +71,7 @@ export default function UserPermissions() {
               to="/admin/platform"
               className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-2"
             >
-              <Gem className="h-4 w-4" /> Plans &amp; entitlements (system admin)
+              <Gem className="h-4 w-4" /> Plan catalogue &amp; default roles (system admin)
             </Link>
           </div>
 
@@ -87,6 +88,9 @@ export default function UserPermissions() {
               <TabsTrigger value="users" className="gap-1.5">
                 <Users className="h-3.5 w-3.5" /> User assignment
               </TabsTrigger>
+              <TabsTrigger value="plans" className="gap-1.5">
+                <Gem className="h-3.5 w-3.5" /> Plan &amp; upgrade
+              </TabsTrigger>
               <TabsTrigger value="billing" className="gap-1.5">
                 <CreditCard className="h-3.5 w-3.5" /> Billing
               </TabsTrigger>
@@ -100,6 +104,9 @@ export default function UserPermissions() {
             </TabsContent>
             <TabsContent value="users" className="mt-4">
               <UserRoleAssignmentPanel />
+            </TabsContent>
+            <TabsContent value="plans" className="mt-4">
+              <PlansPanel />
             </TabsContent>
             <TabsContent value="billing" className="mt-4">
               <BillingPanel />

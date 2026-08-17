@@ -27,9 +27,11 @@ interface Props {
   matrix: PermissionMatrix;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** System admin view: default (system) roles become editable. */
+  allowSystemEdit?: boolean;
 }
 
-export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
+export function RoleDetailSheet({ role, matrix, open, onOpenChange, allowSystemEdit = false }: Props) {
   const [query, setQuery] = useState('');
   const [grantedOnly, setGrantedOnly] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -86,7 +88,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
     setEditing(false);
   };
 
-  const canEditRights = !role.system;
+  const canEditRights = !role.system || allowSystemEdit;
 
   // Fixed-column action grid: every row uses the same column order so states
   // line up vertically and can be scanned at a glance. For custom roles each
@@ -162,9 +164,9 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
             </SheetTitle>
             <SheetDescription className="text-xs">
               {role.description}
-              {role.system
-                ? ' System roles are read-only — clone one to tailor access.'
-                : ' Click any action chip to grant or revoke it for this role.'}
+              {canEditRights
+                ? ' Click any action chip to grant or revoke it for this role.'
+                : ' System roles are read-only — clone one to tailor access.'}
             </SheetDescription>
           </SheetHeader>
 
@@ -181,7 +183,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange }: Props) {
             ))}
           </div>
 
-          {!role.system && (
+          {canEditRights && (
             <div className="mt-3">
               {editing ? (
                 <div className="space-y-3 rounded-lg border p-3">

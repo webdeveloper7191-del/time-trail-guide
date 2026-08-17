@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Gem, Grid3X3, Search, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Gem, Grid3X3, Search, ChevronRight, ShieldCheck, BadgeCheck } from 'lucide-react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { PlanEntitlementMatrixPanel } from '@/components/settings/permissions/PlanEntitlementMatrixPanel';
-import { usePlan } from '@/lib/planStore';
+import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 
 /**
  * System-admin (platform) view: what the product owner configures — the plan
@@ -16,13 +16,6 @@ import { usePlan } from '@/lib/planStore';
  */
 export default function PlatformAdmin() {
   const [tab, setTab] = useState('plans');
-  const { plan } = usePlan();
-
-  useEffect(() => {
-    const open = () => setTab('plans');
-    window.addEventListener('rai:open-plans', open);
-    return () => window.removeEventListener('rai:open-plans', open);
-  }, []);
 
   return (
     <div className="min-h-screen flex w-full bg-background">
@@ -35,7 +28,7 @@ export default function PlatformAdmin() {
             <Input className="pl-9 h-10 rounded-lg" placeholder="Search by keywords" />
           </div>
           <Badge variant="secondary" className="gap-1.5 rounded-full px-3 py-1 uppercase tracking-wide text-[11px]">
-            <Gem className="h-3.5 w-3.5" /> {plan.label} plan
+            <ShieldCheck className="h-3.5 w-3.5" /> System admin
           </Badge>
         </header>
 
@@ -52,7 +45,7 @@ export default function PlatformAdmin() {
             <div>
               <h1 className="text-3xl font-semibold tracking-tight">Plans &amp; Entitlements</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                System administration — define subscription tiers and the features each tier unlocks.
+                System administration — define subscription tiers, what each tier unlocks, and the default roles tenants start with. Tenant subscriptions and upgrades are managed in Users &amp; Permissions.
               </p>
             </div>
             <Link
@@ -71,13 +64,19 @@ export default function PlatformAdmin() {
               <TabsTrigger value="entitlements" className="gap-1.5">
                 <Grid3X3 className="h-3.5 w-3.5" /> Entitlement matrix
               </TabsTrigger>
+              <TabsTrigger value="roles" className="gap-1.5">
+                <BadgeCheck className="h-3.5 w-3.5" /> Default roles
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="plans" className="mt-4">
-              <PlansPanel />
+              <PlansPanel mode="admin" />
             </TabsContent>
             <TabsContent value="entitlements" className="mt-4">
               <PlanEntitlementMatrixPanel />
+            </TabsContent>
+            <TabsContent value="roles" className="mt-4">
+              <RolesPanel scope="system" />
             </TabsContent>
           </Tabs>
         </main>
