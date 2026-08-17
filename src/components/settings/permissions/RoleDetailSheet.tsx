@@ -164,9 +164,9 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange, allowSystemE
             </SheetTitle>
             <SheetDescription className="text-xs">
               {role.description}
-              {role.system
-                ? ' System roles are read-only — clone one to tailor access.'
-                : ' Click any action chip to grant or revoke it for this role.'}
+              {canEditRights
+                ? ' Click any action chip to grant or revoke it for this role.'
+                : ' System roles are read-only — clone one to tailor access.'}
             </SheetDescription>
           </SheetHeader>
 
