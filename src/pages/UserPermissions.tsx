@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,6 @@ import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PermissionMatrixPanel } from '@/components/settings/permissions/PermissionMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { UserRoleAssignmentPanel } from '@/components/settings/permissions/UserRoleAssignmentPanel';
-import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { BillingPanel } from '@/components/settings/billing/BillingPanel';
 import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
 import { usePlan } from '@/lib/planStore';
@@ -24,13 +23,15 @@ import { usePlan } from '@/lib/planStore';
 export default function UserPermissions() {
   const [tab, setTab] = useState('roles');
   const { plan } = usePlan();
+  const navigate = useNavigate();
 
-  // The upgrade dialog's "Compare plans" action deep-links to the plans tab.
+  // "Compare plans" now lives in the system-admin platform view.
   useEffect(() => {
-    const open = () => setTab('plans');
+    const open = () => navigate('/admin/platform');
     window.addEventListener('rai:open-plans', open);
     return () => window.removeEventListener('rai:open-plans', open);
-  }, []);
+  }, [navigate]);
+
 
   return (
     <div className="min-h-screen flex w-full bg-background">
