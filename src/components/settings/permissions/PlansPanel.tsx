@@ -57,7 +57,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
       <div className="grid gap-3 md:grid-cols-3">
         {PLAN_ORDER.map(t => {
           const p = PLANS[t];
-          const current = t === tier;
+          const current = !isAdmin && t === tier;
           return (
             <Card key={t} className={cn(current && 'border-primary ring-1 ring-primary/30')}>
               <CardHeader className="pb-3">
