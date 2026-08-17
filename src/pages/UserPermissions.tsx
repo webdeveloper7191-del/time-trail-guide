@@ -58,7 +58,20 @@ export default function UserPermissions() {
             <span className="text-foreground">Manage Permissions</span>
           </nav>
 
-          <h1 className="text-3xl font-semibold tracking-tight">General Permissions &amp; Roles</h1>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight">General Permissions &amp; Roles</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Manage the roles, permissions and user access for your organisation.
+              </p>
+            </div>
+            <Link
+              to="/admin/platform"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-2"
+            >
+              <Gem className="h-4 w-4" /> Plans &amp; entitlements (system admin)
+            </Link>
+          </div>
 
           <UpgradeBanner />
 
@@ -72,9 +85,6 @@ export default function UserPermissions() {
               </TabsTrigger>
               <TabsTrigger value="users" className="gap-1.5">
                 <Users className="h-3.5 w-3.5" /> User assignment
-              </TabsTrigger>
-              <TabsTrigger value="plans" className="gap-1.5">
-                <Gem className="h-3.5 w-3.5" /> Plans &amp; entitlements
               </TabsTrigger>
               <TabsTrigger value="billing" className="gap-1.5">
                 <CreditCard className="h-3.5 w-3.5" /> Billing
@@ -90,13 +100,11 @@ export default function UserPermissions() {
             <TabsContent value="users" className="mt-4">
               <UserRoleAssignmentPanel />
             </TabsContent>
-            <TabsContent value="plans" className="mt-4">
-              <PlansPanel />
-            </TabsContent>
             <TabsContent value="billing" className="mt-4">
               <BillingPanel />
             </TabsContent>
           </Tabs>
+
         </main>
       </div>
     </div>
