@@ -195,8 +195,6 @@ export function PlansPanel() {
           </div>
         </CardContent>
       </Card>
-
-      <PlanEntitlementMatrixPanel />
     </div>
   );
 }
