@@ -83,7 +83,11 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange, allowSystemE
   const save = () => {
     const name = label.trim();
     if (!name) return;
-    permissionsStore.updateRole(role.id, { label: name, description: description.trim() });
+    permissionsStore.updateRole(
+      role.id,
+      { label: name, description: description.trim() },
+      allowSystemEdit,
+    );
     toast.success('Role updated');
     setEditing(false);
   };
