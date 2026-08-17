@@ -22,7 +22,8 @@ import { UpgradeBanner } from '@/components/settings/permissions/UpgradeBanner';
 import { usePlan } from '@/lib/planStore';
 
 export default function UserPermissions() {
-  const [tab, setTab] = useState('roles');
+  const routeState = useLocation().state as { tab?: string } | null;
+  const [tab, setTab] = useState(routeState?.tab ?? 'roles');
   const { plan } = usePlan();
 
   // Plan comparison + upgrade live with the tenant.
