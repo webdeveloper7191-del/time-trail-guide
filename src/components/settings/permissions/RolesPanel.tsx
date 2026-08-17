@@ -243,13 +243,15 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Default roles are read-only — clone one to create a tailored role. Custom roles on{' '}
-        {plan.label}: {customCount} of {roleCap === null ? 'unlimited' : roleCap}.
+        {isSystemScope
+          ? 'These default roles ship with every tenant. Editing them changes the baseline permissions new tenants start from.'
+          : `Default roles are read-only — clone one to create a tailored role. Custom roles on ${plan.label}: ${customCount} of ${roleCap === null ? 'unlimited' : roleCap}.`}
       </p>
 
 
       <RoleDetailSheet
         role={detailRole}
+        allowSystemEdit={isSystemScope}
         matrix={matrix}
         open={!!detailRole}
         onOpenChange={v => !v && setDetailRole(null)}
