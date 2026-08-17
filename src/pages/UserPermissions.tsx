@@ -87,6 +87,9 @@ export default function UserPermissions() {
               <TabsTrigger value="users" className="gap-1.5">
                 <Users className="h-3.5 w-3.5" /> User assignment
               </TabsTrigger>
+              <TabsTrigger value="plans" className="gap-1.5">
+                <Gem className="h-3.5 w-3.5" /> Plan &amp; upgrade
+              </TabsTrigger>
               <TabsTrigger value="billing" className="gap-1.5">
                 <CreditCard className="h-3.5 w-3.5" /> Billing
               </TabsTrigger>
@@ -100,6 +103,9 @@ export default function UserPermissions() {
             </TabsContent>
             <TabsContent value="users" className="mt-4">
               <UserRoleAssignmentPanel />
+            </TabsContent>
+            <TabsContent value="plans" className="mt-4">
+              <PlansPanel />
             </TabsContent>
             <TabsContent value="billing" className="mt-4">
               <BillingPanel />
