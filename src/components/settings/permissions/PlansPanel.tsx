@@ -112,24 +112,30 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                     <div className="font-medium">{fmt(p.limits.apiCredentials)}</div>
                   </div>
                 </div>
-                <Button
-                  className="w-full"
-                  variant={current ? 'outline' : 'default'}
-                  disabled={current}
-                  onClick={() =>
-                    openCheckoutFlow({
-                      needs: t,
-                      feature: `${p.label} plan`,
-                      source: 'plans-panel',
-                    })
-                  }
-                >
-                  {current
-                    ? 'Current plan'
-                    : isAtLeast(tier, t)
-                      ? `Switch to ${p.label}`
-                      : `Upgrade to ${p.label}`}
-                </Button>
+                {isAdmin ? (
+                  <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
+                    Catalogue definition. Tenants subscribe from Users &amp; Permissions → Plans.
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant={current ? 'outline' : 'default'}
+                    disabled={current}
+                    onClick={() =>
+                      openCheckoutFlow({
+                        needs: t,
+                        feature: `${p.label} plan`,
+                        source: 'plans-panel',
+                      })
+                    }
+                  >
+                    {current
+                      ? 'Current plan'
+                      : isAtLeast(tier, t)
+                        ? `Switch to ${p.label}`
+                        : `Upgrade to ${p.label}`}
+                  </Button>
+                )}
 
               </CardContent>
             </Card>
