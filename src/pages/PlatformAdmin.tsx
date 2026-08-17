@@ -62,10 +62,10 @@ export default function PlatformAdmin() {
                 <Gem className="h-3.5 w-3.5" /> Plans
               </TabsTrigger>
               <TabsTrigger value="entitlements" className="gap-1.5">
-                <Grid3X3 className="h-3.5 w-3.5" /> Entitlement matrix
+                <Grid3X3 className="h-3.5 w-3.5" /> Entitlements
               </TabsTrigger>
               <TabsTrigger value="roles" className="gap-1.5">
-                <BadgeCheck className="h-3.5 w-3.5" /> Default roles
+                <BadgeCheck className="h-3.5 w-3.5" /> Roles
               </TabsTrigger>
             </TabsList>
 
