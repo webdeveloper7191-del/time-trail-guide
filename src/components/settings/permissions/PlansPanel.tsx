@@ -27,7 +27,16 @@ import { cn } from '@/lib/utils';
 
 const fmt = (n: number | null) => (n === null ? 'Unlimited' : n.toLocaleString());
 
-export function PlansPanel() {
+interface PlansPanelProps {
+  /**
+   * `tenant` (default) — shows the tenant's current plan and upgrade actions.
+   * `admin` — catalogue configuration only, no purchase/upgrade CTAs.
+   */
+  mode?: 'tenant' | 'admin';
+}
+
+export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
+  const isAdmin = mode === 'admin';
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
 
