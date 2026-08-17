@@ -26,8 +26,21 @@ import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
 import { RoleDetailSheet } from './RoleDetailSheet';
 
-export function RolesPanel() {
-  const { roles, matrix, assignments } = usePermissionsStore();
+interface RolesPanelProps {
+  /**
+   * `tenant` (default) — org admins manage their custom roles.
+   * `system` — platform admins define the default roles shipped to every tenant.
+   */
+  scope?: 'tenant' | 'system';
+}
+
+export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
+  const isSystemScope = scope === 'system';
+  const { roles: allRoles, matrix, assignments } = usePermissionsStore();
+  const roles = useMemo(
+    () => (isSystemScope ? allRoles.filter(r => r.system) : allRoles),
+    [allRoles, isSystemScope],
+  );
   const { plan } = usePlan();
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('');
