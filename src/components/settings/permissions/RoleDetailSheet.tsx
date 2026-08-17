@@ -183,7 +183,7 @@ export function RoleDetailSheet({ role, matrix, open, onOpenChange, allowSystemE
             ))}
           </div>
 
-          {!role.system && (
+          {canEditRights && (
             <div className="mt-3">
               {editing ? (
                 <div className="space-y-3 rounded-lg border p-3">
