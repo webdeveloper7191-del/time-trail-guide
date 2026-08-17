@@ -175,11 +175,14 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setDetailRole(r)}>
-                <Eye className="h-4 w-4 mr-2" /> {r.system ? 'View permissions' : 'Edit permissions'}
+                <Eye className="h-4 w-4 mr-2" />{' '}
+                {r.system && !isSystemScope ? 'View permissions' : 'Edit permissions'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openCreate(r.id)}>
-                <Copy className="h-4 w-4 mr-2" /> Clone role
-              </DropdownMenuItem>
+              {!isSystemScope && (
+                <DropdownMenuItem onClick={() => openCreate(r.id)}>
+                  <Copy className="h-4 w-4 mr-2" /> Clone role
+                </DropdownMenuItem>
+              )}
               {!r.system && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
