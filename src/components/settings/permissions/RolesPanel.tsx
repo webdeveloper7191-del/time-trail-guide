@@ -281,7 +281,7 @@ export function RolesPanel() {
           </div>
         </SheetContent>
       </Sheet>
-    </Card>
+    </div>
   );
 }
 
