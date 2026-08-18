@@ -193,7 +193,7 @@ export function BillingPanel() {
             Per-user pricing, billed {billing.cycle}. Annual pays 10 months for 12.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {PLAN_ORDER.map(t => {
             const p = PLANS[t];
             const current = t === billing.tier && billing.status === 'active';
@@ -215,24 +215,34 @@ export function BillingPanel() {
                 </div>
                 <div>
                   <span className="text-2xl font-semibold tracking-tight">
-                    {formatMoney(PRICE_PER_USER[t])}
+                    {t === 'free' ? 'Free' : formatMoney(unitRate(t, billing.cycle))}
                   </span>
-                  <span className="text-xs text-muted-foreground"> / user / month</span>
+                  {t !== 'free' && (
+                    <span className="text-xs text-muted-foreground"> / user / month</span>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{p.tagline}</p>
                 <div className="text-[11px] text-muted-foreground">
                   {formatMoney(invoiceTotal(t, billing.cycle, billing.seats).total)} for{' '}
                   {billing.seats} users incl. GST
                 </div>
-                <Button
-                  size="sm"
-                  className="w-full"
-                  variant={current ? 'outline' : 'default'}
-                  disabled={current}
-                  onClick={() => checkout.open({ tier: t, cycle: billing.cycle, source: 'plan-card' })}
-                >
-                  {current ? 'Current plan' : `Choose ${p.label}`}
-                </Button>
+                {p.contactSales && !current ? (
+                  <Button size="sm" className="w-full" asChild>
+                    <a href="mailto:sales@rostered.ai?subject=Enterprise%20plan%20enquiry">
+                      Talk to sales
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    variant={current ? 'outline' : 'default'}
+                    disabled={current}
+                    onClick={() => checkout.open({ tier: t, cycle: billing.cycle, source: 'plan-card' })}
+                  >
+                    {current ? 'Current plan' : `Choose ${p.label}`}
+                  </Button>
+                )}
               </div>
             );
           })}
