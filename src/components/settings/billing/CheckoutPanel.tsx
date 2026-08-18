@@ -28,7 +28,7 @@ import { PLANS, PlanTier } from '@/types/plans';
 import { usePlan } from '@/lib/planStore';
 import {
   BillingCycle,
-  PRICE_PER_USER,
+  unitRate,
   billingStore,
   checkout,
   formatMoney,
@@ -334,7 +334,7 @@ export function CheckoutPanel() {
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between text-muted-foreground">
                 <dt>
-                  {formatMoney(PRICE_PER_USER[tier])} × {seats} users × {totals.months} month
+                  {formatMoney(unitRate(tier, cycle))} × {seats} users × {totals.months} month
                   {totals.months === 1 ? '' : 's'}
                 </dt>
                 <dd className="text-foreground">{formatMoney(totals.subtotal)}</dd>

@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import { PLANS, PLAN_ORDER } from '@/types/plans';
 import {
-  PRICE_PER_USER,
+  unitRate,
   billingStore,
   checkout,
   formatMoney,
@@ -70,7 +70,7 @@ export function BillingPanel() {
                 </div>
                 <div className="text-lg font-semibold tracking-tight">{billing.seats}</div>
                 <div className="text-[11px] text-muted-foreground">
-                  {formatMoney(PRICE_PER_USER[billing.tier])} per user / month
+                  {formatMoney(unitRate(billing.tier, billing.cycle))} per user / month
                 </div>
               </div>
               <div className="rounded-md border p-3">
