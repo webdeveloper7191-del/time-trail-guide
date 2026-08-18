@@ -465,6 +465,9 @@ export const AgencyPartnerStore = {
         rateLimitBurst: 20,
         ipAllowlist: [],
         roleMappings: [],
+        qualificationMappings: [],
+        rateCardMappings: [],
+
         notifications: {
           dispatchFailureRecipients: [],
           deadLetterRecipients: [],
