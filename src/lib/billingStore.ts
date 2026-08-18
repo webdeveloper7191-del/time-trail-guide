@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PlanTier, PLANS } from '@/types/plans';
+import { activeRevision, BASE_REVISION } from '@/lib/pricingScheduleStore';
 
 /* ------------------------------------------------------------------ */
 /* Pricing (UI only — no charges are processed)                         */
@@ -7,21 +8,28 @@ import { PlanTier, PLANS } from '@/types/plans';
 
 export type BillingCycle = 'monthly' | 'annual';
 
-/** Price per user, per month, billed monthly. */
-export const PRICE_PER_USER: Record<PlanTier, number> = {
-  free: 0,
-  essentials: 6,
-  growth: 9,
-  enterprise: 12,
-};
+/**
+ * Prices come from the scheduled price book, so a future-dated revision
+ * automatically becomes the live price on its effective date.
+ */
+
+/** Price per user, per month, billed monthly, in force at `at`. */
+export const priceFor = (tier: PlanTier, at: Date = new Date()) =>
+  activeRevision(at).monthly[tier] ?? BASE_REVISION.monthly[tier];
 
 /** Per-user, per-month discount applied when the plan is paid annually. */
-export const ANNUAL_DISCOUNT_PER_USER: Record<PlanTier, number> = {
-  free: 0,
-  essentials: 1,
-  growth: 1.5,
-  enterprise: 2.5,
-};
+export const annualDiscountFor = (tier: PlanTier, at: Date = new Date()) =>
+  activeRevision(at).annualDiscount[tier] ?? BASE_REVISION.annualDiscount[tier];
+
+/** Today's list price, kept for call sites that read a plain map. */
+export const PRICE_PER_USER: Record<PlanTier, number> = new Proxy({} as Record<PlanTier, number>, {
+  get: (_t, key: string) => priceFor(key as PlanTier),
+});
+
+export const ANNUAL_DISCOUNT_PER_USER: Record<PlanTier, number> = new Proxy(
+  {} as Record<PlanTier, number>,
+  { get: (_t, key: string) => annualDiscountFor(key as PlanTier) },
+);
 
 /** Annual plans are invoiced 12 months up front at the discounted rate. */
 export const ANNUAL_MONTHS_CHARGED = 12;
@@ -35,11 +43,12 @@ export const formatMoney = (amount: number, currency = CURRENCY) =>
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
 
-/** Effective per-user, per-month rate for a cycle. */
-export const unitRate = (tier: PlanTier, cycle: BillingCycle) =>
+/** Effective per-user, per-month rate for a cycle, at a point in time. */
+export const unitRate = (tier: PlanTier, cycle: BillingCycle, at: Date = new Date()) =>
   cycle === 'annual'
-    ? Math.max(0, PRICE_PER_USER[tier] - ANNUAL_DISCOUNT_PER_USER[tier])
-    : PRICE_PER_USER[tier];
+    ? Math.max(0, priceFor(tier, at) - annualDiscountFor(tier, at))
+    : priceFor(tier, at);
+
 
 /** Tax applied per billing country. Drives the live checkout breakdown. */
 export const TAX_RULES: Record<string, { label: string; rate: number }> = {
@@ -61,9 +70,10 @@ export function invoiceTotal(
   cycle: BillingCycle,
   seats: number,
   taxRate: number = DEFAULT_TAX_RATE,
+  at: Date = new Date(),
 ) {
   const months = cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1;
-  const subtotal = unitRate(tier, cycle) * seats * months;
+  const subtotal = unitRate(tier, cycle, at) * seats * months;
   const tax = Math.round(subtotal * taxRate * 100) / 100;
   return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100, months, taxRate };
 }

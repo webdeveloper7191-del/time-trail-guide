@@ -2,7 +2,11 @@ import { Fragment, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { PricingSchedulePanel } from '@/components/settings/permissions/PricingSchedulePanel';
+import { usePricingSchedule } from '@/lib/pricingScheduleStore';
+
 import { Check, Lock, Sparkles, PhoneCall } from 'lucide-react';
 import {
   PLANS,
@@ -47,6 +51,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const { upcoming } = usePricingSchedule();
 
   const rows = useMemo(
     () =>
@@ -62,17 +67,54 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
 
   return (
     <div className="space-y-4">
+      {isAdmin && <PricingSchedulePanel />}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs text-muted-foreground">
-          Prices are per user, per month, in AUD. Annual billing is charged 12 months up front.
-        </p>
-        <Tabs value={cycle} onValueChange={v => setCycle(v as BillingCycle)}>
-          <TabsList className="h-8">
-            <TabsTrigger value="monthly" className="text-xs">Monthly</TabsTrigger>
-            <TabsTrigger value="annual" className="text-xs">Annual · save more</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="space-y-0.5">
+          <p className="text-xs text-muted-foreground">
+            Prices are per user, per month, in AUD. Annual billing is charged 12 months up front.
+          </p>
+          {upcoming.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              New pricing takes effect{' '}
+              {new Date(`${upcoming[0].effectiveFrom}T00:00:00`).toLocaleDateString('en-AU', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+              .
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Label
+            htmlFor="billing-cycle"
+            className={cn(
+              'text-xs cursor-pointer',
+              cycle === 'monthly' ? 'font-medium text-foreground' : 'text-muted-foreground',
+            )}
+          >
+            Monthly
+          </Label>
+          <Switch
+            id="billing-cycle"
+            checked={cycle === 'annual'}
+            onCheckedChange={v => setCycle(v ? 'annual' : 'monthly')}
+          />
+          <Label
+            htmlFor="billing-cycle"
+            className={cn(
+              'text-xs cursor-pointer',
+              cycle === 'annual' ? 'font-medium text-foreground' : 'text-muted-foreground',
+            )}
+          >
+            Annual
+          </Label>
+          <Badge variant="secondary" className="text-[10px]">
+            Save more
+          </Badge>
+        </div>
       </div>
+
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {PLAN_ORDER.map(t => {
