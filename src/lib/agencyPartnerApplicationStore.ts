@@ -3,6 +3,10 @@
 // In-memory (pre-Cloud) with subscribe/notify for reactive views.
 
 import type { DocumentUpload, RateCardEntry, CoverageZoneEntry } from '@/components/agency/AgencyOnboardingWizard';
+import { mappingHealth, type QualificationMapping, type RateCardMapping } from '@/lib/agencyMappingEngine';
+
+export type { QualificationMapping, RateCardMapping };
+
 
 
 export type InviteStatus = 'sent' | 'opened' | 'accepted' | 'expired' | 'revoked';
