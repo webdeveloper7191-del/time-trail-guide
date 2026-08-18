@@ -26,7 +26,33 @@ import {
   type RoleMapping,
 } from '@/lib/agencyPartnerApplicationStore';
 import { usePositions } from '@/lib/masterData/positionsStore';
+import { QualificationMappingTab, RateCardMappingTab } from '@/components/agency/AgencyMappingTabs';
+import { mappingHealth, suggestPosition } from '@/lib/agencyMappingEngine';
 import { KeyRound, RotateCw, Ban, Plus, Send, CheckCircle2, XCircle, AlertTriangle, Trash2, RefreshCw, Copy } from 'lucide-react';
+
+function MappingWorkbench({ app, cfg }: { app: AgencyPartnerApplication; cfg: AgencyIntegrationConfig }) {
+  const [sub, setSub] = useState('roles');
+  const health = mappingHealth(cfg);
+  const pill = (n: number) => (n > 0 ? <Badge variant="outline" className="ml-1.5 border-amber-500 text-amber-700">{n}</Badge> : null);
+  return (
+    <div className="space-y-4">
+      <Card className="p-3 text-xs text-muted-foreground">
+        Agencies use their own role labels, qualification names and rate cards. Every inbound candidate and outbound shift is translated through these three mapping tables, so tenant-custom positions and skills always resolve to the agency's dialect — and dispatch is blocked while anything is unresolved.
+      </Card>
+      <Tabs value={sub} onValueChange={setSub}>
+        <TabsList>
+          <TabsTrigger value="roles">Roles{pill(health.rolesUnresolved)}</TabsTrigger>
+          <TabsTrigger value="qualifications">Qualifications{pill(health.qualsUnresolved)}</TabsTrigger>
+          <TabsTrigger value="rates">Rate cards{pill(health.ratesUnresolved + health.ratesOverCeiling)}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="roles" className="mt-4"><MappingTab app={app} cfg={cfg} /></TabsContent>
+        <TabsContent value="qualifications" className="mt-4"><QualificationMappingTab app={app} cfg={cfg} /></TabsContent>
+        <TabsContent value="rates" className="mt-4"><RateCardMappingTab app={app} cfg={cfg} /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
 
 const CURRENT_USER = 'admin@rostered.ai';
 
@@ -74,7 +100,7 @@ export function AgencyIntegrationPanel({
           <TabsTrigger value="webhook">Webhook</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="limits">Rate limits & IP</TabsTrigger>
-          <TabsTrigger value="mapping">Role mapping</TabsTrigger>
+          <TabsTrigger value="mapping">Mapping</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="deliveries">Delivery log</TabsTrigger>
         </TabsList>
@@ -96,8 +122,9 @@ export function AgencyIntegrationPanel({
             <LimitsTab app={app} cfg={cfg} />
           </TabsContent>
           <TabsContent value="mapping" className="mt-0">
-            <MappingTab app={app} cfg={cfg} />
+            <MappingWorkbench app={app} cfg={cfg} />
           </TabsContent>
+
           <TabsContent value="notifications" className="mt-0">
             <NotificationsTab app={app} cfg={cfg} />
           </TabsContent>
@@ -127,7 +154,7 @@ function OverviewTab({ app, cfg, setTab }: { app: AgencyPartnerApplication; cfg:
     { key: 'creds', title: 'API credentials issued', ok: cfg.credentials.some(c => !c.revokedAt), tab: 'credentials', hint: 'Mint a client id / secret so the agency can authenticate.' },
     { key: 'wh', title: 'Webhook endpoint verified', ok: !!cfg.webhookUrl && !!cfg.webhookVerifiedAt, tab: 'webhook', hint: 'Set the URL, rotate a signing secret, send a test event.' },
     { key: 'ev', title: 'Event subscriptions selected', ok: cfg.eventSubscriptions.length > 0, tab: 'events', hint: 'Pick which events we push to this partner.' },
-    { key: 'map', title: 'Role mapping resolved', ok: cfg.roleMappings.length > 0 && cfg.roleMappings.every(m => !!m.positionId), tab: 'mapping', hint: 'Reconcile every agency role label to a tenant position id.' },
+    { key: 'map', title: 'Roles, qualifications & rates mapped', ok: !mappingHealth(cfg).dispatchBlocked, tab: 'mapping', hint: 'Reconcile agency role labels, qualification names and rate-card lines to tenant master data.' },
     { key: 'not', title: 'Notification routing set', ok: cfg.notifications.dispatchFailureRecipients.length > 0, tab: 'notifications', hint: 'Route dispatch failure and dead-letter alerts.' },
   ];
   return (
@@ -465,9 +492,19 @@ function MappingTab({ app, cfg }: { app: AgencyPartnerApplication; cfg: AgencyIn
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cfg.roleMappings.map(m => (
+            {cfg.roleMappings.map(m => {
+              const sug = !m.positionId ? suggestPosition(m.agencyRoleLabel, activePositions) : null;
+              return (
               <TableRow key={m.id}>
-                <TableCell className="font-mono text-xs">{m.agencyRoleLabel}</TableCell>
+                <TableCell className="font-mono text-xs align-top pt-4">
+                  {m.agencyRoleLabel}
+                  {sug && (
+                    <button type="button" onClick={() => setPosition(m.id, sug.target.id)} className="block mt-1 font-sans text-[11px] text-primary hover:underline">
+                      Suggested: {sug.target.label} ({sug.confidence}%)
+                    </button>
+                  )}
+                </TableCell>
+
                 <TableCell>
                   <Select value={m.positionId ?? ''} onValueChange={v => setPosition(m.id, v)}>
                     <SelectTrigger className="w-64"><SelectValue placeholder="Pick position…" /></SelectTrigger>
@@ -483,7 +520,8 @@ function MappingTab({ app, cfg }: { app: AgencyPartnerApplication; cfg: AgencyIn
                   <Button size="sm" variant="ghost" onClick={() => removeRow(m.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </TableCell>
               </TableRow>
-            ))}
+            ); })}
+
             <TableRow>
               <TableCell colSpan={4}>
                 <div className="flex gap-2">
