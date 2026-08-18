@@ -267,24 +267,31 @@ export function CheckoutPanel() {
               </span>
             </div>
 
-            <div className="flex rounded-md border p-0.5 text-xs">
-              {(['monthly', 'annual'] as BillingCycle[]).map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCycle(c)}
-                  className={cn(
-                    'flex-1 rounded-[4px] px-2 py-1.5 capitalize transition-colors',
-                    cycle === c
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {c}
-                  {c === 'annual' && ' · 2 months free'}
-                </button>
-              ))}
+            <div className="rounded-md border p-2 space-y-2">
+              <div className="flex rounded-md border p-0.5 text-xs">
+                {(['monthly', 'annual'] as BillingCycle[]).map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCycle(c)}
+                    className={cn(
+                      'flex-1 rounded-[4px] px-2 py-1.5 capitalize transition-colors',
+                      cycle === c
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {cycle === 'annual'
+                  ? `Paid up front for 12 months at ${formatMoney(unitRate(tier, 'annual'))} / user / month.`
+                  : `Switch to annual and save ${formatMoney(proration.annualSaving)} a year at ${seats} users.`}
+              </p>
             </div>
+
 
             <div className="space-y-1.5">
               <Label className="text-xs">Users</Label>
