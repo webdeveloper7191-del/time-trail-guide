@@ -51,6 +51,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const { upcoming } = usePricingSchedule();
 
   const rows = useMemo(
     () =>
