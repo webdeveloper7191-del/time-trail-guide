@@ -158,6 +158,10 @@ export interface AgencyIntegrationConfig {
   rateLimitBurst: number;       // burst allowance
   ipAllowlist: string[];        // CIDR or IPs; empty = any
   roleMappings: RoleMapping[];
+  /** Agency qualification/certification labels bound to tenant Skills master. */
+  qualificationMappings?: QualificationMapping[];
+  /** Agency rate-card lines bound to tenant positions + approved ceilings. */
+  rateCardMappings?: RateCardMapping[];
   notifications: NotificationRouting;
   deliveries: WebhookDelivery[];
   lastSuccessfulDeliveryAt?: string;
@@ -174,12 +178,13 @@ export function integrationReadiness(cfg?: AgencyIntegrationConfig): {
   const credentials = !!cfg?.credentials.some(c => !c.revokedAt);
   const webhook = !!cfg?.webhookUrl && !!cfg?.webhookVerifiedAt;
   const events = !!cfg && cfg.eventSubscriptions.length > 0;
-  const mapping = !!cfg && cfg.roleMappings.length > 0 && cfg.roleMappings.every(m => !!m.positionId);
+  const mapping = !!cfg && !mappingHealth(cfg).dispatchBlocked;
   const flags = [credentials, webhook, events, mapping];
   const done = flags.filter(Boolean).length;
   const overall = done === 4 ? 'ready' : done === 0 ? 'not_configured' : 'partial';
   return { credentials, webhook, events, mapping, overall };
 }
+
 
 
 export interface ReviewNote {
