@@ -74,10 +74,12 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
         </Tabs>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {PLAN_ORDER.map(t => {
           const p = PLANS[t];
           const current = !isAdmin && t === tier;
+          const rate = unitRate(t, cycle);
+          const saving = ANNUAL_DISCOUNT_PER_USER[t];
           return (
             <Card key={t} className={cn(current && 'border-primary ring-1 ring-primary/30')}>
               <CardHeader className="pb-3">
@@ -92,10 +94,19 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                 <CardDescription>{p.tagline}</CardDescription>
                 <div className="pt-1">
                   <span className="text-2xl font-semibold tracking-tight">
-                    {formatMoney(PRICE_PER_USER[t])}
+                    {t === 'free' ? 'Free' : formatMoney(rate)}
                   </span>
-                  <span className="text-xs text-muted-foreground"> / user / month</span>
+                  {t !== 'free' && (
+                    <span className="text-xs text-muted-foreground"> / user / month</span>
+                  )}
                 </div>
+                {t !== 'free' && (
+                  <div className="text-[11px] text-muted-foreground">
+                    {cycle === 'annual'
+                      ? `Save ${formatMoney(saving)} / user / month vs ${formatMoney(PRICE_PER_USER[t])} monthly`
+                      : `${formatMoney(unitRate(t, 'annual'))} / user / month billed annually`}
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
 
@@ -121,7 +132,9 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                   </div>
                   <div>
                     <div className="text-muted-foreground">Staff</div>
-                    <div className="font-medium">{fmt(p.limits.staff)}</div>
+                    <div className="font-medium">
+                      {p.limits.staff === null ? 'Unlimited' : `${p.limits.staff} max`}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Custom roles</div>
@@ -136,26 +149,45 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                   <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
                     Catalogue definition. Tenants subscribe from Users &amp; Permissions → Plans.
                   </div>
+                ) : p.contactSales ? (
+                  <Button
+                    className="w-full gap-1.5"
+                    variant={current ? 'outline' : 'default'}
+                    asChild={!current}
+                    disabled={current}
+                  >
+                    {current ? (
+                      <span>Current plan</span>
+                    ) : (
+                      <a href="mailto:sales@rostered.ai?subject=Enterprise%20plan%20enquiry">
+                        <PhoneCall className="h-3.5 w-3.5" /> Talk to sales
+                      </a>
+                    )}
+                  </Button>
                 ) : (
                   <Button
                     className="w-full"
-                    variant={current ? 'outline' : 'default'}
+                    variant={current ? 'outline' : t === 'free' ? 'outline' : 'default'}
                     disabled={current}
                     onClick={() =>
                       openCheckoutFlow({
                         needs: t,
                         feature: `${p.label} plan`,
                         source: 'plans-panel',
+                        cycle,
                       })
                     }
                   >
                     {current
                       ? 'Current plan'
-                      : isAtLeast(tier, t)
-                        ? `Switch to ${p.label}`
-                        : `Upgrade to ${p.label}`}
+                      : t === 'free'
+                        ? 'Downgrade to Free'
+                        : isAtLeast(tier, t)
+                          ? `Switch to ${p.label}`
+                          : `Upgrade to ${p.label}`}
                   </Button>
                 )}
+
 
               </CardContent>
             </Card>
