@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Gem, Grid3X3, Search, ChevronRight, ShieldCheck, BadgeCheck } from 'lucide-react';
+import { Gem, Grid3X3, Search, ChevronRight, ShieldCheck, BadgeCheck, Building2 } from 'lucide-react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { PlanEntitlementMatrixPanel } from '@/components/settings/permissions/PlanEntitlementMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
+import { TenantListPanel } from '@/components/settings/platform/TenantListPanel';
 
 /**
  * System-admin (platform) view: what the product owner configures — the plan
@@ -15,7 +16,7 @@ import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
  * Tenant-facing role administration lives at /settings/permissions.
  */
 export default function PlatformAdmin() {
-  const [tab, setTab] = useState('plans');
+  const [tab, setTab] = useState('tenants');
 
   return (
     <div className="min-h-screen flex w-full bg-background">
@@ -43,9 +44,9 @@ export default function PlatformAdmin() {
 
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight">Plans &amp; Entitlements</h1>
+              <h1 className="text-3xl font-semibold tracking-tight">Manage Organisation</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                System administration — define subscription tiers, what each tier unlocks, and the default roles tenants start with. Tenant subscriptions and upgrades are managed in Users &amp; Permissions.
+                System administration — manage tenant organisations and their pricing, define subscription tiers, what each tier unlocks, and the default roles tenants start with. Tenant subscriptions and upgrades are managed in Users &amp; Permissions.
               </p>
             </div>
             <Link
@@ -58,6 +59,9 @@ export default function PlatformAdmin() {
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="flex flex-wrap h-auto">
+              <TabsTrigger value="tenants" className="gap-1.5">
+                <Building2 className="h-3.5 w-3.5" /> Tenants
+              </TabsTrigger>
               <TabsTrigger value="plans" className="gap-1.5">
                 <Gem className="h-3.5 w-3.5" /> Plans
               </TabsTrigger>
@@ -69,6 +73,9 @@ export default function PlatformAdmin() {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="tenants" className="mt-4">
+              <TenantListPanel />
+            </TabsContent>
             <TabsContent value="plans" className="mt-4">
               <PlansPanel mode="admin" />
             </TabsContent>
