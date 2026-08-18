@@ -280,9 +280,7 @@ export const billingStore = {
       seats: args.seats,
       cancelAtPeriodEnd: false,
       // Cycle changes restart the billing period; otherwise the date holds.
-      renewsOn: cycleChanged
-        ? addMonths(new Date(), args.cycle === 'annual' ? 12 : 1).toISOString()
-        : state.renewsOn,
+      renewsOn: args.proration.renewsOn ?? state.renewsOn,
       invoices: invoices.slice(0, 24),
     });
   },
