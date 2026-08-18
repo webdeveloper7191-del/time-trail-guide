@@ -96,8 +96,9 @@ export function AgencyIntegrationPanel({
             <LimitsTab app={app} cfg={cfg} />
           </TabsContent>
           <TabsContent value="mapping" className="mt-0">
-            <MappingTab app={app} cfg={cfg} />
+            <MappingWorkbench app={app} cfg={cfg} />
           </TabsContent>
+
           <TabsContent value="notifications" className="mt-0">
             <NotificationsTab app={app} cfg={cfg} />
           </TabsContent>
