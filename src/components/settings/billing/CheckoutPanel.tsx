@@ -491,12 +491,14 @@ export function CheckoutPanel() {
               <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-px" />
                 Your next invoice of {formatMoney(proration.nextInvoiceTotal)} {CURRENCY} is due{' '}
-                {new Date(snapshot.renewsOn).toLocaleDateString('en-AU', {
+                {new Date(proration.renewsOn).toLocaleDateString('en-AU', {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
                 })}
-                . This is a demo — no card is charged.
+                {proration.cycleChanged ? ' — the billing date resets with the new term' : ''}. This
+                is a demo — no card is charged.
+
               </p>
             </section>
           ) : (
