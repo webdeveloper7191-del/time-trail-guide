@@ -166,7 +166,7 @@ function write(next: BillingState) {
 export interface ProrationPreview {
   /** Unused time credited back from the current subscription. */
   credit: number;
-  /** Cost of the new subscription for the remainder of the period. */
+  /** Cost of the new subscription (remainder of the period, or a full new term). */
   charge: number;
   /** charge - credit, before tax. Negative means credit balance. */
   subtotal: number;
@@ -179,10 +179,28 @@ export interface ProrationPreview {
   daysInPeriod: number;
   /** Recurring total on the next invoice under the new configuration. */
   nextInvoiceTotal: number;
+  /** True when the billing cycle itself changes (monthly <-> annual). */
+  cycleChanged: boolean;
+  /** Months covered by the charge above. */
+  termMonths: number;
+  /** ISO date the next renewal falls on after the change. */
+  renewsOn: string;
+  /** Savings over 12 months of switching monthly -> annual, before tax. */
+  annualSaving: number;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * Stripe-style proration.
+ *
+ * Same cycle  → credit the unused slice of the current period and charge the
+ *               new configuration for the same remaining slice. The renewal
+ *               date does not move.
+ * Cycle change → the current term ends immediately: credit the unused slice,
+ *               then charge a full new term (12 months annual, 1 month
+ *               monthly) starting today. The renewal date resets.
+ */
 export function prorationPreview(
   current: Pick<BillingState, 'tier' | 'cycle' | 'seats' | 'renewsOn'>,
   next: { tier: PlanTier; cycle: BillingCycle; seats: number },
@@ -193,16 +211,24 @@ export function prorationPreview(
   const msLeft = new Date(current.renewsOn).getTime() - now.getTime();
   const daysRemaining = Math.max(0, Math.min(daysInPeriod, Math.round(msLeft / 86_400_000)));
   const fraction = daysRemaining / daysInPeriod;
+  const cycleChanged = next.cycle !== current.cycle;
 
   const currentPeriod = invoiceTotal(current.tier, current.cycle, current.seats, taxRate).subtotal;
-  const nextPeriod = invoiceTotal(next.tier, next.cycle, next.seats, taxRate).subtotal;
+  const nextTotals = invoiceTotal(next.tier, next.cycle, next.seats, taxRate);
 
   const credit = round2(currentPeriod * fraction);
-  const charge = round2(nextPeriod * fraction);
+  // A cycle switch starts a brand new term, so the whole term is charged now.
+  const charge = round2(cycleChanged ? nextTotals.subtotal : nextTotals.subtotal * fraction);
   const subtotal = round2(charge - credit);
   const tax = round2(Math.max(0, subtotal) * taxRate);
   const dueToday = round2(Math.max(0, subtotal + tax));
   const creditBalance = subtotal < 0 ? round2(-subtotal) : 0;
+
+  const renewal = new Date(now);
+  if (cycleChanged) renewal.setMonth(renewal.getMonth() + nextTotals.months);
+
+  const monthlyYear = unitRate(next.tier, 'monthly', now) * next.seats * 12;
+  const annualYear = unitRate(next.tier, 'annual', now) * next.seats * 12;
 
   return {
     credit,
@@ -213,7 +239,11 @@ export function prorationPreview(
     creditBalance,
     daysRemaining,
     daysInPeriod,
-    nextInvoiceTotal: invoiceTotal(next.tier, next.cycle, next.seats, taxRate).total,
+    nextInvoiceTotal: nextTotals.total,
+    cycleChanged,
+    termMonths: cycleChanged ? nextTotals.months : 0,
+    renewsOn: cycleChanged ? renewal.toISOString() : current.renewsOn,
+    annualSaving: round2(monthlyYear - annualYear),
   };
 }
 
