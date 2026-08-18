@@ -9,13 +9,22 @@ export type BillingCycle = 'monthly' | 'annual';
 
 /** Price per user, per month, billed monthly. */
 export const PRICE_PER_USER: Record<PlanTier, number> = {
-  essentials: 4,
-  growth: 6,
-  enterprise: 8,
+  free: 0,
+  essentials: 6,
+  growth: 9,
+  enterprise: 12,
 };
 
-/** Annual is billed as 10 months up front (2 months free). */
-export const ANNUAL_MONTHS_CHARGED = 10;
+/** Per-user, per-month discount applied when the plan is paid annually. */
+export const ANNUAL_DISCOUNT_PER_USER: Record<PlanTier, number> = {
+  free: 0,
+  essentials: 1,
+  growth: 1.5,
+  enterprise: 2.5,
+};
+
+/** Annual plans are invoiced 12 months up front at the discounted rate. */
+export const ANNUAL_MONTHS_CHARGED = 12;
 
 export const CURRENCY = 'AUD';
 
@@ -29,7 +38,7 @@ export const formatMoney = (amount: number, currency = CURRENCY) =>
 /** Effective per-user, per-month rate for a cycle. */
 export const unitRate = (tier: PlanTier, cycle: BillingCycle) =>
   cycle === 'annual'
-    ? (PRICE_PER_USER[tier] * ANNUAL_MONTHS_CHARGED) / 12
+    ? Math.max(0, PRICE_PER_USER[tier] - ANNUAL_DISCOUNT_PER_USER[tier])
     : PRICE_PER_USER[tier];
 
 /** Tax applied per billing country. Drives the live checkout breakdown. */
@@ -54,7 +63,7 @@ export function invoiceTotal(
   taxRate: number = DEFAULT_TAX_RATE,
 ) {
   const months = cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1;
-  const subtotal = PRICE_PER_USER[tier] * seats * months;
+  const subtotal = unitRate(tier, cycle) * seats * months;
   const tax = Math.round(subtotal * taxRate * 100) / 100;
   return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100, months, taxRate };
 }
@@ -266,7 +275,7 @@ export const billingStore = {
       cycle: args.cycle,
       seats: args.seats,
       cancelAtPeriodEnd: false,
-      renewsOn: addMonths(new Date(), months === 10 ? 12 : 1).toISOString(),
+      renewsOn: addMonths(new Date(), months === 12 ? 12 : 1).toISOString(),
       paymentMethod: args.paymentMethod,
       billingEmail: args.billingEmail,
       companyName: args.companyName,

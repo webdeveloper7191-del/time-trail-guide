@@ -1,8 +1,9 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Check, Lock, Sparkles } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Check, Lock, Sparkles, PhoneCall } from 'lucide-react';
 import {
   PLANS,
   PLAN_ORDER,
@@ -19,7 +20,13 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 
-import { PRICE_PER_USER, formatMoney } from '@/lib/billingStore';
+import {
+  ANNUAL_DISCOUNT_PER_USER,
+  BillingCycle,
+  PRICE_PER_USER,
+  formatMoney,
+  unitRate,
+} from '@/lib/billingStore';
 import { openCheckoutFlow } from '@/lib/upgradeFlow';
 
 import { cn } from '@/lib/utils';
@@ -39,6 +46,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   const isAdmin = mode === 'admin';
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
 
   const rows = useMemo(
     () =>
@@ -54,10 +62,24 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-xs text-muted-foreground">
+          Prices are per user, per month, in AUD. Annual billing is charged 12 months up front.
+        </p>
+        <Tabs value={cycle} onValueChange={v => setCycle(v as BillingCycle)}>
+          <TabsList className="h-8">
+            <TabsTrigger value="monthly" className="text-xs">Monthly</TabsTrigger>
+            <TabsTrigger value="annual" className="text-xs">Annual · save more</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {PLAN_ORDER.map(t => {
           const p = PLANS[t];
           const current = !isAdmin && t === tier;
+          const rate = unitRate(t, cycle);
+          const saving = ANNUAL_DISCOUNT_PER_USER[t];
           return (
             <Card key={t} className={cn(current && 'border-primary ring-1 ring-primary/30')}>
               <CardHeader className="pb-3">
@@ -72,10 +94,19 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                 <CardDescription>{p.tagline}</CardDescription>
                 <div className="pt-1">
                   <span className="text-2xl font-semibold tracking-tight">
-                    {formatMoney(PRICE_PER_USER[t])}
+                    {t === 'free' ? 'Free' : formatMoney(rate)}
                   </span>
-                  <span className="text-xs text-muted-foreground"> / user / month</span>
+                  {t !== 'free' && (
+                    <span className="text-xs text-muted-foreground"> / user / month</span>
+                  )}
                 </div>
+                {t !== 'free' && (
+                  <div className="text-[11px] text-muted-foreground">
+                    {cycle === 'annual'
+                      ? `Save ${formatMoney(saving)} / user / month vs ${formatMoney(PRICE_PER_USER[t])} monthly`
+                      : `${formatMoney(unitRate(t, 'annual'))} / user / month billed annually`}
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
 
@@ -101,7 +132,9 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                   </div>
                   <div>
                     <div className="text-muted-foreground">Staff</div>
-                    <div className="font-medium">{fmt(p.limits.staff)}</div>
+                    <div className="font-medium">
+                      {p.limits.staff === null ? 'Unlimited' : `${p.limits.staff} max`}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Custom roles</div>
@@ -116,26 +149,45 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                   <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground">
                     Catalogue definition. Tenants subscribe from Users &amp; Permissions → Plans.
                   </div>
+                ) : p.contactSales ? (
+                  <Button
+                    className="w-full gap-1.5"
+                    variant={current ? 'outline' : 'default'}
+                    asChild={!current}
+                    disabled={current}
+                  >
+                    {current ? (
+                      <span>Current plan</span>
+                    ) : (
+                      <a href="mailto:sales@rostered.ai?subject=Enterprise%20plan%20enquiry">
+                        <PhoneCall className="h-3.5 w-3.5" /> Talk to sales
+                      </a>
+                    )}
+                  </Button>
                 ) : (
                   <Button
                     className="w-full"
-                    variant={current ? 'outline' : 'default'}
+                    variant={current ? 'outline' : t === 'free' ? 'outline' : 'default'}
                     disabled={current}
                     onClick={() =>
                       openCheckoutFlow({
                         needs: t,
                         feature: `${p.label} plan`,
                         source: 'plans-panel',
+                        cycle,
                       })
                     }
                   >
                     {current
                       ? 'Current plan'
-                      : isAtLeast(tier, t)
-                        ? `Switch to ${p.label}`
-                        : `Upgrade to ${p.label}`}
+                      : t === 'free'
+                        ? 'Downgrade to Free'
+                        : isAtLeast(tier, t)
+                          ? `Switch to ${p.label}`
+                          : `Upgrade to ${p.label}`}
                   </Button>
                 )}
+
 
               </CardContent>
             </Card>
@@ -183,7 +235,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                           <td className="px-4 py-2">
                             <div className="flex items-center gap-1.5">
                               <span className="font-medium">{r.label}</span>
-                              {r.needs && r.needs !== 'essentials' && (
+                              {r.needs && r.needs !== 'free' && (
                                 <Badge variant="secondary" className="text-[10px]">
                                   {planLabel(r.needs as PlanTier)}+
                                 </Badge>

@@ -4,9 +4,9 @@ import { PermissionAction, PERMISSION_MODULES, getSubPermissions, subKey } from 
 /* Subscription tiers                                                   */
 /* ------------------------------------------------------------------ */
 
-export type PlanTier = 'essentials' | 'growth' | 'enterprise';
+export type PlanTier = 'free' | 'essentials' | 'growth' | 'enterprise';
 
-export const PLAN_ORDER: PlanTier[] = ['essentials', 'growth', 'enterprise'];
+export const PLAN_ORDER: PlanTier[] = ['free', 'essentials', 'growth', 'enterprise'];
 
 export interface PlanLimits {
   locations: number | null;
@@ -22,9 +22,24 @@ export interface PlanDefinition {
   /** Short headline of what the tier unlocks over the previous one. */
   highlights: string[];
   limits: PlanLimits;
+  /** Sold through sales rather than self-serve checkout. */
+  contactSales?: boolean;
 }
 
 export const PLANS: Record<PlanTier, PlanDefinition> = {
+  free: {
+    id: 'free',
+    label: 'Free',
+    tagline: 'Get a small team rostered and clocking on — up to 3 staff, one location.',
+    highlights: [
+      'Roster and open shifts for one location',
+      'Timesheets with clock in / out and breaks',
+      'Leave requests and staff profiles',
+      'Employee portal access',
+      'Hard limit of 3 staff',
+    ],
+    limits: { locations: 1, staff: 3, customRoles: 0, apiCredentials: 0 },
+  },
   essentials: {
     id: 'essentials',
     label: 'Essentials',
@@ -36,7 +51,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       'Employee portal with clock in / out',
       'On-site kiosk time clock with PIN and QR clocking',
     ],
-    limits: { locations: 3, staff: 100, customRoles: 0, apiCredentials: 0 },
+    limits: { locations: 3, staff: null, customRoles: 0, apiCredentials: 0 },
   },
   growth: {
     id: 'growth',
@@ -50,7 +65,7 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       'Custom roles and bulk workforce actions',
       'Kiosk face verification, overrides and exception handling',
     ],
-    limits: { locations: 25, staff: 1000, customRoles: 10, apiCredentials: 2 },
+    limits: { locations: 25, staff: null, customRoles: 10, apiCredentials: 2 },
   },
   enterprise: {
     id: 'enterprise',
@@ -60,10 +75,11 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       'Agency partners, dispatch, rate cards and API credentials',
       'Recruitment pipeline and cross-location org-wide reporting',
       'Third-party integrations, SSO/security and audit trail',
-      'Unlimited locations, staff and custom roles',
+      'Unlimited locations and custom roles',
       'Kiosk offline sync and full kiosk audit evidence',
     ],
     limits: { locations: null, staff: null, customRoles: null, apiCredentials: null },
+    contactSales: true,
   },
 };
 
@@ -86,7 +102,24 @@ interface TierDelta {
   subs?: Record<string, Grant>;
 }
 
-/** What Essentials includes out of the box. */
+/** What the Free plan includes. */
+const FREE: TierDelta = {
+  modules: {
+    dashboard: ['view'],
+    roster: ['view', 'manage'],
+    timesheets: ['view', 'manage', 'approve'],
+    leave: ['view', 'manage', 'approve'],
+    workforce: ['view', 'manage'],
+    locations: ['view'],
+    'master-data': ['view'],
+    settings: ['view'],
+    permissions: ['view'],
+    'employee-portal': true,
+    unavailability: ['view', 'manage'],
+  },
+};
+
+/** What Essentials adds on top of Free. */
 const ESSENTIALS: TierDelta = {
   modules: {
     dashboard: ['view', 'export'],
@@ -188,6 +221,7 @@ const ENTERPRISE: TierDelta = {
 };
 
 const DELTAS: Record<PlanTier, TierDelta> = {
+  free: FREE,
   essentials: ESSENTIALS,
   growth: GROWTH,
   enterprise: ENTERPRISE,
@@ -195,6 +229,7 @@ const DELTAS: Record<PlanTier, TierDelta> = {
 
 /** All keys that are introduced (or widened) above Essentials — i.e. gated. */
 const gatedModules = new Set<string>([
+  ...Object.keys(ESSENTIALS.modules ?? {}),
   ...Object.keys(GROWTH.modules ?? {}),
   ...Object.keys(ENTERPRISE.modules ?? {}),
 ]);
