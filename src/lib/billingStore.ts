@@ -63,7 +63,7 @@ export function invoiceTotal(
   taxRate: number = DEFAULT_TAX_RATE,
 ) {
   const months = cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1;
-  const subtotal = PRICE_PER_USER[tier] * seats * months;
+  const subtotal = unitRate(tier, cycle) * seats * months;
   const tax = Math.round(subtotal * taxRate * 100) / 100;
   return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100, months, taxRate };
 }
@@ -275,7 +275,7 @@ export const billingStore = {
       cycle: args.cycle,
       seats: args.seats,
       cancelAtPeriodEnd: false,
-      renewsOn: addMonths(new Date(), months === 10 ? 12 : 1).toISOString(),
+      renewsOn: addMonths(new Date(), months === 12 ? 12 : 1).toISOString(),
       paymentMethod: args.paymentMethod,
       billingEmail: args.billingEmail,
       companyName: args.companyName,
