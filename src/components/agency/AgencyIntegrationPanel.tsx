@@ -154,7 +154,7 @@ function OverviewTab({ app, cfg, setTab }: { app: AgencyPartnerApplication; cfg:
     { key: 'creds', title: 'API credentials issued', ok: cfg.credentials.some(c => !c.revokedAt), tab: 'credentials', hint: 'Mint a client id / secret so the agency can authenticate.' },
     { key: 'wh', title: 'Webhook endpoint verified', ok: !!cfg.webhookUrl && !!cfg.webhookVerifiedAt, tab: 'webhook', hint: 'Set the URL, rotate a signing secret, send a test event.' },
     { key: 'ev', title: 'Event subscriptions selected', ok: cfg.eventSubscriptions.length > 0, tab: 'events', hint: 'Pick which events we push to this partner.' },
-    { key: 'map', title: 'Role mapping resolved', ok: cfg.roleMappings.length > 0 && cfg.roleMappings.every(m => !!m.positionId), tab: 'mapping', hint: 'Reconcile every agency role label to a tenant position id.' },
+    { key: 'map', title: 'Roles, qualifications & rates mapped', ok: !mappingHealth(cfg).dispatchBlocked, tab: 'mapping', hint: 'Reconcile agency role labels, qualification names and rate-card lines to tenant master data.' },
     { key: 'not', title: 'Notification routing set', ok: cfg.notifications.dispatchFailureRecipients.length > 0, tab: 'notifications', hint: 'Route dispatch failure and dead-letter alerts.' },
   ];
   return (
