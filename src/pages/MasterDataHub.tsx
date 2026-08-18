@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Database, Briefcase, IdCard, CalendarDays, Coffee, DollarSign, AlertTriangle } from 'lucide-react';
+import { Database, Briefcase, IdCard, CalendarDays, Coffee, DollarSign, AlertTriangle, Sparkles } from 'lucide-react';
 import { PositionsMasterPanel } from '@/components/settings/masterdata/PositionsMasterPanel';
 import { EmploymentTypesMasterPanel } from '@/components/settings/masterdata/EmploymentTypesMasterPanel';
 import { LeaveTypesMasterPanel } from '@/components/settings/masterdata/LeaveTypesMasterPanel';
 import { ShiftTypesMasterPanel } from '@/components/settings/masterdata/ShiftTypesMasterPanel';
 import { AllowanceTypesMasterPanel } from '@/components/settings/masterdata/AllowanceTypesMasterPanel';
 import { ExceptionReasonsMasterPanel } from '@/components/settings/masterdata/ExceptionReasonsMasterPanel';
+import { SkillsMasterPanel } from '@/components/settings/masterdata/SkillsMasterPanel';
 
 const sections = [
   { id: 'positions',          label: 'Positions',          icon: Briefcase,     Comp: PositionsMasterPanel },
   { id: 'employment-types',   label: 'Employment types',   icon: IdCard,        Comp: EmploymentTypesMasterPanel },
+  { id: 'skills',             label: 'Skills',             icon: Sparkles,      Comp: SkillsMasterPanel },
   { id: 'leave-types',        label: 'Leave types',        icon: CalendarDays,  Comp: LeaveTypesMasterPanel },
   { id: 'shift-types',        label: 'Shift types',        icon: Coffee,        Comp: ShiftTypesMasterPanel },
   { id: 'allowance-types',    label: 'Allowance types',    icon: DollarSign,    Comp: AllowanceTypesMasterPanel },
   { id: 'exception-reasons',  label: 'Exception reasons',  icon: AlertTriangle, Comp: ExceptionReasonsMasterPanel },
 ];
+
 
 export default function MasterDataHub() {
   const [tab, setTab] = useState('positions');
