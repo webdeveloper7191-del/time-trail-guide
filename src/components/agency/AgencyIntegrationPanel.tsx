@@ -492,9 +492,19 @@ function MappingTab({ app, cfg }: { app: AgencyPartnerApplication; cfg: AgencyIn
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cfg.roleMappings.map(m => (
+            {cfg.roleMappings.map(m => {
+              const sug = !m.positionId ? suggestPosition(m.agencyRoleLabel, activePositions) : null;
+              return (
               <TableRow key={m.id}>
-                <TableCell className="font-mono text-xs">{m.agencyRoleLabel}</TableCell>
+                <TableCell className="font-mono text-xs align-top pt-4">
+                  {m.agencyRoleLabel}
+                  {sug && (
+                    <button type="button" onClick={() => setPosition(m.id, sug.target.id)} className="block mt-1 font-sans text-[11px] text-primary hover:underline">
+                      Suggested: {sug.target.label} ({sug.confidence}%)
+                    </button>
+                  )}
+                </TableCell>
+
                 <TableCell>
                   <Select value={m.positionId ?? ''} onValueChange={v => setPosition(m.id, v)}>
                     <SelectTrigger className="w-64"><SelectValue placeholder="Pick position…" /></SelectTrigger>
