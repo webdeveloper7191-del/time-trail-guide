@@ -137,7 +137,7 @@ function ModuleRowInner({
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-medium">{m.label}</span>
-                {moduleTier && moduleTier !== 'essentials' && (
+                {moduleTier && moduleTier !== 'free' && (
                   <Badge
                     variant={moduleLocked ? 'outline' : 'secondary'}
                     className="text-[10px] gap-1"

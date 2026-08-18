@@ -235,7 +235,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                           <td className="px-4 py-2">
                             <div className="flex items-center gap-1.5">
                               <span className="font-medium">{r.label}</span>
-                              {r.needs && r.needs !== 'essentials' && (
+                              {r.needs && r.needs !== 'free' && (
                                 <Badge variant="secondary" className="text-[10px]">
                                   {planLabel(r.needs as PlanTier)}+
                                 </Badge>
