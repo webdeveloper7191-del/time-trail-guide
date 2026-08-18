@@ -422,15 +422,24 @@ export function CheckoutPanel() {
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-medium">Proration</h4>
+                <h4 className="text-xs font-medium">
+                  {proration.cycleChanged ? 'Cycle switch · proration' : 'Proration'}
+                </h4>
                 <dl className="rounded-md border p-3 space-y-1.5 text-sm">
                   <div className="flex justify-between text-muted-foreground">
-                    <dt>Unused time on current plan</dt>
+                    <dt>
+                      Unused time on current plan · {proration.daysRemaining} of{' '}
+                      {proration.daysInPeriod} days
+                    </dt>
                     <dd className="text-foreground">-{formatMoney(proration.credit)}</dd>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <dt>
-                      New plan · {proration.daysRemaining} of {proration.daysInPeriod} days
+                      {proration.cycleChanged
+                        ? `New ${cycle === 'annual' ? 'annual' : 'monthly'} term · ${proration.termMonths} month${
+                            proration.termMonths === 1 ? '' : 's'
+                          } from today`
+                        : `New plan · ${proration.daysRemaining} of ${proration.daysInPeriod} days`}
                     </dt>
                     <dd className="text-foreground">{formatMoney(proration.charge)}</dd>
                   </div>
@@ -438,6 +447,7 @@ export function CheckoutPanel() {
                     <dt>{taxRule.label}</dt>
                     <dd className="text-foreground">{formatMoney(proration.tax)}</dd>
                   </div>
+
                   <Separator className="my-1.5" />
                   <div className="flex justify-between font-semibold">
                     <dt>Due today</dt>
