@@ -1,8 +1,9 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Check, Lock, Sparkles } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Check, Lock, Sparkles, PhoneCall } from 'lucide-react';
 import {
   PLANS,
   PLAN_ORDER,
@@ -19,7 +20,13 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 
-import { PRICE_PER_USER, formatMoney } from '@/lib/billingStore';
+import {
+  ANNUAL_DISCOUNT_PER_USER,
+  BillingCycle,
+  PRICE_PER_USER,
+  formatMoney,
+  unitRate,
+} from '@/lib/billingStore';
 import { openCheckoutFlow } from '@/lib/upgradeFlow';
 
 import { cn } from '@/lib/utils';
@@ -39,6 +46,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   const isAdmin = mode === 'admin';
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements();
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
 
   const rows = useMemo(
     () =>
@@ -54,6 +62,18 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-xs text-muted-foreground">
+          Prices are per user, per month, in AUD. Annual billing is charged 12 months up front.
+        </p>
+        <Tabs value={cycle} onValueChange={v => setCycle(v as BillingCycle)}>
+          <TabsList className="h-8">
+            <TabsTrigger value="monthly" className="text-xs">Monthly</TabsTrigger>
+            <TabsTrigger value="annual" className="text-xs">Annual · save more</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       <div className="grid gap-3 md:grid-cols-3">
         {PLAN_ORDER.map(t => {
           const p = PLANS[t];
