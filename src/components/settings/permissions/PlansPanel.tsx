@@ -2,7 +2,11 @@ import { Fragment, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { PricingSchedulePanel } from '@/components/settings/permissions/PricingSchedulePanel';
+import { usePricingSchedule } from '@/lib/pricingScheduleStore';
+
 import { Check, Lock, Sparkles, PhoneCall } from 'lucide-react';
 import {
   PLANS,
