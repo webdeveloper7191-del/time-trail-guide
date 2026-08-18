@@ -74,7 +74,7 @@ export function AgencyIntegrationPanel({
           <TabsTrigger value="webhook">Webhook</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="limits">Rate limits & IP</TabsTrigger>
-          <TabsTrigger value="mapping">Role mapping</TabsTrigger>
+          <TabsTrigger value="mapping">Mapping</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="deliveries">Delivery log</TabsTrigger>
         </TabsList>
