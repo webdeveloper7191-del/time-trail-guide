@@ -107,12 +107,13 @@ export function BillingPanel() {
                 <Users className="h-3.5 w-3.5" /> Change users
               </Button>
               <Button
-                variant="outline"
+                variant={billing.cycle === 'monthly' ? 'default' : 'outline'}
                 size="sm"
                 className="gap-1.5"
                 onClick={() =>
                   checkout.open({
                     tier: billing.tier,
+                    seats: billing.seats,
                     cycle: billing.cycle === 'annual' ? 'monthly' : 'annual',
                     source: 'cycle',
                   })
@@ -120,7 +121,14 @@ export function BillingPanel() {
               >
                 <RefreshCw className="h-3.5 w-3.5" /> Switch to{' '}
                 {billing.cycle === 'annual' ? 'monthly' : 'annual'}
+                {billing.cycle === 'monthly' &&
+                  ` · save ${formatMoney(
+                    (unitRate(billing.tier, 'monthly') - unitRate(billing.tier, 'annual')) *
+                      billing.seats *
+                      12,
+                  )} / yr`}
               </Button>
+
               <Button
                 variant="ghost"
                 size="sm"

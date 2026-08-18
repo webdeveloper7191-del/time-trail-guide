@@ -267,24 +267,31 @@ export function CheckoutPanel() {
               </span>
             </div>
 
-            <div className="flex rounded-md border p-0.5 text-xs">
-              {(['monthly', 'annual'] as BillingCycle[]).map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCycle(c)}
-                  className={cn(
-                    'flex-1 rounded-[4px] px-2 py-1.5 capitalize transition-colors',
-                    cycle === c
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {c}
-                  {c === 'annual' && ' · 2 months free'}
-                </button>
-              ))}
+            <div className="rounded-md border p-2 space-y-2">
+              <div className="flex rounded-md border p-0.5 text-xs">
+                {(['monthly', 'annual'] as BillingCycle[]).map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCycle(c)}
+                    className={cn(
+                      'flex-1 rounded-[4px] px-2 py-1.5 capitalize transition-colors',
+                      cycle === c
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {cycle === 'annual'
+                  ? `Paid up front for 12 months at ${formatMoney(unitRate(tier, 'annual'))} / user / month.`
+                  : `Switch to annual and save ${formatMoney(proration.annualSaving)} a year at ${seats} users.`}
+              </p>
             </div>
+
 
             <div className="space-y-1.5">
               <Label className="text-xs">Users</Label>
@@ -422,15 +429,24 @@ export function CheckoutPanel() {
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-medium">Proration</h4>
+                <h4 className="text-xs font-medium">
+                  {proration.cycleChanged ? 'Cycle switch · proration' : 'Proration'}
+                </h4>
                 <dl className="rounded-md border p-3 space-y-1.5 text-sm">
                   <div className="flex justify-between text-muted-foreground">
-                    <dt>Unused time on current plan</dt>
+                    <dt>
+                      Unused time on current plan · {proration.daysRemaining} of{' '}
+                      {proration.daysInPeriod} days
+                    </dt>
                     <dd className="text-foreground">-{formatMoney(proration.credit)}</dd>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <dt>
-                      New plan · {proration.daysRemaining} of {proration.daysInPeriod} days
+                      {proration.cycleChanged
+                        ? `New ${cycle === 'annual' ? 'annual' : 'monthly'} term · ${proration.termMonths} month${
+                            proration.termMonths === 1 ? '' : 's'
+                          } from today`
+                        : `New plan · ${proration.daysRemaining} of ${proration.daysInPeriod} days`}
                     </dt>
                     <dd className="text-foreground">{formatMoney(proration.charge)}</dd>
                   </div>
@@ -438,6 +454,7 @@ export function CheckoutPanel() {
                     <dt>{taxRule.label}</dt>
                     <dd className="text-foreground">{formatMoney(proration.tax)}</dd>
                   </div>
+
                   <Separator className="my-1.5" />
                   <div className="flex justify-between font-semibold">
                     <dt>Due today</dt>
@@ -474,12 +491,14 @@ export function CheckoutPanel() {
               <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-px" />
                 Your next invoice of {formatMoney(proration.nextInvoiceTotal)} {CURRENCY} is due{' '}
-                {new Date(snapshot.renewsOn).toLocaleDateString('en-AU', {
+                {new Date(proration.renewsOn).toLocaleDateString('en-AU', {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
                 })}
-                . This is a demo — no card is charged.
+                {proration.cycleChanged ? ' — the billing date resets with the new term' : ''}. This
+                is a demo — no card is charged.
+
               </p>
             </section>
           ) : (
