@@ -70,9 +70,10 @@ export function invoiceTotal(
   cycle: BillingCycle,
   seats: number,
   taxRate: number = DEFAULT_TAX_RATE,
+  at: Date = new Date(),
 ) {
   const months = cycle === 'annual' ? ANNUAL_MONTHS_CHARGED : 1;
-  const subtotal = unitRate(tier, cycle) * seats * months;
+  const subtotal = unitRate(tier, cycle, at) * seats * months;
   const tax = Math.round(subtotal * taxRate * 100) / 100;
   return { subtotal, tax, total: Math.round((subtotal + tax) * 100) / 100, months, taxRate };
 }
