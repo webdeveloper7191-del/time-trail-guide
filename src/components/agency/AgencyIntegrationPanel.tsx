@@ -520,7 +520,8 @@ function MappingTab({ app, cfg }: { app: AgencyPartnerApplication; cfg: AgencyIn
                   <Button size="sm" variant="ghost" onClick={() => removeRow(m.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                 </TableCell>
               </TableRow>
-            ))}
+            ); })}
+
             <TableRow>
               <TableCell colSpan={4}>
                 <div className="flex gap-2">
