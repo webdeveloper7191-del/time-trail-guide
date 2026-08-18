@@ -26,7 +26,33 @@ import {
   type RoleMapping,
 } from '@/lib/agencyPartnerApplicationStore';
 import { usePositions } from '@/lib/masterData/positionsStore';
+import { QualificationMappingTab, RateCardMappingTab } from '@/components/agency/AgencyMappingTabs';
+import { mappingHealth, suggestPosition } from '@/lib/agencyMappingEngine';
 import { KeyRound, RotateCw, Ban, Plus, Send, CheckCircle2, XCircle, AlertTriangle, Trash2, RefreshCw, Copy } from 'lucide-react';
+
+function MappingWorkbench({ app, cfg }: { app: AgencyPartnerApplication; cfg: AgencyIntegrationConfig }) {
+  const [sub, setSub] = useState('roles');
+  const health = mappingHealth(cfg);
+  const pill = (n: number) => (n > 0 ? <Badge variant="outline" className="ml-1.5 border-amber-500 text-amber-700">{n}</Badge> : null);
+  return (
+    <div className="space-y-4">
+      <Card className="p-3 text-xs text-muted-foreground">
+        Agencies use their own role labels, qualification names and rate cards. Every inbound candidate and outbound shift is translated through these three mapping tables, so tenant-custom positions and skills always resolve to the agency's dialect — and dispatch is blocked while anything is unresolved.
+      </Card>
+      <Tabs value={sub} onValueChange={setSub}>
+        <TabsList>
+          <TabsTrigger value="roles">Roles{pill(health.rolesUnresolved)}</TabsTrigger>
+          <TabsTrigger value="qualifications">Qualifications{pill(health.qualsUnresolved)}</TabsTrigger>
+          <TabsTrigger value="rates">Rate cards{pill(health.ratesUnresolved + health.ratesOverCeiling)}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="roles" className="mt-4"><MappingTab app={app} cfg={cfg} /></TabsContent>
+        <TabsContent value="qualifications" className="mt-4"><QualificationMappingTab app={app} cfg={cfg} /></TabsContent>
+        <TabsContent value="rates" className="mt-4"><RateCardMappingTab app={app} cfg={cfg} /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
 
 const CURRENT_USER = 'admin@rostered.ai';
 
