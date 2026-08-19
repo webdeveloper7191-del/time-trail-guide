@@ -608,34 +608,60 @@ export function PolicyUnscheduled() {
               options={unscheduledEndTimeRuleOptions}
               onChange={v => setField('unscheduled', 'createdShiftEndTimeRule', v as TimesheetPolicy['unscheduled']['createdShiftEndTimeRule'])}
             />
+            <IssueList issues={issuesFor('createdShiftEndTimeRule')} />
             {resolved.unscheduled.createdShiftEndTimeRule === 'fixed_duration' && (
-              <NumberRow
-                {...fieldProps('unscheduled', 'createdShiftFixedDurationHours', 'Fixed shift length (hours)',
-                  'Provisional shift length applied from the clock-in time.')}
-                value={resolved.unscheduled.createdShiftFixedDurationHours}
-                onChange={v => setField('unscheduled', 'createdShiftFixedDurationHours', v)}
-              />
+              <>
+                <NumberRow
+                  {...fieldProps('unscheduled', 'createdShiftFixedDurationHours', 'Fixed shift length (hours)',
+                    'Provisional shift length applied from the clock-in time. Must be between 15 minutes and the maximum shift length.')}
+                  value={resolved.unscheduled.createdShiftFixedDurationHours}
+                  onChange={v => setField('unscheduled', 'createdShiftFixedDurationHours', v)}
+                />
+                <IssueList issues={issuesFor('createdShiftFixedDurationHours')} />
+              </>
             )}
             <NumberRow
               {...fieldProps('unscheduled', 'createdShiftMaxDurationHours', 'Maximum shift length (hours)',
-                'Safety cap. If no clock-out is received, the shift is closed at this length and flagged as a missing clock-out.')}
+                'Safety cap applied to every end-time rule. If no clock-out is received, the shift is closed at this length and flagged as a missing clock-out. Allowed range 1–24 hours.')}
               value={resolved.unscheduled.createdShiftMaxDurationHours}
               onChange={v => setField('unscheduled', 'createdShiftMaxDurationHours', v)}
             />
+            <IssueList issues={issuesFor('createdShiftMaxDurationHours')} />
             <NumberRow
               {...fieldProps('unscheduled', 'createdShiftRoundToMinutes', 'Round created shift times to (minutes)',
-                'Rounds the created shift start/end so the roster grid stays tidy. Set 0 to keep exact times. Pay is still calculated from the timesheet, not the rounded shift.')}
+                'Rounds the created shift start down and the end up, in the location’s own timezone, so the roster grid stays tidy. Set 0 to keep exact times. Rounding can never push a shift past the maximum shift length. Pay is still calculated from the timesheet, not the rounded shift.')}
               value={resolved.unscheduled.createdShiftRoundToMinutes}
               onChange={v => setField('unscheduled', 'createdShiftRoundToMinutes', v)}
             />
+            <IssueList issues={issuesFor('createdShiftRoundToMinutes')} />
             <ToggleRow
               {...fieldProps('unscheduled', 'markCreatedShiftUnapproved', 'Mark created shift as unapproved',
                 'The shift appears on the roster with an "Unapproved" state until a manager confirms it, so it is excluded from published rosters and budget actuals.')}
               value={resolved.unscheduled.markCreatedShiftUnapproved}
               onChange={v => setField('unscheduled', 'markCreatedShiftUnapproved', v)}
             />
+            <IssueList issues={issuesFor('markCreatedShiftUnapproved')} />
+
+            {preview && (
+              <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-xs">
+                <p className="font-medium text-foreground mb-1">Worked example</p>
+                <p className="text-muted-foreground">
+                  A staff member clocks in at{' '}
+                  <span className="font-medium text-foreground">{fmtPreview(preview.startIso)}</span>{' '}
+                  ({previewTz}) with no rostered shift. The created shift ends at{' '}
+                  <span className="font-medium text-foreground">{fmtPreview(preview.endIso)}</span>
+                  {preview.durationHours != null && <> — {preview.durationHours}h</>}
+                  {preview.cappedByMaxDuration && <> (truncated by the maximum shift length)</>}
+                  {preview.roundedToMinutes > 0 && <>, rounded to {preview.roundedToMinutes}-minute boundaries</>}.
+                </p>
+                {preview.warnings.map((w, i) => (
+                  <p key={i} className="mt-1 text-amber-700">{w}</p>
+                ))}
+              </div>
+            )}
           </>
         )}
+
       </CardContent>
     </Card>
   );
