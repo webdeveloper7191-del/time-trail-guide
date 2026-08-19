@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
 import { australianAwards, getAwardById } from '@/data/australianAwards';
 import {
