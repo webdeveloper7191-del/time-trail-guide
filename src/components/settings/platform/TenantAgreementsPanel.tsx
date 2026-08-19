@@ -127,13 +127,17 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
       <AgreementWorkQueue
         agreements={agreements}
         ownerRole={repRole}
+        open={queueOpen}
+        onClose={() => setQueueOpen(false)}
         onSelectOwner={(role, ownerId) => {
           setRepRole(role);
           setRep(ownerId);
+          setQueueOpen(false);
         }}
       />
 
       <div className="flex flex-wrap items-center gap-2 justify-between">
+
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
