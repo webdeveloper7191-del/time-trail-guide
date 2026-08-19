@@ -25,6 +25,16 @@ export default function UserPermissions() {
   const routeState = useLocation().state as { tab?: string } | null;
   const [tab, setTab] = useState(routeState?.tab ?? 'roles');
   const { plan } = usePlan();
+  const [search, setSearch] = useState('');
+
+  const searchPlaceholder =
+    tab === 'roles'
+      ? 'Search roles or what they can do…'
+      : tab === 'matrix'
+        ? 'Search modules or sub-permissions…'
+        : tab === 'users'
+          ? 'Search people by name, email or position…'
+          : 'Search by keywords';
 
   // Plan comparison + upgrade live with the tenant.
   useEffect(() => {
@@ -43,7 +53,12 @@ export default function UserPermissions() {
         <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-6 bg-card border-b border-border">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 h-10 rounded-lg" placeholder="Search by keywords" />
+            <Input
+              className="pl-9 h-10 rounded-lg"
+              placeholder={searchPlaceholder}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
           <Badge variant="secondary" className="gap-1.5 rounded-full px-3 py-1 uppercase tracking-wide text-[11px]">
             <Gem className="h-3.5 w-3.5" /> {plan.label} plan
@@ -97,13 +112,13 @@ export default function UserPermissions() {
             </TabsList>
 
             <TabsContent value="roles" className="mt-4">
-              <RolesPanel />
+              <RolesPanel query={search} />
             </TabsContent>
             <TabsContent value="matrix" className="mt-4">
-              <PermissionMatrixPanel />
+              <PermissionMatrixPanel query={search} />
             </TabsContent>
             <TabsContent value="users" className="mt-4">
-              <UserRoleAssignmentPanel />
+              <UserRoleAssignmentPanel query={search} />
             </TabsContent>
             <TabsContent value="plans" className="mt-4">
               <PlansPanel />

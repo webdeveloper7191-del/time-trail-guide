@@ -42,7 +42,7 @@ const PAGE_SIZE = 15;
 const ALL = '__all__';
 const UNASSIGNED = '__unassigned__';
 
-export function UserRoleAssignmentPanel() {
+export function UserRoleAssignmentPanel({ query: externalQuery }: { query?: string } = {}) {
   const { roles, assignments } = usePermissionsStore();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>(ALL);
@@ -59,7 +59,7 @@ export function UserRoleAssignmentPanel() {
   const roleLabel = (id: string) => roles.find(r => r.id === id)?.label ?? id;
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = (externalQuery?.trim() || search.trim()).toLowerCase();
     return mockStaff.filter(s => {
       const list = assignments[s.id] ?? [];
       if (
