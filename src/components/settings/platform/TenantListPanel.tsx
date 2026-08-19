@@ -341,6 +341,10 @@ export function TenantListPanel() {
                         <DropdownMenuItem onClick={() => setPricingFor(t)}>
                           Plan &amp; pricing
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setAgreementFor(t)}>
+                          Send / upload plan agreement
+                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           onClick={() =>
                             tenantStore.update(t.id, {
