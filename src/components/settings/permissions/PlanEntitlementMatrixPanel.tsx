@@ -486,8 +486,11 @@ export function PlanEntitlementMatrixPanel({ query: externalQuery }: { query?: s
             <DialogTitle>
               Remove “{pending?.actionLabel} {pending?.label}” from {PLANS[tier].label}?
             </DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-2 text-sm">
+            <DialogDescription>
+              Review who loses access before switching this off.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
                 <p>
                   Plans are cumulative, so this also removes the capability from{' '}
                   {pending?.impact.tiers.map(t => PLANS[t].label).join(', ')}.
@@ -512,9 +515,7 @@ export function PlanEntitlementMatrixPanel({ query: externalQuery }: { query?: s
                     {pending.impact.tenants > pending.impact.names.length ? ' and others' : ''}
                   </p>
                 )}
-              </div>
-            </DialogDescription>
-          </DialogHeader>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPending(null)}>
               Keep it
