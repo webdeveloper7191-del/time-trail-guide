@@ -299,13 +299,18 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
                           </Badge>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {tenantAgreementTypeLabels[a.type]}
-                        {a.fileName ? ` · ${a.fileName}` : ''}
-                      </div>
+                      {a.fileName && (
+                        <div className="text-xs text-muted-foreground">{a.fileName}</div>
+                      )}
                     </div>
                   </div>
                 </td>
+                <td className="px-3 py-3">
+                  <Badge variant="outline" className="text-[11px] font-normal">
+                    {tenantAgreementTypeLabels[a.type]}
+                  </Badge>
+                </td>
+
                 <td className="px-3 py-3 text-muted-foreground">
                   {a.seats ? `${a.seats} seats` : '–'}
                   {a.contractValue != null && (
