@@ -94,6 +94,10 @@ export interface ModuleRowProps {
     action: PermissionAction,
     on: boolean,
   ) => void;
+  /** Draft-aware toggles. When omitted the row writes straight to the store. */
+  onToggleAction?: (moduleId: string, action: PermissionAction) => void;
+  onToggleSubAction?: (moduleId: string, subId: string, action: PermissionAction) => void;
+  onSetSubAll?: (moduleId: string, subId: string, actions: PermissionAction[]) => void;
 }
 
 function ModuleRowInner({
@@ -108,7 +112,23 @@ function ModuleRowInner({
   onSetAll,
   onBulkAllRoles,
   onBulkAction,
+  onToggleAction,
+  onToggleSubAction,
+  onSetSubAll,
 }: ModuleRowProps) {
+  const toggleAction = (moduleId: string, a: PermissionAction) =>
+    onToggleAction
+      ? onToggleAction(moduleId, a)
+      : permissionsStore.toggleAction(roleId, moduleId, a);
+  const toggleSubAction = (moduleId: string, subId: string, a: PermissionAction) =>
+    onToggleSubAction
+      ? onToggleSubAction(moduleId, subId, a)
+      : permissionsStore.toggleSubAction(roleId, moduleId, subId, a);
+  const setSubAll = (moduleId: string, subId: string, actions: PermissionAction[]) =>
+    onSetSubAll
+      ? onSetSubAll(moduleId, subId, actions)
+      : permissionsStore.setSubActions(roleId, moduleId, subId, actions);
+
   const granted = grants[m.id] ?? [];
   const planActions = planModuleActions(tier, m.id);
   const moduleTier = requiredModuleTier(m.id);
@@ -176,7 +196,7 @@ function ModuleRowInner({
               ) : entitled ? (
                 <Checkbox
                   checked={granted.includes(a)}
-                  onCheckedChange={() => permissionsStore.toggleAction(roleId, m.id, a)}
+                  onCheckedChange={() => toggleAction(m.id, a)}
                   aria-label={`${actionLabels[a]} ${m.label}`}
                 />
               ) : (
@@ -280,9 +300,7 @@ function ModuleRowInner({
                       <Checkbox
                         className="h-3.5 w-3.5"
                         checked={subOn.includes(a)}
-                        onCheckedChange={() =>
-                          permissionsStore.toggleSubAction(roleId, m.id, sub.id, a)
-                        }
+                        onCheckedChange={() => toggleSubAction(m.id, sub.id, a)}
                         aria-label={`${actionLabels[a]} ${m.label} — ${sub.label}`}
                       />
                     ) : (
@@ -302,14 +320,7 @@ function ModuleRowInner({
                   size="sm"
                   disabled={subLocked}
                   className="h-6 text-[11px] text-muted-foreground"
-                  onClick={() =>
-                    permissionsStore.setSubActions(
-                      roleId,
-                      m.id,
-                      sub.id,
-                      subAllOn ? [] : subPlanActions,
-                    )
-                  }
+                  onClick={() => setSubAll(m.id, sub.id, subAllOn ? [] : subPlanActions)}
                 >
                   {subAllOn ? 'Clear' : 'Grant all'}
                 </Button>
@@ -333,7 +344,10 @@ export const ModuleRow = memo(ModuleRowInner, (prev, next) => {
     prev.open !== next.open ||
     prev.roleCount !== next.roleCount ||
     prev.entitlementsVersion !== next.entitlementsVersion ||
-    prev.subs !== next.subs
+    prev.subs !== next.subs ||
+    prev.onToggleAction !== next.onToggleAction ||
+    prev.onToggleSubAction !== next.onToggleSubAction ||
+    prev.onSetSubAll !== next.onSetSubAll
   ) {
     return false;
   }

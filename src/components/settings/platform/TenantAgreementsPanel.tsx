@@ -42,6 +42,7 @@ import {
 import { TenantAgreementPanel } from './TenantAgreementPanel';
 import { AgreementTrackingPanel } from './AgreementTrackingPanel';
 import { RenewalDocumentPanel } from './RenewalDocumentPanel';
+import { AgreementWorkQueue } from './AgreementWorkQueue';
 
 const statusStyle: Record<TenantAgreementStatus, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -59,7 +60,7 @@ const dateLabel = (iso?: string) =>
     : '–';
 
 /** Platform-admin view of every subscription agreement issued to tenants. */
-export function TenantAgreementsPanel() {
+export function TenantAgreementsPanel({ query: externalQuery }: { query?: string } = {}) {
   const agreements = useTenantAgreements();
   const tenants = useTenants();
   const [query, setQuery] = useState('');
@@ -75,7 +76,7 @@ export function TenantAgreementsPanel() {
   const [newFor, setNewFor] = useState('');
 
   const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (externalQuery?.trim() || query).trim().toLowerCase();
     return agreements.filter(a => {
       if (status === 'outstanding' && !isOutstanding(a)) return false;
       if (status === 'overdue' && !isOverdue(a)) return false;
@@ -83,7 +84,7 @@ export function TenantAgreementsPanel() {
       if (status === 'renewals' && !isRenewalDue(a)) return false;
       if (status === 'new' && (a.dealType ?? 'new') !== 'new') return false;
       if (status === 'renewal' && a.dealType !== 'renewal') return false;
-      if (rep !== 'all' && a[repRole] !== rep) return false;
+      if (rep !== 'all' && (a[repRole] ?? 'unassigned') !== rep) return false;
       if (!q) return true;
       return [
         a.tenantName,
@@ -97,7 +98,7 @@ export function TenantAgreementsPanel() {
         .toLowerCase()
         .includes(q);
     });
-  }, [agreements, query, status, rep, repRole]);
+  }, [agreements, query, externalQuery, status, rep, repRole]);
 
   const outstanding = agreements.filter(isOutstanding).length;
   const overdueCount = agreements.filter(isOverdue).length;
@@ -123,6 +124,15 @@ export function TenantAgreementsPanel() {
 
   return (
     <div className="space-y-4">
+      <AgreementWorkQueue
+        agreements={agreements}
+        ownerRole={repRole}
+        onSelectOwner={(role, ownerId) => {
+          setRepRole(role);
+          setRep(ownerId);
+        }}
+      />
+
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative w-64">

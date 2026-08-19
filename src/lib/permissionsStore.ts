@@ -10,6 +10,12 @@ import {
 
 } from '@/types/permissions';
 import { PlanTier } from '@/types/plans';
+import {
+  applySetModuleActions,
+  applySetSubActions,
+  applyToggleAction,
+  applyToggleSubAction,
+} from '@/lib/roleGrants';
 import { planAllows, planAllowsSub } from '@/lib/planEntitlementsStore';
 import { planStore } from '@/lib/planStore';
 
@@ -167,28 +173,7 @@ export const permissionsStore = {
   /** Parent module toggle — cascades down to every sub-permission. */
   toggleAction: (roleId: string, moduleId: string, action: PermissionAction) => {
     const matrix = permissionsStore.getMatrix();
-    const roleMatrix = { ...(matrix[roleId] ?? {}) };
-    const current = roleMatrix[moduleId] ?? [];
-    const has = current.includes(action);
-    let next = has ? current.filter(a => a !== action) : [...current, action];
-    // Any non-view grant implies view.
-    if (!has && action !== 'view' && !next.includes('view')) next = ['view', ...next];
-    if (has && action === 'view') next = [];
-    roleMatrix[moduleId] = next;
-
-    for (const sub of getSubPermissions(moduleId)) {
-      const key = subKey(moduleId, sub.id);
-      const subCurrent = roleMatrix[key] ?? [];
-      // Only keep sub grants that are still allowed by the parent.
-      let subNext = subCurrent.filter(a => next.includes(a));
-      if (!has && sub.actions.includes(action)) {
-        // Granting on the parent switches the action on everywhere below it.
-        subNext = [...new Set([...subNext, action])];
-        if (action !== 'view' && sub.actions.includes('view')) subNext = [...new Set(['view' as PermissionAction, ...subNext])];
-      }
-      roleMatrix[key] = subNext;
-    }
-
+    const roleMatrix = applyToggleAction({ ...(matrix[roleId] ?? {}) }, moduleId, action);
     permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
 
@@ -200,32 +185,19 @@ export const permissionsStore = {
     action: PermissionAction,
   ) => {
     const matrix = permissionsStore.getMatrix();
-    const roleMatrix = { ...(matrix[roleId] ?? {}) };
-    const key = subKey(moduleId, subId);
-    const current = roleMatrix[key] ?? [];
-    const has = current.includes(action);
-    let next = has ? current.filter(a => a !== action) : [...current, action];
-    if (!has && action !== 'view' && !next.includes('view')) next = ['view', ...next];
-    if (has && action === 'view') next = [];
-    roleMatrix[key] = next;
-
-    if (!has) {
-      // Parent must allow anything granted below it.
-      const parent = roleMatrix[moduleId] ?? [];
-      const parentNext = [...new Set([...parent, ...next])];
-      roleMatrix[moduleId] = parentNext;
-    }
-
+    const roleMatrix = applyToggleSubAction(
+      { ...(matrix[roleId] ?? {}) },
+      moduleId,
+      subId,
+      action,
+    );
     permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
 
   /** Set the whole module (and all its sub-permissions) at once. */
   setModuleActions: (roleId: string, moduleId: string, actions: PermissionAction[]) => {
     const matrix = permissionsStore.getMatrix();
-    const roleMatrix = { ...(matrix[roleId] ?? {}), [moduleId]: actions };
-    for (const sub of getSubPermissions(moduleId)) {
-      roleMatrix[subKey(moduleId, sub.id)] = sub.actions.filter(a => actions.includes(a));
-    }
+    const roleMatrix = applySetModuleActions({ ...(matrix[roleId] ?? {}) }, moduleId, actions);
     permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
 
@@ -236,12 +208,21 @@ export const permissionsStore = {
     actions: PermissionAction[],
   ) => {
     const matrix = permissionsStore.getMatrix();
-    const roleMatrix = { ...(matrix[roleId] ?? {}), [subKey(moduleId, subId)]: actions };
-    if (actions.length) {
-      roleMatrix[moduleId] = [...new Set([...(roleMatrix[moduleId] ?? []), ...actions])];
-    }
+    const roleMatrix = applySetSubActions(
+      { ...(matrix[roleId] ?? {}) },
+      moduleId,
+      subId,
+      actions,
+    );
     permissionsStore.saveMatrix({ ...matrix, [roleId]: roleMatrix });
   },
+
+  /** Replace one role's entire grant set (used by drafts and templates). */
+  setRoleGrants: (roleId: string, grants: Record<string, PermissionAction[]>) => {
+    const matrix = permissionsStore.getMatrix();
+    permissionsStore.saveMatrix({ ...matrix, [roleId]: { ...grants } });
+  },
+
 
   /**
    * Bulk: enable or disable a module (and every sub-permission below it) for

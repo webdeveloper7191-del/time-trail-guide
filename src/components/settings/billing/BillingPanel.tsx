@@ -23,6 +23,7 @@ import {
   useBilling,
   CURRENCY,
 } from '@/lib/billingStore';
+import { syncSeatsToLicensedUsers, useSeatReconciliation } from '@/lib/seatReconciliation';
 import { cn } from '@/lib/utils';
 
 const dateFmt = (iso: string) =>
@@ -32,9 +33,87 @@ export function BillingPanel() {
   const billing = useBilling();
   const plan = PLANS[billing.tier];
   const totals = invoiceTotal(billing.tier, billing.cycle, billing.seats);
+  const seats = useSeatReconciliation();
+  const wastedSpend =
+    seats.delta > 0 ? unitRate(billing.tier, billing.cycle) * seats.delta : 0;
 
   return (
     <div className="space-y-4">
+      {/* Seat vs staff reconciliation */}
+      {seats.state !== 'balanced' && (
+        <Card
+          className={cn(
+            'border-l-4',
+            seats.state === 'under' ? 'border-l-destructive' : 'border-l-amber-500',
+          )}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  {seats.state === 'under'
+                    ? 'You have more licensed users than billed seats'
+                    : 'You are paying for seats nobody uses'}
+                </CardTitle>
+                <CardDescription>
+                  Billed seats should match active staff who hold at least one role — those are
+                  the only people who can sign in.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const n = syncSeatsToLicensedUsers();
+                    toast.success(`Billed seats set to ${n} licensed user${n === 1 ? '' : 's'}`);
+                  }}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Sync seats to {seats.licensedUsers}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 sm:grid-cols-4">
+              {[
+                { label: 'Billed seats', value: seats.billedSeats, hint: 'on the subscription' },
+                {
+                  label: 'Licensed users',
+                  value: seats.licensedUsers,
+                  hint: 'active staff with a role',
+                },
+                {
+                  label: 'Active, no role',
+                  value: seats.unassignedActive,
+                  hint: 'cannot sign in yet',
+                },
+                {
+                  label: 'Stale assignments',
+                  value: seats.staleAssignments,
+                  hint: 'inactive staff still holding roles',
+                },
+              ].map(card => (
+                <div key={card.label} className="rounded-md border p-3">
+                  <div className="text-xs text-muted-foreground">{card.label}</div>
+                  <div className="text-lg font-semibold tracking-tight">{card.value}</div>
+                  <div className="text-[11px] text-muted-foreground">{card.hint}</div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {seats.state === 'over'
+                ? `${seats.delta} unused seat${seats.delta === 1 ? '' : 's'} · about ${formatMoney(
+                    wastedSpend,
+                  )} per month.`
+                : `${Math.abs(seats.delta)} licensed user${
+                    Math.abs(seats.delta) === 1 ? '' : 's'
+                  } beyond the seats you are billed for — add seats before they lose access.`}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Current subscription */}
       <div className="grid gap-3 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -68,7 +147,14 @@ export function BillingPanel() {
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="h-3.5 w-3.5" /> Users
                 </div>
-                <div className="text-lg font-semibold tracking-tight">{billing.seats}</div>
+                <div className="text-lg font-semibold tracking-tight">
+                  {billing.seats}
+                  {seats.state !== 'balanced' && (
+                    <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                      / {seats.licensedUsers} licensed
+                    </span>
+                  )}
+                </div>
                 <div className="text-[11px] text-muted-foreground">
                   {formatMoney(unitRate(billing.tier, billing.cycle))} per user / month
                 </div>

@@ -65,7 +65,7 @@ const statusStyles: Record<TenantStatus, string> = {
   suspended: 'text-destructive',
 };
 
-export function TenantListPanel() {
+export function TenantListPanel({ query: externalQuery }: { query?: string } = {}) {
   const tenants = useTenants();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TenantStatus[]>([]);
@@ -81,7 +81,7 @@ export function TenantListPanel() {
   const [agreementFor, setAgreementFor] = useState<Tenant | null>(null);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (externalQuery?.trim() || query).trim().toLowerCase();
     const rows = tenants.filter(t => {
       if (statusFilter.length && !statusFilter.includes(t.status)) return false;
       if (customOnly && !t.customPricing) return false;
@@ -93,7 +93,7 @@ export function TenantListPanel() {
     });
     const dir = sort.dir === 'asc' ? 1 : -1;
     return [...rows].sort((a, b) => String(a[sort.key]).localeCompare(String(b[sort.key])) * dir);
-  }, [tenants, query, statusFilter, customOnly, sort]);
+  }, [tenants, query, externalQuery, statusFilter, customOnly, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const current = Math.min(page, totalPages);

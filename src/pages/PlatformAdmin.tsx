@@ -19,6 +19,7 @@ import { PlanContractDefaultsPanel } from '@/components/settings/platform/PlanCo
  */
 export default function PlatformAdmin() {
   const [tab, setTab] = useState('tenants');
+  const [query, setQuery] = useState('');
 
   return (
     <div className="min-h-screen flex w-full bg-background">
@@ -28,7 +29,22 @@ export default function PlatformAdmin() {
         <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-6 bg-card border-b border-border">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9 h-10 rounded-lg" placeholder="Search by keywords" />
+            <Input
+              className="pl-9 h-10 rounded-lg"
+              placeholder={
+                tab === 'tenants'
+                  ? 'Search organisations…'
+                  : tab === 'agreements'
+                    ? 'Search agreements, owners or documents…'
+                    : tab === 'entitlements'
+                      ? 'Search modules or capabilities…'
+                      : tab === 'roles'
+                        ? 'Search roles…'
+                        : 'Search by keywords'
+              }
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
           </div>
           <Badge variant="secondary" className="gap-1.5 rounded-full px-3 py-1 uppercase tracking-wide text-[11px]">
             <ShieldCheck className="h-3.5 w-3.5" /> System admin
@@ -79,20 +95,20 @@ export default function PlatformAdmin() {
             </TabsList>
 
             <TabsContent value="tenants" className="mt-4">
-              <TenantListPanel />
+              <TenantListPanel query={query} />
             </TabsContent>
             <TabsContent value="agreements" className="mt-4">
-              <TenantAgreementsPanel />
+              <TenantAgreementsPanel query={query} />
             </TabsContent>
             <TabsContent value="plans" className="mt-4 space-y-4">
               <PlansPanel mode="admin" />
               <PlanContractDefaultsPanel />
             </TabsContent>
             <TabsContent value="entitlements" className="mt-4">
-              <PlanEntitlementMatrixPanel />
+              <PlanEntitlementMatrixPanel query={query} />
             </TabsContent>
             <TabsContent value="roles" className="mt-4">
-              <RolesPanel scope="system" />
+              <RolesPanel scope="system" query={query} />
             </TabsContent>
           </Tabs>
         </main>
