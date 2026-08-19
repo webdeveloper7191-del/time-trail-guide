@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,9 +56,27 @@ import {
 } from '@/lib/planEntitlementsStore';
 import { upgradePrompt } from '@/lib/upgradePrompt';
 import { ModuleRow } from './ModuleRow';
+import { GrantDiffList } from './GrantDiffList';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  RoleGrants,
+  applySetModuleActions,
+  applySetSubActions,
+  applyToggleAction,
+  applyToggleSubAction,
+  countChanges,
+  diffGrants,
+} from '@/lib/roleGrants';
 import { cn } from '@/lib/utils';
 
-export function PermissionMatrixPanel() {
+export function PermissionMatrixPanel({ query: externalQuery }: { query?: string } = {}) {
   const { roles, matrix } = usePermissionsStore();
   const { tier } = usePlan();
   const entitlements = usePlanEntitlements(); // re-render when plan entitlements change
@@ -67,11 +85,58 @@ export function PermissionMatrixPanel() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showAllSubs, setShowAllSubs] = useState(false);
 
+  const [draft, setDraft] = useState<RoleGrants | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+
   const role = roles.find(r => r.id === roleId) ?? roles[0];
-  const roleMatrix = matrix[roleId] ?? {};
+  const saved = matrix[roleId] ?? {};
+  const roleMatrix = draft ?? saved;
 
+  const diff = useMemo(() => (draft ? diffGrants(saved, draft) : []), [draft, saved]);
+  const pending = countChanges(diff);
 
-  const query = search.trim().toLowerCase();
+  /** Switching roles abandons an unsaved draft. */
+  useEffect(() => {
+    setDraft(null);
+  }, [roleId]);
+
+  const edit = useCallback(
+    (fn: (current: RoleGrants) => RoleGrants) =>
+      setDraft(prev => fn(prev ?? (permissionsStore.getMatrix()[roleId] ?? {}))),
+    [roleId],
+  );
+
+  const onToggleAction = useCallback(
+    (moduleId: string, action: PermissionAction) =>
+      edit(current => applyToggleAction(current, moduleId, action)),
+    [edit],
+  );
+  const onToggleSubAction = useCallback(
+    (moduleId: string, subId: string, action: PermissionAction) =>
+      edit(current => applyToggleSubAction(current, moduleId, subId, action)),
+    [edit],
+  );
+  const onSetSubAll = useCallback(
+    (moduleId: string, subId: string, actions: PermissionAction[]) =>
+      edit(current => applySetSubActions(current, moduleId, subId, actions)),
+    [edit],
+  );
+
+  const saveDraft = () => {
+    if (!draft) return;
+    permissionsStore.setRoleGrants(roleId, draft);
+    setDraft(null);
+    setReviewOpen(false);
+    toast.success(`${pending} permission change${pending === 1 ? '' : 's'} saved to ${role?.label}`);
+  };
+
+  const discardDraft = () => {
+    setDraft(null);
+    setReviewOpen(false);
+    toast('Unsaved permission changes discarded');
+  };
+
+  const query = (externalQuery?.trim() || search.trim()).toLowerCase();
 
   const matchesModule = (id: string, label: string, description: string) =>
     !query || label.toLowerCase().includes(query) || description.toLowerCase().includes(query);
@@ -157,7 +222,7 @@ export function PermissionMatrixPanel() {
   const setAll = (moduleId: string, actions: PermissionAction[], on: boolean) => {
     // Never grant something the current subscription plan does not include.
     const allowed = actions.filter(a => planAllows(tier, moduleId, a));
-    permissionsStore.setModuleActions(roleId, moduleId, on ? allowed : []);
+    edit(current => applySetModuleActions(current, moduleId, on ? allowed : []));
   };
 
 
@@ -324,6 +389,9 @@ export function PermissionMatrixPanel() {
                           onSetAll={setAll}
                           onBulkAllRoles={bulkAllRoles}
                           onBulkAction={bulkAction}
+                          onToggleAction={onToggleAction}
+                          onToggleSubAction={onToggleSubAction}
+                          onSetSubAll={onSetSubAll}
                         />
                       ))}
                     </Fragment>
@@ -335,6 +403,55 @@ export function PermissionMatrixPanel() {
           </div>
         </CardContent>
       </Card>
+
+      {pending > 0 && (
+        <div className="sticky bottom-4 z-20">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 shadow-lg">
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="secondary">{pending} unsaved</Badge>
+              <span className="text-muted-foreground">
+                Changes to <span className="font-medium text-foreground">{role?.label}</span> are
+                not applied until you save.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={discardDraft}>
+                Discard
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)}>
+                Review changes
+              </Button>
+              <Button size="sm" onClick={saveDraft}>
+                Save changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Review changes to {role?.label}</DialogTitle>
+            <DialogDescription>
+              {pending} permission change{pending === 1 ? '' : 's'} across {diff.length}{' '}
+              capabilit{diff.length === 1 ? 'y' : 'ies'}. Nothing is applied until you save.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55vh] overflow-y-auto">
+            <GrantDiffList rows={diff} emptyText="No pending changes." />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={discardDraft}>
+              Discard
+            </Button>
+            <Button variant="outline" onClick={() => setReviewOpen(false)}>
+              Keep editing
+            </Button>
+            <Button onClick={saveDraft}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
