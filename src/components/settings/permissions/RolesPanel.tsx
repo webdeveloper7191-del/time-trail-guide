@@ -308,6 +308,7 @@ export function RolesPanel({ scope = 'tenant', query: externalQuery }: RolesPane
       />
 
       <RoleCompareDialog
+        key={`cmp-${compareFrom ?? 'any'}-${compareOpen}`}
         roles={allRoles}
         matrix={matrix}
         open={compareOpen}
