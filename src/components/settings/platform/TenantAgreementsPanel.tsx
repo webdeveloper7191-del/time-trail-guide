@@ -84,7 +84,7 @@ export function TenantAgreementsPanel() {
       if (status === 'renewals' && !isRenewalDue(a)) return false;
       if (status === 'new' && (a.dealType ?? 'new') !== 'new') return false;
       if (status === 'renewal' && a.dealType !== 'renewal') return false;
-      if (rep !== 'all' && a[repRole] !== rep) return false;
+      if (rep !== 'all' && (a[repRole] ?? 'unassigned') !== rep) return false;
       if (!q) return true;
       return [
         a.tenantName,
