@@ -10,6 +10,12 @@ import {
 
 } from '@/types/permissions';
 import { PlanTier } from '@/types/plans';
+import {
+  applySetModuleActions,
+  applySetSubActions,
+  applyToggleAction,
+  applyToggleSubAction,
+} from '@/lib/roleGrants';
 import { planAllows, planAllowsSub } from '@/lib/planEntitlementsStore';
 import { planStore } from '@/lib/planStore';
 
