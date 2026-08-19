@@ -15,6 +15,10 @@ import {
   approvalCadenceOptions,
   linkUnscheduledOptions,
   timeDriftOptions,
+  noShiftClockInActionOptions,
+  unscheduledRosterFlagOptions,
+  unscheduledShiftCreationOptions,
+  unscheduledEndTimeRuleOptions,
   paidMealOptions,
   
   earlyClockInOptions,
