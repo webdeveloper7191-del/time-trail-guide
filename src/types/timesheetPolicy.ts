@@ -305,3 +305,31 @@ export const clockBoundaryReferenceOptions: { value: ClockBoundaryReference; lab
   { value: 'operating_window', label: 'Operating window (location hours)' },
 ];
 
+
+export const noShiftClockInActionOptions: { value: NoShiftClockInAction; label: string }[] = [
+  { value: 'block', label: 'Block the clock-in (no rostered shift)' },
+  { value: 'allow_flag', label: 'Allow and flag for review' },
+  { value: 'allow_silent', label: 'Allow without flagging' },
+];
+
+export const unscheduledRosterFlagOptions: { value: UnscheduledRosterFlag; label: string }[] = [
+  { value: 'off', label: 'No roster flag' },
+  { value: 'info', label: 'Info — grey marker on the roster cell' },
+  { value: 'warning', label: 'Warning — amber "Unrostered" badge' },
+  { value: 'critical', label: 'Critical — red badge + compliance alert' },
+];
+
+export const unscheduledShiftCreationOptions: { value: UnscheduledShiftCreation; label: string }[] = [
+  { value: 'never', label: 'Never — timesheet only, roster untouched' },
+  { value: 'on_clock_in', label: 'On clock-in (live shift appears immediately)' },
+  { value: 'on_clock_out', label: 'On clock-out (once actual times are known)' },
+  { value: 'on_approval', label: 'On timesheet approval' },
+];
+
+export const unscheduledEndTimeRuleOptions: { value: UnscheduledEndTimeRule; label: string }[] = [
+  { value: 'actual_clock_out', label: 'Actual clock-out time' },
+  { value: 'fixed_duration', label: 'Clock-in + fixed duration' },
+  { value: 'location_close', label: 'Location closing time' },
+  { value: 'area_default_shift', label: 'Area default shift end time' },
+  { value: 'open_ended', label: 'Leave open-ended until clock-out' },
+];
