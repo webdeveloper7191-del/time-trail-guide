@@ -489,7 +489,41 @@ export function PolicyApproving() {
 }
 
 export function PolicyUnscheduled() {
-  const { resolved, setField, fieldProps } = usePolicyAndScope();
+  const { resolved, setField, fieldProps, scope, isTenant } = usePolicyAndScope();
+  const location = isTenant ? undefined : mockLocations.find(l => l.id === scope);
+  const validationIssues = useMemo(() => validateUnscheduledEndTimeSettings(resolved.unscheduled, {
+    isTenantScope: isTenant,
+    hasOperatingHours: isTenant
+      ? mockLocations.every(l => (l.operatingHours ?? []).some(h => h.isOpen))
+      : (location?.operatingHours ?? []).some(h => h.isOpen),
+    hasAreaDefaultShiftEnd: false,
+  }), [resolved.unscheduled, isTenant, location]);
+  const issuesFor = (field: string) => validationIssues.filter(i => i.field === field);
+  const previewTz = location?.timezone ?? 'Australia/Melbourne';
+  const preview = useMemo(() => {
+    if (resolved.unscheduled.createShiftInRoster === 'never') return null;
+    const now = new Date();
+    const clockIn = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 22, 7));
+    try {
+      return resolveUnscheduledShiftWindow({
+        settings: resolved.unscheduled,
+        clockIn,
+        timezone: previewTz,
+        operatingHours: location?.operatingHours,
+        provisional: true,
+      });
+    } catch {
+      return null;
+    }
+  }, [resolved.unscheduled, previewTz, location]);
+  const fmtPreview = (iso: string | null) =>
+    iso
+      ? new Intl.DateTimeFormat('en-AU', {
+          timeZone: previewTz, hour: 'numeric', minute: '2-digit', hour12: true,
+          weekday: 'short',
+        }).format(new Date(iso))
+      : 'Open-ended';
+
   return (
     <Card>
       <CardHeader>
