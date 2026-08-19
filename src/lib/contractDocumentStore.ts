@@ -133,7 +133,16 @@ let documents: ContractDocument[] = [
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
-const emit = () => listeners.forEach(l => l());
+/** Cached immutable snapshot so useSyncExternalStore stays stable between emits. */
+let snapshot: ContractDocument[] = [];
+const rebuildSnapshot = () => {
+  snapshot = [...documents].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+};
+rebuildSnapshot();
+const emit = () => {
+  rebuildSnapshot();
+  listeners.forEach(l => l());
+};
 
 export const contractDocumentStore = {
   subscribe(listener: Listener) {
@@ -142,7 +151,7 @@ export const contractDocumentStore = {
   },
 
   all(): ContractDocument[] {
-    return [...documents].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    return snapshot;
   },
 
   forStaff(staffId: string): ContractDocument[] {
