@@ -41,16 +41,24 @@ import {
 import { usePlan } from '@/lib/planStore';
 import { cn } from '@/lib/utils';
 
-export function PlanEntitlementMatrixPanel() {
+interface PendingToggle {
+  label: string;
+  actionLabel: string;
+  impact: CapabilityImpact;
+  apply: () => void;
+}
+
+export function PlanEntitlementMatrixPanel({ query: externalQuery }: { query?: string } = {}) {
   const entitlements = usePlanEntitlements();
   const { tier: currentTier } = usePlan();
   const [tier, setTier] = useState<PlanTier>(currentTier);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showAllSubs, setShowAllSubs] = useState(false);
+  const [pending, setPending] = useState<PendingToggle | null>(null);
 
   const ent = entitlements[tier] ?? {};
-  const query = search.trim().toLowerCase();
+  const query = (externalQuery?.trim() || search).trim().toLowerCase();
 
   const modules = useMemo(
     () =>
@@ -80,6 +88,29 @@ export function PlanEntitlementMatrixPanel() {
   const isOpen = (moduleId: string) => (query ? true : (expanded[moduleId] ?? showAllSubs));
 
   const coverage = planCoverage(tier);
+
+  /**
+   * Turning a capability off cascades to every higher tier, so warn with the
+   * number of tenants that would lose it before applying the change.
+   */
+  const guardedToggle = (
+    key: string,
+    action: PermissionAction,
+    isOn: boolean,
+    label: string,
+    apply: () => void,
+  ) => {
+    if (!isOn) {
+      apply();
+      return;
+    }
+    const impact = capabilityImpact(tier, key, action);
+    if (impact.tenants === 0 && impact.roles === 0) {
+      apply();
+      return;
+    }
+    setPending({ label, actionLabel: actionLabels[action], impact, apply });
+  };
 
   const exportCsv = () => {
     const header = [
@@ -161,7 +192,7 @@ export function PlanEntitlementMatrixPanel() {
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search modules or sub-permissions…"
+                placeholder={externalQuery?.trim() ? externalQuery : 'Search modules or sub-permissions…'}
                 className="pl-8 w-[250px]"
               />
             </div>
@@ -283,7 +314,9 @@ export function PlanEntitlementMatrixPanel() {
                                     <Checkbox
                                       checked={included.includes(a)}
                                       onCheckedChange={() =>
-                                        planEntitlementsStore.toggleModuleAction(tier, m.id, a)
+                                        guardedToggle(m.id, a, included.includes(a), m.label, () =>
+                                          planEntitlementsStore.toggleModuleAction(tier, m.id, a),
+                                        )
                                       }
                                       aria-label={`${actionLabels[a]} ${m.label} on ${PLANS[tier].label}`}
                                     />
@@ -388,11 +421,18 @@ export function PlanEntitlementMatrixPanel() {
                                             className="h-3.5 w-3.5"
                                             checked={subOn.includes(a)}
                                             onCheckedChange={() =>
-                                              planEntitlementsStore.toggleSubAction(
-                                                tier,
-                                                m.id,
-                                                sub.id,
+                                              guardedToggle(
+                                                key,
                                                 a,
+                                                subOn.includes(a),
+                                                `${m.label} — ${sub.label}`,
+                                                () =>
+                                                  planEntitlementsStore.toggleSubAction(
+                                                    tier,
+                                                    m.id,
+                                                    sub.id,
+                                                    a,
+                                                  ),
                                               )
                                             }
                                             aria-label={`${actionLabels[a]} ${m.label} — ${sub.label} on ${PLANS[tier].label}`}
@@ -428,6 +468,56 @@ export function PlanEntitlementMatrixPanel() {
           </table>
         </div>
       </CardContent>
+
+      <AlertDialog open={!!pending} onOpenChange={o => !o && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Remove “{pending?.actionLabel} {pending?.label}” from {PLANS[tier].label}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Plans are cumulative, so this also removes the capability from{' '}
+                  {pending?.impact.tiers.map(t => PLANS[t].label).join(', ')}.
+                </p>
+                <div className="rounded-md border p-3 space-y-1 text-foreground">
+                  <div className="flex justify-between">
+                    <span>Tenants impacted</span>
+                    <span className="font-semibold">{pending?.impact.tenants}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Billed seats affected</span>
+                    <span className="font-semibold">{pending?.impact.seats}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Roles currently granting it</span>
+                    <span className="font-semibold">{pending?.impact.roles}</span>
+                  </div>
+                </div>
+                {!!pending?.impact.names.length && (
+                  <p className="text-xs text-muted-foreground">
+                    e.g. {pending.impact.names.join(', ')}
+                    {pending.impact.tenants > pending.impact.names.length ? ' and others' : ''}
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                pending?.apply();
+                toast.success('Entitlement updated');
+                setPending(null);
+              }}
+            >
+              Remove capability
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
