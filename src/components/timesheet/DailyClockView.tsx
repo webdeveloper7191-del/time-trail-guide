@@ -236,7 +236,7 @@ export function DailyClockView({ timesheets, onViewTimesheet, onEditTimesheet }:
           </SelectContent>
         </Select>
 
-        <Button variant="outline" onClick={() => exportToCSV(filtered, exportColumns, `daily-clock-${format(new Date(), 'yyyy-MM-dd')}`)}>
+        <Button variant="outline" onClick={() => exportToCSV('Daily Clock Records', exportColumns, filtered, 'daily-clock')}>
           <Download className="h-4 w-4 mr-2" />Export
         </Button>
       </div>
