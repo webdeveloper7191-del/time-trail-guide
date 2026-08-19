@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PlanTier, PLAN_ORDER } from '@/types/plans';
 import { BillingCycle } from '@/lib/billingStore';
+import { LimitOverrides } from '@/lib/planLimitsStore';
 
 /**
  * Platform-admin tenant (client) directory.
