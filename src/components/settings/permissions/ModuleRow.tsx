@@ -344,7 +344,10 @@ export const ModuleRow = memo(ModuleRowInner, (prev, next) => {
     prev.open !== next.open ||
     prev.roleCount !== next.roleCount ||
     prev.entitlementsVersion !== next.entitlementsVersion ||
-    prev.subs !== next.subs
+    prev.subs !== next.subs ||
+    prev.onToggleAction !== next.onToggleAction ||
+    prev.onToggleSubAction !== next.onToggleSubAction ||
+    prev.onSetSubAll !== next.onSetSubAll
   ) {
     return false;
   }
