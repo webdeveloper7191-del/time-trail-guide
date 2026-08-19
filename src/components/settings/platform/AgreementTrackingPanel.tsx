@@ -150,29 +150,11 @@ export function AgreementTrackingPanel({ agreementId, onClose }: Props) {
           )}
         </section>
 
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold tracking-tight">Progress</h3>
-          <ol className="space-y-3">
-            {steps.map(s => (
-              <li key={s.label} className="flex items-start gap-3">
-                <span
-                  className={cn(
-                    'mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border',
-                    s.done
-                      ? 'bg-primary/10 border-primary/30 text-primary'
-                      : 'bg-muted border-border text-muted-foreground',
-                  )}
-                >
-                  {s.done ? <s.icon className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-                </span>
-                <div className="text-sm">
-                  <div className={cn(!s.done && 'text-muted-foreground')}>{s.label}</div>
-                  <div className="text-xs text-muted-foreground">{s.done ? dt(s.at) : 'Pending'}</div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <AgreementLifecycleTimeline
+          agreement={agreement}
+          previous={all.find(a => a.id === agreement.renewalOfId)}
+        />
+
 
         <section className="space-y-2">
           <h3 className="text-sm font-semibold tracking-tight">Signatories</h3>
