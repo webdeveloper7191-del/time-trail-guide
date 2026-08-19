@@ -303,11 +303,12 @@ export function AgreementWorkQueue({
               </table>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Click an owner to filter the agreement list below to their book of work.
+              Click an owner to filter the agreement list to their book of work.
             </p>
           </div>
-        </CardContent>
+        </div>
       )}
-    </Card>
+    </PrimaryOffCanvas>
+
   );
 }
