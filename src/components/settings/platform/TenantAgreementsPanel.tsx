@@ -216,6 +216,14 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" className="h-9" onClick={() => setQueueOpen(true)}>
+            <BellRing className="h-4 w-4 mr-1.5" /> Work queue
+            {remindersDue > 0 && (
+              <Badge variant="secondary" className="ml-2 text-[10px]">
+                {remindersDue}
+              </Badge>
+            )}
+          </Button>
           <Select
             value={newFor}
             onValueChange={v => {
