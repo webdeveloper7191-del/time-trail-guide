@@ -256,7 +256,6 @@ export function TenantAgreementsPanel() {
                     <div>
                       <div>{a.title}</div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs">{a.title ? '' : ''}</span>
                         <Badge
                           variant={a.dealType === 'renewal' ? 'secondary' : 'outline'}
                           className="text-[10px]"

@@ -16,6 +16,13 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/billingStore';
 import {
+  dealTypeLabels,
+  daysToTermEnd,
+  effectiveUplift,
+  isRenewalDue,
+  renewalSummary,
+  upliftBasisLabels,
+  upliftedValue,
   OWNER_ROLE_LABELS,
   OWNER_ROLE_OPTIONS,
   OwnerRole,
@@ -93,7 +100,55 @@ export function AgreementTrackingPanel({ agreementId, onClose }: Props) {
             )}
           </div>
           <p className="text-xs text-muted-foreground">{trackingSummary(agreement)}</p>
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <Badge variant={agreement.dealType === 'renewal' ? 'secondary' : 'outline'}>
+              {dealTypeLabels[agreement.dealType ?? 'new']}
+            </Badge>
+            {agreement.renewalOfId && (
+              <Badge variant="outline">Renews {agreement.renewalOfId}</Badge>
+            )}
+            {isRenewalDue(agreement) && <Badge variant="destructive">Renewal due</Badge>}
+          </div>
         </div>
+
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold tracking-tight">Term & annual price change</h3>
+          <div className="grid gap-2 sm:grid-cols-2 text-sm">
+            <div className="rounded-md border border-border px-3 py-2">
+              <div className="text-xs text-muted-foreground">Term</div>
+              <div>
+                {agreement.termMonths ? `${agreement.termMonths} months` : '–'}
+                {agreement.termEndsOn ? ` · ends ${agreement.termEndsOn}` : ''}
+              </div>
+              <div className="text-xs text-muted-foreground">{renewalSummary(agreement)}</div>
+            </div>
+            <div className="rounded-md border border-border px-3 py-2">
+              <div className="text-xs text-muted-foreground">Annual increase</div>
+              <div>
+                {upliftBasisLabels[agreement.priceTerms?.basis ?? 'none']}
+                {agreement.priceTerms && agreement.priceTerms.basis !== 'none'
+                  ? ` · ${effectiveUplift(agreement.priceTerms).toFixed(1)}%`
+                  : ''}
+              </div>
+              {agreement.contractValue != null && agreement.priceTerms?.basis !== 'none' && (
+                <div className="text-xs text-muted-foreground">
+                  Next term ≈ {formatMoney(upliftedValue(agreement.contractValue, agreement.priceTerms))}
+                </div>
+              )}
+            </div>
+          </div>
+          {agreement.termsNotes && (
+            <p className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground whitespace-pre-wrap">
+              {agreement.termsNotes}
+            </p>
+          )}
+          {daysToTermEnd(agreement) !== null && agreement.priceTerms && (
+            <p className="text-xs text-muted-foreground">
+              {agreement.priceTerms.autoRenew ? 'Auto-renews' : 'Does not auto-renew'} ·{' '}
+              {agreement.priceTerms.noticeDays} days notice required.
+            </p>
+          )}
+        </section>
 
         <section className="space-y-3">
           <h3 className="text-sm font-semibold tracking-tight">Progress</h3>
