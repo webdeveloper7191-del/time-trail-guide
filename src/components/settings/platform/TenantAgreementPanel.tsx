@@ -20,6 +20,16 @@ import { BillingCycle, formatMoney, priceFor, annualDiscountFor } from '@/lib/bi
 import { Tenant, tenantRate } from '@/lib/tenantStore';
 import {
   ACCOUNT_MANAGERS,
+  AgreementDealType,
+  AnnualPriceTerms,
+  TenantAgreement,
+  UpliftBasis,
+  addMonths,
+  dealTypeLabels,
+  defaultPriceTerms,
+  effectiveUplift,
+  upliftBasisLabels,
+  upliftedValue,
   ONBOARDING_MANAGERS,
   SALES_REPS,
   TenantAgreementType,
@@ -31,6 +41,8 @@ interface Props {
   tenant: Tenant | null;
   open: boolean;
   onClose: () => void;
+  /** When set, the panel opens pre-filled as a renewal of this agreement. */
+  renewalOf?: TenantAgreement | null;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -41,7 +53,7 @@ const MAX_BYTES = 20 * 1024 * 1024;
  * Platform-admin panel to issue a plan/subscription agreement for a tenant:
  * either send it for e-signature or record a copy signed offline.
  */
-export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
+export function TenantAgreementPanel({ tenant, open, onClose, renewalOf }: Props) {
   const [mode, setMode] = useState<'send' | 'upload'>('send');
   const [type, setType] = useState<TenantAgreementType>('subscription_agreement');
   const [title, setTitle] = useState('');
@@ -60,6 +72,10 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
   const [salesRepId, setSalesRepId] = useState(SALES_REPS[0].id);
   const [onboardingManagerId, setOnboardingManagerId] = useState(ONBOARDING_MANAGERS[0].id);
   const [accountManagerId, setAccountManagerId] = useState(ACCOUNT_MANAGERS[0].id);
+  const [dealType, setDealType] = useState<AgreementDealType>('new');
+  const [termMonths, setTermMonths] = useState(12);
+  const [priceTerms, setPriceTerms] = useState<AnnualPriceTerms>(defaultPriceTerms());
+  const [termsNotes, setTermsNotes] = useState('');
 
   const [signedOn, setSignedOn] = useState(today());
   const [file, setFile] = useState<File | null>(null);
@@ -84,7 +100,38 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
     setSalesRepId(SALES_REPS[0].id);
     setOnboardingManagerId(ONBOARDING_MANAGERS[0].id);
     setAccountManagerId(ACCOUNT_MANAGERS[0].id);
-  }, [tenant]);
+
+    if (renewalOf) {
+      setDealType('renewal');
+      setType('renewal');
+      setPlan(renewalOf.plan ?? tenant.plan);
+      setCycle(renewalOf.cycle ?? tenant.cycle);
+      setSeats(renewalOf.seats ?? tenant.seats);
+      setTermMonths(renewalOf.termMonths ?? 12);
+      setPriceTerms(renewalOf.priceTerms ?? defaultPriceTerms());
+      setTermsNotes(renewalOf.termsNotes ?? '');
+      setSalesRepId(renewalOf.salesRepId ?? SALES_REPS[0].id);
+      setOnboardingManagerId(renewalOf.onboardingManagerId ?? ONBOARDING_MANAGERS[0].id);
+      setAccountManagerId(renewalOf.accountManagerId ?? ACCOUNT_MANAGERS[0].id);
+      const start = renewalOf.termEndsOn ?? inDays(14);
+      setEffectiveDate(start);
+      setTermEndsOn(addMonths(start, renewalOf.termMonths ?? 12));
+      setSignatoryName(renewalOf.signatories[0]?.name ?? tenant.contactName);
+      setSignatoryEmail(renewalOf.signatories[0]?.email ?? tenant.contactEmail);
+    } else {
+      setDealType('new');
+      setTermMonths(12);
+      setPriceTerms(defaultPriceTerms());
+      setTermsNotes('');
+      setTermEndsOn(addMonths(inDays(14), 12));
+    }
+  }, [tenant, renewalOf]);
+
+  /** Keep the term end in step with start date + term length. */
+  const applyTerm = (months: number, start = effectiveDate) => {
+    setTermMonths(months);
+    setTermEndsOn(addMonths(start, months));
+  };
 
   const rate = useMemo(
     () => (tenant ? tenantRate(tenant, priceFor(plan), annualDiscountFor(plan)) : null),
@@ -135,6 +182,11 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
       salesRepId,
       onboardingManagerId,
       accountManagerId,
+      dealType,
+      renewalOfId: renewalOf?.id,
+      termMonths,
+      priceTerms,
+      termsNotes: termsNotes.trim() || undefined,
     };
 
     if (!common.signatoryName || !common.signatoryEmail) {
@@ -171,8 +223,12 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
     <PrimaryOffCanvas
       open={open}
       onClose={onClose}
-      title={`Plan agreement · ${tenant.name}`}
-      description="Send the subscription agreement for e-signature, or record a copy the client signed offline."
+      title={`${renewalOf ? 'Renewal' : 'Plan agreement'} · ${tenant.name}`}
+      description={
+        renewalOf
+          ? `Renewing "${renewalOf.title}" — terms, uplift and owners are pre-filled from the expiring agreement.`
+          : 'Send the subscription agreement for e-signature, or record a copy the client signed offline.'
+      }
       icon={FileSignature}
       size="lg"
       actions={[
@@ -230,7 +286,10 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
                 <Input
                   type="date"
                   value={effectiveDate}
-                  onChange={e => setEffectiveDate(e.target.value)}
+                  onChange={e => {
+                    setEffectiveDate(e.target.value);
+                    setTermEndsOn(addMonths(e.target.value, termMonths));
+                  }}
                 />
               </div>
             </div>
@@ -295,7 +354,10 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
                 <Input
                   type="date"
                   value={effectiveDate}
-                  onChange={e => setEffectiveDate(e.target.value)}
+                  onChange={e => {
+                    setEffectiveDate(e.target.value);
+                    setTermEndsOn(addMonths(e.target.value, termMonths));
+                  }}
                 />
               </div>
             </div>
@@ -344,6 +406,36 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
                 </Select>
               </div>
             ))}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Agreement type</Label>
+              <Select value={dealType} onValueChange={v => setDealType(v as AgreementDealType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(dealTypeLabels) as AgreementDealType[]).map(d => (
+                    <SelectItem key={d} value={d}>
+                      {dealTypeLabels[d]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Term length</Label>
+              <Select value={String(termMonths)} onValueChange={v => applyTerm(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 3, 6, 12, 24, 36, 60].map(m => (
+                    <SelectItem key={m} value={String(m)}>
+                      {m} month{m > 1 ? 's' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Term ends</Label>
               <Input type="date" value={termEndsOn} onChange={e => setTermEndsOn(e.target.value)} />
@@ -411,6 +503,96 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
             <span className="font-semibold">
               {formatMoney(contractValue)} {cycle === 'annual' ? 'per year' : 'per month'}
             </span>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold tracking-tight">Annual price change & renewal</h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Increase basis</Label>
+              <Select
+                value={priceTerms.basis}
+                onValueChange={v => setPriceTerms({ ...priceTerms, basis: v as UpliftBasis })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(upliftBasisLabels) as UpliftBasis[]).map(b => (
+                    <SelectItem key={b} value={b}>
+                      {upliftBasisLabels[b]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">
+                {priceTerms.basis === 'cpi' ? 'Assumed CPI %' : 'Increase %'}
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.1}
+                disabled={priceTerms.basis === 'none'}
+                value={priceTerms.percent}
+                onChange={e => setPriceTerms({ ...priceTerms, percent: Number(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">CPI cap %</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.1}
+                disabled={priceTerms.basis !== 'cpi'}
+                value={priceTerms.capPercent ?? 0}
+                onChange={e => setPriceTerms({ ...priceTerms, capPercent: Number(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Auto-renew at term end</Label>
+              <Select
+                value={priceTerms.autoRenew ? 'yes' : 'no'}
+                onValueChange={v => setPriceTerms({ ...priceTerms, autoRenew: v === 'yes' })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes — rolls into a new term</SelectItem>
+                  <SelectItem value="no">No — ends unless renewed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Notice days</Label>
+              <Input
+                type="number"
+                min={0}
+                value={priceTerms.noticeDays}
+                onChange={e => setPriceTerms({ ...priceTerms, noticeDays: Number(e.target.value) || 0 })}
+              />
+            </div>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm flex items-center justify-between">
+            <span className="text-muted-foreground">
+              Applied uplift {effectiveUplift(priceTerms).toFixed(1)}% at each anniversary
+            </span>
+            <span className="font-semibold">
+              Next term ≈ {formatMoney(upliftedValue(contractValue, priceTerms))}{' '}
+              {cycle === 'annual' ? 'per year' : 'per month'}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Terms & special conditions</Label>
+            <Textarea
+              rows={3}
+              value={termsNotes}
+              placeholder="Payment terms, minimum commitment, exit conditions, negotiated inclusions…"
+              onChange={e => setTermsNotes(e.target.value)}
+            />
           </div>
         </section>
       </div>
