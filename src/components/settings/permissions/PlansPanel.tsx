@@ -72,6 +72,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   return (
     <div className="space-y-4">
       {isAdmin && <PricingSchedulePanel />}
+      {!isAdmin && <PlanLimitsPanel />}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="space-y-0.5">
           <p className="text-xs text-muted-foreground">
