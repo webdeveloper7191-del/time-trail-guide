@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Calendar, Clock, ClipboardCheck, Sparkles,
   Target, TrendingUp, MessageSquare, Users, GraduationCap,
-  ChevronDown, ChevronRight, LogOut, UserCircle,
+  ChevronDown, ChevronRight, LogOut, UserCircle, FileSignature,
 } from 'lucide-react';
 
 export type NavGroup = {
