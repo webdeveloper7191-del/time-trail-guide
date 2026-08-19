@@ -34,6 +34,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  FileSignature,
 } from 'lucide-react';
 import { mockStaff } from '@/data/mockStaffData';
 import { employmentStatusLabels, employmentTypeLabels, payRateTypeLabels, genderLabels } from '@/types/staff';
@@ -45,6 +46,7 @@ import { StaffAwardRuleSection } from '@/components/staff/StaffAwardRuleSection'
 import { StaffAvailabilitySection } from '@/components/staff/StaffAvailabilitySection';
 import { StaffBankDetailsSection } from '@/components/staff/StaffBankDetailsSection';
 import { StaffQualificationsSection } from '@/components/staff/StaffQualificationsSection';
+import { StaffContractsSection } from '@/components/staff/StaffContractsSection';
 
 import { Award } from 'lucide-react';
 
@@ -55,6 +57,7 @@ const sidebarSections = [
   { id: 'qualifications', label: 'Qualifications', icon: Award },
   { id: 'time-attendance', label: 'Time & Attendance', icon: Clock },
   { id: 'leave', label: 'Leave & Unavailability', icon: CalendarDays },
+  { id: 'contracts', label: 'Contracts & Documents', icon: FileSignature },
   { id: 'hr', label: 'HR', icon: Briefcase },
   { id: 'audit', label: 'Employee Audit History', icon: History },
 ];
@@ -238,6 +241,9 @@ export default function StaffDetail() {
                 <h3 className="section-header mb-4">Leave & Unavailability</h3>
                 <p className="text-muted-foreground">Leave management coming soon...</p>
               </div>
+            )}
+            {activeSection === 'contracts' && (
+              <StaffContractsSection staff={staff} />
             )}
             {activeSection === 'hr' && (
               <div className="card-material-elevated p-6">

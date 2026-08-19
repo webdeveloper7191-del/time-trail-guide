@@ -46,6 +46,7 @@ import { Employee360Panel } from '@/components/performance/Employee360Panel';
 import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecognitionPanel';
 import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
 import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
+import { EmployeeDocumentsPanel } from '@/components/employee/EmployeeDocumentsPanel';
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
 import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
@@ -102,6 +103,7 @@ export function EmployeePortal() {
     schedule: { title: 'My Schedule', subtitle: 'Shifts, open shifts and swap requests' },
     current: { title: 'My Timesheets', subtitle: 'Review your hours and compliance' },
     'leave-balances': { title: 'Leave Balances', subtitle: 'RDO, ADO and TOIL accruals' },
+    documents: { title: 'Contracts & Documents', subtitle: 'Review, sign and download your documents' },
     recognition: { title: 'Recognition', subtitle: 'Celebrate your team' },
     performance: { title: 'Performance', subtitle: 'Reviews, goals and feedback' },
     okrs: { title: 'My OKRs', subtitle: 'Track objectives and key results' },
@@ -137,6 +139,9 @@ export function EmployeePortal() {
         );
       case 'leave-balances':
         return <LeaveBalancesView employeeName={currentEmployee.name} />;
+      case 'documents':
+        return <EmployeeDocumentsPanel employeeName={currentEmployee.name} />;
+
 
       case 'recognition':
         return <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />;

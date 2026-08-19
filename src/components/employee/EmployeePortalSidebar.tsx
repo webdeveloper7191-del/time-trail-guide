@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Calendar, Clock, ClipboardCheck, Sparkles,
   Target, TrendingUp, MessageSquare, Users, GraduationCap,
-  ChevronDown, ChevronRight, LogOut, UserCircle,
+  ChevronDown, ChevronRight, LogOut, UserCircle, FileSignature,
 } from 'lucide-react';
 
 export type NavGroup = {
@@ -42,6 +42,11 @@ export function EmployeePortalSidebar({
         { id: 'current', label: 'My Timesheets', icon: Clock },
         { id: 'leave-balances', label: 'Leave Balances', icon: ClipboardCheck },
       ],
+    },
+    {
+      id: 'documents',
+      label: 'Contracts & Documents',
+      icon: FileSignature,
     },
     {
       id: 'growth',
