@@ -735,7 +735,7 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
                 <p className="text-sm text-muted-foreground">
                   Pay conditions have been saved. Would you like to generate or send any documents?
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Button
                     variant="outline"
                     className="flex flex-col items-center gap-2 h-auto py-4 border-2 hover:border-primary/50 hover:bg-primary/5"
