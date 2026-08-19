@@ -219,27 +219,41 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                     )}
                   </Button>
                 ) : (
-                  <Button
-                    className="w-full"
-                    variant={current ? 'outline' : t === 'free' ? 'outline' : 'default'}
-                    disabled={current}
-                    onClick={() =>
-                      openCheckoutFlow({
-                        needs: t,
-                        feature: `${p.label} plan`,
-                        source: 'plans-panel',
-                        cycle,
-                      })
-                    }
-                  >
-                    {current
-                      ? 'Current plan'
-                      : t === 'free'
-                        ? 'Downgrade to Free'
-                        : isAtLeast(tier, t)
-                          ? `Switch to ${p.label}`
-                          : `Upgrade to ${p.label}`}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block">
+                        <Button
+                          className="w-full"
+                          variant={current ? 'outline' : t === 'free' ? 'outline' : 'default'}
+                          disabled={current || blocked}
+                          onClick={() =>
+                            openCheckoutFlow({
+                              needs: t,
+                              feature: `${p.label} plan`,
+                              source: 'plans-panel',
+                              cycle,
+                              seats: usage.staff,
+                            })
+                          }
+                        >
+                          {current
+                            ? 'Current plan'
+                            : blocked
+                              ? 'Usage over limit'
+                              : t === 'free'
+                                ? 'Downgrade to Free'
+                                : isAtLeast(tier, t)
+                                  ? `Switch to ${p.label}`
+                                  : `Upgrade to ${p.label}`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {blocked && (
+                      <TooltipContent className="max-w-[260px] text-xs">
+                        {blockedReason}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 )}
 
 
