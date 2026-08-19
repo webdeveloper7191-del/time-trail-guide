@@ -5,6 +5,7 @@ import {
   Clock,
   Users,
   Calendar,
+  CalendarCheck,
   Settings,
   LogOut,
   ChevronLeft,
@@ -47,6 +48,7 @@ const navItems = [
 
 export function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <aside
@@ -72,6 +74,20 @@ export function AdminSidebar() {
           className="text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8 p-0"
         >
           {collapsed ? <Menu className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Quick Access */}
+      <div className={cn('px-3 pt-4 pb-2', collapsed && 'px-2')}>
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full justify-start gap-2 shadow-sm"
+          onClick={() => navigate('/timesheet-admin?view=daily')}
+          aria-label="Open Daily Clock view"
+        >
+          <Clock className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Daily Clock</span>}
         </Button>
       </div>
 
