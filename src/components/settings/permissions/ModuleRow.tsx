@@ -94,6 +94,10 @@ export interface ModuleRowProps {
     action: PermissionAction,
     on: boolean,
   ) => void;
+  /** Draft-aware toggles. When omitted the row writes straight to the store. */
+  onToggleAction?: (moduleId: string, action: PermissionAction) => void;
+  onToggleSubAction?: (moduleId: string, subId: string, action: PermissionAction) => void;
+  onSetSubAll?: (moduleId: string, subId: string, actions: PermissionAction[]) => void;
 }
 
 function ModuleRowInner({
@@ -108,7 +112,23 @@ function ModuleRowInner({
   onSetAll,
   onBulkAllRoles,
   onBulkAction,
+  onToggleAction,
+  onToggleSubAction,
+  onSetSubAll,
 }: ModuleRowProps) {
+  const toggleAction = (moduleId: string, a: PermissionAction) =>
+    onToggleAction
+      ? onToggleAction(moduleId, a)
+      : permissionsStore.toggleAction(roleId, moduleId, a);
+  const toggleSubAction = (moduleId: string, subId: string, a: PermissionAction) =>
+    onToggleSubAction
+      ? onToggleSubAction(moduleId, subId, a)
+      : permissionsStore.toggleSubAction(roleId, moduleId, subId, a);
+  const setSubAll = (moduleId: string, subId: string, actions: PermissionAction[]) =>
+    onSetSubAll
+      ? onSetSubAll(moduleId, subId, actions)
+      : permissionsStore.setSubActions(roleId, moduleId, subId, actions);
+
   const granted = grants[m.id] ?? [];
   const planActions = planModuleActions(tier, m.id);
   const moduleTier = requiredModuleTier(m.id);
