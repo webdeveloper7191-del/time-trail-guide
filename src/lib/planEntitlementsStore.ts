@@ -9,6 +9,8 @@ import {
   planRank,
   subActionUniverse,
 } from '@/types/plans';
+import { tenantStore } from '@/lib/tenantStore';
+import { permissionsStore } from '@/lib/permissionsStore';
 
 const KEY = 'rai.plan.entitlements.v6';
 
@@ -260,4 +262,48 @@ export function planCoverage(tier: PlanTier) {
     }
   }
   return { granted, total };
+}
+
+/* ------------------------------------------------------------------ */
+/* Impact analysis — who loses access when a capability is switched off */
+/* ------------------------------------------------------------------ */
+
+export interface CapabilityImpact {
+  /** Tiers that would lose the capability (this tier and everything above). */
+  tiers: PlanTier[];
+  /** Live tenant organisations sitting on those tiers. */
+  tenants: number;
+  /** Seats billed across those tenants. */
+  seats: number;
+  /** Custom roles that currently grant the capability. */
+  roles: number;
+  names: string[];
+}
+
+/**
+ * Removing an action from a tier cascades upward (higher tiers inherit from
+ * lower ones), so every tenant on that tier or above is impacted.
+ */
+export function capabilityImpact(
+  tier: PlanTier,
+  key: string,
+  action: PermissionAction,
+): CapabilityImpact {
+  const tiers = PLAN_ORDER.filter(
+    t => planRank(t) >= planRank(tier) && (load()[t]?.[key] ?? []).includes(action),
+  );
+  const affected = tenantStore
+    .get()
+    .filter(t => t.status !== 'inactive' && tiers.includes(t.plan));
+  const roles = permissionsStore
+    .get()
+    .roles.filter(r => (r.grants?.[key] ?? []).includes(action)).length;
+
+  return {
+    tiers,
+    tenants: affected.length,
+    seats: affected.reduce((sum, t) => sum + (t.seats ?? 0), 0),
+    roles,
+    names: affected.slice(0, 6).map(t => t.name),
+  };
 }
