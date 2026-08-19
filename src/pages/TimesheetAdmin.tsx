@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { mockTimesheets, locations } from '@/data/mockTimesheets';
 import { Timesheet, TimesheetStatus } from '@/types/timesheet';
 import { validateCompliance } from '@/lib/complianceEngine';
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
   Users,
