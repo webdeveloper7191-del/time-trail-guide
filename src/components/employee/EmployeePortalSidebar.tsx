@@ -44,6 +44,11 @@ export function EmployeePortalSidebar({
       ],
     },
     {
+      id: 'documents',
+      label: 'Contracts & Documents',
+      icon: FileSignature,
+    },
+    {
       id: 'growth',
       label: 'Growth & Performance',
       icon: TrendingUp,
