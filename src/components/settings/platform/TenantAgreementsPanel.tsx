@@ -60,7 +60,7 @@ const dateLabel = (iso?: string) =>
     : '–';
 
 /** Platform-admin view of every subscription agreement issued to tenants. */
-export function TenantAgreementsPanel() {
+export function TenantAgreementsPanel({ query: externalQuery }: { query?: string } = {}) {
   const agreements = useTenantAgreements();
   const tenants = useTenants();
   const [query, setQuery] = useState('');
@@ -76,7 +76,7 @@ export function TenantAgreementsPanel() {
   const [newFor, setNewFor] = useState('');
 
   const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (externalQuery?.trim() || query).trim().toLowerCase();
     return agreements.filter(a => {
       if (status === 'outstanding' && !isOutstanding(a)) return false;
       if (status === 'overdue' && !isOverdue(a)) return false;
@@ -98,7 +98,7 @@ export function TenantAgreementsPanel() {
         .toLowerCase()
         .includes(q);
     });
-  }, [agreements, query, status, rep, repRole]);
+  }, [agreements, query, externalQuery, status, rep, repRole]);
 
   const outstanding = agreements.filter(isOutstanding).length;
   const overdueCount = agreements.filter(isOverdue).length;
