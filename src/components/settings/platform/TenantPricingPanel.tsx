@@ -74,8 +74,38 @@ export function TenantPricingPanel({ tenant, open, onClose }: Props) {
   const perMonth = unit * seats;
   const savingPerYear = (listUnit - unit) * seats * 12;
 
+  const planCaps = PLANS[plan].limits;
+  const fmtLimit = (n: number | null) => (n === null ? 'unlimited' : n.toLocaleString());
+  const limitsOverridden = Object.keys(limits).length > 0;
+  const validation = validatePlanLimits(
+    plan,
+    {
+      staff: Math.max(tenant.staff, seats),
+      locations: tenant.locations ?? 0,
+      customRoles: 0,
+      apiCredentials: 0,
+    },
+    limits,
+  );
+  const limitChecks = validation.checks.filter(c => c.key === 'staff' || c.key === 'locations');
+
+  const toggleLimits = (on: boolean) =>
+    setLimits(
+      on
+        ? {
+            staff: { value: planCaps.staff, reason: '' },
+            locations: { value: planCaps.locations, reason: '' },
+          }
+        : {},
+    );
+
   const save = () => {
-    tenantStore.update(tenant.id, { plan, cycle, seats });
+    tenantStore.update(tenant.id, {
+      plan,
+      cycle,
+      seats,
+      limitOverrides: limitsOverridden ? limits : undefined,
+    });
     tenantStore.setPricing(tenant.id, custom ? draft : undefined);
     toast.success(custom ? 'Client pricing saved' : 'Reverted to standard price book');
     onClose();
