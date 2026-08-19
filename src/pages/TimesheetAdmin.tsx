@@ -15,6 +15,7 @@ import { ExportDialog } from '@/components/timesheet/ExportDialog';
 import { NotificationCenter, generateMockNotifications, Notification } from '@/components/timesheet/NotificationCenter';
 import { ApprovalDelegationModal, generateMockDelegations } from '@/components/timesheet/ApprovalDelegationModal';
 import { AddTimesheetPanel } from '@/components/timesheet/AddTimesheetPanel';
+import { DailyClockView } from '@/components/timesheet/DailyClockView';
 import { ImportTimesheetModal } from '@/components/timesheet/ImportTimesheetModal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -56,7 +57,7 @@ import { bankOvertimeAsTOIL } from '@/lib/leaveAccrualEngine';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type TabValue = 'all' | 'exceptions' | TimesheetStatus;
-type ViewMode = 'table' | 'analytics' | 'calendar' | 'audit' | 'compliance';
+type ViewMode = 'table' | 'daily' | 'analytics' | 'calendar' | 'audit' | 'compliance';
 
 export default function TimesheetAdmin() {
   const [timesheets, setTimesheets] = useState<Timesheet[]>(mockTimesheets);
@@ -288,7 +289,7 @@ export default function TimesheetAdmin() {
             </div>
             <div className="flex items-center gap-2">
               {/* View Mode Buttons */}
-              {['table', 'analytics', 'calendar', 'audit', 'compliance'].map((mode) => (
+              {['table', 'daily', 'analytics', 'calendar', 'audit', 'compliance'].map((mode) => (
                 <Button
                   key={mode}
                   variant={viewMode === mode ? 'default' : 'outline'}
@@ -297,6 +298,7 @@ export default function TimesheetAdmin() {
                   className="capitalize"
                 >
                   {mode === 'table' && <Users className="h-4 w-4 mr-1.5" />}
+                  {mode === 'daily' && <Clock className="h-4 w-4 mr-1.5" />}
                   {mode === 'analytics' && <BarChart3 className="h-4 w-4 mr-1.5" />}
                   {mode === 'calendar' && <Calendar className="h-4 w-4 mr-1.5" />}
                   {mode === 'audit' && <History className="h-4 w-4 mr-1.5" />}
@@ -428,6 +430,14 @@ export default function TimesheetAdmin() {
                 showSelection={showSelection}
               />
             </>
+          )}
+
+          {viewMode === 'daily' && (
+            <DailyClockView
+              timesheets={timesheets}
+              onViewTimesheet={handleView}
+              onEditTimesheet={handleEdit}
+            />
           )}
 
           {viewMode === 'analytics' && <TimesheetAnalytics timesheets={timesheets} />}
