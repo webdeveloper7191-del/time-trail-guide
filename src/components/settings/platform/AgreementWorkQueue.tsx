@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlarmClock, BellRing, ChevronDown, ChevronRight, RotateCcw, Send } from 'lucide-react';
+import { AlarmClock, BellRing, RotateCcw, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   OWNER_ROLE_LABELS,
@@ -37,20 +37,23 @@ const parseDays = (text: string) =>
   );
 
 /**
- * Auto-reminder policy plus an owner-based queue so each rep can see what they
- * need to chase today.
+ * Auto-reminder policy plus an owner-based queue, presented in a right-aligned
+ * side panel so the agreements list stays clean.
  */
 export function AgreementWorkQueue({
   agreements,
   ownerRole,
   onSelectOwner,
+  open,
+  onClose,
 }: {
   agreements: TenantAgreement[];
   ownerRole: OwnerRole;
   onSelectOwner: (role: OwnerRole, ownerId: string) => void;
+  open: boolean;
+  onClose: () => void;
 }) {
   const policy = useReminderPolicy();
-  const [open, setOpen] = useState(true);
   const [role, setRole] = useState<OwnerRole>(ownerRole);
 
   const reminders = useMemo(() => dueReminders(agreements, policy), [agreements, policy]);
@@ -58,27 +61,31 @@ export function AgreementWorkQueue({
   const queue = useMemo(() => ownerWorkQueue(agreements, role, policy), [agreements, role, policy]);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setOpen(v => !v)}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={open ? 'Collapse work queue' : 'Expand work queue'}
-              >
-                {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
-              Work queue &amp; auto-reminders
-            </CardTitle>
-            <CardDescription>
-              Chasers are scheduled from the sign-by date and the term end, then routed to whoever
-              owns the account.
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+    <PrimaryOffCanvas
+      open={open}
+      onClose={onClose}
+      title="Work queue & auto-reminders"
+      description="Chasers are scheduled from the sign-by date and the term end, then routed to whoever owns the account."
+      icon={AlarmClock}
+      size="2xl"
+      actions={[
+        { label: 'Close', variant: 'outlined', onClick: onClose },
+        {
+          label: `Run reminders (${sendable.length})`,
+          variant: 'primary',
+          disabled: !policy.enabled || !sendable.length,
+          onClick: () => {
+            const sent = runAutoReminders(agreements, policy);
+            toast.success(
+              sent ? `${sent} reminder${sent === 1 ? '' : 's'} sent` : 'Nothing to send right now',
+            );
+          },
+        },
+      ]}
+    >
+      {(
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
             <Badge variant={sendable.length ? 'default' : 'secondary'} className="gap-1">
               <BellRing className="h-3.5 w-3.5" /> {sendable.length} due now
             </Badge>
@@ -97,11 +104,7 @@ export function AgreementWorkQueue({
               <Send className="h-3.5 w-3.5 mr-1.5" /> Run reminders
             </Button>
           </div>
-        </div>
-      </CardHeader>
 
-      {open && (
-        <CardContent className="space-y-4">
           {/* Policy */}
           <div className="rounded-lg border p-3 space-y-3">
             <div className="flex items-center justify-between gap-3">
