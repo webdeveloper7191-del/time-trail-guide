@@ -45,12 +45,15 @@ export function TenantPricingPanel({ tenant, open, onClose }: Props) {
     effectiveFrom: today(),
   });
 
+  const [limits, setLimits] = useState<LimitOverrides>({});
+
   useEffect(() => {
     if (!tenant) return;
     setPlan(tenant.plan);
     setCycle(tenant.cycle);
     setSeats(tenant.seats);
     setCustom(!!tenant.customPricing);
+    setLimits(tenant.limitOverrides ?? {});
     setDraft(
       tenant.customPricing ?? {
         monthly: priceFor(tenant.plan),
