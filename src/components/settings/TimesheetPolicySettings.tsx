@@ -27,6 +27,12 @@ import {
 } from '@/types/timesheetPolicy';
 
 import { timesheetPolicyStore, getPolicyVersion } from '@/lib/timesheetPolicyStore';
+import {
+  validateUnscheduledEndTimeSettings,
+  resolveUnscheduledShiftWindow,
+  type EndTimeValidationIssue,
+} from '@/lib/unscheduledShiftEndTime';
+
 
 type SectionKey = keyof TimesheetPolicy;
 
