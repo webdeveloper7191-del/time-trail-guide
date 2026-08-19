@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
 import { australianAwards, getAwardById } from '@/data/australianAwards';
 import {
@@ -29,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   CalendarIcon, TrendingUp, TrendingDown, AlertCircle, Check, Download, 
   History, Calculator, Clock, DollarSign, ArrowRight, Zap, CalendarPlus,
-  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft
+  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft, Upload, X, Paperclip
 } from 'lucide-react';
 import { format, isBefore, startOfDay, addDays, subMonths, isAfter } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -93,6 +93,9 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const [reason, setReason] = useState('');
   const [backPayCalculation, setBackPayCalculation] = useState<BackPayCalculation | null>(null);
   const [showDocumentStep, setShowDocumentStep] = useState(false);
+  const [signedFile, setSignedFile] = useState<File | null>(null);
+  const [signedDate, setSignedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const signedInputRef = useRef<HTMLInputElement>(null);
 
   const selectedAwardData = getAwardById(selectedAward);
   const selectedClassificationData = selectedAwardData?.classifications.find(
@@ -203,10 +206,38 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
     setShowDocumentStep(false);
   };
 
-  const handleSkipDocuments = () => {
+  const MAX_SIGNED_FILE_MB = 20;
+
+  const handleSignedFilePicked = (file: File | undefined) => {
+    if (!file) return;
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Unsupported file type', { description: 'Upload a PDF, PNG or JPG.' });
+      return;
+    }
+    if (file.size > MAX_SIGNED_FILE_MB * 1024 * 1024) {
+      toast.error('File too large', { description: `Maximum size is ${MAX_SIGNED_FILE_MB}MB.` });
+      return;
+    }
+    setSignedFile(file);
+  };
+
+  const handleUploadSignedContract = () => {
+    if (!signedFile) return;
+    toast.success('Signed contract uploaded', {
+      description: `${signedFile.name} attached to ${staff.firstName} ${staff.lastName}'s record, signed ${format(new Date(`${signedDate}T00:00:00`), 'dd MMM yyyy')}.`,
+    });
+    setSignedFile(null);
     onOpenChange(false);
     setShowDocumentStep(false);
   };
+
+  const handleSkipDocuments = () => {
+    setSignedFile(null);
+    onOpenChange(false);
+    setShowDocumentStep(false);
+  };
+
 
   const config = modeConfig[mode];
   const ModeIcon = config.icon;
@@ -704,7 +735,7 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
                 <p className="text-sm text-muted-foreground">
                   Pay conditions have been saved. Would you like to generate or send any documents?
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Button
                     variant="outline"
                     className="flex flex-col items-center gap-2 h-auto py-4 border-2 hover:border-primary/50 hover:bg-primary/5"
@@ -727,7 +758,68 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
                       <p className="text-xs text-muted-foreground">E-sign the updated conditions</p>
                     </div>
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-auto py-4 border-2 hover:border-primary/50 hover:bg-primary/5"
+                    onClick={() => signedInputRef.current?.click()}
+                  >
+                    <Upload className="h-5 w-5 text-primary" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium">Upload Signed Contract</p>
+                      <p className="text-xs text-muted-foreground">
+                        Attach a contract signed outside the system
+                      </p>
+                    </div>
+                  </Button>
                 </div>
+
+                <input
+                  ref={signedInputRef}
+                  type="file"
+                  accept="application/pdf,image/png,image/jpeg"
+                  className="hidden"
+                  onChange={e => {
+                    handleSignedFilePicked(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                />
+
+                {signedFile && (
+                  <div className="rounded-md border bg-background p-3 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Paperclip className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{signedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(signedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setSignedFile(null)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Date signed</Label>
+                      <Input
+                        type="date"
+                        value={signedDate}
+                        max={format(new Date(), 'yyyy-MM-dd')}
+                        onChange={e => setSignedDate(e.target.value)}
+                        className="h-8"
+                      />
+                    </div>
+                    <Button className="w-full" onClick={handleUploadSignedContract}>
+                      <Check className="h-4 w-4 mr-2" />
+                      Attach signed contract
+                    </Button>
+                  </div>
+                )}
+
                 <Button
                   variant="ghost"
                   className="w-full text-muted-foreground"
