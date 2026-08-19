@@ -46,6 +46,7 @@ import { Employee360Panel } from '@/components/performance/Employee360Panel';
 import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecognitionPanel';
 import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
 import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
+import { EmployeeDocumentsPanel } from '@/components/employee/EmployeeDocumentsPanel';
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
 import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
