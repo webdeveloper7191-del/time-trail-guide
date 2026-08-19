@@ -132,6 +132,88 @@ export function TenantPricingPanel({ tenant, open, onClose }: Props) {
         <section className="space-y-3 rounded-lg border p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
+              <h3 className="text-sm font-semibold tracking-tight">Plan limits</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {PLANS[plan].label} allows {fmtLimit(planCaps.staff)} staff,{' '}
+                {fmtLimit(planCaps.locations)} locations. Override only where a deal has been
+                agreed.
+              </p>
+            </div>
+            <Switch checked={limitsOverridden} onCheckedChange={toggleLimits} />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            {limitChecks.map(c => (
+              <div
+                key={c.key}
+                className={cn(
+                  'rounded-md border p-2 text-xs',
+                  c.status === 'breach' && 'border-destructive/40 bg-destructive/5',
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{c.label}</span>
+                  <span className="font-medium">
+                    {c.used.toLocaleString()} / {fmtLimit(c.limit)}
+                  </span>
+                </div>
+                {c.status === 'breach' && (
+                  <p className="text-destructive mt-0.5">
+                    {c.excess} over the {PLANS[plan].label} cap.
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {limitsOverridden && (
+            <div className="grid gap-3 sm:grid-cols-2 pt-1">
+              {(['staff', 'locations'] as LimitKey[]).map(key => (
+                <div key={key} className="space-y-1.5">
+                  <Label className="text-xs">{LIMIT_LABEL[key]} maximum (blank = unlimited)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="Unlimited"
+                    value={limits[key]?.value ?? ''}
+                    onChange={e =>
+                      setLimits(l => ({
+                        ...l,
+                        [key]: {
+                          reason: l[key]?.reason ?? '',
+                          approvedBy: l[key]?.approvedBy,
+                          value: e.target.value === '' ? null : Number(e.target.value) || 0,
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">Override reason</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="e.g. Free pilot extended to 8 staff until contract signature"
+                  value={limits.staff?.reason ?? limits.locations?.reason ?? ''}
+                  onChange={e =>
+                    setLimits(l => {
+                      const reason = e.target.value;
+                      const next: typeof l = { ...l };
+                      for (const k of ['staff', 'locations'] as LimitKey[]) {
+                        if (next[k]) next[k] = { ...next[k]!, reason };
+                      }
+                      return next;
+                    })
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
               <h3 className="text-sm font-semibold tracking-tight">Client-specific pricing</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Standard rate today is {formatMoney(listMonthly)} / user / month
