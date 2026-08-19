@@ -27,6 +27,12 @@ import {
 } from '@/types/timesheetPolicy';
 
 import { timesheetPolicyStore, getPolicyVersion } from '@/lib/timesheetPolicyStore';
+import {
+  validateUnscheduledEndTimeSettings,
+  resolveUnscheduledShiftWindow,
+  type EndTimeValidationIssue,
+} from '@/lib/unscheduledShiftEndTime';
+
 
 type SectionKey = keyof TimesheetPolicy;
 
@@ -488,8 +494,66 @@ export function PolicyApproving() {
   );
 }
 
+function IssueList({ issues }: { issues: EndTimeValidationIssue[] }) {
+  if (issues.length === 0) return null;
+  return (
+    <div className="pb-3 pl-0.5 space-y-1">
+      {issues.map((issue, i) => (
+        <p
+          key={i}
+          className={
+            issue.level === 'error'
+              ? 'text-xs text-destructive'
+              : issue.level === 'warning'
+                ? 'text-xs text-amber-700'
+                : 'text-xs text-muted-foreground'
+          }
+        >
+          {issue.level === 'error' ? 'Invalid: ' : issue.level === 'warning' ? 'Heads up: ' : ''}
+          {issue.message}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function PolicyUnscheduled() {
-  const { resolved, setField, fieldProps } = usePolicyAndScope();
+
+  const { resolved, setField, fieldProps, scope, isTenant } = usePolicyAndScope();
+  const location = isTenant ? undefined : mockLocations.find(l => l.id === scope);
+  const validationIssues = useMemo(() => validateUnscheduledEndTimeSettings(resolved.unscheduled, {
+    isTenantScope: isTenant,
+    hasOperatingHours: isTenant
+      ? mockLocations.every(l => (l.operatingHours ?? []).some(h => h.isOpen))
+      : (location?.operatingHours ?? []).some(h => h.isOpen),
+    hasAreaDefaultShiftEnd: false,
+  }), [resolved.unscheduled, isTenant, location]);
+  const issuesFor = (field: string) => validationIssues.filter(i => i.field === field);
+  const previewTz = location?.timezone ?? 'Australia/Melbourne';
+  const preview = useMemo(() => {
+    if (resolved.unscheduled.createShiftInRoster === 'never') return null;
+    const now = new Date();
+    const clockIn = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 22, 7));
+    try {
+      return resolveUnscheduledShiftWindow({
+        settings: resolved.unscheduled,
+        clockIn: clockIn.getTime(),
+        timezone: previewTz,
+        operatingHours: location?.operatingHours,
+        provisional: true,
+      });
+    } catch {
+      return null;
+    }
+  }, [resolved.unscheduled, previewTz, location]);
+  const fmtPreview = (iso: string | null) =>
+    iso
+      ? new Intl.DateTimeFormat('en-AU', {
+          timeZone: previewTz, hour: 'numeric', minute: '2-digit', hour12: true,
+          weekday: 'short',
+        }).format(new Date(iso))
+      : 'Open-ended';
+
   return (
     <Card>
       <CardHeader>
@@ -568,34 +632,60 @@ export function PolicyUnscheduled() {
               options={unscheduledEndTimeRuleOptions}
               onChange={v => setField('unscheduled', 'createdShiftEndTimeRule', v as TimesheetPolicy['unscheduled']['createdShiftEndTimeRule'])}
             />
+            <IssueList issues={issuesFor('createdShiftEndTimeRule')} />
             {resolved.unscheduled.createdShiftEndTimeRule === 'fixed_duration' && (
-              <NumberRow
-                {...fieldProps('unscheduled', 'createdShiftFixedDurationHours', 'Fixed shift length (hours)',
-                  'Provisional shift length applied from the clock-in time.')}
-                value={resolved.unscheduled.createdShiftFixedDurationHours}
-                onChange={v => setField('unscheduled', 'createdShiftFixedDurationHours', v)}
-              />
+              <>
+                <NumberRow
+                  {...fieldProps('unscheduled', 'createdShiftFixedDurationHours', 'Fixed shift length (hours)',
+                    'Provisional shift length applied from the clock-in time. Must be between 15 minutes and the maximum shift length.')}
+                  value={resolved.unscheduled.createdShiftFixedDurationHours}
+                  onChange={v => setField('unscheduled', 'createdShiftFixedDurationHours', v)}
+                />
+                <IssueList issues={issuesFor('createdShiftFixedDurationHours')} />
+              </>
             )}
             <NumberRow
               {...fieldProps('unscheduled', 'createdShiftMaxDurationHours', 'Maximum shift length (hours)',
-                'Safety cap. If no clock-out is received, the shift is closed at this length and flagged as a missing clock-out.')}
+                'Safety cap applied to every end-time rule. If no clock-out is received, the shift is closed at this length and flagged as a missing clock-out. Allowed range 1–24 hours.')}
               value={resolved.unscheduled.createdShiftMaxDurationHours}
               onChange={v => setField('unscheduled', 'createdShiftMaxDurationHours', v)}
             />
+            <IssueList issues={issuesFor('createdShiftMaxDurationHours')} />
             <NumberRow
               {...fieldProps('unscheduled', 'createdShiftRoundToMinutes', 'Round created shift times to (minutes)',
-                'Rounds the created shift start/end so the roster grid stays tidy. Set 0 to keep exact times. Pay is still calculated from the timesheet, not the rounded shift.')}
+                'Rounds the created shift start down and the end up, in the location’s own timezone, so the roster grid stays tidy. Set 0 to keep exact times. Rounding can never push a shift past the maximum shift length. Pay is still calculated from the timesheet, not the rounded shift.')}
               value={resolved.unscheduled.createdShiftRoundToMinutes}
               onChange={v => setField('unscheduled', 'createdShiftRoundToMinutes', v)}
             />
+            <IssueList issues={issuesFor('createdShiftRoundToMinutes')} />
             <ToggleRow
               {...fieldProps('unscheduled', 'markCreatedShiftUnapproved', 'Mark created shift as unapproved',
                 'The shift appears on the roster with an "Unapproved" state until a manager confirms it, so it is excluded from published rosters and budget actuals.')}
               value={resolved.unscheduled.markCreatedShiftUnapproved}
               onChange={v => setField('unscheduled', 'markCreatedShiftUnapproved', v)}
             />
+            <IssueList issues={issuesFor('markCreatedShiftUnapproved')} />
+
+            {preview && (
+              <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-xs">
+                <p className="font-medium text-foreground mb-1">Worked example</p>
+                <p className="text-muted-foreground">
+                  A staff member clocks in at{' '}
+                  <span className="font-medium text-foreground">{fmtPreview(preview.startIso)}</span>{' '}
+                  ({previewTz}) with no rostered shift. The created shift ends at{' '}
+                  <span className="font-medium text-foreground">{fmtPreview(preview.endIso)}</span>
+                  {preview.durationHours != null && <> — {preview.durationHours}h</>}
+                  {preview.cappedByMaxDuration && <> (truncated by the maximum shift length)</>}
+                  {preview.roundedToMinutes > 0 && <>, rounded to {preview.roundedToMinutes}-minute boundaries</>}.
+                </p>
+                {preview.warnings.map((w, i) => (
+                  <p key={i} className="mt-1 text-amber-700">{w}</p>
+                ))}
+              </div>
+            )}
           </>
         )}
+
       </CardContent>
     </Card>
   );
