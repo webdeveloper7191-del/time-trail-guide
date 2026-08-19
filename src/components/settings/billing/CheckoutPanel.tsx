@@ -121,6 +121,12 @@ export function CheckoutPanel() {
   const seatOverride = !!limitOverrides.staff;
   const capSeats = (n: number) => (maxSeats === null ? n : Math.min(n, maxSeats));
 
+  // Keep the seat count legal whenever the selected plan changes.
+  useEffect(() => {
+    if (maxSeats !== null) setSeats(s => Math.min(s, maxSeats));
+  }, [maxSeats]);
+
+
   const totals = useMemo(
     () => invoiceTotal(tier, cycle, seats, taxRule.rate),
     [tier, cycle, seats, taxRule.rate],
