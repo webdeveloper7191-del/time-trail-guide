@@ -16,21 +16,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileSignature, MoreVertical, Search, Upload, FileText } from 'lucide-react';
+import { Activity, FileSignature, MoreVertical, Search, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/billingStore';
 import { Tenant, useTenants } from '@/lib/tenantStore';
 import {
+  SALES_REPS,
   TenantAgreement,
   TenantAgreementStatus,
   isOutstanding,
+  isOverdue,
+  salesRepById,
+  trackingSummary,
   tenantAgreementStatusLabels,
   tenantAgreementStore,
   tenantAgreementTypeLabels,
   useTenantAgreements,
 } from '@/lib/tenantAgreementStore';
 import { TenantAgreementPanel } from './TenantAgreementPanel';
+import { AgreementTrackingPanel } from './AgreementTrackingPanel';
 
 const statusStyle: Record<TenantAgreementStatus, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -52,7 +57,9 @@ export function TenantAgreementsPanel() {
   const agreements = useTenantAgreements();
   const tenants = useTenants();
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'all' | 'outstanding' | 'complete'>('all');
+  const [status, setStatus] = useState<'all' | 'outstanding' | 'overdue' | 'complete'>('all');
+  const [rep, setRep] = useState<string>('all');
+  const [trackId, setTrackId] = useState<string | null>(null);
   const [issueFor, setIssueFor] = useState<Tenant | null>(null);
   const [newFor, setNewFor] = useState('');
 
@@ -60,16 +67,19 @@ export function TenantAgreementsPanel() {
     const q = query.trim().toLowerCase();
     return agreements.filter(a => {
       if (status === 'outstanding' && !isOutstanding(a)) return false;
+      if (status === 'overdue' && !isOverdue(a)) return false;
       if (status === 'complete' && isOutstanding(a)) return false;
+      if (rep !== 'all' && a.salesRepId !== rep) return false;
       if (!q) return true;
-      return [a.tenantName, a.title, tenantAgreementTypeLabels[a.type]]
+      return [a.tenantName, a.title, tenantAgreementTypeLabels[a.type], salesRepById(a.salesRepId)?.name ?? '']
         .join(' ')
         .toLowerCase()
         .includes(q);
     });
-  }, [agreements, query, status]);
+  }, [agreements, query, status, rep]);
 
   const outstanding = agreements.filter(isOutstanding).length;
+  const overdueCount = agreements.filter(isOverdue).length;
 
   const openFor = (tenantId: string) => {
     const t = tenants.find(x => x.id === tenantId);
@@ -96,9 +106,28 @@ export function TenantAgreementsPanel() {
             <SelectContent>
               <SelectItem value="all">All agreements</SelectItem>
               <SelectItem value="outstanding">Awaiting signature</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
               <SelectItem value="complete">Signed / closed</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={rep} onValueChange={setRep}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="Sales person" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sales people</SelectItem>
+              {SALES_REPS.map(r => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {overdueCount > 0 && (
+            <Badge variant="destructive" className="h-9 px-3 rounded-md">
+              {overdueCount} overdue
+            </Badge>
+          )}
           {outstanding > 0 && (
             <Badge variant="secondary" className="h-9 px-3 rounded-md">
               {outstanding} awaiting signature
@@ -143,6 +172,7 @@ export function TenantAgreementsPanel() {
               <th className="text-left font-medium px-3 py-2.5">Organisation</th>
               <th className="text-left font-medium px-3 py-2.5">Document</th>
               <th className="text-left font-medium px-3 py-2.5">Terms</th>
+              <th className="text-left font-medium px-3 py-2.5">Sales person</th>
               <th className="text-left font-medium px-3 py-2.5">Status</th>
               <th className="text-left font-medium px-3 py-2.5">Sent / signed</th>
               <th className="text-left font-medium px-3 py-2.5">Starts</th>
@@ -177,6 +207,9 @@ export function TenantAgreementsPanel() {
                     </div>
                   )}
                 </td>
+                <td className="px-3 py-3 text-muted-foreground">
+                  {salesRepById(a.salesRepId)?.name ?? 'Unassigned'}
+                </td>
                 <td className="px-3 py-3">
                   <span
                     className={cn(
@@ -186,6 +219,7 @@ export function TenantAgreementsPanel() {
                   >
                     {tenantAgreementStatusLabels[a.status]}
                   </span>
+                  <div className="mt-1 text-xs text-muted-foreground">{trackingSummary(a)}</div>
                 </td>
                 <td className="px-3 py-3 text-muted-foreground">
                   {a.completedAt ? `Signed ${dateLabel(a.completedAt)}` : `Sent ${dateLabel(a.sentAt)}`}
@@ -197,6 +231,16 @@ export function TenantAgreementsPanel() {
                   {a.effectiveDate ? dateLabel(`${a.effectiveDate}T00:00:00`) : '–'}
                 </td>
                 <td className="px-3 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Track document"
+                    onClick={() => setTrackId(a.id)}
+                  >
+                    <Activity className="h-4 w-4" />
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -204,6 +248,10 @@ export function TenantAgreementsPanel() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56 bg-popover">
+                      <DropdownMenuItem onClick={() => setTrackId(a.id)}>
+                        Track document
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {isOutstanding(a) && (
                         <>
                           <DropdownMenuItem
@@ -245,12 +293,13 @@ export function TenantAgreementsPanel() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  </div>
                 </td>
               </tr>
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-muted-foreground">
+                <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">
                   No agreements match your filters.
                 </td>
               </tr>
@@ -258,6 +307,8 @@ export function TenantAgreementsPanel() {
           </tbody>
         </table>
       </div>
+
+      <AgreementTrackingPanel agreementId={trackId} onClose={() => setTrackId(null)} />
 
       <TenantAgreementPanel
         tenant={issueFor}

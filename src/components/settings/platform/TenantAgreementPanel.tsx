@@ -19,6 +19,7 @@ import { PLANS, PLAN_ORDER, PlanTier } from '@/types/plans';
 import { BillingCycle, formatMoney, priceFor, annualDiscountFor } from '@/lib/billingStore';
 import { Tenant, tenantRate } from '@/lib/tenantStore';
 import {
+  SALES_REPS,
   TenantAgreementType,
   tenantAgreementStore,
   tenantAgreementTypeLabels,
@@ -54,6 +55,7 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
   const [effectiveDate, setEffectiveDate] = useState(inDays(14));
   const [termEndsOn, setTermEndsOn] = useState(inDays(379));
   const [message, setMessage] = useState('');
+  const [salesRepId, setSalesRepId] = useState(SALES_REPS[0].id);
 
   const [signedOn, setSignedOn] = useState(today());
   const [file, setFile] = useState<File | null>(null);
@@ -75,6 +77,7 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
     setEffectiveDate(inDays(14));
     setTermEndsOn(inDays(379));
     setSignedOn(today());
+    setSalesRepId(SALES_REPS[0].id);
   }, [tenant]);
 
   const rate = useMemo(
@@ -123,6 +126,7 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
       signatoryEmail: signatoryEmail.trim(),
       effectiveDate,
       termEndsOn,
+      salesRepId,
     };
 
     if (!common.signatoryName || !common.signatoryEmail) {
@@ -303,6 +307,22 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
                   {(Object.keys(tenantAgreementTypeLabels) as TenantAgreementType[]).map(t => (
                     <SelectItem key={t} value={t}>
                       {tenantAgreementTypeLabels[t]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Sales person</Label>
+              <Select value={salesRepId} onValueChange={setSalesRepId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Assign a sales person" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SALES_REPS.map(r => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                      {r.territory ? ` · ${r.territory}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
