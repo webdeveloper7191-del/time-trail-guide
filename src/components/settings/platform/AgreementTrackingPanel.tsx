@@ -37,6 +37,7 @@ import {
   trackingSummary,
   useTenantAgreements,
 } from '@/lib/tenantAgreementStore';
+import { AgreementLifecycleTimeline } from './AgreementLifecycleTimeline';
 
 interface Props {
   agreementId: string | null;
