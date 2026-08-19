@@ -105,6 +105,10 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
   const outstanding = agreements.filter(isOutstanding).length;
   const overdueCount = agreements.filter(isOverdue).length;
   const renewalsDue = agreements.filter(a => isRenewalDue(a)).length;
+  const remindersDue = useMemo(
+    () => sendableReminders(dueReminders(agreements)).length,
+    [agreements],
+  );
 
   const openFor = (tenantId: string) => {
     const t = tenants.find(x => x.id === tenantId);
