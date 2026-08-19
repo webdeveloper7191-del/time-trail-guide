@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Gem, Grid3X3, Search, ChevronRight, ShieldCheck, BadgeCheck, Building2 } from 'lucide-react';
+import { Gem, Grid3X3, Search, ChevronRight, ShieldCheck, BadgeCheck, Building2, FileSignature } from 'lucide-react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PlansPanel } from '@/components/settings/permissions/PlansPanel';
 import { PlanEntitlementMatrixPanel } from '@/components/settings/permissions/PlanEntitlementMatrixPanel';
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { TenantListPanel } from '@/components/settings/platform/TenantListPanel';
+import { TenantAgreementsPanel } from '@/components/settings/platform/TenantAgreementsPanel';
 
 /**
  * System-admin (platform) view: what the product owner configures — the plan
@@ -62,6 +63,9 @@ export default function PlatformAdmin() {
               <TabsTrigger value="tenants" className="gap-1.5">
                 <Building2 className="h-3.5 w-3.5" /> Tenants
               </TabsTrigger>
+              <TabsTrigger value="agreements" className="gap-1.5">
+                <FileSignature className="h-3.5 w-3.5" /> Agreements
+              </TabsTrigger>
               <TabsTrigger value="plans" className="gap-1.5">
                 <Gem className="h-3.5 w-3.5" /> Plans
               </TabsTrigger>
@@ -75,6 +79,9 @@ export default function PlatformAdmin() {
 
             <TabsContent value="tenants" className="mt-4">
               <TenantListPanel />
+            </TabsContent>
+            <TabsContent value="agreements" className="mt-4">
+              <TenantAgreementsPanel />
             </TabsContent>
             <TabsContent value="plans" className="mt-4">
               <PlansPanel mode="admin" />

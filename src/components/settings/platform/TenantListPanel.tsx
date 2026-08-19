@@ -47,6 +47,7 @@ import {
   useTenants,
 } from '@/lib/tenantStore';
 import { TenantPricingPanel } from './TenantPricingPanel';
+import { TenantAgreementPanel } from './TenantAgreementPanel';
 
 type SortKey = 'name' | 'contactName' | 'createdAt' | 'status';
 
@@ -77,6 +78,7 @@ export function TenantListPanel() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [pricingFor, setPricingFor] = useState<Tenant | null>(null);
+  const [agreementFor, setAgreementFor] = useState<Tenant | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -341,6 +343,10 @@ export function TenantListPanel() {
                         <DropdownMenuItem onClick={() => setPricingFor(t)}>
                           Plan &amp; pricing
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setAgreementFor(t)}>
+                          Send / upload plan agreement
+                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           onClick={() =>
                             tenantStore.update(t.id, {
@@ -439,6 +445,12 @@ export function TenantListPanel() {
         tenant={pricingFor}
         open={!!pricingFor}
         onClose={() => setPricingFor(null)}
+      />
+
+      <TenantAgreementPanel
+        tenant={agreementFor}
+        open={!!agreementFor}
+        onClose={() => setAgreementFor(null)}
       />
     </div>
   );
