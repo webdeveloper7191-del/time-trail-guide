@@ -494,7 +494,31 @@ export function PolicyApproving() {
   );
 }
 
+function IssueList({ issues }: { issues: EndTimeValidationIssue[] }) {
+  if (issues.length === 0) return null;
+  return (
+    <div className="pb-3 pl-0.5 space-y-1">
+      {issues.map((issue, i) => (
+        <p
+          key={i}
+          className={
+            issue.level === 'error'
+              ? 'text-xs text-destructive'
+              : issue.level === 'warning'
+                ? 'text-xs text-amber-700'
+                : 'text-xs text-muted-foreground'
+          }
+        >
+          {issue.level === 'error' ? 'Invalid: ' : issue.level === 'warning' ? 'Heads up: ' : ''}
+          {issue.message}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 export function PolicyUnscheduled() {
+
   const { resolved, setField, fieldProps, scope, isTenant } = usePolicyAndScope();
   const location = isTenant ? undefined : mockLocations.find(l => l.id === scope);
   const validationIssues = useMemo(() => validateUnscheduledEndTimeSettings(resolved.unscheduled, {
