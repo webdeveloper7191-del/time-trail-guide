@@ -293,11 +293,12 @@ export function capabilityImpact(
     t => planRank(t) >= planRank(tier) && (load()[t]?.[key] ?? []).includes(action),
   );
   const affected = tenantStore
-    .get()
+    .getAll()
     .filter(t => t.status !== 'inactive' && tiers.includes(t.plan));
+  const matrix = permissionsStore.getMatrix();
   const roles = permissionsStore
-    .get()
-    .roles.filter(r => (r.grants?.[key] ?? []).includes(action)).length;
+    .getRoles()
+    .filter(r => (matrix[r.id]?.[key] ?? []).includes(action)).length;
 
   return {
     tiers,
