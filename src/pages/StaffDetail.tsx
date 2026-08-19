@@ -56,6 +56,7 @@ const sidebarSections = [
   { id: 'qualifications', label: 'Qualifications', icon: Award },
   { id: 'time-attendance', label: 'Time & Attendance', icon: Clock },
   { id: 'leave', label: 'Leave & Unavailability', icon: CalendarDays },
+  { id: 'contracts', label: 'Contracts & Documents', icon: FileSignature },
   { id: 'hr', label: 'HR', icon: Briefcase },
   { id: 'audit', label: 'Employee Audit History', icon: History },
 ];
