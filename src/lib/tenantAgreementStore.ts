@@ -99,6 +99,42 @@ export const OWNER_ROLE_OPTIONS: Record<OwnerRole, SalesRep[]> = {
   accountManagerId: ACCOUNT_MANAGERS,
 };
 
+/** Whether the paper is net-new business or a renewal of an existing term. */
+export type AgreementDealType = 'new' | 'renewal';
+
+export const dealTypeLabels: Record<AgreementDealType, string> = {
+  new: 'New business',
+  renewal: 'Renewal',
+};
+
+/** How the per-user price moves at each anniversary of the term. */
+export type UpliftBasis = 'none' | 'fixed' | 'cpi';
+
+export const upliftBasisLabels: Record<UpliftBasis, string> = {
+  none: 'No annual increase',
+  fixed: 'Fixed % increase',
+  cpi: 'CPI-linked increase',
+};
+
+export interface AnnualPriceTerms {
+  basis: UpliftBasis;
+  /** Fixed uplift %, or the assumed/indexed CPI % used for forecasting. */
+  percent: number;
+  /** Optional cap applied to a CPI-linked increase. */
+  capPercent?: number;
+  autoRenew: boolean;
+  /** Days of notice required before term end to stop auto-renewal. */
+  noticeDays: number;
+}
+
+export const defaultPriceTerms = (): AnnualPriceTerms => ({
+  basis: 'cpi',
+  percent: 3.5,
+  capPercent: 5,
+  autoRenew: true,
+  noticeDays: 60,
+});
+
 export interface TenantAgreementSignatory {
   name: string;
   email: string;
@@ -134,6 +170,16 @@ export interface TenantAgreement {
   onboardingManagerId?: string;
   /** Ongoing account manager (customer success). */
   accountManagerId?: string;
+  /** New business vs renewal of an earlier agreement. */
+  dealType?: AgreementDealType;
+  /** Agreement this one renews, when dealType is 'renewal'. */
+  renewalOfId?: string;
+  /** Contract term length in months. */
+  termMonths?: number;
+  /** Annual price movement / renewal terms. */
+  priceTerms?: AnnualPriceTerms;
+  /** Free-text contractual terms and special conditions. */
+  termsNotes?: string;
   /** Delivery + engagement tracking. */
   remindersSent?: number;
   lastReminderAt?: string;
@@ -175,6 +221,9 @@ function seed(): TenantAgreement[] {
         { name: 'Rostered.ai', email: 'contracts@rostered.ai', role: 'platform', signedAt: daysAgo(93) },
       ],
       salesRepId: 'sr_priya',
+      dealType: 'new',
+      termMonths: 12,
+      priceTerms: { basis: 'cpi', percent: 3.5, capPercent: 5, autoRenew: true, noticeDays: 60 },
       onboardingManagerId: 'om_lucy',
       accountManagerId: 'am_josh',
       remindersSent: 1,
@@ -204,6 +253,9 @@ function seed(): TenantAgreement[] {
       signatories: [{ name: 'Ankit Sharma', email: 'ankit.sharma@example.com', role: 'client' }],
       message: 'Please review and sign to activate your Essentials subscription.',
       salesRepId: 'sr_dan',
+      dealType: 'new',
+      termMonths: 12,
+      priceTerms: { basis: 'fixed', percent: 4, autoRenew: true, noticeDays: 30 },
       onboardingManagerId: 'om_raj',
       accountManagerId: 'am_ana',
       remindersSent: 0,
@@ -229,6 +281,10 @@ function seed(): TenantAgreement[] {
       fileName: 'test-care-price-variation-signed.pdf',
       fileSize: 486_000,
       salesRepId: 'sr_mei',
+      dealType: 'renewal',
+      renewalOfId: 'ta-001',
+      termMonths: 24,
+      priceTerms: { basis: 'none', percent: 0, autoRenew: false, noticeDays: 90 },
       onboardingManagerId: 'om_tara',
       accountManagerId: 'am_ken',
       source: 'upload',
@@ -287,6 +343,11 @@ export interface SendAgreementInput {
   salesRepId?: string;
   onboardingManagerId?: string;
   accountManagerId?: string;
+  dealType?: AgreementDealType;
+  renewalOfId?: string;
+  termMonths?: number;
+  priceTerms?: AnnualPriceTerms;
+  termsNotes?: string;
 }
 
 export interface UploadAgreementInput
@@ -328,6 +389,11 @@ export const tenantAgreementStore = {
       message: input.message,
       salesRepId: input.salesRepId,
       onboardingManagerId: input.onboardingManagerId,
+      dealType: input.dealType ?? 'new',
+      renewalOfId: input.renewalOfId,
+      termMonths: input.termMonths,
+      priceTerms: input.priceTerms,
+      termsNotes: input.termsNotes,
       accountManagerId: input.accountManagerId,
       remindersSent: 0,
       openCount: 0,
@@ -367,6 +433,11 @@ export const tenantAgreementStore = {
       fileSize: input.fileSize,
       salesRepId: input.salesRepId,
       onboardingManagerId: input.onboardingManagerId,
+      dealType: input.dealType ?? 'new',
+      renewalOfId: input.renewalOfId,
+      termMonths: input.termMonths,
+      priceTerms: input.priceTerms,
+      termsNotes: input.termsNotes,
       accountManagerId: input.accountManagerId,
       source: 'upload',
       history: [{ at: now(), label: `Signed copy uploaded (${input.fileName})`, by: 'Platform admin' }],
@@ -488,6 +559,52 @@ export const isOutstanding = (a: TenantAgreement) =>
   a.status === 'sent' || a.status === 'viewed' || a.status === 'draft';
 
 export const isComplete = (a: TenantAgreement) => a.status === 'signed' || a.status === 'uploaded';
+
+/** Add whole months to an ISO yyyy-mm-dd date, returning yyyy-mm-dd. */
+export function addMonths(dateISO: string, months: number): string {
+  const d = new Date(`${dateISO}T00:00:00`);
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() < day) d.setDate(0);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Effective annual uplift %, respecting a CPI cap when one is set. */
+export function effectiveUplift(terms?: AnnualPriceTerms): number {
+  if (!terms || terms.basis === 'none') return 0;
+  if (terms.basis === 'cpi' && terms.capPercent != null) {
+    return Math.min(terms.percent, terms.capPercent);
+  }
+  return terms.percent;
+}
+
+/** Value after applying `years` of annual uplift. */
+export function upliftedValue(value: number, terms?: AnnualPriceTerms, years = 1): number {
+  const pct = effectiveUplift(terms) / 100;
+  return value * Math.pow(1 + pct, years);
+}
+
+/** Days until the term ends (negative once expired). */
+export function daysToTermEnd(a: TenantAgreement): number | null {
+  if (!a.termEndsOn) return null;
+  return Math.ceil((new Date(`${a.termEndsOn}T23:59:59`).getTime() - Date.now()) / 86400000);
+}
+
+/** A signed agreement inside its renewal notice window (or already expired). */
+export function isRenewalDue(a: TenantAgreement, windowDays?: number): boolean {
+  if (!isComplete(a)) return false;
+  const d = daysToTermEnd(a);
+  if (d === null) return false;
+  const window = windowDays ?? a.priceTerms?.noticeDays ?? 90;
+  return d <= window;
+}
+
+export function renewalSummary(a: TenantAgreement): string {
+  const d = daysToTermEnd(a);
+  if (d === null) return 'No term end set';
+  if (d < 0) return `Term ended ${Math.abs(d)}d ago`;
+  return `${d}d to term end${a.priceTerms?.autoRenew ? ' · auto-renews' : ''}`;
+}
 
 /** Days until (positive) or past (negative) the sign-by date. */
 export function daysToDue(a: TenantAgreement): number | null {
