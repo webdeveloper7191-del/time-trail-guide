@@ -425,7 +425,7 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">
                   No agreements match your filters.
                 </td>
               </tr>
