@@ -223,8 +223,12 @@ export function TenantAgreementPanel({ tenant, open, onClose, renewalOf }: Props
     <PrimaryOffCanvas
       open={open}
       onClose={onClose}
-      title={`Plan agreement · ${tenant.name}`}
-      description="Send the subscription agreement for e-signature, or record a copy the client signed offline."
+      title={`${renewalOf ? 'Renewal' : 'Plan agreement'} · ${tenant.name}`}
+      description={
+        renewalOf
+          ? `Renewing "${renewalOf.title}" — terms, uplift and owners are pre-filled from the expiring agreement.`
+          : 'Send the subscription agreement for e-signature, or record a copy the client signed offline.'
+      }
       icon={FileSignature}
       size="lg"
       actions={[

@@ -16,12 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Activity, FileSignature, MoreVertical, Search, Upload, FileText } from 'lucide-react';
+import { Activity, FileSignature, MoreVertical, RefreshCw, Search, Upload, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/billingStore';
 import { Tenant, useTenants } from '@/lib/tenantStore';
 import {
+  dealTypeLabels,
+  isRenewalDue,
+  renewalSummary,
   OWNER_ROLE_LABELS,
   OWNER_ROLE_OPTIONS,
   OwnerRole,
@@ -59,7 +62,10 @@ export function TenantAgreementsPanel() {
   const agreements = useTenantAgreements();
   const tenants = useTenants();
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'all' | 'outstanding' | 'overdue' | 'complete'>('all');
+  const [status, setStatus] = useState<
+    'all' | 'outstanding' | 'overdue' | 'complete' | 'renewals' | 'new' | 'renewal'
+  >('all');
+  const [renewFrom, setRenewFrom] = useState<TenantAgreement | null>(null);
   const [repRole, setRepRole] = useState<OwnerRole>('salesRepId');
   const [rep, setRep] = useState<string>('all');
   const [trackId, setTrackId] = useState<string | null>(null);
@@ -72,6 +78,9 @@ export function TenantAgreementsPanel() {
       if (status === 'outstanding' && !isOutstanding(a)) return false;
       if (status === 'overdue' && !isOverdue(a)) return false;
       if (status === 'complete' && isOutstanding(a)) return false;
+      if (status === 'renewals' && !isRenewalDue(a)) return false;
+      if (status === 'new' && (a.dealType ?? 'new') !== 'new') return false;
+      if (status === 'renewal' && a.dealType !== 'renewal') return false;
       if (rep !== 'all' && a[repRole] !== rep) return false;
       if (!q) return true;
       return [
@@ -90,10 +99,24 @@ export function TenantAgreementsPanel() {
 
   const outstanding = agreements.filter(isOutstanding).length;
   const overdueCount = agreements.filter(isOverdue).length;
+  const renewalsDue = agreements.filter(a => isRenewalDue(a)).length;
 
   const openFor = (tenantId: string) => {
     const t = tenants.find(x => x.id === tenantId);
-    if (t) setIssueFor(t);
+    if (t) {
+      setRenewFrom(null);
+      setIssueFor(t);
+    }
+  };
+
+  const openRenewal = (a: TenantAgreement) => {
+    const t = tenants.find(x => x.id === a.tenantId);
+    if (!t) {
+      toast.error('Organisation not found for this agreement.');
+      return;
+    }
+    setRenewFrom(a);
+    setIssueFor(t);
   };
 
   return (
@@ -118,6 +141,9 @@ export function TenantAgreementsPanel() {
               <SelectItem value="outstanding">Awaiting signature</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
               <SelectItem value="complete">Signed / closed</SelectItem>
+              <SelectItem value="renewals">Renewals due</SelectItem>
+              <SelectItem value="new">New business</SelectItem>
+              <SelectItem value="renewal">Renewals</SelectItem>
             </SelectContent>
           </Select>
           <Select
@@ -151,6 +177,15 @@ export function TenantAgreementsPanel() {
               ))}
             </SelectContent>
           </Select>
+          {renewalsDue > 0 && (
+            <Badge
+              variant="secondary"
+              className="h-9 px-3 rounded-md cursor-pointer"
+              onClick={() => setStatus('renewals')}
+            >
+              {renewalsDue} renewal{renewalsDue > 1 ? 's' : ''} due
+            </Badge>
+          )}
           {overdueCount > 0 && (
             <Badge variant="destructive" className="h-9 px-3 rounded-md">
               {overdueCount} overdue
@@ -220,6 +255,20 @@ export function TenantAgreementsPanel() {
                     )}
                     <div>
                       <div>{a.title}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs">{a.title ? '' : ''}</span>
+                        <Badge
+                          variant={a.dealType === 'renewal' ? 'secondary' : 'outline'}
+                          className="text-[10px]"
+                        >
+                          {dealTypeLabels[a.dealType ?? 'new']}
+                        </Badge>
+                        {isRenewalDue(a) && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Renewal due
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {tenantAgreementTypeLabels[a.type]}
                         {a.fileName ? ` · ${a.fileName}` : ''}
@@ -232,6 +281,12 @@ export function TenantAgreementsPanel() {
                   {a.contractValue != null && (
                     <div className="text-xs">
                       {formatMoney(a.contractValue)} {a.cycle === 'annual' ? '/ yr' : '/ mo'}
+                    </div>
+                  )}
+                  {a.termMonths && <div className="text-xs">{a.termMonths}-month term</div>}
+                  {a.termEndsOn && (
+                    <div className="text-xs">
+                      Ends {dateLabel(`${a.termEndsOn}T00:00:00`)} · {renewalSummary(a)}
                     </div>
                   )}
                 </td>
@@ -306,6 +361,9 @@ export function TenantAgreementsPanel() {
                           <DropdownMenuSeparator />
                         </>
                       )}
+                      <DropdownMenuItem onClick={() => openRenewal(a)}>
+                        <RefreshCw className="h-3.5 w-3.5 mr-2" /> Send renewal
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openFor(a.tenantId)}>
                         New agreement for this client
                       </DropdownMenuItem>
@@ -342,8 +400,12 @@ export function TenantAgreementsPanel() {
 
       <TenantAgreementPanel
         tenant={issueFor}
+        renewalOf={renewFrom}
         open={!!issueFor}
-        onClose={() => setIssueFor(null)}
+        onClose={() => {
+          setIssueFor(null);
+          setRenewFrom(null);
+        }}
       />
     </div>
   );
