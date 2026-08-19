@@ -63,11 +63,33 @@ export interface TimesheetApprovingSettings {
   breakRoundingAdjustment: RoundingDirection;
 }
 
+export type NoShiftClockInAction = 'block' | 'allow_flag' | 'allow_silent';
+export type UnscheduledRosterFlag = 'off' | 'info' | 'warning' | 'critical';
+export type UnscheduledShiftCreation = 'never' | 'on_clock_in' | 'on_clock_out' | 'on_approval';
+export type UnscheduledEndTimeRule =
+  | 'actual_clock_out'
+  | 'fixed_duration'
+  | 'location_close'
+  | 'area_default_shift'
+  | 'open_ended';
+
 export interface UnscheduledShiftsSettings {
   linkUnscheduledToScheduled: LinkUnscheduled;
   allowTimeDriftMatching: TimeDrift;
   requireTrainingForUnscheduled: boolean;
+  // Clock-in with no rostered shift
+  noShiftClockInAction: NoShiftClockInAction;
+  rosterFlagSeverity: UnscheduledRosterFlag;
+  notifyManagerOnUnscheduledClockIn: boolean;
+  // Auto-created roster shift
+  createShiftInRoster: UnscheduledShiftCreation;
+  createdShiftEndTimeRule: UnscheduledEndTimeRule;
+  createdShiftFixedDurationHours: number;
+  createdShiftMaxDurationHours: number;
+  createdShiftRoundToMinutes: number;
+  markCreatedShiftUnapproved: boolean;
 }
+
 
 export interface BreaksSettings {
   autoIncludeScheduledOnClockOut: boolean;
