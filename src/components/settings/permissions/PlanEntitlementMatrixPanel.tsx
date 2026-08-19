@@ -42,15 +42,13 @@ import {
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { usePlan } from '@/lib/planStore';
 import { cn } from '@/lib/utils';
 
@@ -482,13 +480,13 @@ export function PlanEntitlementMatrixPanel({ query: externalQuery }: { query?: s
         </div>
       </CardContent>
 
-      <AlertDialog open={!!pending} onOpenChange={o => !o && setPending(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
+      <Dialog open={!!pending} onOpenChange={o => !o && setPending(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
               Remove “{pending?.actionLabel} {pending?.label}” from {PLANS[tier].label}?
-            </AlertDialogTitle>
-            <AlertDialogDescription asChild>
+            </DialogTitle>
+            <DialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
                   Plans are cumulative, so this also removes the capability from{' '}
@@ -515,11 +513,14 @@ export function PlanEntitlementMatrixPanel({ query: externalQuery }: { query?: s
                   </p>
                 )}
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
-            <AlertDialogAction
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPending(null)}>
+              Keep it
+            </Button>
+            <Button
+              variant="destructive"
               onClick={() => {
                 pending?.apply();
                 toast.success('Entitlement updated');
@@ -527,10 +528,10 @@ export function PlanEntitlementMatrixPanel({ query: externalQuery }: { query?: s
               }}
             >
               Remove capability
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
