@@ -127,6 +127,13 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
           const current = !isAdmin && t === tier;
           const rate = unitRate(t, cycle);
           const saving = ANNUAL_DISCOUNT_PER_USER[t];
+          const fit = isAdmin ? null : validateFor(t);
+          const blocked = !isAdmin && !current && !!fit && !fit.ok;
+          const blockedReason = blocked
+            ? `Current usage exceeds this plan: ${fit!.breaches
+                .map(b => `${b.label} ${b.used} of ${b.limit === null ? '∞' : b.limit}`)
+                .join(', ')}. Reduce usage or add a limit override above.`
+            : '';
           return (
             <Card key={t} className={cn(current && 'border-primary ring-1 ring-primary/30')}>
               <CardHeader className="pb-3">
