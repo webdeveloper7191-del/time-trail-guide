@@ -515,10 +515,88 @@ export function PolicyUnscheduled() {
           value={resolved.unscheduled.requireTrainingForUnscheduled}
           onChange={v => setField('unscheduled', 'requireTrainingForUnscheduled', v)}
         />
+
+        <div className="pt-5 pb-1">
+          <p className="text-sm font-medium tracking-tight">Clock-in with no rostered shift</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            What happens when a staff member clocks in on a device for a day they are not rostered.
+          </p>
+        </div>
+
+        <SelectRow
+          {...fieldProps('unscheduled', 'noShiftClockInAction', 'When there is no rostered shift',
+            'Controls whether the device accepts the punch at all, and whether it is marked for review.',
+            noShiftClockInActionGuide)}
+          value={resolved.unscheduled.noShiftClockInAction}
+          options={noShiftClockInActionOptions}
+          onChange={v => setField('unscheduled', 'noShiftClockInAction', v as TimesheetPolicy['unscheduled']['noShiftClockInAction'])}
+        />
+        <SelectRow
+          {...fieldProps('unscheduled', 'rosterFlagSeverity', 'How it is flagged on the roster',
+            'The marker shown on the roster grid cell for an unrostered clock-in. Critical also raises a compliance alert in the roster alerts panel.',
+            rosterFlagSeverityGuide)}
+          value={resolved.unscheduled.rosterFlagSeverity}
+          options={unscheduledRosterFlagOptions}
+          onChange={v => setField('unscheduled', 'rosterFlagSeverity', v as TimesheetPolicy['unscheduled']['rosterFlagSeverity'])}
+        />
+        <ToggleRow
+          {...fieldProps('unscheduled', 'notifyManagerOnUnscheduledClockIn', 'Notify the location manager',
+            'Send a notification the moment an unrostered clock-in is recorded.')}
+          value={resolved.unscheduled.notifyManagerOnUnscheduledClockIn}
+          onChange={v => setField('unscheduled', 'notifyManagerOnUnscheduledClockIn', v)}
+        />
+        <SelectRow
+          {...fieldProps('unscheduled', 'createShiftInRoster', 'Create a shift in the roster',
+            'Whether an unrostered clock-in should generate a matching shift so the roster reflects who is actually on site.',
+            createShiftGuide)}
+          value={resolved.unscheduled.createShiftInRoster}
+          options={unscheduledShiftCreationOptions}
+          onChange={v => setField('unscheduled', 'createShiftInRoster', v as TimesheetPolicy['unscheduled']['createShiftInRoster'])}
+        />
+
+        {resolved.unscheduled.createShiftInRoster !== 'never' && (
+          <>
+            <SelectRow
+              {...fieldProps('unscheduled', 'createdShiftEndTimeRule', 'End time for the created shift',
+                'How the end time is set for the auto-created shift. On clock-in creation the end time is provisional and is corrected to the actual clock-out.',
+                endTimeRuleGuide)}
+              value={resolved.unscheduled.createdShiftEndTimeRule}
+              options={unscheduledEndTimeRuleOptions}
+              onChange={v => setField('unscheduled', 'createdShiftEndTimeRule', v as TimesheetPolicy['unscheduled']['createdShiftEndTimeRule'])}
+            />
+            {resolved.unscheduled.createdShiftEndTimeRule === 'fixed_duration' && (
+              <NumberRow
+                {...fieldProps('unscheduled', 'createdShiftFixedDurationHours', 'Fixed shift length (hours)',
+                  'Provisional shift length applied from the clock-in time.')}
+                value={resolved.unscheduled.createdShiftFixedDurationHours}
+                onChange={v => setField('unscheduled', 'createdShiftFixedDurationHours', v)}
+              />
+            )}
+            <NumberRow
+              {...fieldProps('unscheduled', 'createdShiftMaxDurationHours', 'Maximum shift length (hours)',
+                'Safety cap. If no clock-out is received, the shift is closed at this length and flagged as a missing clock-out.')}
+              value={resolved.unscheduled.createdShiftMaxDurationHours}
+              onChange={v => setField('unscheduled', 'createdShiftMaxDurationHours', v)}
+            />
+            <NumberRow
+              {...fieldProps('unscheduled', 'createdShiftRoundToMinutes', 'Round created shift times to (minutes)',
+                'Rounds the created shift start/end so the roster grid stays tidy. Set 0 to keep exact times. Pay is still calculated from the timesheet, not the rounded shift.')}
+              value={resolved.unscheduled.createdShiftRoundToMinutes}
+              onChange={v => setField('unscheduled', 'createdShiftRoundToMinutes', v)}
+            />
+            <ToggleRow
+              {...fieldProps('unscheduled', 'markCreatedShiftUnapproved', 'Mark created shift as unapproved',
+                'The shift appears on the roster with an "Unapproved" state until a manager confirms it, so it is excluded from published rosters and budget actuals.')}
+              value={resolved.unscheduled.markCreatedShiftUnapproved}
+              onChange={v => setField('unscheduled', 'markCreatedShiftUnapproved', v)}
+            />
+          </>
+        )}
       </CardContent>
     </Card>
   );
 }
+
 
 export function PolicyBreaks() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
