@@ -32,6 +32,9 @@ import {
   unitRate,
 } from '@/lib/billingStore';
 import { openCheckoutFlow } from '@/lib/upgradeFlow';
+import { PlanLimitsPanel } from '@/components/settings/permissions/PlanLimitsPanel';
+import { usePlanLimits } from '@/lib/planLimitsStore';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { cn } from '@/lib/utils';
 
