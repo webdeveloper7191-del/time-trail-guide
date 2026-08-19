@@ -75,7 +75,7 @@ export function UserRoleAssignmentPanel({ query: externalQuery }: { query?: stri
       if (locationFilter !== ALL && !(s.locations ?? []).includes(locationFilter)) return false;
       return true;
     });
-  }, [search, assignments, roleFilter, locationFilter]);
+  }, [search, externalQuery, assignments, roleFilter, locationFilter]);
 
   useEffect(() => setPage(0), [search, roleFilter, locationFilter]);
 
