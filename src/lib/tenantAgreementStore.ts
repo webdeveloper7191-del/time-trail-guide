@@ -536,10 +536,83 @@ export const tenantAgreementStore = {
     emit();
   },
 
+  /** Save a not-yet-sent draft (used by generated renewal documents). */
+  createDraft(input: SendAgreementInput): TenantAgreement {
+    const signatories: TenantAgreementSignatory[] = [
+      { name: input.signatoryName, email: input.signatoryEmail, role: 'client' },
+    ];
+    if (input.countersignerName && input.countersignerEmail) {
+      signatories.push({
+        name: input.countersignerName,
+        email: input.countersignerEmail,
+        role: 'platform',
+      });
+    }
+    const doc: TenantAgreement = {
+      id: `ta-${Math.random().toString(36).slice(2, 9)}`,
+      tenantId: input.tenantId,
+      tenantName: input.tenantName,
+      title: input.title,
+      type: input.type,
+      status: 'draft',
+      plan: input.plan,
+      cycle: input.cycle,
+      seats: input.seats,
+      contractValue: input.contractValue,
+      createdAt: now(),
+      dueDate: input.dueDate,
+      effectiveDate: input.effectiveDate,
+      termEndsOn: input.termEndsOn,
+      signatories,
+      message: input.message,
+      salesRepId: input.salesRepId,
+      onboardingManagerId: input.onboardingManagerId,
+      accountManagerId: input.accountManagerId,
+      dealType: input.dealType ?? 'renewal',
+      renewalOfId: input.renewalOfId,
+      termMonths: input.termMonths,
+      priceTerms: input.priceTerms,
+      termsNotes: input.termsNotes,
+      remindersSent: 0,
+      openCount: 0,
+      source: 'e-signature',
+      history: [{ at: now(), label: 'Renewal document generated for review', by: 'Platform admin' }],
+    };
+    agreements = [doc, ...agreements];
+    emit();
+    return doc;
+  },
+
+  /** Send a previously generated draft out for signature. */
+  sendDraft(id: string, opts?: { dueDate?: string; message?: string }) {
+    agreements = agreements.map(a =>
+      a.id === id
+        ? {
+            ...a,
+            status: 'sent',
+            sentAt: now(),
+            dueDate: opts?.dueDate ?? a.dueDate,
+            message: opts?.message ?? a.message,
+            history: [
+              ...a.history,
+              {
+                at: now(),
+                label: `Sent for signature to ${a.signatories[0]?.email ?? 'client'}`,
+                by: 'Platform admin',
+              },
+            ],
+          }
+        : a,
+    );
+    emit();
+  },
+
   remove(id: string) {
     agreements = agreements.filter(a => a.id !== id);
     emit();
   },
+
+
 
   subscribe(l: () => void) {
     listeners.add(l);
