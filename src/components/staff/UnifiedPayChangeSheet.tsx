@@ -93,6 +93,9 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const [reason, setReason] = useState('');
   const [backPayCalculation, setBackPayCalculation] = useState<BackPayCalculation | null>(null);
   const [showDocumentStep, setShowDocumentStep] = useState(false);
+  const [signedFile, setSignedFile] = useState<File | null>(null);
+  const [signedDate, setSignedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const signedInputRef = useRef<HTMLInputElement>(null);
 
   const selectedAwardData = getAwardById(selectedAward);
   const selectedClassificationData = selectedAwardData?.classifications.find(
