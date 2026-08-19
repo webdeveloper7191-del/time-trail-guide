@@ -45,6 +45,7 @@ import { StaffAwardRuleSection } from '@/components/staff/StaffAwardRuleSection'
 import { StaffAvailabilitySection } from '@/components/staff/StaffAvailabilitySection';
 import { StaffBankDetailsSection } from '@/components/staff/StaffBankDetailsSection';
 import { StaffQualificationsSection } from '@/components/staff/StaffQualificationsSection';
+import { StaffContractsSection } from '@/components/staff/StaffContractsSection';
 
 import { Award } from 'lucide-react';
 
