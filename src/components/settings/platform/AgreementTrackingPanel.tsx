@@ -16,7 +16,9 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/billingStore';
 import {
-  SALES_REPS,
+  OWNER_ROLE_LABELS,
+  OWNER_ROLE_OPTIONS,
+  OwnerRole,
   TenantAgreement,
   daysToDue,
   isOutstanding,
@@ -144,28 +146,30 @@ export function AgreementTrackingPanel({ agreementId, onClose }: Props) {
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Sales person</Label>
-            <Select
-              value={agreement.salesRepId ?? ''}
-              onValueChange={v => {
-                tenantAgreementStore.assignSalesRep(agreement.id, v);
-                toast.success(`Assigned to ${salesRepById(v)?.name}`);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Assign a sales person" />
-              </SelectTrigger>
-              <SelectContent>
-                {SALES_REPS.map(r => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                    {r.territory ? ` · ${r.territory}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {(['salesRepId', 'onboardingManagerId', 'accountManagerId'] as OwnerRole[]).map(role => (
+            <div className="space-y-1.5" key={role}>
+              <Label className="text-xs">{OWNER_ROLE_LABELS[role]}</Label>
+              <Select
+                value={agreement[role] ?? ''}
+                onValueChange={v => {
+                  tenantAgreementStore.assignOwner(agreement.id, role, v);
+                  toast.success(`${OWNER_ROLE_LABELS[role]} set to ${salesRepById(v)?.name}`);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={`Assign ${OWNER_ROLE_LABELS[role].toLowerCase()}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {OWNER_ROLE_OPTIONS[role].map(r => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                      {r.territory ? ` · ${r.territory}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
           <div className="space-y-1.5">
             <Label className="text-xs">Contract value</Label>
             <div className="h-10 flex items-center rounded-md border border-border px-3 text-sm">

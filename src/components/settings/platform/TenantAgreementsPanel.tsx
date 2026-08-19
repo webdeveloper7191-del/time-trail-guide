@@ -22,7 +22,9 @@ import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/billingStore';
 import { Tenant, useTenants } from '@/lib/tenantStore';
 import {
-  SALES_REPS,
+  OWNER_ROLE_LABELS,
+  OWNER_ROLE_OPTIONS,
+  OwnerRole,
   TenantAgreement,
   TenantAgreementStatus,
   isOutstanding,
@@ -58,6 +60,7 @@ export function TenantAgreementsPanel() {
   const tenants = useTenants();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'all' | 'outstanding' | 'overdue' | 'complete'>('all');
+  const [repRole, setRepRole] = useState<OwnerRole>('salesRepId');
   const [rep, setRep] = useState<string>('all');
   const [trackId, setTrackId] = useState<string | null>(null);
   const [issueFor, setIssueFor] = useState<Tenant | null>(null);
@@ -69,14 +72,21 @@ export function TenantAgreementsPanel() {
       if (status === 'outstanding' && !isOutstanding(a)) return false;
       if (status === 'overdue' && !isOverdue(a)) return false;
       if (status === 'complete' && isOutstanding(a)) return false;
-      if (rep !== 'all' && a.salesRepId !== rep) return false;
+      if (rep !== 'all' && a[repRole] !== rep) return false;
       if (!q) return true;
-      return [a.tenantName, a.title, tenantAgreementTypeLabels[a.type], salesRepById(a.salesRepId)?.name ?? '']
+      return [
+        a.tenantName,
+        a.title,
+        tenantAgreementTypeLabels[a.type],
+        salesRepById(a.salesRepId)?.name ?? '',
+        salesRepById(a.onboardingManagerId)?.name ?? '',
+        salesRepById(a.accountManagerId)?.name ?? '',
+      ]
         .join(' ')
         .toLowerCase()
         .includes(q);
     });
-  }, [agreements, query, status, rep]);
+  }, [agreements, query, status, rep, repRole]);
 
   const outstanding = agreements.filter(isOutstanding).length;
   const overdueCount = agreements.filter(isOverdue).length;
@@ -110,13 +120,31 @@ export function TenantAgreementsPanel() {
               <SelectItem value="complete">Signed / closed</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={rep} onValueChange={setRep}>
-            <SelectTrigger className="h-9 w-[200px]">
-              <SelectValue placeholder="Sales person" />
+          <Select
+            value={repRole}
+            onValueChange={v => {
+              setRepRole(v as OwnerRole);
+              setRep('all');
+            }}
+          >
+            <SelectTrigger className="h-9 w-[180px]">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All sales people</SelectItem>
-              {SALES_REPS.map(r => (
+              {(Object.keys(OWNER_ROLE_LABELS) as OwnerRole[]).map(r => (
+                <SelectItem key={r} value={r}>
+                  {OWNER_ROLE_LABELS[r]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={rep} onValueChange={setRep}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder={OWNER_ROLE_LABELS[repRole]} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All {OWNER_ROLE_LABELS[repRole].toLowerCase()}s</SelectItem>
+              {OWNER_ROLE_OPTIONS[repRole].map(r => (
                 <SelectItem key={r.id} value={r.id}>
                   {r.name}
                 </SelectItem>
@@ -172,7 +200,7 @@ export function TenantAgreementsPanel() {
               <th className="text-left font-medium px-3 py-2.5">Organisation</th>
               <th className="text-left font-medium px-3 py-2.5">Document</th>
               <th className="text-left font-medium px-3 py-2.5">Terms</th>
-              <th className="text-left font-medium px-3 py-2.5">Sales person</th>
+              <th className="text-left font-medium px-3 py-2.5">Owners</th>
               <th className="text-left font-medium px-3 py-2.5">Status</th>
               <th className="text-left font-medium px-3 py-2.5">Sent / signed</th>
               <th className="text-left font-medium px-3 py-2.5">Starts</th>
@@ -207,8 +235,10 @@ export function TenantAgreementsPanel() {
                     </div>
                   )}
                 </td>
-                <td className="px-3 py-3 text-muted-foreground">
-                  {salesRepById(a.salesRepId)?.name ?? 'Unassigned'}
+                <td className="px-3 py-3 text-muted-foreground text-xs leading-5">
+                  <div>Sales: {salesRepById(a.salesRepId)?.name ?? 'Unassigned'}</div>
+                  <div>Onboarding: {salesRepById(a.onboardingManagerId)?.name ?? 'Unassigned'}</div>
+                  <div>Account: {salesRepById(a.accountManagerId)?.name ?? 'Unassigned'}</div>
                 </td>
                 <td className="px-3 py-3">
                   <span

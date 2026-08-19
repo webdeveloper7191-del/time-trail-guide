@@ -65,7 +65,39 @@ export const SALES_REPS: SalesRep[] = [
   { id: 'sr_house', name: 'House account', email: 'sales@rostered.ai', territory: 'Unassigned' },
 ];
 
-export const salesRepById = (id?: string) => SALES_REPS.find(r => r.id === id);
+export const ONBOARDING_MANAGERS: SalesRep[] = [
+  { id: 'om_lucy', name: 'Lucy Hart', email: 'lucy.hart@rostered.ai', territory: 'Implementation' },
+  { id: 'om_raj', name: 'Raj Patel', email: 'raj.patel@rostered.ai', territory: 'Implementation' },
+  { id: 'om_tara', name: 'Tara Nguyen', email: 'tara.nguyen@rostered.ai', territory: 'Enterprise onboarding' },
+  { id: 'om_pool', name: 'Onboarding pool', email: 'onboarding@rostered.ai', territory: 'Unassigned' },
+];
+
+export const ACCOUNT_MANAGERS: SalesRep[] = [
+  { id: 'am_josh', name: 'Josh Reilly', email: 'josh.reilly@rostered.ai', territory: 'Customer success' },
+  { id: 'am_ana', name: 'Ana Silva', email: 'ana.silva@rostered.ai', territory: 'Customer success' },
+  { id: 'am_ken', name: 'Ken Watanabe', email: 'ken.watanabe@rostered.ai', territory: 'Strategic accounts' },
+  { id: 'am_pool', name: 'Support pool', email: 'success@rostered.ai', territory: 'Unassigned' },
+];
+
+/** Every internal owner across the three roles, for lookups. */
+const ALL_OWNERS = () => [...SALES_REPS, ...ONBOARDING_MANAGERS, ...ACCOUNT_MANAGERS];
+
+export const salesRepById = (id?: string) => ALL_OWNERS().find(r => r.id === id);
+export const ownerById = salesRepById;
+
+export type OwnerRole = 'salesRepId' | 'onboardingManagerId' | 'accountManagerId';
+
+export const OWNER_ROLE_LABELS: Record<OwnerRole, string> = {
+  salesRepId: 'Sales person',
+  onboardingManagerId: 'Onboarding manager',
+  accountManagerId: 'Account manager',
+};
+
+export const OWNER_ROLE_OPTIONS: Record<OwnerRole, SalesRep[]> = {
+  salesRepId: SALES_REPS,
+  onboardingManagerId: ONBOARDING_MANAGERS,
+  accountManagerId: ACCOUNT_MANAGERS,
+};
 
 export interface TenantAgreementSignatory {
   name: string;
@@ -98,6 +130,10 @@ export interface TenantAgreement {
   message?: string;
   /** Sales person who owns this deal / document. */
   salesRepId?: string;
+  /** Onboarding / implementation manager for this client. */
+  onboardingManagerId?: string;
+  /** Ongoing account manager (customer success). */
+  accountManagerId?: string;
   /** Delivery + engagement tracking. */
   remindersSent?: number;
   lastReminderAt?: string;
@@ -139,6 +175,8 @@ function seed(): TenantAgreement[] {
         { name: 'Rostered.ai', email: 'contracts@rostered.ai', role: 'platform', signedAt: daysAgo(93) },
       ],
       salesRepId: 'sr_priya',
+      onboardingManagerId: 'om_lucy',
+      accountManagerId: 'am_josh',
       remindersSent: 1,
       lastReminderAt: daysAgo(94),
       openCount: 3,
@@ -166,6 +204,8 @@ function seed(): TenantAgreement[] {
       signatories: [{ name: 'Ankit Sharma', email: 'ankit.sharma@example.com', role: 'client' }],
       message: 'Please review and sign to activate your Essentials subscription.',
       salesRepId: 'sr_dan',
+      onboardingManagerId: 'om_raj',
+      accountManagerId: 'am_ana',
       remindersSent: 0,
       openCount: 0,
       source: 'e-signature',
@@ -189,6 +229,8 @@ function seed(): TenantAgreement[] {
       fileName: 'test-care-price-variation-signed.pdf',
       fileSize: 486_000,
       salesRepId: 'sr_mei',
+      onboardingManagerId: 'om_tara',
+      accountManagerId: 'am_ken',
       source: 'upload',
       history: [{ at: daysAgo(30), label: 'Signed copy uploaded', by: 'Platform admin' }],
     },
@@ -243,6 +285,8 @@ export interface SendAgreementInput {
   termEndsOn?: string;
   message?: string;
   salesRepId?: string;
+  onboardingManagerId?: string;
+  accountManagerId?: string;
 }
 
 export interface UploadAgreementInput
@@ -283,6 +327,8 @@ export const tenantAgreementStore = {
       signatories,
       message: input.message,
       salesRepId: input.salesRepId,
+      onboardingManagerId: input.onboardingManagerId,
+      accountManagerId: input.accountManagerId,
       remindersSent: 0,
       openCount: 0,
       source: 'e-signature',
@@ -320,6 +366,8 @@ export const tenantAgreementStore = {
       fileName: input.fileName,
       fileSize: input.fileSize,
       salesRepId: input.salesRepId,
+      onboardingManagerId: input.onboardingManagerId,
+      accountManagerId: input.accountManagerId,
       source: 'upload',
       history: [{ at: now(), label: `Signed copy uploaded (${input.fileName})`, by: 'Platform admin' }],
     };
@@ -376,20 +424,29 @@ export const tenantAgreementStore = {
     emit();
   },
 
-  assignSalesRep(id: string, salesRepId: string) {
+  /** Assign any internal owner role (sales, onboarding, account management). */
+  assignOwner(id: string, role: OwnerRole, ownerId: string) {
     agreements = agreements.map(a =>
       a.id === id
         ? {
             ...a,
-            salesRepId,
+            [role]: ownerId,
             history: [
               ...a.history,
-              { at: now(), label: `Assigned to ${salesRepById(salesRepId)?.name ?? 'sales'}`, by: 'Platform admin' },
+              {
+                at: now(),
+                label: `${OWNER_ROLE_LABELS[role]} set to ${salesRepById(ownerId)?.name ?? 'unassigned'}`,
+                by: 'Platform admin',
+              },
             ],
           }
         : a,
     );
     emit();
+  },
+
+  assignSalesRep(id: string, salesRepId: string) {
+    tenantAgreementStore.assignOwner(id, 'salesRepId', salesRepId);
   },
 
   resend(id: string) {

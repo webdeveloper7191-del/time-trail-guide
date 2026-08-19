@@ -19,6 +19,8 @@ import { PLANS, PLAN_ORDER, PlanTier } from '@/types/plans';
 import { BillingCycle, formatMoney, priceFor, annualDiscountFor } from '@/lib/billingStore';
 import { Tenant, tenantRate } from '@/lib/tenantStore';
 import {
+  ACCOUNT_MANAGERS,
+  ONBOARDING_MANAGERS,
   SALES_REPS,
   TenantAgreementType,
   tenantAgreementStore,
@@ -56,6 +58,8 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
   const [termEndsOn, setTermEndsOn] = useState(inDays(379));
   const [message, setMessage] = useState('');
   const [salesRepId, setSalesRepId] = useState(SALES_REPS[0].id);
+  const [onboardingManagerId, setOnboardingManagerId] = useState(ONBOARDING_MANAGERS[0].id);
+  const [accountManagerId, setAccountManagerId] = useState(ACCOUNT_MANAGERS[0].id);
 
   const [signedOn, setSignedOn] = useState(today());
   const [file, setFile] = useState<File | null>(null);
@@ -78,6 +82,8 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
     setTermEndsOn(inDays(379));
     setSignedOn(today());
     setSalesRepId(SALES_REPS[0].id);
+    setOnboardingManagerId(ONBOARDING_MANAGERS[0].id);
+    setAccountManagerId(ACCOUNT_MANAGERS[0].id);
   }, [tenant]);
 
   const rate = useMemo(
@@ -127,6 +133,8 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
       effectiveDate,
       termEndsOn,
       salesRepId,
+      onboardingManagerId,
+      accountManagerId,
     };
 
     if (!common.signatoryName || !common.signatoryEmail) {
@@ -312,22 +320,30 @@ export function TenantAgreementPanel({ tenant, open, onClose }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Sales person</Label>
-              <Select value={salesRepId} onValueChange={setSalesRepId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Assign a sales person" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SALES_REPS.map(r => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name}
-                      {r.territory ? ` · ${r.territory}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {(
+              [
+                ['Sales person', salesRepId, setSalesRepId, SALES_REPS],
+                ['Onboarding manager', onboardingManagerId, setOnboardingManagerId, ONBOARDING_MANAGERS],
+                ['Account manager', accountManagerId, setAccountManagerId, ACCOUNT_MANAGERS],
+              ] as const
+            ).map(([label, value, setValue, options]) => (
+              <div className="space-y-1.5" key={label}>
+                <Label className="text-xs">{label}</Label>
+                <Select value={value} onValueChange={setValue}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Assign ${label.toLowerCase()}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {options.map(r => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                        {r.territory ? ` · ${r.territory}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
             <div className="space-y-1.5">
               <Label className="text-xs">Term ends</Label>
               <Input type="date" value={termEndsOn} onChange={e => setTermEndsOn(e.target.value)} />
