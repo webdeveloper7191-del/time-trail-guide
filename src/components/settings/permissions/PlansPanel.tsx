@@ -32,6 +32,9 @@ import {
   unitRate,
 } from '@/lib/billingStore';
 import { openCheckoutFlow } from '@/lib/upgradeFlow';
+import { PlanLimitsPanel } from '@/components/settings/permissions/PlanLimitsPanel';
+import { usePlanLimits } from '@/lib/planLimitsStore';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { cn } from '@/lib/utils';
 
@@ -52,6 +55,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   const entitlements = usePlanEntitlements();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const { upcoming } = usePricingSchedule();
+  const { validateFor, usage } = usePlanLimits();
 
   const rows = useMemo(
     () =>
@@ -68,6 +72,7 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
   return (
     <div className="space-y-4">
       {isAdmin && <PricingSchedulePanel />}
+      {!isAdmin && <PlanLimitsPanel />}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="space-y-0.5">
           <p className="text-xs text-muted-foreground">
@@ -122,6 +127,13 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
           const current = !isAdmin && t === tier;
           const rate = unitRate(t, cycle);
           const saving = ANNUAL_DISCOUNT_PER_USER[t];
+          const fit = isAdmin ? null : validateFor(t);
+          const blocked = !isAdmin && !current && !!fit && !fit.ok;
+          const blockedReason = blocked
+            ? `Current usage exceeds this plan: ${fit!.breaches
+                .map(b => `${b.label} ${b.used} of ${b.limit === null ? '∞' : b.limit}`)
+                .join(', ')}. Reduce usage or add a limit override above.`
+            : '';
           return (
             <Card key={t} className={cn(current && 'border-primary ring-1 ring-primary/30')}>
               <CardHeader className="pb-3">
@@ -207,27 +219,41 @@ export function PlansPanel({ mode = 'tenant' }: PlansPanelProps = {}) {
                     )}
                   </Button>
                 ) : (
-                  <Button
-                    className="w-full"
-                    variant={current ? 'outline' : t === 'free' ? 'outline' : 'default'}
-                    disabled={current}
-                    onClick={() =>
-                      openCheckoutFlow({
-                        needs: t,
-                        feature: `${p.label} plan`,
-                        source: 'plans-panel',
-                        cycle,
-                      })
-                    }
-                  >
-                    {current
-                      ? 'Current plan'
-                      : t === 'free'
-                        ? 'Downgrade to Free'
-                        : isAtLeast(tier, t)
-                          ? `Switch to ${p.label}`
-                          : `Upgrade to ${p.label}`}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block">
+                        <Button
+                          className="w-full"
+                          variant={current ? 'outline' : t === 'free' ? 'outline' : 'default'}
+                          disabled={current || blocked}
+                          onClick={() =>
+                            openCheckoutFlow({
+                              needs: t,
+                              feature: `${p.label} plan`,
+                              source: 'plans-panel',
+                              cycle,
+                              seats: usage.staff,
+                            })
+                          }
+                        >
+                          {current
+                            ? 'Current plan'
+                            : blocked
+                              ? 'Usage over limit'
+                              : t === 'free'
+                                ? 'Downgrade to Free'
+                                : isAtLeast(tier, t)
+                                  ? `Switch to ${p.label}`
+                                  : `Upgrade to ${p.label}`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {blocked && (
+                      <TooltipContent className="max-w-[260px] text-xs">
+                        {blockedReason}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 )}
 
 

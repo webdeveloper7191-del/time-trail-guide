@@ -39,6 +39,7 @@ import {
   taxRuleFor,
 } from '@/lib/billingStore';
 import { InvoiceHistorySection } from '@/components/settings/billing/InvoiceHistorySection';
+import { planLimitStore, seatCeiling } from '@/lib/planLimitsStore';
 import { cn } from '@/lib/utils';
 
 
@@ -114,6 +115,18 @@ export function CheckoutPanel() {
   const plan = PLANS[tier];
   /** Tax follows the billing country, so the breakdown reacts to billing details too. */
   const taxRule = taxRuleFor(country);
+  /** Hard seat cap of the selected plan, after any documented limit override. */
+  const limitOverrides = planLimitStore.all();
+  const maxSeats = seatCeiling(tier, limitOverrides);
+  const seatOverride = !!limitOverrides.staff;
+  const capSeats = (n: number) => (maxSeats === null ? n : Math.min(n, maxSeats));
+
+  // Keep the seat count legal whenever the selected plan changes.
+  useEffect(() => {
+    if (maxSeats !== null) setSeats(s => Math.min(s, maxSeats));
+  }, [maxSeats]);
+
+
   const totals = useMemo(
     () => invoiceTotal(tier, cycle, seats, taxRule.rate),
     [tier, cycle, seats, taxRule.rate],
@@ -306,19 +319,30 @@ export function CheckoutPanel() {
                 </Button>
                 <Input
                   value={seats}
-                  onChange={e => setSeats(Math.max(1, Number(digits(e.target.value)) || 1))}
+                  onChange={e =>
+                    setSeats(capSeats(Math.max(1, Number(digits(e.target.value)) || 1)))
+                  }
                   className="h-8 text-center"
                 />
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={() => setSeats(s => s + 1)}
+                  disabled={maxSeats !== null && seats >= maxSeats}
+                  onClick={() => setSeats(s => capSeats(s + 1))}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               </div>
+              {maxSeats !== null && (
+                <p className="text-[11px] text-muted-foreground">
+                  {plan.label} is capped at {maxSeats} users
+                  {seatOverride ? ' (limit override applied)' : ''}. Choose a higher plan or raise
+                  the limit in Plans → Plan limits.
+                </p>
+              )}
             </div>
+
 
             <div className="space-y-1.5">
               <Label className="text-xs">Billing country</Label>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PlanTier, PLAN_ORDER } from '@/types/plans';
 import { BillingCycle } from '@/lib/billingStore';
+import { LimitOverrides } from '@/lib/planLimitsStore';
 
 /**
  * Platform-admin tenant (client) directory.
@@ -40,6 +41,8 @@ export interface Tenant {
   seats: number;
   /** Negotiated rate for this client only. */
   customPricing?: TenantPricing;
+  /** Documented lifts of the plan's hard limits for this client only. */
+  limitOverrides?: LimitOverrides;
 }
 
 export const TENANT_STATUS_LABEL: Record<TenantStatus, string> = {
