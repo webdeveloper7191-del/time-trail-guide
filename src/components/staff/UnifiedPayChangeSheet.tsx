@@ -206,10 +206,38 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
     setShowDocumentStep(false);
   };
 
-  const handleSkipDocuments = () => {
+  const MAX_SIGNED_FILE_MB = 20;
+
+  const handleSignedFilePicked = (file: File | undefined) => {
+    if (!file) return;
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
+    if (!allowed.includes(file.type)) {
+      toast.error('Unsupported file type', { description: 'Upload a PDF, PNG or JPG.' });
+      return;
+    }
+    if (file.size > MAX_SIGNED_FILE_MB * 1024 * 1024) {
+      toast.error('File too large', { description: `Maximum size is ${MAX_SIGNED_FILE_MB}MB.` });
+      return;
+    }
+    setSignedFile(file);
+  };
+
+  const handleUploadSignedContract = () => {
+    if (!signedFile) return;
+    toast.success('Signed contract uploaded', {
+      description: `${signedFile.name} attached to ${staff.firstName} ${staff.lastName}'s record, signed ${format(new Date(`${signedDate}T00:00:00`), 'dd MMM yyyy')}.`,
+    });
+    setSignedFile(null);
     onOpenChange(false);
     setShowDocumentStep(false);
   };
+
+  const handleSkipDocuments = () => {
+    setSignedFile(null);
+    onOpenChange(false);
+    setShowDocumentStep(false);
+  };
+
 
   const config = modeConfig[mode];
   const ModeIcon = config.icon;
