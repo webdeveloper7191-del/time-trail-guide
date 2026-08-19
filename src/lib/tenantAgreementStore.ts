@@ -49,6 +49,24 @@ export const tenantAgreementStatusLabels: Record<TenantAgreementStatus, string> 
   uploaded: 'Signed (uploaded)',
 };
 
+/** Sales people who can be assigned as document owner. */
+export interface SalesRep {
+  id: string;
+  name: string;
+  email: string;
+  territory?: string;
+}
+
+export const SALES_REPS: SalesRep[] = [
+  { id: 'sr_priya', name: 'Priya Nair', email: 'priya.nair@rostered.ai', territory: 'VIC / TAS' },
+  { id: 'sr_dan', name: 'Daniel Brooks', email: 'daniel.brooks@rostered.ai', territory: 'NSW / ACT' },
+  { id: 'sr_mei', name: 'Mei Lin', email: 'mei.lin@rostered.ai', territory: 'QLD' },
+  { id: 'sr_sam', name: 'Sam Okafor', email: 'sam.okafor@rostered.ai', territory: 'WA / SA / NT' },
+  { id: 'sr_house', name: 'House account', email: 'sales@rostered.ai', territory: 'Unassigned' },
+];
+
+export const salesRepById = (id?: string) => SALES_REPS.find(r => r.id === id);
+
 export interface TenantAgreementSignatory {
   name: string;
   email: string;
@@ -78,6 +96,13 @@ export interface TenantAgreement {
   termEndsOn?: string;
   signatories: TenantAgreementSignatory[];
   message?: string;
+  /** Sales person who owns this deal / document. */
+  salesRepId?: string;
+  /** Delivery + engagement tracking. */
+  remindersSent?: number;
+  lastReminderAt?: string;
+  openCount?: number;
+  declineReason?: string;
   /** Set when the signed copy was uploaded rather than e-signed. */
   fileName?: string;
   fileSize?: number;
@@ -113,6 +138,10 @@ function seed(): TenantAgreement[] {
         { name: 'Krishna Kotadiya', email: 'krishna.kotadiya@example.com', role: 'client', signedAt: daysAgo(93) },
         { name: 'Rostered.ai', email: 'contracts@rostered.ai', role: 'platform', signedAt: daysAgo(93) },
       ],
+      salesRepId: 'sr_priya',
+      remindersSent: 1,
+      lastReminderAt: daysAgo(94),
+      openCount: 3,
       source: 'e-signature',
       history: [
         { at: daysAgo(95), label: 'Sent for signature', by: 'Platform admin' },
@@ -136,6 +165,9 @@ function seed(): TenantAgreement[] {
       effectiveDate: daysAhead(12).slice(0, 10),
       signatories: [{ name: 'Ankit Sharma', email: 'ankit.sharma@example.com', role: 'client' }],
       message: 'Please review and sign to activate your Essentials subscription.',
+      salesRepId: 'sr_dan',
+      remindersSent: 0,
+      openCount: 0,
       source: 'e-signature',
       history: [{ at: daysAgo(4), label: 'Sent for signature', by: 'Platform admin' }],
     },
@@ -156,6 +188,7 @@ function seed(): TenantAgreement[] {
       signatories: [{ name: 'Test Care Group', email: 'ops@testcare.example.com', role: 'client', signedAt: daysAgo(30) }],
       fileName: 'test-care-price-variation-signed.pdf',
       fileSize: 486_000,
+      salesRepId: 'sr_mei',
       source: 'upload',
       history: [{ at: daysAgo(30), label: 'Signed copy uploaded', by: 'Platform admin' }],
     },
@@ -209,6 +242,7 @@ export interface SendAgreementInput {
   effectiveDate?: string;
   termEndsOn?: string;
   message?: string;
+  salesRepId?: string;
 }
 
 export interface UploadAgreementInput
@@ -248,6 +282,9 @@ export const tenantAgreementStore = {
       termEndsOn: input.termEndsOn,
       signatories,
       message: input.message,
+      salesRepId: input.salesRepId,
+      remindersSent: 0,
+      openCount: 0,
       source: 'e-signature',
       history: [{ at: now(), label: `Sent for signature to ${input.signatoryEmail}`, by: 'Platform admin' }],
     };
@@ -282,6 +319,7 @@ export const tenantAgreementStore = {
       ],
       fileName: input.fileName,
       fileSize: input.fileSize,
+      salesRepId: input.salesRepId,
       source: 'upload',
       history: [{ at: now(), label: `Signed copy uploaded (${input.fileName})`, by: 'Platform admin' }],
     };
@@ -305,10 +343,50 @@ export const tenantAgreementStore = {
     emit();
   },
 
-  markDeclined(id: string) {
+  markDeclined(id: string, reason?: string) {
     agreements = agreements.map(a =>
       a.id === id
-        ? { ...a, status: 'declined', history: [...a.history, { at: now(), label: 'Declined by client' }] }
+        ? {
+            ...a,
+            status: 'declined',
+            declineReason: reason,
+            history: [
+              ...a.history,
+              { at: now(), label: reason ? `Declined by client — ${reason}` : 'Declined by client' },
+            ],
+          }
+        : a,
+    );
+    emit();
+  },
+
+  /** Record that the client opened the document (delivery tracking). */
+  markViewed(id: string) {
+    agreements = agreements.map(a =>
+      a.id === id
+        ? {
+            ...a,
+            status: a.status === 'sent' ? 'viewed' : a.status,
+            viewedAt: a.viewedAt ?? now(),
+            openCount: (a.openCount ?? 0) + 1,
+            history: [...a.history, { at: now(), label: 'Opened by client' }],
+          }
+        : a,
+    );
+    emit();
+  },
+
+  assignSalesRep(id: string, salesRepId: string) {
+    agreements = agreements.map(a =>
+      a.id === id
+        ? {
+            ...a,
+            salesRepId,
+            history: [
+              ...a.history,
+              { at: now(), label: `Assigned to ${salesRepById(salesRepId)?.name ?? 'sales'}`, by: 'Platform admin' },
+            ],
+          }
         : a,
     );
     emit();
@@ -317,7 +395,14 @@ export const tenantAgreementStore = {
   resend(id: string) {
     agreements = agreements.map(a =>
       a.id === id
-        ? { ...a, sentAt: now(), status: a.status === 'draft' ? 'sent' : a.status, history: [...a.history, { at: now(), label: 'Reminder sent', by: 'Platform admin' }] }
+        ? {
+            ...a,
+            sentAt: now(),
+            status: a.status === 'draft' ? 'sent' : a.status,
+            remindersSent: (a.remindersSent ?? 0) + 1,
+            lastReminderAt: now(),
+            history: [...a.history, { at: now(), label: 'Reminder sent', by: 'Platform admin' }],
+          }
         : a,
     );
     emit();
@@ -344,3 +429,33 @@ export function useTenantAgreements(tenantId?: string) {
 
 export const isOutstanding = (a: TenantAgreement) =>
   a.status === 'sent' || a.status === 'viewed' || a.status === 'draft';
+
+export const isComplete = (a: TenantAgreement) => a.status === 'signed' || a.status === 'uploaded';
+
+/** Days until (positive) or past (negative) the sign-by date. */
+export function daysToDue(a: TenantAgreement): number | null {
+  if (!a.dueDate) return null;
+  const due = new Date(`${a.dueDate}T23:59:59`).getTime();
+  return Math.ceil((due - Date.now()) / 86400000);
+}
+
+export const isOverdue = (a: TenantAgreement) => {
+  const d = daysToDue(a);
+  return isOutstanding(a) && d !== null && d < 0;
+};
+
+/** One-line tracking summary of where a sent document currently sits. */
+export function trackingSummary(a: TenantAgreement): string {
+  if (a.status === 'uploaded') return 'Signed copy on file';
+  if (a.status === 'signed') return 'Signed by all parties';
+  if (a.status === 'declined') return a.declineReason ? `Declined — ${a.declineReason}` : 'Declined by client';
+  if (a.status === 'expired') return 'Expired without signature';
+  if (a.status === 'draft') return 'Draft — not sent yet';
+  const opens = a.openCount ?? 0;
+  const reminders = a.remindersSent ?? 0;
+  const parts = [opens > 0 ? `Opened ${opens}×` : 'Not opened yet'];
+  if (reminders) parts.push(`${reminders} reminder${reminders > 1 ? 's' : ''}`);
+  const d = daysToDue(a);
+  if (d !== null) parts.push(d < 0 ? `${Math.abs(d)}d overdue` : `${d}d to sign`);
+  return parts.join(' · ');
+}
