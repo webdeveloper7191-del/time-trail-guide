@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Plus, Trash2, Lock, Search, Copy, Eye, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, Lock, Search, Copy, Eye, MoreVertical, GitCompare, FileJson, Download, Save } from 'lucide-react';
 
 import { toast } from 'sonner';
 import {
@@ -25,8 +25,13 @@ import {
 import { permissionsStore, usePermissionsStore } from '@/lib/permissionsStore';
 import { usePlan } from '@/lib/planStore';
 import { RoleDetailSheet } from './RoleDetailSheet';
+import { RoleCompareDialog } from './RoleCompareDialog';
+import { RoleTemplatesSheet, exportRoleAsTemplate } from './RoleTemplatesSheet';
+import { roleTemplateStore } from '@/lib/roleTemplateStore';
 
 interface RolesPanelProps {
+  /** Search text driven by the page header; merged with the local box. */
+  query?: string;
   /**
    * `tenant` (default) — org admins manage their custom roles.
    * `system` — platform admins define the default roles shipped to every tenant.
@@ -34,7 +39,7 @@ interface RolesPanelProps {
   scope?: 'tenant' | 'system';
 }
 
-export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
+export function RolesPanel({ scope = 'tenant', query: externalQuery }: RolesPanelProps = {}) {
   const isSystemScope = scope === 'system';
   const { roles: allRoles, matrix, assignments } = usePermissionsStore();
   const roles = useMemo(
@@ -48,6 +53,9 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
   const [copyFrom, setCopyFrom] = useState('none');
   const [query, setQuery] = useState('');
   const [detailRole, setDetailRole] = useState<RoleDefinition | null>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareFrom, setCompareFrom] = useState<string | undefined>();
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const customCount = roles.filter(r => !r.system).length;
   const roleCap = plan.limits.customRoles;
@@ -63,8 +71,10 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
     return counts;
   }, [assignments]);
 
+  const effectiveQuery = externalQuery?.trim() || query;
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = effectiveQuery.trim().toLowerCase();
     if (!q) return roles;
     return roles.filter(r => {
       if (r.label.toLowerCase().includes(q) || r.description.toLowerCase().includes(q)) return true;
@@ -89,7 +99,7 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
         });
       });
     });
-  }, [roles, query, matrix]);
+  }, [roles, effectiveQuery, matrix]);
 
 
   const openCreate = (fromRoleId?: string) => {
@@ -186,6 +196,25 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
               <DropdownMenuItem onClick={() => openCreate(r.id)}>
                 <Copy className="h-4 w-4 mr-2" /> Clone role
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setCompareFrom(r.id);
+                  setCompareOpen(true);
+                }}
+              >
+                <GitCompare className="h-4 w-4 mr-2" /> Compare with…
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  roleTemplateStore.saveFromRole(r, `${r.label} template`);
+                  toast.success(`"${r.label}" saved as a role template`);
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" /> Save as template
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportRoleAsTemplate(r)}>
+                <Download className="h-4 w-4 mr-2" /> Export JSON
+              </DropdownMenuItem>
               {(!r.system || isSystemScope) && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -216,10 +245,26 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
             onChange={e => setQuery(e.target.value)}
           />
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="h-10 rounded-lg"
+            onClick={() => {
+              setCompareFrom(undefined);
+              setCompareOpen(true);
+            }}
+            disabled={roles.length < 2}
+          >
+            <GitCompare className="h-4 w-4 mr-1.5" /> Compare roles
+          </Button>
+          <Button variant="outline" className="h-10 rounded-lg" onClick={() => setTemplatesOpen(true)}>
+            <FileJson className="h-4 w-4 mr-1.5" /> Templates
+          </Button>
         <Button className="h-10 rounded-lg" onClick={() => openCreate()} disabled={atCap}>
           <Plus className="h-4 w-4 mr-1.5" />
           {isSystemScope ? 'New Default Role' : 'New Custom Role'}
         </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden bg-card">
@@ -261,6 +306,16 @@ export function RolesPanel({ scope = 'tenant' }: RolesPanelProps = {}) {
         open={!!detailRole}
         onOpenChange={v => !v && setDetailRole(null)}
       />
+
+      <RoleCompareDialog
+        roles={allRoles}
+        matrix={matrix}
+        open={compareOpen}
+        onOpenChange={setCompareOpen}
+        initialLeft={compareFrom}
+      />
+
+      <RoleTemplatesSheet roles={allRoles} open={templatesOpen} onOpenChange={setTemplatesOpen} />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-[420px] sm:max-w-[420px]">
