@@ -102,6 +102,7 @@ export function EmployeePortal() {
     schedule: { title: 'My Schedule', subtitle: 'Shifts, open shifts and swap requests' },
     current: { title: 'My Timesheets', subtitle: 'Review your hours and compliance' },
     'leave-balances': { title: 'Leave Balances', subtitle: 'RDO, ADO and TOIL accruals' },
+    documents: { title: 'Contracts & Documents', subtitle: 'Review, sign and download your documents' },
     recognition: { title: 'Recognition', subtitle: 'Celebrate your team' },
     performance: { title: 'Performance', subtitle: 'Reviews, goals and feedback' },
     okrs: { title: 'My OKRs', subtitle: 'Track objectives and key results' },
