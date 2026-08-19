@@ -68,16 +68,8 @@ export function AgreementTrackingPanel({ agreementId, onClose }: Props) {
   const overdue = isOverdue(agreement);
   const outstanding = isOutstanding(agreement);
 
-  const steps = [
-    { label: 'Sent', at: agreement.sentAt, done: !!agreement.sentAt, icon: Mail },
-    { label: 'Opened by client', at: agreement.viewedAt, done: !!agreement.viewedAt, icon: Eye },
-    {
-      label: agreement.source === 'upload' ? 'Signed copy uploaded' : 'Signed',
-      at: agreement.completedAt,
-      done: !!agreement.completedAt,
-      icon: Check,
-    },
-  ];
+
+
 
   return (
     <PrimaryOffCanvas
