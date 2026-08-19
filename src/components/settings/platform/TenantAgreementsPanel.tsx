@@ -74,6 +74,7 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
   const [renewalDoc, setRenewalDoc] = useState<TenantAgreement | null>(null);
   const [issueFor, setIssueFor] = useState<Tenant | null>(null);
   const [newFor, setNewFor] = useState('');
+  const [queueOpen, setQueueOpen] = useState(false);
 
   const rows = useMemo(() => {
     const q = (externalQuery?.trim() || query).trim().toLowerCase();
