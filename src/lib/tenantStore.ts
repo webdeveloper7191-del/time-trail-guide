@@ -40,6 +40,8 @@ export interface Tenant {
   seats: number;
   /** Negotiated rate for this client only. */
   customPricing?: TenantPricing;
+  /** Documented lifts of the plan's hard limits for this client only. */
+  limitOverrides?: LimitOverrides;
 }
 
 export const TENANT_STATUS_LABEL: Record<TenantStatus, string> = {
