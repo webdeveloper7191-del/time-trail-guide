@@ -10,6 +10,7 @@ import { PlanEntitlementMatrixPanel } from '@/components/settings/permissions/Pl
 import { RolesPanel } from '@/components/settings/permissions/RolesPanel';
 import { TenantListPanel } from '@/components/settings/platform/TenantListPanel';
 import { TenantAgreementsPanel } from '@/components/settings/platform/TenantAgreementsPanel';
+import { PlanContractDefaultsPanel } from '@/components/settings/platform/PlanContractDefaultsPanel';
 
 /**
  * System-admin (platform) view: what the product owner configures — the plan
@@ -83,8 +84,9 @@ export default function PlatformAdmin() {
             <TabsContent value="agreements" className="mt-4">
               <TenantAgreementsPanel />
             </TabsContent>
-            <TabsContent value="plans" className="mt-4">
+            <TabsContent value="plans" className="mt-4 space-y-4">
               <PlansPanel mode="admin" />
+              <PlanContractDefaultsPanel />
             </TabsContent>
             <TabsContent value="entitlements" className="mt-4">
               <PlanEntitlementMatrixPanel />

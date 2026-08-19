@@ -41,6 +41,7 @@ import {
 } from '@/lib/tenantAgreementStore';
 import { TenantAgreementPanel } from './TenantAgreementPanel';
 import { AgreementTrackingPanel } from './AgreementTrackingPanel';
+import { RenewalDocumentPanel } from './RenewalDocumentPanel';
 
 const statusStyle: Record<TenantAgreementStatus, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -69,6 +70,7 @@ export function TenantAgreementsPanel() {
   const [repRole, setRepRole] = useState<OwnerRole>('salesRepId');
   const [rep, setRep] = useState<string>('all');
   const [trackId, setTrackId] = useState<string | null>(null);
+  const [renewalDoc, setRenewalDoc] = useState<TenantAgreement | null>(null);
   const [issueFor, setIssueFor] = useState<Tenant | null>(null);
   const [newFor, setNewFor] = useState('');
 
@@ -360,6 +362,9 @@ export function TenantAgreementsPanel() {
                           <DropdownMenuSeparator />
                         </>
                       )}
+                      <DropdownMenuItem onClick={() => setRenewalDoc(a)}>
+                        <FileText className="h-3.5 w-3.5 mr-2" /> Generate renewal document
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openRenewal(a)}>
                         <RefreshCw className="h-3.5 w-3.5 mr-2" /> Send renewal
                       </DropdownMenuItem>
@@ -396,6 +401,12 @@ export function TenantAgreementsPanel() {
       </div>
 
       <AgreementTrackingPanel agreementId={trackId} onClose={() => setTrackId(null)} />
+
+      <RenewalDocumentPanel
+        source={renewalDoc}
+        open={!!renewalDoc}
+        onClose={() => setRenewalDoc(null)}
+      />
 
       <TenantAgreementPanel
         tenant={issueFor}
