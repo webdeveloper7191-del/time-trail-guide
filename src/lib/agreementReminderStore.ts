@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  ALL_OWNERS,
+
+  ACCOUNT_MANAGERS,
+  ONBOARDING_MANAGERS,
   OWNER_ROLE_LABELS,
+  SALES_REPS,
   OwnerRole,
   SalesRep,
   TenantAgreement,
@@ -255,4 +258,4 @@ export function ownerWorkQueue(
   );
 }
 
-export const allOwners = ALL_OWNERS;
+export const allOwners = () => [...SALES_REPS, ...ONBOARDING_MANAGERS, ...ACCOUNT_MANAGERS];
