@@ -138,6 +138,9 @@ export function EmployeePortal() {
         );
       case 'leave-balances':
         return <LeaveBalancesView employeeName={currentEmployee.name} />;
+      case 'documents':
+        return <EmployeeDocumentsPanel employeeName={currentEmployee.name} />;
+
 
       case 'recognition':
         return <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />;
