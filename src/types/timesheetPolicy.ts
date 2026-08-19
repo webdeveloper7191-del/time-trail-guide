@@ -195,7 +195,17 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     linkUnscheduledToScheduled: 'never',
     allowTimeDriftMatching: 'never',
     requireTrainingForUnscheduled: false,
+    noShiftClockInAction: 'allow_flag',
+    rosterFlagSeverity: 'warning',
+    notifyManagerOnUnscheduledClockIn: true,
+    createShiftInRoster: 'on_clock_out',
+    createdShiftEndTimeRule: 'actual_clock_out',
+    createdShiftFixedDurationHours: 8,
+    createdShiftMaxDurationHours: 12,
+    createdShiftRoundToMinutes: 15,
+    markCreatedShiftUnapproved: true,
   },
+
   breaks: {
     autoIncludeScheduledOnClockOut: false,
     flagShortOrMissedBreaks: false,
