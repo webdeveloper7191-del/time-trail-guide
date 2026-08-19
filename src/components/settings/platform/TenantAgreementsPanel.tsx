@@ -16,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Activity, FileSignature, MoreVertical, RefreshCw, Search, Upload, FileText } from 'lucide-react';
+import { Activity, BellRing, FileSignature, MoreVertical, RefreshCw, Search, Upload, FileText } from 'lucide-react';
+import { dueReminders, sendableReminders } from '@/lib/agreementReminderStore';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/lib/billingStore';
@@ -74,6 +75,7 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
   const [renewalDoc, setRenewalDoc] = useState<TenantAgreement | null>(null);
   const [issueFor, setIssueFor] = useState<Tenant | null>(null);
   const [newFor, setNewFor] = useState('');
+  const [queueOpen, setQueueOpen] = useState(false);
 
   const rows = useMemo(() => {
     const q = (externalQuery?.trim() || query).trim().toLowerCase();
@@ -103,6 +105,10 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
   const outstanding = agreements.filter(isOutstanding).length;
   const overdueCount = agreements.filter(isOverdue).length;
   const renewalsDue = agreements.filter(a => isRenewalDue(a)).length;
+  const remindersDue = useMemo(
+    () => sendableReminders(dueReminders(agreements)).length,
+    [agreements],
+  );
 
   const openFor = (tenantId: string) => {
     const t = tenants.find(x => x.id === tenantId);
@@ -127,13 +133,17 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
       <AgreementWorkQueue
         agreements={agreements}
         ownerRole={repRole}
+        open={queueOpen}
+        onClose={() => setQueueOpen(false)}
         onSelectOwner={(role, ownerId) => {
           setRepRole(role);
           setRep(ownerId);
+          setQueueOpen(false);
         }}
       />
 
       <div className="flex flex-wrap items-center gap-2 justify-between">
+
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -211,6 +221,14 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" className="h-9" onClick={() => setQueueOpen(true)}>
+            <BellRing className="h-4 w-4 mr-1.5" /> Work queue
+            {remindersDue > 0 && (
+              <Badge variant="secondary" className="ml-2 text-[10px]">
+                {remindersDue}
+              </Badge>
+            )}
+          </Button>
           <Select
             value={newFor}
             onValueChange={v => {
@@ -246,6 +264,7 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
             <tr>
               <th className="text-left font-medium px-3 py-2.5">Organisation</th>
               <th className="text-left font-medium px-3 py-2.5">Document</th>
+              <th className="text-left font-medium px-3 py-2.5">Type</th>
               <th className="text-left font-medium px-3 py-2.5">Terms</th>
               <th className="text-left font-medium px-3 py-2.5">Owners</th>
               <th className="text-left font-medium px-3 py-2.5">Status</th>
@@ -280,13 +299,18 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
                           </Badge>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {tenantAgreementTypeLabels[a.type]}
-                        {a.fileName ? ` · ${a.fileName}` : ''}
-                      </div>
+                      {a.fileName && (
+                        <div className="text-xs text-muted-foreground">{a.fileName}</div>
+                      )}
                     </div>
                   </div>
                 </td>
+                <td className="px-3 py-3">
+                  <Badge variant="outline" className="text-[11px] font-normal">
+                    {tenantAgreementTypeLabels[a.type]}
+                  </Badge>
+                </td>
+
                 <td className="px-3 py-3 text-muted-foreground">
                   {a.seats ? `${a.seats} seats` : '–'}
                   {a.contractValue != null && (
@@ -401,7 +425,7 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">
                   No agreements match your filters.
                 </td>
               </tr>
