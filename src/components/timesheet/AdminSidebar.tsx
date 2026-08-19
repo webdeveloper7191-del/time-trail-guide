@@ -1,4 +1,5 @@
 import { NavLink } from '@/components/NavLink';
+import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Clock,
@@ -15,8 +16,6 @@ import {
   MapPin,
   UserCircle,
   BarChart3,
-  CalendarClock,
-  CalendarCheck,
   Database,
   Handshake,
   ShieldCheck,
@@ -32,8 +31,6 @@ const navItems = [
   { icon: Calendar, label: 'Roster', to: '/roster' },
   { icon: Users, label: 'Workforce', to: '/workforce' },
   { icon: CalendarCheck, label: 'Leave', to: '/leave' },
-  
-  
   { icon: MapPin, label: 'Locations', to: '/locations' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },
   { icon: ClipboardList, label: 'Forms', to: '/forms' },
