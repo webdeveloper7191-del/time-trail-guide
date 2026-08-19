@@ -61,9 +61,11 @@ type TabValue = 'all' | 'exceptions' | TimesheetStatus;
 type ViewMode = 'table' | 'daily' | 'analytics' | 'calendar' | 'audit' | 'compliance';
 
 export default function TimesheetAdmin() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = (searchParams.get('view') as ViewMode) || 'table';
   const [timesheets, setTimesheets] = useState<Timesheet[]>(mockTimesheets);
   const [activeTab, setActiveTab] = useState<TabValue>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>(initialView);
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [selectedTimesheet, setSelectedTimesheet] = useState<Timesheet | null>(null);
@@ -78,6 +80,25 @@ export default function TimesheetAdmin() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [otPrompt, setOtPrompt] = useState<{ ts: Timesheet } | null>(null);
+
+  // Sync view mode from URL query param and keep URL in sync when user toggles view modes
+  useEffect(() => {
+    const urlView = searchParams.get('view') as ViewMode;
+    if (urlView && urlView !== viewMode && ['table', 'daily', 'analytics', 'calendar', 'audit', 'compliance'].includes(urlView)) {
+      setViewMode(urlView);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const current = searchParams.get('view');
+    if (viewMode === 'table' && current) {
+      searchParams.delete('view');
+      setSearchParams(searchParams, { replace: true });
+    } else if (viewMode !== 'table' && current !== viewMode) {
+      searchParams.set('view', viewMode);
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [viewMode]);
 
   // Calculate stats
   const stats = useMemo(() => {
