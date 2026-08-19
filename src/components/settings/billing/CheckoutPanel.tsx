@@ -114,6 +114,12 @@ export function CheckoutPanel() {
   const plan = PLANS[tier];
   /** Tax follows the billing country, so the breakdown reacts to billing details too. */
   const taxRule = taxRuleFor(country);
+  /** Hard seat cap of the selected plan, after any documented limit override. */
+  const limitOverrides = planLimitStore.all();
+  const maxSeats = seatCeiling(tier, limitOverrides);
+  const seatOverride = !!limitOverrides.staff;
+  const capSeats = (n: number) => (maxSeats === null ? n : Math.min(n, maxSeats));
+
   const totals = useMemo(
     () => invoiceTotal(tier, cycle, seats, taxRule.rate),
     [tier, cycle, seats, taxRule.rate],
