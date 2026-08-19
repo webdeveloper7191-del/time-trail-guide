@@ -34,6 +34,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  FileSignature,
 } from 'lucide-react';
 import { mockStaff } from '@/data/mockStaffData';
 import { employmentStatusLabels, employmentTypeLabels, payRateTypeLabels, genderLabels } from '@/types/staff';
