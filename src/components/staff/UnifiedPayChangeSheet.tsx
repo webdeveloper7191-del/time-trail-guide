@@ -29,7 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   CalendarIcon, TrendingUp, TrendingDown, AlertCircle, Check, Download, 
   History, Calculator, Clock, DollarSign, ArrowRight, Zap, CalendarPlus,
-  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft
+  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft, Upload, X, Paperclip
 } from 'lucide-react';
 import { format, isBefore, startOfDay, addDays, subMonths, isAfter } from 'date-fns';
 import { cn } from '@/lib/utils';
