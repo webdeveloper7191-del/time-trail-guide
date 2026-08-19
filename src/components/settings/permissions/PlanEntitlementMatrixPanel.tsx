@@ -31,13 +31,26 @@ import {
   getSubPermissions,
   moduleGroups,
   subKey,
+  PermissionAction,
 } from '@/types/permissions';
 import { PLANS, PLAN_ORDER, PlanTier, planLabel } from '@/types/plans';
 import {
+  CapabilityImpact,
+  capabilityImpact,
   planCoverage,
   planEntitlementsStore,
   usePlanEntitlements,
 } from '@/lib/planEntitlementsStore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { usePlan } from '@/lib/planStore';
 import { cn } from '@/lib/utils';
 
