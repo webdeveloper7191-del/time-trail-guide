@@ -264,6 +264,7 @@ export function TenantAgreementsPanel({ query: externalQuery }: { query?: string
             <tr>
               <th className="text-left font-medium px-3 py-2.5">Organisation</th>
               <th className="text-left font-medium px-3 py-2.5">Document</th>
+              <th className="text-left font-medium px-3 py-2.5">Type</th>
               <th className="text-left font-medium px-3 py-2.5">Terms</th>
               <th className="text-left font-medium px-3 py-2.5">Owners</th>
               <th className="text-left font-medium px-3 py-2.5">Status</th>
