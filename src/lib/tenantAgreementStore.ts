@@ -536,10 +536,83 @@ export const tenantAgreementStore = {
     emit();
   },
 
+  /** Save a not-yet-sent draft (used by generated renewal documents). */
+  createDraft(input: SendAgreementInput): TenantAgreement {
+    const signatories: TenantAgreementSignatory[] = [
+      { name: input.signatoryName, email: input.signatoryEmail, role: 'client' },
+    ];
+    if (input.countersignerName && input.countersignerEmail) {
+      signatories.push({
+        name: input.countersignerName,
+        email: input.countersignerEmail,
+        role: 'platform',
+      });
+    }
+    const doc: TenantAgreement = {
+      id: `ta-${Math.random().toString(36).slice(2, 9)}`,
+      tenantId: input.tenantId,
+      tenantName: input.tenantName,
+      title: input.title,
+      type: input.type,
+      status: 'draft',
+      plan: input.plan,
+      cycle: input.cycle,
+      seats: input.seats,
+      contractValue: input.contractValue,
+      createdAt: now(),
+      dueDate: input.dueDate,
+      effectiveDate: input.effectiveDate,
+      termEndsOn: input.termEndsOn,
+      signatories,
+      message: input.message,
+      salesRepId: input.salesRepId,
+      onboardingManagerId: input.onboardingManagerId,
+      accountManagerId: input.accountManagerId,
+      dealType: input.dealType ?? 'renewal',
+      renewalOfId: input.renewalOfId,
+      termMonths: input.termMonths,
+      priceTerms: input.priceTerms,
+      termsNotes: input.termsNotes,
+      remindersSent: 0,
+      openCount: 0,
+      source: 'e-signature',
+      history: [{ at: now(), label: 'Renewal document generated for review', by: 'Platform admin' }],
+    };
+    agreements = [doc, ...agreements];
+    emit();
+    return doc;
+  },
+
+  /** Send a previously generated draft out for signature. */
+  sendDraft(id: string, opts?: { dueDate?: string; message?: string }) {
+    agreements = agreements.map(a =>
+      a.id === id
+        ? {
+            ...a,
+            status: 'sent',
+            sentAt: now(),
+            dueDate: opts?.dueDate ?? a.dueDate,
+            message: opts?.message ?? a.message,
+            history: [
+              ...a.history,
+              {
+                at: now(),
+                label: `Sent for signature to ${a.signatories[0]?.email ?? 'client'}`,
+                by: 'Platform admin',
+              },
+            ],
+          }
+        : a,
+    );
+    emit();
+  },
+
   remove(id: string) {
     agreements = agreements.filter(a => a.id !== id);
     emit();
   },
+
+
 
   subscribe(l: () => void) {
     listeners.add(l);
@@ -632,4 +705,176 @@ export function trackingSummary(a: TenantAgreement): string {
   const d = daysToDue(a);
   if (d !== null) parts.push(d < 0 ? `${Math.abs(d)}d overdue` : `${d}d to sign`);
   return parts.join(' · ');
+}
+
+/* ------------------------------------------------------------------ *
+ * Renewal timeline
+ * ------------------------------------------------------------------ */
+
+export type AgreementEventKind =
+  | 'generated'
+  | 'sent'
+  | 'opened'
+  | 'reminder'
+  | 'signed'
+  | 'declined'
+  | 'overdue';
+
+export interface AgreementTimelineEvent {
+  kind: AgreementEventKind;
+  label: string;
+  at?: string;
+  detail?: string;
+  done: boolean;
+}
+
+/**
+ * Ordered lifecycle events for one agreement — used by the New vs Renewal
+ * timeline: generated -> sent -> opened -> reminders -> signed (or overdue).
+ */
+export function agreementTimeline(a: TenantAgreement): AgreementTimelineEvent[] {
+  const events: AgreementTimelineEvent[] = [];
+
+  const generated = a.history.find(h => h.label.startsWith('Renewal document generated'));
+  if (generated || a.status === 'draft') {
+    events.push({
+      kind: 'generated',
+      label: 'Document generated',
+      at: generated?.at ?? a.createdAt,
+      detail: 'Pre-filled from the expiring term',
+      done: true,
+    });
+  }
+
+  events.push({
+    kind: 'sent',
+    label: a.source === 'upload' ? 'Issued offline' : 'Sent for signature',
+    at: a.sentAt ?? (a.source === 'upload' ? a.createdAt : undefined),
+    detail: a.signatories[0]?.email,
+    done: !!a.sentAt || a.source === 'upload',
+  });
+
+  events.push({
+    kind: 'opened',
+    label: 'Opened by client',
+    at: a.viewedAt,
+    detail: a.openCount ? `${a.openCount} open${a.openCount > 1 ? 's' : ''}` : undefined,
+    done: !!a.viewedAt,
+  });
+
+  const reminders = a.remindersSent ?? 0;
+  events.push({
+    kind: 'reminder',
+    label: reminders ? `${reminders} reminder${reminders > 1 ? 's' : ''} sent` : 'No reminders sent',
+    at: a.lastReminderAt,
+    detail: a.lastReminderAt ? 'Last reminder' : undefined,
+    done: reminders > 0,
+  });
+
+  if (a.status === 'declined') {
+    events.push({
+      kind: 'declined',
+      label: 'Declined by client',
+      at: a.history.find(h => h.label.startsWith('Declined'))?.at,
+      detail: a.declineReason,
+      done: true,
+    });
+  } else {
+    events.push({
+      kind: 'signed',
+      label: a.source === 'upload' ? 'Signed copy on file' : 'Signed by all parties',
+      at: a.completedAt,
+      detail: a.fileName,
+      done: isComplete(a),
+    });
+  }
+
+  if (isOverdue(a)) {
+    const d = daysToDue(a);
+    events.push({
+      kind: 'overdue',
+      label: 'Overdue',
+      at: a.dueDate ? `${a.dueDate}T23:59:59` : undefined,
+      detail: d !== null ? `${Math.abs(d)} days past the sign-by date` : undefined,
+      done: true,
+    });
+  }
+
+  return events;
+}
+
+/**
+ * Plain-text body of a renewal agreement, generated from the expiring term so
+ * it can be reviewed before it is sent for signature.
+ */
+export function renewalDocumentBody(input: {
+  tenantName: string;
+  title: string;
+  previous?: TenantAgreement;
+  planLabel: string;
+  cycle?: BillingCycle;
+  seats?: number;
+  contractValue?: number;
+  effectiveDate?: string;
+  termEndsOn?: string;
+  termMonths?: number;
+  priceTerms?: AnnualPriceTerms;
+  termsNotes?: string;
+  signatoryName?: string;
+  signatoryEmail?: string;
+}): string {
+  const money = (n?: number) =>
+    n == null ? '–' : n.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
+  const per = input.cycle === 'annual' ? 'per year' : 'per month';
+  const terms = input.priceTerms;
+  const uplift =
+    !terms || terms.basis === 'none'
+      ? 'No annual price increase applies during this term.'
+      : `${upliftBasisLabels[terms.basis]} of ${terms.percent.toFixed(1)}%${
+          terms.basis === 'cpi' && terms.capPercent != null ? ` capped at ${terms.capPercent}%` : ''
+        }, applied at each anniversary of the commencement date.`;
+
+  return [
+    `RENEWAL AGREEMENT`,
+    ``,
+    `Between: Rostered.ai ("Provider")`,
+    `And: ${input.tenantName} ("Customer")`,
+    ``,
+    `1. BACKGROUND`,
+    input.previous
+      ? `This agreement renews "${input.previous.title}"${
+          input.previous.termEndsOn ? ` which expires on ${input.previous.termEndsOn}` : ''
+        }. All terms carry over except where varied below.`
+      : `This agreement renews the Customer's existing subscription.`,
+    ``,
+    `2. SUBSCRIPTION`,
+    `Plan: ${input.planLabel}`,
+    `Billing cycle: ${input.cycle === 'annual' ? 'Annual' : 'Monthly'}`,
+    `Licensed seats: ${input.seats ?? '–'}`,
+    `Contract value: ${money(input.contractValue)} ${per}`,
+    ``,
+    `3. TERM`,
+    `Commences: ${input.effectiveDate ?? '–'}`,
+    `Term length: ${input.termMonths ?? '–'} months`,
+    `Expires: ${input.termEndsOn ?? '–'}`,
+    terms
+      ? `${terms.autoRenew ? 'Auto-renews' : 'Does not auto-renew'} at expiry. Notice period: ${terms.noticeDays} days.`
+      : '',
+    ``,
+    `4. ANNUAL PRICE CHANGE`,
+    uplift,
+    input.contractValue != null && terms && terms.basis !== 'none'
+      ? `Indicative next-term value: ${money(upliftedValue(input.contractValue, terms))} ${per}.`
+      : '',
+    ``,
+    `5. SPECIAL CONDITIONS`,
+    input.termsNotes?.trim() || 'None.',
+    ``,
+    `6. SIGNATURES`,
+    `Customer: ${input.signatoryName ?? '________________'} (${input.signatoryEmail ?? '________________'})`,
+    `Provider: Rostered.ai — contracts@rostered.ai`,
+  ]
+    .filter(l => l !== '')
+    .join('\n')
+    .replace(/\n(?=\d\. )/g, '\n\n');
 }

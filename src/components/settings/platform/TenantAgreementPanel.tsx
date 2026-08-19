@@ -36,6 +36,7 @@ import {
   tenantAgreementStore,
   tenantAgreementTypeLabels,
 } from '@/lib/tenantAgreementStore';
+import { planContractDefaultsStore } from '@/lib/planContractDefaultsStore';
 
 interface Props {
   tenant: Tenant | null;
@@ -107,25 +108,38 @@ export function TenantAgreementPanel({ tenant, open, onClose, renewalOf }: Props
       setPlan(renewalOf.plan ?? tenant.plan);
       setCycle(renewalOf.cycle ?? tenant.cycle);
       setSeats(renewalOf.seats ?? tenant.seats);
-      setTermMonths(renewalOf.termMonths ?? 12);
-      setPriceTerms(renewalOf.priceTerms ?? defaultPriceTerms());
-      setTermsNotes(renewalOf.termsNotes ?? '');
+      const renewDefaults = planContractDefaultsStore.get(renewalOf.plan ?? tenant.plan);
+      setTermMonths(renewalOf.termMonths ?? renewDefaults.termMonths);
+      setPriceTerms(renewalOf.priceTerms ?? renewDefaults.priceTerms);
+      setTermsNotes(renewalOf.termsNotes ?? renewDefaults.termsNotes ?? '');
       setSalesRepId(renewalOf.salesRepId ?? SALES_REPS[0].id);
       setOnboardingManagerId(renewalOf.onboardingManagerId ?? ONBOARDING_MANAGERS[0].id);
       setAccountManagerId(renewalOf.accountManagerId ?? ACCOUNT_MANAGERS[0].id);
       const start = renewalOf.termEndsOn ?? inDays(14);
       setEffectiveDate(start);
-      setTermEndsOn(addMonths(start, renewalOf.termMonths ?? 12));
+      setTermEndsOn(addMonths(start, renewalOf.termMonths ?? renewDefaults.termMonths));
       setSignatoryName(renewalOf.signatories[0]?.name ?? tenant.contactName);
       setSignatoryEmail(renewalOf.signatories[0]?.email ?? tenant.contactEmail);
     } else {
+      const planDefaults = planContractDefaultsStore.get(tenant.plan);
       setDealType('new');
-      setTermMonths(12);
-      setPriceTerms(defaultPriceTerms());
-      setTermsNotes('');
-      setTermEndsOn(addMonths(inDays(14), 12));
+      setTermMonths(planDefaults.termMonths);
+      setPriceTerms(planDefaults.priceTerms);
+      setTermsNotes(planDefaults.termsNotes ?? '');
+      setTermEndsOn(addMonths(inDays(14), planDefaults.termMonths));
     }
   }, [tenant, renewalOf]);
+
+  /** Selling a different plan re-applies that plan's contract defaults. */
+  const applyPlanDefaults = (tier: PlanTier) => {
+    setPlan(tier);
+    if (renewalOf) return;
+    const d = planContractDefaultsStore.get(tier);
+    setTermMonths(d.termMonths);
+    setPriceTerms(d.priceTerms);
+    setTermsNotes(prev => (prev.trim() ? prev : d.termsNotes ?? ''));
+    setTermEndsOn(addMonths(effectiveDate, d.termMonths));
+  };
 
   /** Keep the term end in step with start date + term length. */
   const applyTerm = (months: number, start = effectiveDate) => {
@@ -456,7 +470,7 @@ export function TenantAgreementPanel({ tenant, open, onClose, renewalOf }: Props
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Plan</Label>
-              <Select value={plan} onValueChange={v => setPlan(v as PlanTier)}>
+              <Select value={plan} onValueChange={v => applyPlanDefaults(v as PlanTier)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -507,7 +521,21 @@ export function TenantAgreementPanel({ tenant, open, onClose, renewalOf }: Props
         </section>
 
         <section className="space-y-3">
-          <h3 className="text-sm font-semibold tracking-tight">Annual price change & renewal</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold tracking-tight">Annual price change &amp; renewal</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                const d = planContractDefaultsStore.get(plan);
+                applyTerm(d.termMonths);
+                setPriceTerms(d.priceTerms);
+              }}
+            >
+              Reset to {PLANS[plan].label} plan defaults
+            </Button>
+          </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Increase basis</Label>
