@@ -196,7 +196,7 @@ function ModuleRowInner({
               ) : entitled ? (
                 <Checkbox
                   checked={granted.includes(a)}
-                  onCheckedChange={() => permissionsStore.toggleAction(roleId, m.id, a)}
+                  onCheckedChange={() => toggleAction(m.id, a)}
                   aria-label={`${actionLabels[a]} ${m.label}`}
                 />
               ) : (
@@ -300,9 +300,7 @@ function ModuleRowInner({
                       <Checkbox
                         className="h-3.5 w-3.5"
                         checked={subOn.includes(a)}
-                        onCheckedChange={() =>
-                          permissionsStore.toggleSubAction(roleId, m.id, sub.id, a)
-                        }
+                        onCheckedChange={() => toggleSubAction(m.id, sub.id, a)}
                         aria-label={`${actionLabels[a]} ${m.label} — ${sub.label}`}
                       />
                     ) : (
@@ -322,14 +320,7 @@ function ModuleRowInner({
                   size="sm"
                   disabled={subLocked}
                   className="h-6 text-[11px] text-muted-foreground"
-                  onClick={() =>
-                    permissionsStore.setSubActions(
-                      roleId,
-                      m.id,
-                      sub.id,
-                      subAllOn ? [] : subPlanActions,
-                    )
-                  }
+                  onClick={() => setSubAll(m.id, sub.id, subAllOn ? [] : subPlanActions)}
                 >
                   {subAllOn ? 'Clear' : 'Grant all'}
                 </Button>
