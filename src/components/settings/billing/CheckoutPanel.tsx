@@ -39,6 +39,7 @@ import {
   taxRuleFor,
 } from '@/lib/billingStore';
 import { InvoiceHistorySection } from '@/components/settings/billing/InvoiceHistorySection';
+import { planLimitStore, seatCeiling } from '@/lib/planLimitsStore';
 import { cn } from '@/lib/utils';
 
 
