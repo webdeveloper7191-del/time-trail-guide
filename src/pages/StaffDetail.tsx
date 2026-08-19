@@ -242,6 +242,9 @@ export default function StaffDetail() {
                 <p className="text-muted-foreground">Leave management coming soon...</p>
               </div>
             )}
+            {activeSection === 'contracts' && (
+              <StaffContractsSection staff={staff} />
+            )}
             {activeSection === 'hr' && (
               <div className="card-material-elevated p-6">
                 <h3 className="section-header mb-4">HR Documents</h3>
