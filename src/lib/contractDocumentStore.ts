@@ -76,8 +76,8 @@ const daysAhead = (n: number) => iso(new Date(Date.now() + n * 86400000));
 let documents: ContractDocument[] = [
   {
     id: 'doc-001',
-    staffId: '1',
-    staffName: 'Sarah Chen',
+    staffId: 'staff-1',
+    staffName: 'Mark John',
     title: 'Employment Contract — Operations Coordinator',
     type: 'employment_contract',
     status: 'signed',
@@ -87,7 +87,7 @@ let documents: ContractDocument[] = [
     completedAt: daysAgo(118),
     effectiveDate: daysAgo(115),
     signatories: [
-      { name: 'Sarah Chen', email: 'sarah.chen@company.com', role: 'employee', signedAt: daysAgo(118) },
+      { name: 'Mark John', email: 'mark.john@example.com', role: 'employee', signedAt: daysAgo(118) },
       { name: 'Priya Nair', email: 'priya.nair@company.com', role: 'manager', signedAt: daysAgo(118) },
     ],
     source: 'e-signature',
@@ -98,7 +98,7 @@ let documents: ContractDocument[] = [
   },
   {
     id: 'doc-002',
-    staffId: '1',
+    staffId: 'staff-emp',
     staffName: 'Sarah Chen',
     title: 'Pay Variation Letter — Level 3.2',
     type: 'pay_variation',
@@ -116,15 +116,15 @@ let documents: ContractDocument[] = [
   },
   {
     id: 'doc-003',
-    staffId: '2',
-    staffName: 'Marcus Webb',
+    staffId: 'staff-2',
+    staffName: 'Sarah Williams',
     title: 'Casual Employment Agreement',
     type: 'agreement',
     status: 'uploaded',
     createdAt: daysAgo(40),
     completedAt: daysAgo(40),
-    signatories: [{ name: 'Marcus Webb', email: 'marcus.webb@company.com', role: 'employee', signedAt: daysAgo(41) }],
-    fileName: 'marcus-webb-casual-agreement-signed.pdf',
+    signatories: [{ name: 'Sarah Williams', email: 'sarah.williams@example.com', role: 'employee', signedAt: daysAgo(41) }],
+    fileName: 'sarah-williams-casual-agreement-signed.pdf',
     fileSize: 428_112,
     source: 'upload',
     history: [{ at: daysAgo(40), label: 'Signed copy uploaded', by: 'Priya Nair' }],
