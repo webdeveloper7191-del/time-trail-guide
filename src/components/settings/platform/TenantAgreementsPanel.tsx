@@ -42,6 +42,7 @@ import {
 import { TenantAgreementPanel } from './TenantAgreementPanel';
 import { AgreementTrackingPanel } from './AgreementTrackingPanel';
 import { RenewalDocumentPanel } from './RenewalDocumentPanel';
+import { AgreementWorkQueue } from './AgreementWorkQueue';
 
 const statusStyle: Record<TenantAgreementStatus, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -123,6 +124,15 @@ export function TenantAgreementsPanel() {
 
   return (
     <div className="space-y-4">
+      <AgreementWorkQueue
+        agreements={agreements}
+        ownerRole={repRole}
+        onSelectOwner={(role, ownerId) => {
+          setRepRole(role);
+          setRep(ownerId);
+        }}
+      />
+
       <div className="flex flex-wrap items-center gap-2 justify-between">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative w-64">
