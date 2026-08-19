@@ -1092,6 +1092,42 @@ const linkUnscheduledOptionGuide = (
   ]} />
 );
 
+const noShiftClockInActionGuide = (
+  <OptionGuide items={[
+    { label: 'Block the clock-in', description: 'Device refuses the punch and tells the staff member to contact their manager. Strongest cost control.' },
+    { label: 'Allow and flag for review', description: 'Punch is accepted, timesheet is created and marked as unrostered so a manager must review it. Recommended default.' },
+    { label: 'Allow without flagging', description: 'Punch is accepted silently. Only use where ad-hoc attendance is normal.' },
+  ]} />
+);
+
+const rosterFlagSeverityGuide = (
+  <OptionGuide items={[
+    { label: 'No roster flag', description: 'Nothing appears on the roster grid — the entry lives only in timesheets.' },
+    { label: 'Info', description: 'Neutral marker on the day cell. Visible, but not counted as an issue.' },
+    { label: 'Warning', description: 'Amber "Unrostered" badge on the shift and a line item in the roster alerts panel.' },
+    { label: 'Critical', description: 'Red badge plus a compliance alert — use where unrostered attendance breaches ratios or budget rules.' },
+  ]} />
+);
+
+const createShiftGuide = (
+  <OptionGuide items={[
+    { label: 'Never', description: 'The roster stays as planned; the unrostered hours exist only as a timesheet.' },
+    { label: 'On clock-in', description: 'A live shift appears immediately so the roster reflects who is on site right now. End time is provisional until clock-out.' },
+    { label: 'On clock-out', description: 'The shift is written once both actual times are known — cleanest roster history.' },
+    { label: 'On timesheet approval', description: 'Only approved unrostered hours reach the roster and budget actuals.' },
+  ]} />
+);
+
+const endTimeRuleGuide = (
+  <OptionGuide items={[
+    { label: 'Actual clock-out time', description: 'Shift ends exactly when the staff member clocks out. Most accurate; requires a clock-out.' },
+    { label: 'Clock-in + fixed duration', description: 'Assumes a standard shift length (e.g. 8h) from the punch. Good for live coverage views.' },
+    { label: 'Location closing time', description: 'Ends at the location\'s operating close for that day. Suits sites with fixed trading hours.' },
+    { label: 'Area default shift end', description: 'Uses the area\'s default shift pattern end time — keeps the grid aligned with normal shifts.' },
+    { label: 'Leave open-ended', description: 'Shift shows as in-progress with no end until a clock-out arrives, then closes at the max duration cap.' },
+  ]} />
+);
+
 const timeDriftOptionGuide = (
   <OptionGuide items={[
     { label: 'Never', description: 'No drift tolerance — times must align exactly to link.' },
