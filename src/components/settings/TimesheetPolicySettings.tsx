@@ -513,7 +513,7 @@ export function PolicyUnscheduled() {
     try {
       return resolveUnscheduledShiftWindow({
         settings: resolved.unscheduled,
-        clockIn,
+        clockIn: clockIn.getTime(),
         timezone: previewTz,
         operatingHours: location?.operatingHours,
         provisional: true,
