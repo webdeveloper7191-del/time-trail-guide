@@ -28,6 +28,7 @@ import DatabaseDocumentation from "./pages/DatabaseDocumentation";
 import SRSDocumentation from "./pages/SRSDocumentation";
 import RequirementsTraceabilityMatrix from "./pages/RequirementsTraceabilityMatrix";
 import AgencyIntegrationApiDocs from "./pages/AgencyIntegrationApiDocs";
+import TimesheetSettingsLogicDocs from "./pages/TimesheetSettingsLogicDocs";
 import LocationManagement from "./pages/LocationManagement";
 import ReportsPage from "./pages/ReportsPage";
 import LeaveAccrualsHub from "./pages/LeaveAccrualsHub";
@@ -74,6 +75,7 @@ const App = () => {
                   <Route path="/docs/srs" element={<SRSDocumentation />} />
                   <Route path="/docs/rtm" element={<RequirementsTraceabilityMatrix />} />
                   <Route path="/docs/agency-api" element={<AgencyIntegrationApiDocs />} />
+                  <Route path="/docs/timesheet-logic" element={<TimesheetSettingsLogicDocs />} />
                   <Route path="/locations" element={<LocationManagement />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/leave-accruals" element={<LeaveAccrualsHub />} />
