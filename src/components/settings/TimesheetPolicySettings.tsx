@@ -166,19 +166,30 @@ export function PolicyTimeTracking() {
           comingSoon
         />
         <ToggleRow
-          {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Rostered.ai Kiosk App Clock-in/out',
-            'Allow staff to clock in and out via the Rostered.ai Kiosk App.',
-            <><p className="font-medium mb-1">Example</p><p>A field worker arrives on-site and clocks in from the Rostered.ai Kiosk App. Useful for staff who don't have access to a fixed kiosk or computer.</p></>)}
+          {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Rostered.ai Kiosk App (Fixed Location)',
+            'Allow staff to clock in and out from a fixed-location kiosk device running the Rostered.ai Kiosk App.',
+            <><p className="font-medium mb-1">Example</p><p>At the front desk of a location, a shared tablet displays the Rostered.ai Kiosk App. Staff enter their PIN or scan a QR code to clock in before their shift starts.</p></>)}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
         <ToggleRow
-          {...fieldProps('timeTracking', 'captureGpsOnMobile', 'Capture GPS on Rostered.ai Kiosk App Clock-in/out',
-            'Record GPS coordinates when staff clock in or out via the Rostered.ai Kiosk App. Distance from scheduled location will appear in timesheets.',
-            <><p className="font-medium mb-1">Example</p><p>Liam clocks in via the Rostered.ai Kiosk App from 1.2 km away from his assigned location. The timesheet shows "Clocked in 1.2 km from site" so the manager can investigate without blocking the clock-in.</p></>)}
-          value={resolved.timeTracking.captureGpsOnMobile}
-          onChange={v => setField('timeTracking', 'captureGpsOnMobile', v)}
+          {...fieldProps('timeTracking', 'enableStaffMobileApp', 'Enable Staff Mobile App Clock-in/out',
+            'Allow staff to clock in and out using their personal staff mobile app.',
+            <><p className="font-medium mb-1">Example</p><p>A field worker arrives on-site and clocks in from their own phone. Useful for staff who don't have access to a fixed kiosk or computer.</p></>)}
+          value={resolved.timeTracking.enableStaffMobileApp}
+          onChange={v => setField('timeTracking', 'enableStaffMobileApp', v)}
+          comingSoon
         />
+        {resolved.timeTracking.enableStaffMobileApp && (
+          <ToggleRow
+            {...fieldProps('timeTracking', 'captureGpsOnMobile', 'Capture GPS on Staff Mobile App Clock-in/out',
+              'Record GPS coordinates when staff clock in or out via the staff mobile app. Distance from scheduled location will appear in timesheets.',
+              <><p className="font-medium mb-1">Example</p><p>Liam clocks in from the staff mobile app 1.2 km away from his assigned location. The timesheet shows "Clocked in 1.2 km from site" so the manager can investigate without blocking the clock-in.</p></>)}
+            value={resolved.timeTracking.captureGpsOnMobile}
+            onChange={v => setField('timeTracking', 'captureGpsOnMobile', v)}
+            comingSoon
+          />
+        )}
         <ToggleRow
           {...fieldProps('timeTracking', 'restrictToGeofence', 'Restrict Clock-ins to Geo-fence',
             'Prevent clock-ins from outside a defined distance using GPS location.',

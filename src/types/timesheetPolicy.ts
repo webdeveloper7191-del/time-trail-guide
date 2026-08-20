@@ -15,7 +15,8 @@ export type VarianceFlag = 'never' | 'over_5m' | 'over_10m' | 'over_15m' | 'alwa
 
 export interface TimeTrackingSettings {
   enableWebClock: boolean;
-  enableMobileClock: boolean;
+  enableMobileClock: boolean; // Rostered.ai Kiosk App (fixed-location shared device)
+  enableStaffMobileApp: boolean;
   captureGpsOnMobile: boolean;
   restrictToGeofence: boolean;
   geofenceRadiusMeters: number;
@@ -155,6 +156,7 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
   timeTracking: {
     enableWebClock: true,
     enableMobileClock: true,
+    enableStaffMobileApp: false,
     captureGpsOnMobile: false,
     restrictToGeofence: false,
     geofenceRadiusMeters: 100,
