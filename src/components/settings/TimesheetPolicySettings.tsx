@@ -22,6 +22,7 @@ import {
   paidMealOptions,
   
   earlyClockInOptions,
+  kioskVerificationOptions,
   anomalySeverityOptions,
   clockBoundaryReferenceOptions,
 } from '@/types/timesheetPolicy';
