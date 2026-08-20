@@ -365,10 +365,17 @@ export default function TimesheetSettings() {
                     Unsaved Changes
                   </Badge>
                 )}
+                <Button variant="outline" asChild className="gap-2">
+                  <Link to="/docs/timesheet-logic">
+                    <BookOpen className="h-4 w-4" />
+                    Business logic
+                  </Link>
+                </Button>
                 <Button variant="outline" onClick={handleReset} className="gap-2">
                   <RotateCcw className="h-4 w-4" />
                   Reset
                 </Button>
+
                 <Button onClick={handleSave} className="gap-2">
                   <Save className="h-4 w-4" />
                   Save Settings
