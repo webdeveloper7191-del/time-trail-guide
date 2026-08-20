@@ -53,7 +53,7 @@ export const policyResolutionNotes = {
 };
 
 export const lifecycleStages = [
-  { stage: '1. Capture', detail: 'Clock-in/out via web, mobile, SMS or kiosk. Time Tracking + Team Member Permissions decide whether the punch is accepted at all.' },
+  { stage: '1. Capture', detail: 'Clock-in/out via the Employee Portal (web), the Staff Mobile App, SMS, or the shared Rostered.ai Kiosk App. Time Tracking + Team Member Permissions decide whether the punch is accepted at all.' },
   { stage: '2. Attach', detail: 'The punch is matched to a rostered shift. Unscheduled Shifts rules decide what happens when no shift exists.' },
   { stage: '3. Normalise', detail: 'Breaks are applied and Rounding adjusts start/end/break values. Net hours are recalculated.' },
   { stage: '4. Validate', detail: 'Timesheet Issues and Compliance thresholds raise info/warning/critical flags against the day and the week.' },
