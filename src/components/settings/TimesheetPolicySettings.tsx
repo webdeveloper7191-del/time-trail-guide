@@ -206,13 +206,27 @@ export function PolicyTimeTracking() {
             onChange={v => setField('timeTracking', 'geofenceRadiusMeters', v)}
           />
         )}
-        <ToggleRow
-          {...fieldProps('timeTracking', 'requireKioskPhoto', 'Require Face Verification',
-            'Team members must clock in using face verification at the kiosk when starting or ending a shift.',
-            <><p className="font-medium mb-1">Example</p><p>At a warehouse kiosk, the camera takes a quick selfie that's matched against the staff profile photo. Prevents "buddy punching" where one worker clocks in for another.</p></>)}
-          value={resolved.timeTracking.requireKioskPhoto}
-          onChange={v => setField('timeTracking', 'requireKioskPhoto', v)}
+        <SelectRow
+          {...fieldProps('timeTracking', 'kioskVerificationMode', 'Kiosk Identity Verification',
+            'How staff identify themselves at the Rostered.ai Kiosk App when clocking in or out.',
+            <>
+              <p className="font-medium mb-1">Example</p>
+              <p>Choose <em>PIN only</em> for the fastest queue at shift change. Choose <em>Face verification only</em> for a hands-free, no-PIN-to-forget flow. Choose <em>PIN + face verification</em> for the strongest protection against "buddy punching" (one worker clocking in for another).</p>
+              <div className="mt-2 space-y-1">
+                <p><strong>PIN only</strong> — staff enter their personal PIN. Fast, no camera required.</p>
+                <p><strong>Face verification only</strong> — the kiosk camera matches a selfie against the staff profile photo.</p>
+                <p><strong>PIN + face verification</strong> — both are required; the clock event is rejected if either fails.</p>
+              </div>
+            </>)}
+          value={resolved.timeTracking.kioskVerificationMode}
+          options={kioskVerificationOptions}
+          onChange={v => {
+            const mode = v as TimesheetPolicy['timeTracking']['kioskVerificationMode'];
+            setField('timeTracking', 'kioskVerificationMode', mode);
+            setField('timeTracking', 'requireKioskPhoto', mode !== 'pin');
+          }}
         />
+
 
         <NumberRow
           {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
