@@ -767,13 +767,43 @@ export function PolicyBreaks() {
           />
           {resolved.breaks.paidMealBreaks === 'over_threshold' && (
             <NumberRow
-              {...fieldProps('breaks', 'paidMealOverMinutesThreshold', 'Paid if shift exceeds (minutes)',
-                'Meal breaks become paid when the shift exceeds this duration.',
-                <><p className="font-medium mb-1">Example</p><p>Set to <strong>360</strong> (6 hours). A 5-hour shift → meal break unpaid. A 7-hour shift → meal break paid because total time exceeds the threshold.</p></>)}
-              value={resolved.breaks.paidMealOverMinutesThreshold}
-              onChange={v => setField('breaks', 'paidMealOverMinutesThreshold', v)}
+              {...fieldProps('breaks', 'paidMealOverShiftHours', 'Paid if shift exceeds (hours)',
+                'Meal breaks become paid when the rostered/worked shift is longer than this many hours.',
+                <><p className="font-medium mb-1">Example</p><p>Set to <strong>6</strong>. A 5-hour shift → meal break unpaid. A 7-hour shift → meal break paid.</p></>)}
+              value={resolved.breaks.paidMealOverShiftHours}
+              onChange={v => setField('breaks', 'paidMealOverShiftHours', Math.min(24, Math.max(0, v)))}
             />
           )}
+          {resolved.breaks.paidMealBreaks !== 'never' && (
+            <>
+              <NumberRow
+                {...fieldProps('breaks', 'paidMealMaxPaidMinutes', 'Maximum paid meal minutes (0 = no cap)',
+                  'Caps how much of a paid meal break is actually paid. Time beyond the cap is treated as unpaid.',
+                  <><p className="font-medium mb-1">Example</p><p>Cap of <strong>20</strong>. Staff take a 35-min meal break → 20 min paid, 15 min deducted as unpaid. Set to 0 to pay the whole break.</p></>)}
+                value={resolved.breaks.paidMealMaxPaidMinutes}
+                onChange={v => setField('breaks', 'paidMealMaxPaidMinutes', Math.min(120, Math.max(0, v)))}
+              />
+              <ToggleRow
+                {...fieldProps('breaks', 'paidMealCountsTowardHours', 'Paid meal time counts toward hours',
+                  'When ON, paid meal minutes count toward ordinary hours, overtime accumulation and daily/weekly thresholds.',
+                  <><p className="font-medium mb-1">Example</p><p>7.5 worked hours + a 30-min paid meal break. With <strong>ON</strong> the day records 8.0 hours (counting toward an 8h overtime threshold). With OFF the meal is paid but the day still counts as 7.5 hours for overtime.</p></>)}
+                value={resolved.breaks.paidMealCountsTowardHours}
+                onChange={v => setField('breaks', 'paidMealCountsTowardHours', v)}
+              />
+            </>
+          )}
+          <ToggleRow
+            {...fieldProps('breaks', 'payInterruptedUnpaidMeal', 'Pay interrupted unpaid meal breaks',
+              'If an unpaid meal break is cut short or interrupted by work, pay the full break instead of deducting it.',
+              <><p className="font-medium mb-1">Example</p><p>Scheduled 30-min unpaid meal; staff are recalled after 12 min. With <strong>ON</strong> no deduction is made and the break is flagged for review. With OFF only the 12 min is deducted.</p></>)}
+            value={resolved.breaks.payInterruptedUnpaidMeal}
+            onChange={v => setField('breaks', 'payInterruptedUnpaidMeal', v)}
+          />
+          <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Current outcome: </span>
+            {paidMealSummary(resolved.breaks)}
+          </div>
+
         </PermissionGroup>
 
 
@@ -1263,6 +1293,20 @@ const paidMealOptionGuide = (
     { label: 'Paid if shift exceeds threshold', description: 'Paid only on longer shifts (e.g. 6h+). Set the threshold below.' },
   ]} />
 );
+
+function paidMealSummary(b: TimesheetPolicy['breaks']): string {
+  const cap = b.paidMealMaxPaidMinutes > 0 ? ` up to ${b.paidMealMaxPaidMinutes} min (excess unpaid)` : ' in full';
+  const counts = b.paidMealCountsTowardHours ? 'counts toward ordinary/overtime hours' : 'does not count toward hour thresholds';
+  const interrupted = b.payInterruptedUnpaidMeal
+    ? 'Interrupted unpaid meal breaks are paid in full.'
+    : 'Interrupted unpaid meal breaks are deducted for the time actually taken.';
+  if (b.paidMealBreaks === 'never') return `Meal breaks are unpaid and deducted from paid time. ${interrupted}`;
+  const when = b.paidMealBreaks === 'always'
+    ? 'Every meal break is paid'
+    : `Meal breaks are paid only when the shift exceeds ${b.paidMealOverShiftHours} hours (otherwise unpaid)`;
+  return `${when}${cap}, and paid meal time ${counts}. ${interrupted}`;
+}
+
 
 const boundaryReferenceOptionGuide = (
   <OptionGuide items={[
