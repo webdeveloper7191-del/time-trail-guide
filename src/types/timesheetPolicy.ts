@@ -231,6 +231,11 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     flagShortOrMissedBreaks: false,
     paidMealBreaks: 'never',
     paidMealOverMinutesThreshold: 30,
+    paidMealOverShiftHours: 6,
+    paidMealMaxPaidMinutes: 0,
+    paidMealCountsTowardHours: true,
+    payInterruptedUnpaidMeal: true,
+
   },
   issues: {
     flagShiftTimeVariance: 'never',
