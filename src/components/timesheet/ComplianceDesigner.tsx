@@ -81,6 +81,30 @@ export function ComplianceDesigner({ value, onChange }: Props) {
     onChange({ ...value, [key]: { ...value[key], ...patch } });
   };
 
+  // ---- Inline validation: catch impossible or self-contradicting limits ----
+  const issues: Partial<Record<ThresholdDef['key'], string>> = {};
+  const daily = value.maxDailyHours;
+  const weekly = value.maxWeeklyHours;
+  const rest = value.minRestBetweenShiftsHours;
+  const consec = value.maxConsecutiveDays;
+
+  if (daily.enabled && (daily.value <= 0 || daily.value > 24)) issues.maxDailyHours = 'Must be between 1 and 24 hours.';
+  if (weekly.enabled && (weekly.value <= 0 || weekly.value > 168)) issues.maxWeeklyHours = 'Must be between 1 and 168 hours.';
+  if (rest.enabled && (rest.value < 0 || rest.value > 24)) issues.minRestBetweenShiftsHours = 'Must be between 0 and 24 hours.';
+  if (consec.enabled && (consec.value < 1 || consec.value > 31)) issues.maxConsecutiveDays = 'Must be between 1 and 31 days.';
+  if (daily.enabled && weekly.enabled && weekly.value < daily.value) {
+    issues.maxWeeklyHours = 'Weekly limit is lower than the daily limit — every long day would breach the week.';
+  }
+  if (daily.enabled && rest.enabled && daily.value + rest.value > 24) {
+    issues.minRestBetweenShiftsHours = `A ${daily.value}h day plus ${rest.value}h rest exceeds 24 hours, so back-to-back days always breach.`;
+  }
+  if (daily.enabled && weekly.enabled && consec.enabled && daily.value * consec.value < weekly.value) {
+    issues.maxWeeklyHours = `Unreachable: ${consec.value} days at ${daily.value}h is only ${daily.value * consec.value}h, so the ${weekly.value}h weekly flag can never fire.`;
+  }
+
+  const enabledCount = ([daily, weekly, rest, consec] as FlagThreshold[]).filter(t => t.enabled).length;
+  const criticalCount = ([daily, weekly, rest, consec] as FlagThreshold[]).filter(t => t.enabled && t.severity === 'critical').length;
+
   return (
     <div className="space-y-6">
       {/* Flagging thresholds */}
@@ -95,7 +119,14 @@ export function ComplianceDesigner({ value, onChange }: Props) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Current outcome: </span>
+            {enabledCount === 0
+              ? 'No compliance limits are active — no fatigue or hours breaches will be flagged.'
+              : `${enabledCount} of 4 limits active, ${criticalCount} set to Critical (blocks approval until resolved or overridden).`}
+          </div>
           <div className="divide-y border rounded-md">
+
             {THRESHOLDS.map((def) => {
               const t = value[def.key];
               const Icon = def.icon;
@@ -138,6 +169,10 @@ export function ComplianceDesigner({ value, onChange }: Props) {
                         </Select>
                       </div>
                     )}
+                    {t.enabled && issues[def.key] && (
+                      <p className="text-xs text-destructive pt-1">{issues[def.key]}</p>
+                    )}
+
                   </div>
                   <Switch
                     checked={t.enabled}

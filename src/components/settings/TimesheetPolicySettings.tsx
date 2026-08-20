@@ -347,8 +347,53 @@ function PermissionGroup({ title, children }: { title: string; children: React.R
 
 export function PolicyApproving() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
-  const roundingOn = resolved.approving.roundingEnabled;
-  const autoApprovalOn = resolved.approving.autoApproval !== 'never';
+  const a = resolved.approving;
+  const roundingOn = a.roundingEnabled;
+  const autoApprovalOn = a.autoApproval !== 'never';
+
+  const warnings: { title: string; body: React.ReactNode }[] = [];
+  if (a.autoApproval === 'on_submit' && !a.skipAutoApprovalIfFlagged) {
+    warnings.push({
+      title: 'Every timesheet will be approved without review',
+      body: <>Auto-approval is set to <strong>On submission</strong> and <strong>Skip auto-approval if flagged</strong> is off, so even timesheets with missing clock-outs or compliance breaches are approved straight to payroll. Turn on “Skip auto-approval if flagged” or choose “When matches scheduled shift”.</>,
+    });
+  }
+  if (autoApprovalOn && a.autoApprovalMaxDailyHours === 0) {
+    warnings.push({
+      title: 'No safety cap on auto-approved hours',
+      body: <>Max auto-approvable daily hours is <strong>0</strong> (disabled), so a 20-hour day caused by a forgotten punch could auto-approve. A cap of 10–12 hours is recommended.</>,
+    });
+  }
+  if (!roundingOn && (a.adjustStartToScheduledIfEarlier || a.adjustEndToScheduledIfDelayed || a.startTimeAdjustment !== 'never' || a.endTimeAdjustment !== 'never')) {
+    warnings.push({
+      title: 'Rounding rules are configured but inactive',
+      body: <>The master switch <strong>Timesheet Rounding (Auto)</strong> is off, so the snap and rounding rules below are ignored and exact recorded times are used.</>,
+    });
+  }
+  if (roundingOn && a.startTimeAdjustment === 'down_nearest_15' && a.endTimeAdjustment === 'down_nearest_15') {
+    warnings.push({
+      title: 'Rounding always trims paid time',
+      body: <>Both start and end round <strong>down to 15 minutes</strong>, which systematically reduces recorded hours in the employer’s favour. In most jurisdictions this creates underpayment risk — use “Nearest” rounding for a neutral split.</>,
+    });
+  }
+
+  const autoApprovalSummary = (() => {
+    if (!autoApprovalOn) return 'Every timesheet is routed through the approval chain manually.';
+    const base =
+      a.autoApproval === 'on_submit' ? 'Timesheets are approved as soon as staff submit them'
+      : a.autoApproval === 'matches_schedule' ? `Timesheets are approved automatically when start and end are within ${a.autoApprovalMatchToleranceMinutes} min of the roster`
+      : 'Qualifying timesheets are batch-approved at end of day';
+    const flagged = a.skipAutoApprovalIfFlagged ? ', unless any anomaly flag is raised' : ', even if anomaly flags are raised';
+    const cap = a.autoApprovalMaxDailyHours > 0 ? `, and never for days over ${a.autoApprovalMaxDailyHours} hours` : ', with no daily-hours cap';
+    return `${base}${flagged}${cap}. ${a.notifyStaffOnAdjustment ? 'Staff are notified of any auto-adjustment.' : 'Staff are not notified of auto-adjustments.'}`;
+  })();
+
+  const roundingSummary = (() => {
+    if (!roundingOn) return 'Recorded times are used exactly as captured — no rounding is applied.';
+    const label = (v: string) => roundingOptions.find(o => o.value === v)?.label ?? v;
+    return `Early clock-ins ${a.adjustStartToScheduledIfEarlier ? 'snap forward to the scheduled start' : 'are kept as recorded'}; other starts round to ${label(a.startTimeAdjustment)}. Late clock-outs ${a.adjustEndToScheduledIfDelayed ? 'snap back to the scheduled end' : 'are kept as recorded'}; other ends round to ${label(a.endTimeAdjustment)}.`;
+  })();
+
   return (
     <Card>
       <CardHeader>
@@ -356,6 +401,17 @@ export function PolicyApproving() {
         <CardDescription>Automatic approval, rounding and approval routing.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {warnings.length > 0 && (
+          <div className="space-y-2">
+            {warnings.map(w => (
+              <div key={w.title} className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                <p className="font-medium mb-1">{w.title}</p>
+                <p>{w.body}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
           <Info className="h-4 w-4 mt-0.5 shrink-0 text-foreground/70" />
           <div className="space-y-1">
@@ -430,7 +486,11 @@ export function PolicyApproving() {
               />
             </div>
           </div>
+          <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Current outcome: </span>{autoApprovalSummary}
+          </div>
         </PermissionGroup>
+
 
         <PermissionGroup title="Rounding">
           <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground/80 mb-2">
@@ -500,9 +560,13 @@ export function PolicyApproving() {
               />
             </div>
           </div>
+          <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Current outcome: </span>{roundingSummary}
+          </div>
           <div className="pt-2 text-xs text-muted-foreground">
             Break rounding now lives in the <span className="font-medium text-foreground">Breaks</span> tab under <span className="font-medium text-foreground">Rounding</span>.
           </div>
+
         </PermissionGroup>
 
         <PermissionGroup title="Approval Chain">
@@ -1033,6 +1097,13 @@ export function PolicyIssues() {
         </PermissionGroup>
 
         <PermissionGroup title="Excessive Hours">
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+            These flags overlap with <span className="font-medium text-foreground">Compliance flag thresholds</span> in
+            the card below (daily hours, weekly hours, rest between shifts, consecutive days). Both raise flags
+            independently — the <span className="font-medium text-foreground">stricter</span> threshold fires first, so
+            keep the two aligned to avoid duplicate flags on the same timesheet.
+          </div>
+
           <SelectRow
             {...fieldProps('issues', 'flagExcessiveDailyHours', 'Excessive Daily Hours',
               'Severity when a single day exceeds the maximum allowed working hours.',
