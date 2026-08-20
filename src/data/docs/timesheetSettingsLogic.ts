@@ -1478,12 +1478,32 @@ export const conflictMatrix: { rule: string; conflictsWith: string; resolution: 
   },
   {
     rule: 'Flag buddy punching',
-    conflictsWith: 'No GPS and no kiosk photo',
-    resolution: 'Only the device/time-cluster signal is available, which alone is insufficient. Enable at least one verification channel or lower the severity.',
+    conflictsWith: 'Kiosk verification set to "PIN only" and no GPS',
+    resolution: 'Only the device/time-cluster signal is available, which alone is insufficient. Move the kiosk to a face-verification mode or lower the severity.',
+  },
+  {
+    rule: 'Kiosk verification includes face',
+    conflictsWith: 'Staff with no enrolled face template',
+    resolution: 'The punch is blocked rather than downgraded to PIN. Enrol the staff member, or use "PIN + face" so identification still works while enrolment is completed.',
+  },
+  {
+    rule: 'Paid meal breaks + cap on paid minutes',
+    conflictsWith: 'Award-mandated paid meal duration',
+    resolution: 'The award duration wins. The cap can only reduce paid minutes below an award minimum where no award provision applies.',
+  },
+  {
+    rule: 'Paid meal counts toward hours = Off',
+    conflictsWith: 'Excessive daily hours / overtime thresholds',
+    resolution: 'Paid meal minutes are paid but excluded from threshold maths, so a day can be paid above the cap without flagging. Leave on unless the award says otherwise.',
   },
   {
     rule: 'Compliance daily limit 10h',
     conflictsWith: 'Issues excessive daily hours 12h',
     resolution: 'Both fire independently. Compliance gates approval at 10h; the Issues flag adds a second, louder signal at 12h. Keep compliance ≤ issues threshold.',
+  },
+  {
+    rule: 'SLA breach action "Auto-approve"',
+    conflictsWith: 'Skip auto-approval when flagged',
+    resolution: 'The skip rule only governs the initial auto-approval attempt. A breach-driven auto-approve still clears flagged timesheets — use "Escalate" or "Hold" if that is unacceptable.',
   },
 ];
