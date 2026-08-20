@@ -824,20 +824,11 @@ export function PolicyBreaks() {
           <SelectRow
             {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
               "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.",
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Paid if shift exceeds threshold"</em>. A 4-hour shift → meal break is unpaid. A 9-hour shift exceeding the threshold below → meal break is paid. Award rules (if defined) always take precedence over this fallback.</p>{paidMealOptionGuide}</>)}
+              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Never (unpaid)"</em> to deduct meal breaks from paid time, or <em>"Always paid"</em> to keep meal breaks paid. Award rules (if defined) always take precedence over this fallback.</p>{paidMealOptionGuide}</>)}
             value={resolved.breaks.paidMealBreaks}
             options={paidMealOptions}
             onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
           />
-          {resolved.breaks.paidMealBreaks === 'over_threshold' && (
-            <NumberRow
-              {...fieldProps('breaks', 'paidMealOverShiftHours', 'Paid if shift exceeds (hours)',
-                'Meal breaks become paid when the rostered/worked shift is longer than this many hours.',
-                <><p className="font-medium mb-1">Example</p><p>Set to <strong>6</strong>. A 5-hour shift → meal break unpaid. A 7-hour shift → meal break paid.</p></>)}
-              value={resolved.breaks.paidMealOverShiftHours}
-              onChange={v => setField('breaks', 'paidMealOverShiftHours', Math.min(24, Math.max(0, v)))}
-            />
-          )}
           <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">Current outcome: </span>
             {paidMealSummary(resolved.breaks)}
@@ -1329,14 +1320,12 @@ const paidMealOptionGuide = (
   <OptionGuide items={[
     { label: 'Never (unpaid)', description: 'Meal breaks are always unpaid (default for most awards).' },
     { label: 'Always paid', description: 'Meal breaks are always paid regardless of shift length.' },
-    { label: 'Paid if shift exceeds threshold', description: 'Paid only on longer shifts (e.g. 6h+). Set the threshold below.' },
   ]} />
 );
 
 function paidMealSummary(b: TimesheetPolicy['breaks']): string {
   if (b.paidMealBreaks === 'never') return 'Meal breaks are unpaid and deducted from paid time.';
-  if (b.paidMealBreaks === 'always') return 'Every meal break is paid in full and not deducted from paid time.';
-  return `Meal breaks are paid in full when the shift exceeds ${b.paidMealOverShiftHours} hours, otherwise they are unpaid and deducted.`;
+  return 'Every meal break is paid and not deducted from paid time.';
 }
 
 
