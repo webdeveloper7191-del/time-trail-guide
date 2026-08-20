@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { useBreakRules } from '@/lib/breakRulesStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,7 @@ import {
   Eye,
   HelpCircle,
   Award,
+  BookOpen,
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction, ApprovalTriggerSet } from '@/types/compliance';
 import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegationModal';
@@ -365,10 +367,17 @@ export default function TimesheetSettings() {
                     Unsaved Changes
                   </Badge>
                 )}
+                <Button variant="outline" asChild className="gap-2">
+                  <Link to="/docs/timesheet-logic">
+                    <BookOpen className="h-4 w-4" />
+                    Business logic
+                  </Link>
+                </Button>
                 <Button variant="outline" onClick={handleReset} className="gap-2">
                   <RotateCcw className="h-4 w-4" />
                   Reset
                 </Button>
+
                 <Button onClick={handleSave} className="gap-2">
                   <Save className="h-4 w-4" />
                   Save Settings
