@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { useBreakRules } from '@/lib/breakRulesStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,7 @@ import {
   Eye,
   HelpCircle,
   Award,
+  BookOpen,
 } from 'lucide-react';
 import { ApprovalTier, BreakRule, ApprovalRule, ApprovalRuleCondition, SlaBreachAction, ApprovalTriggerSet } from '@/types/compliance';
 import { ApprovalDelegationModal } from '@/components/timesheet/ApprovalDelegationModal';
