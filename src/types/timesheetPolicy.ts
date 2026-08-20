@@ -165,6 +165,7 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     restrictToGeofence: false,
     geofenceRadiusMeters: 100,
     enableSmsClock: false,
+    kioskVerificationMode: 'pin',
     requireKioskPhoto: false,
     minTimesheetMinutes: 15,
   },
