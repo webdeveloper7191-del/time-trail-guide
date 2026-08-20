@@ -10,7 +10,7 @@ export type RoundingDirection = 'never' | 'nearest_5' | 'nearest_10' | 'nearest_
 export type ApprovalCadence = 'never' | 'daily' | 'on_submit' | 'matches_schedule';
 export type LinkUnscheduled = 'never' | 'best_fit' | 'exact_match' | 'same_location';
 export type TimeDrift = 'never' | 'within_15m' | 'within_30m' | 'within_1h' | 'within_2h' | 'within_4h';
-export type PaidMealMode = 'never' | 'always' | 'over_threshold';
+export type PaidMealMode = 'never' | 'always';
 export type VarianceFlag = 'never' | 'over_5m' | 'over_10m' | 'over_15m' | 'always';
 
 export type KioskVerificationMode = 'pin' | 'face' | 'pin_and_face';
@@ -103,16 +103,16 @@ export interface BreaksSettings {
   autoIncludeScheduledOnClockOut: boolean;
   flagShortOrMissedBreaks: boolean;
   paidMealBreaks: PaidMealMode;
-  /** @deprecated legacy minutes threshold — superseded by paidMealOverShiftHours */
-  paidMealOverMinutesThreshold: number;
-  /** Shift length (hours) after which a meal break becomes paid (over_threshold mode) */
-  paidMealOverShiftHours: number;
-  /** Cap on how many minutes of a meal break are paid (0 = no cap, pay full break) */
-  paidMealMaxPaidMinutes: number;
-  /** Whether paid meal time counts toward ordinary/overtime hour accumulation */
-  paidMealCountsTowardHours: boolean;
-  /** Pay an unpaid meal break when it is interrupted or cut short by work */
-  payInterruptedUnpaidMeal: boolean;
+  /** @deprecated legacy minutes threshold — no longer surfaced in UI */
+  paidMealOverMinutesThreshold?: number;
+  /** @deprecated legacy hours threshold — no longer surfaced in UI */
+  paidMealOverShiftHours?: number;
+  /** @deprecated legacy cap — no longer surfaced in UI */
+  paidMealMaxPaidMinutes?: number;
+  /** @deprecated legacy accrual toggle — no longer surfaced in UI */
+  paidMealCountsTowardHours?: boolean;
+  /** @deprecated legacy interrupted meal toggle — no longer surfaced in UI */
+  payInterruptedUnpaidMeal?: boolean;
 }
 
 
@@ -315,7 +315,6 @@ export const timeDriftOptions: { value: TimeDrift; label: string }[] = [
 export const paidMealOptions: { value: PaidMealMode; label: string }[] = [
   { value: 'never', label: 'Never (unpaid)' },
   { value: 'always', label: 'Always paid' },
-  { value: 'over_threshold', label: 'Paid if shift exceeds threshold' },
 ];
 
 export const varianceFlagOptions: { value: VarianceFlag; label: string }[] = [
