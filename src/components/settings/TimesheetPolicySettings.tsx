@@ -1334,16 +1334,9 @@ const paidMealOptionGuide = (
 );
 
 function paidMealSummary(b: TimesheetPolicy['breaks']): string {
-  const cap = b.paidMealMaxPaidMinutes > 0 ? ` up to ${b.paidMealMaxPaidMinutes} min (excess unpaid)` : ' in full';
-  const counts = b.paidMealCountsTowardHours ? 'counts toward ordinary/overtime hours' : 'does not count toward hour thresholds';
-  const interrupted = b.payInterruptedUnpaidMeal
-    ? 'Interrupted unpaid meal breaks are paid in full.'
-    : 'Interrupted unpaid meal breaks are deducted for the time actually taken.';
-  if (b.paidMealBreaks === 'never') return `Meal breaks are unpaid and deducted from paid time. ${interrupted}`;
-  const when = b.paidMealBreaks === 'always'
-    ? 'Every meal break is paid'
-    : `Meal breaks are paid only when the shift exceeds ${b.paidMealOverShiftHours} hours (otherwise unpaid)`;
-  return `${when}${cap}, and paid meal time ${counts}. ${interrupted}`;
+  if (b.paidMealBreaks === 'never') return 'Meal breaks are unpaid and deducted from paid time.';
+  if (b.paidMealBreaks === 'always') return 'Every meal break is paid in full and not deducted from paid time.';
+  return `Meal breaks are paid in full when the shift exceeds ${b.paidMealOverShiftHours} hours, otherwise they are unpaid and deducted.`;
 }
 
 
