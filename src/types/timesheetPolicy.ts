@@ -103,8 +103,18 @@ export interface BreaksSettings {
   autoIncludeScheduledOnClockOut: boolean;
   flagShortOrMissedBreaks: boolean;
   paidMealBreaks: PaidMealMode;
+  /** @deprecated legacy minutes threshold — superseded by paidMealOverShiftHours */
   paidMealOverMinutesThreshold: number;
+  /** Shift length (hours) after which a meal break becomes paid (over_threshold mode) */
+  paidMealOverShiftHours: number;
+  /** Cap on how many minutes of a meal break are paid (0 = no cap, pay full break) */
+  paidMealMaxPaidMinutes: number;
+  /** Whether paid meal time counts toward ordinary/overtime hour accumulation */
+  paidMealCountsTowardHours: boolean;
+  /** Pay an unpaid meal break when it is interrupted or cut short by work */
+  payInterruptedUnpaidMeal: boolean;
 }
+
 
 export type AnomalySeverity = 'off' | 'info' | 'warning' | 'critical';
 
