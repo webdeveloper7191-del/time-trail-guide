@@ -560,9 +560,13 @@ export function PolicyApproving() {
               />
             </div>
           </div>
+          <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Current outcome: </span>{roundingSummary}
+          </div>
           <div className="pt-2 text-xs text-muted-foreground">
             Break rounding now lives in the <span className="font-medium text-foreground">Breaks</span> tab under <span className="font-medium text-foreground">Rounding</span>.
           </div>
+
         </PermissionGroup>
 
         <PermissionGroup title="Approval Chain">
