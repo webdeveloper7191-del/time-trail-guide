@@ -16,14 +16,17 @@ export type VarianceFlag = 'never' | 'over_5m' | 'over_10m' | 'over_15m' | 'alwa
 export type KioskVerificationMode = 'pin' | 'face' | 'pin_and_face';
 
 export interface TimeTrackingSettings {
+  /** Web Employee Portal — self-service channel. */
   enableWebClock: boolean;
-  enableMobileClock: boolean; // Rostered.ai Kiosk App (fixed-location shared device)
+  /** Rostered.ai Kiosk App — fixed-location shared device, not a self-service channel. */
+  enableMobileClock: boolean;
+  /** Staff personal mobile app — self-service channel. */
   enableStaffMobileApp: boolean;
   captureGpsOnMobile: boolean;
   restrictToGeofence: boolean;
   geofenceRadiusMeters: number;
   enableSmsClock: boolean;
-  /** How staff identify themselves at the Rostered.ai Kiosk App. */
+  /** How staff identify themselves at the shared Rostered.ai Kiosk App. */
   kioskVerificationMode: KioskVerificationMode;
   requireKioskPhoto: boolean; // derived: true when mode includes face verification
   minTimesheetMinutes: number;
