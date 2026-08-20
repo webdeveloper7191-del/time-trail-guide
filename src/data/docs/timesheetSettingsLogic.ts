@@ -216,7 +216,7 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
       {
         id: 'editing',
         title: 'Editing',
-        summary: 'Self-service edit rights. Manager rights are governed separately by the Users & Permissions matrix.',
+        summary: 'Self-service edit rights via the web app or Staff Mobile App. Manager rights are governed separately by the Users & Permissions matrix. Kiosk edits are controlled by Time Tracking settings.',
         items: [
           {
             key: 'permissions.createAndEditTimesheets',
