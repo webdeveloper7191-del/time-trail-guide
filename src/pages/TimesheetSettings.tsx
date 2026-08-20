@@ -681,6 +681,21 @@ export default function TimesheetSettings() {
                       </tbody>
                     </table>
                   </div>
+                  {(() => {
+                    const broken = (Object.entries(notifications.events) as [NotifEventKey, typeof notifications.events[NotifEventKey]][])
+                      .filter(([, ev]) => (ev.channels.inApp || ev.channels.email) && !NOTIF_ROLES.some(r => ev.recipients[r.key]));
+                    if (broken.length === 0) return null;
+                    return (
+                      <p className="text-xs text-amber-700">
+                        Heads up: {broken.length} event{broken.length > 1 ? 's have' : ' has'} a channel switched on but no recipient roles selected — {broken.length > 1 ? 'these notifications' : 'this notification'} will never send.
+                      </p>
+                    );
+                  })()}
+                  {notifications.dailyDigest && !NOTIF_ROLES.some(r => notifications.digestRecipients[r.key]) && (
+                    <p className="text-xs text-amber-700">
+                      Heads up: the approvals digest is enabled but has no recipients selected.
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     <strong>Audience</strong> classifies who the event is primarily about — <em>Staff</em>{' '}
                     events concern the timesheet owner, <em>Manager</em> events drive approval workflow,
