@@ -169,6 +169,10 @@ export function ComplianceDesigner({ value, onChange }: Props) {
                         </Select>
                       </div>
                     )}
+                    {t.enabled && issues[def.key] && (
+                      <p className="text-xs text-destructive pt-1">{issues[def.key]}</p>
+                    )}
+
                   </div>
                   <Switch
                     checked={t.enabled}
