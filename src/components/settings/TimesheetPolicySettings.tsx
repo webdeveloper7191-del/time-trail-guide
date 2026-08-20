@@ -352,7 +352,7 @@ export function PolicyApproving() {
   const autoApprovalOn = a.autoApproval !== 'never';
 
   const warnings: { title: string; body: React.ReactNode }[] = [];
-  if (a.autoApproval === 'on_submission' && !a.skipAutoApprovalIfFlagged) {
+  if (a.autoApproval === 'on_submit' && !a.skipAutoApprovalIfFlagged) {
     warnings.push({
       title: 'Every timesheet will be approved without review',
       body: <>Auto-approval is set to <strong>On submission</strong> and <strong>Skip auto-approval if flagged</strong> is off, so even timesheets with missing clock-outs or compliance breaches are approved straight to payroll. Turn on “Skip auto-approval if flagged” or choose “When matches scheduled shift”.</>,
@@ -380,7 +380,7 @@ export function PolicyApproving() {
   const autoApprovalSummary = (() => {
     if (!autoApprovalOn) return 'Every timesheet is routed through the approval chain manually.';
     const base =
-      a.autoApproval === 'on_submission' ? 'Timesheets are approved as soon as staff submit them'
+      a.autoApproval === 'on_submit' ? 'Timesheets are approved as soon as staff submit them'
       : a.autoApproval === 'matches_schedule' ? `Timesheets are approved automatically when start and end are within ${a.autoApprovalMatchToleranceMinutes} min of the roster`
       : 'Qualifying timesheets are batch-approved at end of day';
     const flagged = a.skipAutoApprovalIfFlagged ? ', unless any anomaly flag is raised' : ', even if anomaly flags are raised';
