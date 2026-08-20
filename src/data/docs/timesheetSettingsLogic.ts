@@ -73,14 +73,14 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
       {
         id: 'channels',
         title: 'Capture channels',
-        summary: 'Each channel is independently enabled. If every channel is disabled, time can only be entered manually by a manager.',
+        summary: 'Each channel is independently enabled. Self-service channels are Web and Staff Mobile App. The Rostered.ai Kiosk App is a shared fixed-location device and is not a self-service channel. If every channel is disabled, time can only be entered manually by a manager.',
         items: [
           {
             key: 'timeTracking.enableWebClock',
             label: 'Web clock',
             type: 'Boolean',
             defaultValue: 'On',
-            purpose: 'Allows staff to clock in/out from the browser (Employee Portal).',
+            purpose: 'Allows staff to clock in/out from the browser via the Employee Portal (self-service).',
             logic: [
               'When off, the clock widget is hidden in the Employee Portal and any API punch with source `web` is rejected with `CHANNEL_DISABLED`.',
               'Turning it off does not delete existing punches; open shifts already clocked in can still be clocked out to avoid stranded records.',
@@ -89,29 +89,29 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
             edgeCases: ['If all channels are disabled while a staff member is mid-shift, the system falls back to Auto clock-out after shift.'],
           },
           {
-            key: 'timeTracking.enableMobileClock',
-            label: 'Rostered.ai Kiosk App (fixed location)',
-            type: 'Boolean',
-            defaultValue: 'On',
-            purpose: 'Allows punches from the fixed-location Rostered.ai Kiosk App.',
-            logic: [
-              'When off, kiosk punches are rejected and the shared kiosk device shows a "clock disabled by your organisation" state.',
-              'Face verification and geofencing can apply to this channel.',
-            ],
-            interactions: ['requireKioskPhoto', 'restrictToGeofence'],
-          },
-          {
             key: 'timeTracking.enableStaffMobileApp',
             label: 'Staff mobile app clock',
             type: 'Boolean',
             defaultValue: 'Off',
-            purpose: 'Allows punches from the staff personal mobile app.',
+            purpose: 'Allows punches from the staff personal mobile app (self-service).',
             logic: [
               'When off, mobile app punches are rejected and the staff mobile app shows a "clock disabled by your organisation" state.',
               'GPS capture and geofencing for mobile punches are only evaluated when this channel is enabled.',
             ],
             interactions: ['captureGpsOnMobile', 'restrictToGeofence'],
             edgeCases: ['This feature is currently under development and is shown as coming soon.'],
+          },
+          {
+            key: 'timeTracking.enableMobileClock',
+            label: 'Rostered.ai Kiosk App (fixed location)',
+            type: 'Boolean',
+            defaultValue: 'On',
+            purpose: 'Allows punches from the fixed-location Rostered.ai Kiosk App. This is a shared device, not a personal self-service channel.',
+            logic: [
+              'When off, kiosk punches are rejected and the shared kiosk device shows a "clock disabled by your organisation" state.',
+              'Face verification and geofencing can apply to this channel.',
+            ],
+            interactions: ['requireKioskPhoto', 'restrictToGeofence'],
           },
           {
             key: 'timeTracking.captureGpsOnMobile',
@@ -223,9 +223,9 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
             label: 'Create and edit own timesheets',
             type: 'Boolean',
             defaultValue: 'Off',
-            purpose: 'Allows staff to add a manual timesheet rather than only clocking.',
+            purpose: 'Allows staff to add a manual timesheet via the web or Staff Mobile App rather than only clocking.',
             logic: [
-              'When on, the Employee Portal shows "Add timesheet" and staff can edit any day in the current, unsubmitted period.',
+              'When on, the Employee Portal and Staff Mobile App show "Add timesheet" and staff can edit any day in the current, unsubmitted period.',
               'Manually created entries are always tagged `source: manual` and are excluded from auto-approval when "When matches scheduled shift" is selected unless the times match within tolerance.',
               'When off, staff can view but not create; the add button is hidden and the API rejects staff-authored creates.',
             ],
