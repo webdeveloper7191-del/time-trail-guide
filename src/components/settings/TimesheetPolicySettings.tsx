@@ -191,51 +191,53 @@ export function PolicyTimeTracking() {
             comingSoon
           />
         )}
-        <ToggleRow
-          {...fieldProps('timeTracking', 'restrictToGeofence', 'Restrict Clock-ins to Geo-fence',
-            'Prevent clock-ins from outside a defined distance using GPS location.',
-            <><p className="font-medium mb-1">Example</p><p>With the radius set to 100 m, a staff member trying to clock in from a café 500 m away sees: "You must be at the site to clock in." Stops accidental or fraudulent off-site clock-ins.</p></>)}
-          value={resolved.timeTracking.restrictToGeofence}
-          onChange={v => setField('timeTracking', 'restrictToGeofence', v)}
-        />
-        {resolved.timeTracking.restrictToGeofence && (
-          <NumberRow
-            {...fieldProps('timeTracking', 'geofenceRadiusMeters', 'Geo-fence radius (meters)',
-              'Maximum distance from scheduled location at which clock-in is allowed.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <strong>150</strong>. A large hospital campus allows clock-in from any entrance. A small clinic might use <strong>50</strong> to keep clock-ins precisely on-site.</p></>)}
-            value={resolved.timeTracking.geofenceRadiusMeters}
-            onChange={v => setField('timeTracking', 'geofenceRadiusMeters', v)}
-          />
+        {resolved.timeTracking.enableMobileClock && (
+          <>
+            <ToggleRow
+              {...fieldProps('timeTracking', 'restrictToGeofence', 'Restrict Clock-ins to Geo-fence',
+                'Prevent clock-ins from outside a defined distance using GPS location.',
+                <><p className="font-medium mb-1">Example</p><p>With the radius set to 100 m, a staff member trying to clock in from a café 500 m away sees: "You must be at the site to clock in." Stops accidental or fraudulent off-site clock-ins.</p></>)}
+              value={resolved.timeTracking.restrictToGeofence}
+              onChange={v => setField('timeTracking', 'restrictToGeofence', v)}
+            />
+            {resolved.timeTracking.restrictToGeofence && (
+              <NumberRow
+                {...fieldProps('timeTracking', 'geofenceRadiusMeters', 'Geo-fence radius (meters)',
+                  'Maximum distance from scheduled location at which clock-in is allowed.',
+                  <><p className="font-medium mb-1">Example</p><p>Set to <strong>150</strong>. A large hospital campus allows clock-in from any entrance. A small clinic might use <strong>50</strong> to keep clock-ins precisely on-site.</p></>)}
+                value={resolved.timeTracking.geofenceRadiusMeters}
+                onChange={v => setField('timeTracking', 'geofenceRadiusMeters', v)}
+              />
+            )}
+            <SelectRow
+              {...fieldProps('timeTracking', 'kioskVerificationMode', 'Kiosk Identity Verification',
+                'How staff identify themselves at the Rostered.ai Kiosk App when clocking in or out.',
+                <>
+                  <p className="font-medium mb-1">Example</p>
+                  <p>Choose <em>PIN only</em> for the fastest queue at shift change. Choose <em>Face verification only</em> for a hands-free, no-PIN-to-forget flow. Choose <em>PIN + face verification</em> for the strongest protection against "buddy punching" (one worker clocking in for another).</p>
+                  <div className="mt-2 space-y-1">
+                    <p><strong>PIN only</strong> — staff enter their personal PIN. Fast, no camera required.</p>
+                    <p><strong>Face verification only</strong> — the kiosk camera matches a selfie against the staff profile photo.</p>
+                    <p><strong>PIN + face verification</strong> — both are required; the clock event is rejected if either fails.</p>
+                  </div>
+                </>)}
+              value={resolved.timeTracking.kioskVerificationMode}
+              options={kioskVerificationOptions}
+              onChange={v => {
+                const mode = v as TimesheetPolicy['timeTracking']['kioskVerificationMode'];
+                setField('timeTracking', 'kioskVerificationMode', mode);
+                setField('timeTracking', 'requireKioskPhoto', mode !== 'pin');
+              }}
+            />
+            <NumberRow
+              {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
+                'Timesheets shorter than the specified duration will not be recorded.',
+                <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. A staff member clocks in, realises they're at the wrong location, and clocks out after 4 minutes. The entry is discarded so it doesn't clutter timesheets or payroll.</p></>)}
+              value={resolved.timeTracking.minTimesheetMinutes}
+              onChange={v => setField('timeTracking', 'minTimesheetMinutes', v)}
+            />
+          </>
         )}
-        <SelectRow
-          {...fieldProps('timeTracking', 'kioskVerificationMode', 'Kiosk Identity Verification',
-            'How staff identify themselves at the Rostered.ai Kiosk App when clocking in or out.',
-            <>
-              <p className="font-medium mb-1">Example</p>
-              <p>Choose <em>PIN only</em> for the fastest queue at shift change. Choose <em>Face verification only</em> for a hands-free, no-PIN-to-forget flow. Choose <em>PIN + face verification</em> for the strongest protection against "buddy punching" (one worker clocking in for another).</p>
-              <div className="mt-2 space-y-1">
-                <p><strong>PIN only</strong> — staff enter their personal PIN. Fast, no camera required.</p>
-                <p><strong>Face verification only</strong> — the kiosk camera matches a selfie against the staff profile photo.</p>
-                <p><strong>PIN + face verification</strong> — both are required; the clock event is rejected if either fails.</p>
-              </div>
-            </>)}
-          value={resolved.timeTracking.kioskVerificationMode}
-          options={kioskVerificationOptions}
-          onChange={v => {
-            const mode = v as TimesheetPolicy['timeTracking']['kioskVerificationMode'];
-            setField('timeTracking', 'kioskVerificationMode', mode);
-            setField('timeTracking', 'requireKioskPhoto', mode !== 'pin');
-          }}
-        />
-
-
-        <NumberRow
-          {...fieldProps('timeTracking', 'minTimesheetMinutes', 'Minimum timesheet length (minutes)',
-            'Timesheets shorter than the specified duration will not be recorded.',
-            <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. A staff member clocks in, realises they're at the wrong location, and clocks out after 4 minutes. The entry is discarded so it doesn't clutter timesheets or payroll.</p></>)}
-          value={resolved.timeTracking.minTimesheetMinutes}
-          onChange={v => setField('timeTracking', 'minTimesheetMinutes', v)}
-        />
       </CardContent>
     </Card>
   );
