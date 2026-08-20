@@ -160,22 +160,22 @@ export function PolicyTimeTracking() {
         <ToggleRow
           {...fieldProps('timeTracking', 'enableWebClock', 'Enable Web Clock-in/out',
             'Allow staff to clock in and out via the web app.',
-            <><p className="font-medium mb-1">Example</p><p>A reception staff member on a desktop opens the web portal and taps "Clock in" at 8:58 AM. With this OFF, the button is hidden and they must use the mobile app or kiosk.</p></>)}
+            <><p className="font-medium mb-1">Example</p><p>A reception staff member on a desktop opens the web portal and taps "Clock in" at 8:58 AM. With this OFF, the button is hidden and they must use the Rostered.ai Kiosk App.</p></>)}
           value={resolved.timeTracking.enableWebClock}
           onChange={v => setField('timeTracking', 'enableWebClock', v)}
           comingSoon
         />
         <ToggleRow
-          {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Mobile App Clock-in/out',
-            'Allow staff to clock in and out via the staff mobile app.',
-            <><p className="font-medium mb-1">Example</p><p>A field worker arrives on-site and clocks in from the mobile app. Useful for staff who don't have access to a fixed kiosk or computer.</p></>)}
+          {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Rostered.ai Kiosk App Clock-in/out',
+            'Allow staff to clock in and out via the Rostered.ai Kiosk App.',
+            <><p className="font-medium mb-1">Example</p><p>A field worker arrives on-site and clocks in from the Rostered.ai Kiosk App. Useful for staff who don't have access to a fixed kiosk or computer.</p></>)}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
         <ToggleRow
-          {...fieldProps('timeTracking', 'captureGpsOnMobile', 'Capture GPS on Mobile Clock-in/out',
-            'Record GPS coordinates when staff clock in or out via mobile. Distance from scheduled location will appear in timesheets.',
-            <><p className="font-medium mb-1">Example</p><p>Liam clocks in via mobile from 1.2 km away from his assigned location. The timesheet shows "Clocked in 1.2 km from site" so the manager can investigate without blocking the clock-in.</p></>)}
+          {...fieldProps('timeTracking', 'captureGpsOnMobile', 'Capture GPS on Rostered.ai Kiosk App Clock-in/out',
+            'Record GPS coordinates when staff clock in or out via the Rostered.ai Kiosk App. Distance from scheduled location will appear in timesheets.',
+            <><p className="font-medium mb-1">Example</p><p>Liam clocks in via the Rostered.ai Kiosk App from 1.2 km away from his assigned location. The timesheet shows "Clocked in 1.2 km from site" so the manager can investigate without blocking the clock-in.</p></>)}
           value={resolved.timeTracking.captureGpsOnMobile}
           onChange={v => setField('timeTracking', 'captureGpsOnMobile', v)}
         />
@@ -227,7 +227,7 @@ export function PolicyPermissions() {
         <PermissionGroup title="Editing">
           <ToggleRow
             {...fieldProps('permissions', 'createAndEditTimesheets', 'Create and Edit Timesheets',
-              'Allow team members to create and edit their timesheets via the web or mobile app.',
+              'Allow team members to create and edit their timesheets via the web or Rostered.ai Kiosk App.',
               <><p className="font-medium mb-1">Example</p><p>Maya forgot to clock in yesterday. With this <strong>ON</strong>, she can add the missing entry herself; with OFF, she must ask her manager to add it.</p></>)}
             value={resolved.permissions.createAndEditTimesheets}
             onChange={v => setField('permissions', 'createAndEditTimesheets', v)}
