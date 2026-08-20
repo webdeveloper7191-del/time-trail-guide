@@ -373,7 +373,32 @@ export function ApprovalFlowDesigner({
           subtitle="Approved timesheets are queued for the next pay run."
           tone="success"
         />
+
+        <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Current outcome: </span>{outcomeSummary}
+        </div>
+
+        {issues.length > 0 && (
+          <div className="rounded-md border border-border bg-background p-3 space-y-1">
+            {issues.map((issue, i) => (
+              <p
+                key={i}
+                className={
+                  issue.level === 'error'
+                    ? 'text-xs text-destructive'
+                    : issue.level === 'warning'
+                      ? 'text-xs text-amber-700'
+                      : 'text-xs text-muted-foreground'
+                }
+              >
+                {issue.level === 'error' ? 'Invalid: ' : issue.level === 'warning' ? 'Heads up: ' : ''}
+                {issue.message}
+              </p>
+            ))}
+          </div>
+        )}
       </CardContent>
+
     </Card>
   );
 }
