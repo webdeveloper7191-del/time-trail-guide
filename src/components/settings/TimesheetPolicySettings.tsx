@@ -948,22 +948,6 @@ export function PolicyIssues() {
     { value: '0', label: 'Any difference at all' },
   ];
 
-  // ---- Conflict detection: rounding step >= variance threshold ----
-  const roundingStepMinutes = (() => {
-    if (!resolved.approving.roundingEnabled) return 0;
-    const steps: Record<string, number> = {
-      nearest_5: 5, nearest_10: 10, nearest_15: 15,
-      up_nearest_15: 15, down_nearest_15: 15, never: 0,
-    };
-    return Math.max(
-      steps[resolved.approving.startTimeAdjustment] ?? 0,
-      steps[resolved.approving.endTimeAdjustment] ?? 0,
-    );
-  })();
-  const shiftVarMins = varianceMinutes(resolved.issues.flagShiftTimeVariance);
-  const shiftVarOn = varianceEnabled(resolved.issues.flagShiftTimeVariance);
-  const showRoundingConflict = shiftVarOn && roundingStepMinutes > 0 && roundingStepMinutes >= shiftVarMins;
-
   return (
     <Card>
       <CardHeader>
@@ -983,76 +967,7 @@ export function PolicyIssues() {
           <span className="text-foreground">Critical</span> – blocks submission when "Block submission on critical" is on.
         </div>
 
-        <PermissionGroup title="Time Variance">
-          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-            Variance flags compare <span className="font-medium text-foreground">actual</span> times to{' '}
-            <span className="font-medium text-foreground">scheduled / expected</span> times and raise a flag for review.
-            They do not change recorded time or pay — for that, use{' '}
-            <span className="font-medium text-foreground">Rounding</span> in the Approving tab.
-          </div>
 
-          {showRoundingConflict && (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
-              <p className="font-medium mb-1">Heads up — rounding may swallow this flag</p>
-              <p>
-                Your start/end rounding rounds to <strong>{roundingStepMinutes} min</strong>, which is at or above your{' '}
-                <strong>{shiftVarMins}-min</strong> variance threshold. Most variances will be rounded away before
-                the flag can fire. Either raise the variance threshold above {roundingStepMinutes} min, or use a
-                smaller rounding step.
-              </p>
-            </div>
-          )}
-
-          <ToggleRow
-            {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag shift time variance',
-              "Raise a flag when actual clock-in or clock-out differs from the scheduled shift by more than the threshold below. The time itself isn't changed — only a flag is raised for the reviewer.",
-              <>
-                <p className="font-medium mb-1">Example</p>
-                <p>Threshold = <em>more than 10 minutes</em>. Priya was rostered 9:00 AM – 5:00 PM but clocked 8:42 AM – 5:24 PM. Both ends drift &gt;10 min, so the timesheet is flagged for review instead of auto-approving.</p>
-              </>)}
-            value={shiftVarOn}
-            onChange={v => setField('issues', 'flagShiftTimeVariance', buildVariance(v, shiftVarMins))}
-          />
-          {shiftVarOn && (
-            <SelectRow
-              {...fieldProps('issues', 'flagShiftTimeVariance', 'Flag when variance is',
-                'How far the actual clock time may drift from the scheduled time before a flag is raised.',
-                <>
-                  <p className="font-medium mb-1">Tip</p>
-                  <p>Pick a threshold larger than your rounding step (Approving → Rounding) so rounding doesn't absorb the variance before it can be flagged.</p>
-                  {varianceThresholdOptionGuide}
-                </>)}
-              value={String(shiftVarMins)}
-              options={thresholdOptions}
-              onChange={v => setField('issues', 'flagShiftTimeVariance', buildVariance(true, Number(v)))}
-            />
-          )}
-
-          <ToggleRow
-            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag break duration variance',
-              'Raise a flag when the recorded break is shorter or longer than the required duration (from the applicable Break Rule, or the scheduled break) by more than the threshold below.',
-              <>
-                <p className="font-medium mb-1">Example</p>
-                <p>Threshold = <em>more than 10 minutes</em>. A 30-min meal break is required. Tom records only 14 min (16 min short) — flagged. A 32-min break — within tolerance, no flag.</p>
-              </>)}
-            value={varianceEnabled(resolved.issues.flagBreakDurationVariance)}
-            onChange={v => setField('issues', 'flagBreakDurationVariance', buildVariance(v, varianceMinutes(resolved.issues.flagBreakDurationVariance)))}
-          />
-          {varianceEnabled(resolved.issues.flagBreakDurationVariance) && (
-            <SelectRow
-              {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag when break differs by',
-                'How many minutes the recorded break may differ from the required duration before a flag is raised.',
-                <>
-                  <p className="font-medium mb-1">Example</p>
-                  <p>Set to <em>more than 10 minutes</em>. Required 30-min break taken in 22 min (8 min short) → no flag. Taken in 18 min (12 min short) → flagged.</p>
-                  {varianceThresholdOptionGuide}
-                </>)}
-              value={String(varianceMinutes(resolved.issues.flagBreakDurationVariance))}
-              options={thresholdOptions}
-              onChange={v => setField('issues', 'flagBreakDurationVariance', buildVariance(true, Number(v)))}
-            />
-          )}
-        </PermissionGroup>
 
 
         <PermissionGroup title="Missing & Unusual Entries">
@@ -1098,29 +1013,14 @@ export function PolicyIssues() {
 
         </PermissionGroup>
 
-        <PermissionGroup title="Excessive Hours">
+        <PermissionGroup title="Hours & Overtime">
           <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-            These flags overlap with <span className="font-medium text-foreground">Compliance flag thresholds</span> in
-            the card below (daily hours, weekly hours, rest between shifts, consecutive days). Both raise flags
-            independently — the <span className="font-medium text-foreground">stricter</span> threshold fires first, so
-            keep the two aligned to avoid duplicate flags on the same timesheet.
+            Daily hours, weekly hours, rest between shifts and consecutive days are set once in{' '}
+            <span className="font-medium text-foreground">Compliance flag thresholds</span> (card below). The flags here
+            cover what those limits don't: unbroken shifts and overtime volume.
           </div>
 
-          <SelectRow
-            {...fieldProps('issues', 'flagExcessiveDailyHours', 'Excessive Daily Hours',
-              'Severity when a single day exceeds the maximum allowed working hours.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>12h</em>, severity = <em>Critical</em>. Liam records a 13h25m shift. The system blocks submission until a manager verifies it was a genuine emergency callout.</p>{severityOptionGuide}</>)}
-            value={resolved.issues.flagExcessiveDailyHours}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagExcessiveDailyHours', v as TimesheetPolicy['issues']['flagExcessiveDailyHours'])}
-          />
-          <NumberRow
-            {...fieldProps('issues', 'excessiveDailyHoursThreshold', 'Daily Hours Threshold',
-              'Maximum hours per day before the excessive-hours flag fires.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>12</em>. A 12h shift is fine; a 12h05m shift triggers the flag.</p></>)}
-            value={resolved.issues.excessiveDailyHoursThreshold}
-            onChange={v => setField('issues', 'excessiveDailyHoursThreshold', Math.max(0, v))}
-          />
+
           <SelectRow
             {...fieldProps('issues', 'flagLongShiftWithoutBreak', 'Long Shift Without Break',
               'Flag shifts that exceed the threshold but have no break recorded — a common compliance risk.',
@@ -1154,39 +1054,35 @@ export function PolicyIssues() {
         </PermissionGroup>
 
         <PermissionGroup title="Break Behaviour">
-          <SelectRow
-            {...fieldProps('issues', 'flagExceededBreak', 'Exceeded Break Duration',
-              'Flag when a recorded break runs longer than the allowed/scheduled duration by more than the percentage below.',
-              <><p className="font-medium mb-1">Example</p><p>Threshold = <em>150%</em>, severity = <em>Info</em>. A 30-min meal break stretches to 50 min (167%) — flagged so the manager can decide whether to deduct unpaid time.</p>{severityOptionGuide}</>)}
-            value={resolved.issues.flagExceededBreak}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagExceededBreak', v as TimesheetPolicy['issues']['flagExceededBreak'])}
+          <ToggleRow
+            {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag break duration variance',
+              'Raise a flag when the recorded break is shorter or longer than the required duration (from the applicable Break Rule, or the scheduled break) by more than the threshold below.',
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Threshold = <em>more than 10 minutes</em>. A 30-min meal break is required. Tom records only 14 min (16 min short) — flagged. A 45-min break (15 min long) — also flagged.</p>
+              </>)}
+            value={varianceEnabled(resolved.issues.flagBreakDurationVariance)}
+            onChange={v => setField('issues', 'flagBreakDurationVariance', buildVariance(v, varianceMinutes(resolved.issues.flagBreakDurationVariance)))}
           />
-          <NumberRow
-            {...fieldProps('issues', 'exceededBreakPercent', 'Exceeded Break Threshold (%)',
-              'Break duration above this percentage of the scheduled length triggers the flag.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>150</em>. A 30-min scheduled break is fine up to 45 min; 46 min triggers the flag.</p></>)}
-            value={resolved.issues.exceededBreakPercent}
-            onChange={v => setField('issues', 'exceededBreakPercent', Math.max(100, v))}
-          />
+          {varianceEnabled(resolved.issues.flagBreakDurationVariance) && (
+            <SelectRow
+              {...fieldProps('issues', 'flagBreakDurationVariance', 'Flag when break differs by',
+                'How many minutes the recorded break may differ (short or long) from the required duration before a flag is raised.',
+                <>
+                  <p className="font-medium mb-1">Example</p>
+                  <p>Set to <em>more than 10 minutes</em>. Required 30-min break taken in 22 min (8 min short) → no flag. Taken in 18 min (12 min short) → flagged.</p>
+                  {varianceThresholdOptionGuide}
+                </>)}
+              value={String(varianceMinutes(resolved.issues.flagBreakDurationVariance))}
+              options={thresholdOptions}
+              onChange={v => setField('issues', 'flagBreakDurationVariance', buildVariance(true, Number(v)))}
+            />
+          )}
         </PermissionGroup>
 
+
         <PermissionGroup title="Behavioural Patterns">
-          <SelectRow
-            {...fieldProps('issues', 'flagPatternDrift', 'Pattern Drift',
-              'Detect when clock-in times deviate significantly from a staff member\'s historical average — possible buddy-punching or schedule confusion.',
-              <><p className="font-medium mb-1">Example</p><p>Drift = <em>60 min</em>, severity = <em>Info</em>. Noah usually clocks in around 8:30 AM. He clocks in at 10:15 AM — flagged as informational so managers can spot a missed shift swap.</p>{severityOptionGuide}</>)}
-            value={resolved.issues.flagPatternDrift}
-            options={anomalySeverityOptions}
-            onChange={v => setField('issues', 'flagPatternDrift', v as TimesheetPolicy['issues']['flagPatternDrift'])}
-          />
-          <NumberRow
-            {...fieldProps('issues', 'patternDriftMinutes', 'Pattern Drift Threshold (min)',
-              'Minutes of deviation from the historical average clock-in time before the flag fires.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <em>60</em>. A 45-min deviation is ignored; a 75-min deviation is flagged.</p></>)}
-            value={resolved.issues.patternDriftMinutes}
-            onChange={v => setField('issues', 'patternDriftMinutes', Math.max(0, v))}
-          />
+
           <SelectRow
             {...fieldProps('issues', 'flagBuddyPunching', 'Suspected Buddy Punching',
               'Detect when two staff clock in/out from the same device within seconds of each other — a classic indicator of one person punching for another.',
