@@ -122,6 +122,74 @@ export function ApprovalFlowDesigner({
     mark();
   };
 
+  const issues = useMemo(() => {
+    const out: { level: 'error' | 'warning' | 'info'; message: string }[] = [];
+    const { slaHours, reminderHours, breachAction } = locationManagerStep;
+
+    if (!Number.isFinite(slaHours) || slaHours <= 0) {
+      out.push({ level: 'error', message: 'Step 1 SLA must be at least 1 hour — a zero SLA breaches the moment a timesheet is submitted.' });
+    } else if (slaHours > 336) {
+      out.push({ level: 'warning', message: 'Step 1 SLA is longer than two weeks, so approvals can sit past a pay run without breaching.' });
+    }
+    if (reminderHours < 0) {
+      out.push({ level: 'error', message: 'Reminder lead time cannot be negative.' });
+    } else if (reminderHours >= slaHours && slaHours > 0) {
+      out.push({ level: 'error', message: `Reminder lead time (${reminderHours}h) must be less than the SLA (${slaHours}h), otherwise the reminder fires at or before submission.` });
+    } else if (reminderHours === 0) {
+      out.push({ level: 'warning', message: 'Reminder lead time is 0 — approvers get no warning before the SLA breaches.' });
+    }
+    if (breachAction === 'auto_approve') {
+      out.push({ level: 'warning', message: 'On breach the timesheet auto-approves. Overtime and flagged hours will be paid without a human check.' });
+    }
+    if (breachAction === 'auto_reject') {
+      out.push({ level: 'warning', message: 'On breach the timesheet auto-rejects. Staff must resubmit, which risks missing the pay cut-off.' });
+    }
+    if (breachAction === 'hold') {
+      out.push({ level: 'info', message: 'On breach the timesheet is held — nothing moves until someone actions it manually.' });
+    }
+
+    rules.forEach((rule, idx) => {
+      const t = rule.triggers ?? {};
+      const hasTrigger = !!(t.hasOvertime || t.hasComplianceFlag || t.hasException ||
+        t.overtimeOverHours !== undefined || t.dailyHoursOver !== undefined);
+      const label = rule.name?.trim() || `Step ${idx + 2}`;
+      if (!hasTrigger) {
+        out.push({ level: 'warning', message: `"${label}" has no conditions, so it runs on every timesheet that reaches it.` });
+      }
+      const bands = rule.bands?.length ? rule.bands : [];
+      bands.forEach((b, bIdx) => {
+        if (!b.slaHours || b.slaHours <= 0) {
+          out.push({ level: 'error', message: `"${label}" band ${bIdx + 1} has no valid SLA.` });
+        }
+      });
+      const catchAllIdx = bands.findIndex(b => !b.locationIds?.length && !b.locationGroupIds?.length && !b.employmentTypes?.length);
+      if (bands.length > 1 && catchAllIdx > -1 && catchAllIdx < bands.length - 1) {
+        out.push({ level: 'warning', message: `"${label}" band ${catchAllIdx + 1} matches everything, so the bands below it can never run. Move it to the bottom.` });
+      }
+      if (bands.length > 1 && catchAllIdx === -1) {
+        out.push({ level: 'info', message: `"${label}" has no catch-all band — timesheets outside every scope skip this step.` });
+      }
+    });
+
+    if (autoApproveClean && rules.length > 0) {
+      out.push({ level: 'info', message: 'Auto-approve is on: clean timesheets bypass Step 1 and every escalation step below it.' });
+    }
+    return out;
+  }, [locationManagerStep, rules, autoApproveClean]);
+
+  const outcomeSummary = useMemo(() => {
+    const { slaHours, reminderHours, breachAction } = locationManagerStep;
+    const clean = autoApproveClean
+      ? 'A timesheet with no flags, overtime or exceptions goes straight to payroll.'
+      : 'Every timesheet — clean or not — goes to the Location Manager first.';
+    const remindAt = Math.max(0, slaHours - reminderHours);
+    const chain = rules.length
+      ? ` If a timesheet matches a later step's conditions it continues through ${rules.length} escalation step${rules.length > 1 ? 's' : ''} before payroll.`
+      : ' There are no escalation steps, so Location Manager approval is final.';
+    return `${clean} Otherwise the Location Manager has ${slaHours}h to act, is reminded at ${remindAt}h, and on breach the system will ${breachLabel(breachAction)}.${chain}`;
+  }, [locationManagerStep, rules, autoApproveClean]);
+
+
   return (
     <Card>
       <CardHeader>
