@@ -13,6 +13,8 @@ export type TimeDrift = 'never' | 'within_15m' | 'within_30m' | 'within_1h' | 'w
 export type PaidMealMode = 'never' | 'always' | 'over_threshold';
 export type VarianceFlag = 'never' | 'over_5m' | 'over_10m' | 'over_15m' | 'always';
 
+export type KioskVerificationMode = 'pin' | 'face' | 'pin_and_face';
+
 export interface TimeTrackingSettings {
   enableWebClock: boolean;
   enableMobileClock: boolean; // Rostered.ai Kiosk App (fixed-location shared device)
@@ -21,7 +23,9 @@ export interface TimeTrackingSettings {
   restrictToGeofence: boolean;
   geofenceRadiusMeters: number;
   enableSmsClock: boolean;
-  requireKioskPhoto: boolean;
+  /** How staff identify themselves at the Rostered.ai Kiosk App. */
+  kioskVerificationMode: KioskVerificationMode;
+  requireKioskPhoto: boolean; // derived: true when mode includes face verification
   minTimesheetMinutes: number;
 }
 
@@ -161,6 +165,7 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     restrictToGeofence: false,
     geofenceRadiusMeters: 100,
     enableSmsClock: false,
+    kioskVerificationMode: 'pin',
     requireKioskPhoto: false,
     minTimesheetMinutes: 15,
   },
@@ -263,6 +268,14 @@ export const earlyClockInOptions: { value: EarlyClockInPolicy; label: string }[]
   { value: 'within_minutes', label: 'Up to X minutes early' },
   { value: 'anytime', label: 'Anytime before shift' },
 ];
+
+export const kioskVerificationOptions: { value: KioskVerificationMode; label: string }[] = [
+  { value: 'pin', label: 'PIN only' },
+  { value: 'face', label: 'Face verification only' },
+  { value: 'pin_and_face', label: 'PIN + face verification' },
+];
+
+
 
 
 export const linkUnscheduledOptions: { value: LinkUnscheduled; label: string }[] = [
