@@ -269,6 +269,14 @@ export const earlyClockInOptions: { value: EarlyClockInPolicy; label: string }[]
   { value: 'anytime', label: 'Anytime before shift' },
 ];
 
+export const kioskVerificationOptions: { value: KioskVerificationMode; label: string }[] = [
+  { value: 'pin', label: 'PIN only' },
+  { value: 'face', label: 'Face verification only' },
+  { value: 'pin_and_face', label: 'PIN + face verification' },
+];
+
+
+
 
 export const linkUnscheduledOptions: { value: LinkUnscheduled; label: string }[] = [
   { value: 'never', label: 'Never' },
