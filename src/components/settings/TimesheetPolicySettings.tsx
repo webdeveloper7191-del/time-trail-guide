@@ -1097,6 +1097,13 @@ export function PolicyIssues() {
         </PermissionGroup>
 
         <PermissionGroup title="Excessive Hours">
+          <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+            These flags overlap with <span className="font-medium text-foreground">Compliance flag thresholds</span> in
+            the card below (daily hours, weekly hours, rest between shifts, consecutive days). Both raise flags
+            independently — the <span className="font-medium text-foreground">stricter</span> threshold fires first, so
+            keep the two aligned to avoid duplicate flags on the same timesheet.
+          </div>
+
           <SelectRow
             {...fieldProps('issues', 'flagExcessiveDailyHours', 'Excessive Daily Hours',
               'Severity when a single day exceeds the maximum allowed working hours.',
