@@ -486,7 +486,11 @@ export function PolicyApproving() {
               />
             </div>
           </div>
+          <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Current outcome: </span>{autoApprovalSummary}
+          </div>
         </PermissionGroup>
+
 
         <PermissionGroup title="Rounding">
           <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground/80 mb-2">
