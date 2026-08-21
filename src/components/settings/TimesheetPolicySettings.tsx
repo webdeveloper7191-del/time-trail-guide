@@ -510,6 +510,8 @@ export function PolicyApproving() {
               <>
                 <p className="font-medium mb-1">What it does</p>
                 <p>Turns on the rounding engine. When OFF, recorded times are used verbatim and the four rules below are ignored (even if individually set).</p>
+                <p className="font-medium mt-2 mb-1">Example</p>
+                <p>Clock-in 8:52 AM, clock-out 5:06 PM. With this <strong>OFF</strong> payroll sees 8:52 AM – 5:06 PM (8h 14m). With it <strong>ON</strong> and "Nearest 15 minutes" set, payroll sees 9:00 AM – 5:00 PM (8h 00m).</p>
               </>)}
             value={resolved.approving.roundingEnabled}
             onChange={v => setField('approving', 'roundingEnabled', v)}
@@ -702,7 +704,8 @@ export function PolicyUnscheduled() {
         {!blocked && (
           <ToggleRow
             {...fieldProps('unscheduled', 'requireTrainingForUnscheduled', 'Only allow if required training is complete',
-              'Blocks the unscheduled clock-in when the area has training requirements the staff member has not met.')}
+              'Blocks the unscheduled clock-in when the area has training requirements the staff member has not met.',
+              <><p className="font-medium mb-1">Example</p><p>Room 2 requires a current First Aid certificate. Ben turns up unrostered with an expired certificate. With this <strong>ON</strong> the kiosk refuses the punch: "Training not current for this area." With OFF he clocks in and the gap is only picked up later in review.</p></>)}
             value={u.requireTrainingForUnscheduled}
             onChange={v => setField('unscheduled', 'requireTrainingForUnscheduled', v)}
           />
@@ -720,7 +723,8 @@ export function PolicyUnscheduled() {
         {!blocked && (
           <ToggleRow
             {...fieldProps('unscheduled', 'notifyManagerOnUnscheduledClockIn', 'Notify the location manager',
-              'Send a notification the moment an unrostered clock-in is recorded.')}
+              'Send a notification the moment an unrostered clock-in is recorded.',
+              <><p className="font-medium mb-1">Example</p><p>Priya clocks in at 6:04 AM with no rostered shift. The location manager gets a push/email at 6:04 AM: "Unrostered clock-in — Priya, Room 3." With this OFF, it is only seen when the timesheet is reviewed at week's end.</p></>)}
             value={u.notifyManagerOnUnscheduledClockIn}
             onChange={v => setField('unscheduled', 'notifyManagerOnUnscheduledClockIn', v)}
           />
@@ -756,7 +760,8 @@ export function PolicyUnscheduled() {
                   <>
                     <NumberRow
                       {...fieldProps('unscheduled', 'createdShiftFixedDurationHours', 'Fixed shift length (hours)',
-                        'Provisional length applied from the clock-in time.')}
+                        'Provisional length applied from the clock-in time.',
+                      <><p className="font-medium mb-1">Example</p><p>Set to <strong>8</strong>. A clock-in at 7:15 AM creates a provisional shift of 7:15 AM – 3:15 PM on the roster. When the actual clock-out lands at 3:40 PM, the shift is corrected to the real end time.</p></>)}
                       value={u.createdShiftFixedDurationHours}
                       onChange={v => setField('unscheduled', 'createdShiftFixedDurationHours', v)}
                     />
@@ -765,21 +770,24 @@ export function PolicyUnscheduled() {
                 )}
                 <NumberRow
                   {...fieldProps('unscheduled', 'createdShiftMaxDurationHours', 'Maximum shift length (hours)',
-                    'Safety cap for every end-time rule. Without a clock-out the shift closes here and is flagged. Range 1–24 hours.')}
+                    'Safety cap for every end-time rule. Without a clock-out the shift closes here and is flagged. Range 1–24 hours.',
+                    <><p className="font-medium mb-1">Example</p><p>Set to <strong>12</strong>. Sam clocks in at 6:00 AM and forgets to clock out. Instead of a runaway 24-hour shift, the roster shift closes at 6:00 PM and is flagged "Auto-closed at max duration" for a manager to correct.</p></>)}
                   value={u.createdShiftMaxDurationHours}
                   onChange={v => setField('unscheduled', 'createdShiftMaxDurationHours', v)}
                 />
                 <IssueList issues={issuesFor('createdShiftMaxDurationHours')} />
                 <NumberRow
                   {...fieldProps('unscheduled', 'createdShiftRoundToMinutes', 'Round created shift times to (minutes)',
-                    'Tidies the roster only — pay is always calculated from the timesheet. Set 0 to keep exact times.')}
+                    'Tidies the roster only — pay is always calculated from the timesheet. Set 0 to keep exact times.',
+                    <><p className="font-medium mb-1">Example</p><p>Set to <strong>15</strong>. A clock-in at 7:07 AM and clock-out at 3:23 PM show on the roster as 7:00 AM – 3:30 PM, so the grid stays aligned with other shifts. Pay is still calculated on the exact 7:07 AM – 3:23 PM times. Set to <strong>0</strong> to show the exact times.</p></>)}
                   value={u.createdShiftRoundToMinutes}
                   onChange={v => setField('unscheduled', 'createdShiftRoundToMinutes', v)}
                 />
                 <IssueList issues={issuesFor('createdShiftRoundToMinutes')} />
                 <ToggleRow
                   {...fieldProps('unscheduled', 'markCreatedShiftUnapproved', 'Mark created shift as unapproved',
-                    'Keeps the shift out of published rosters and budget actuals until a manager confirms it.')}
+                    'Keeps the shift out of published rosters and budget actuals until a manager confirms it.',
+                    <><p className="font-medium mb-1">Example</p><p>With <strong>ON</strong>, Priya's auto-created shift appears with a dashed "Unapproved" outline, is excluded from labour cost actuals, and is not visible to other staff until the manager accepts it. With OFF it is published immediately and counts toward the week's budget.</p></>)}
                   value={u.markCreatedShiftUnapproved}
                   onChange={v => setField('unscheduled', 'markCreatedShiftUnapproved', v)}
                 />

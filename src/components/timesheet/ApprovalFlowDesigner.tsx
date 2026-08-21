@@ -285,6 +285,9 @@ export function ApprovalFlowDesigner({
                       value={locationManagerStep.slaHours}
                       onChange={(e) => updateLM({ slaHours: Number(e.target.value) })}
                     />
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      Example: set to 24. A timesheet submitted Monday 5:00 PM must be actioned by Tuesday 5:00 PM.
+                    </p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Remind before breach (hrs)</Label>
@@ -293,6 +296,9 @@ export function ApprovalFlowDesigner({
                       value={locationManagerStep.reminderHours}
                       onChange={(e) => updateLM({ reminderHours: Number(e.target.value) })}
                     />
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      Example: set to 4 with a 24h SLA — the approver is reminded 4 hours before the deadline (Tuesday 1:00 PM).
+                    </p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">On SLA breach</Label>
@@ -308,6 +314,9 @@ export function ApprovalFlowDesigner({
                         <SelectItem value="hold">Hold for review</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      Example: "Escalate" sends the untouched timesheet to the backup manager at Tuesday 5:00 PM; "Hold" leaves it pending and out of the pay run.
+                    </p>
                   </div>
                   <div className="md:col-span-3 flex flex-wrap gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
