@@ -39,6 +39,7 @@ interface ThresholdDef {
   unit: string;
   icon: React.ElementType;
   comparison: 'exceeds' | 'falls below';
+  example: string;
 }
 
 const THRESHOLDS: ThresholdDef[] = [
@@ -49,6 +50,7 @@ const THRESHOLDS: ThresholdDef[] = [
     unit: 'hrs',
     icon: Clock,
     comparison: 'exceeds',
+    example: 'Example: set to 10 hrs. A staff member works 8:00 AM – 7:30 PM (11.5 hrs) — the day is flagged. A 9:00 AM – 6:00 PM day (9 hrs) passes.',
   },
   {
     key: 'maxWeeklyHours',
@@ -57,6 +59,7 @@ const THRESHOLDS: ThresholdDef[] = [
     unit: 'hrs',
     icon: CalendarDays,
     comparison: 'exceeds',
+    example: 'Example: set to 38 hrs. Five 8-hour days totals 40 hrs — the week is flagged with "2 hrs over the weekly limit".',
   },
   {
     key: 'minRestBetweenShiftsHours',
@@ -65,6 +68,7 @@ const THRESHOLDS: ThresholdDef[] = [
     unit: 'hrs',
     icon: Timer,
     comparison: 'falls below',
+    example: 'Example: set to 10 hrs. A staff member finishes at 10:00 PM and starts again at 6:00 AM (8 hrs rest) — flagged. Starting at 8:00 AM (10 hrs rest) passes.',
   },
   {
     key: 'maxConsecutiveDays',
@@ -73,6 +77,7 @@ const THRESHOLDS: ThresholdDef[] = [
     unit: 'days',
     icon: Sun,
     comparison: 'exceeds',
+    example: 'Example: set to 6 days. Working Monday to Saturday is fine; adding Sunday with no rest day flags the 7th consecutive day.',
   },
 ];
 
@@ -141,6 +146,7 @@ export function ComplianceDesigner({ value, onChange }: Props) {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">{def.description}</p>
+                    <p className="text-xs text-muted-foreground/80 italic">{def.example}</p>
                     {t.enabled && (
                       <div className="flex items-center gap-2 pt-2">
                         <span className="text-xs text-muted-foreground">Flag when value {def.comparison}</span>
