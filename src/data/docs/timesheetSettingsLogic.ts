@@ -53,7 +53,7 @@ export const policyResolutionNotes = {
 };
 
 export const lifecycleStages = [
-  { stage: '1. Capture', detail: 'Clock-in/out via the Employee Portal (web), the Staff Mobile App, SMS, or the shared Rostered.ai Kiosk App. Time Tracking + Team Member Permissions decide whether the punch is accepted at all.' },
+  { stage: '1. Capture', detail: 'Clock-in/out via the Employee Portal (web), the Staff Mobile App, or the shared Rostered.ai Kiosk App. Time Tracking + Team Member Permissions decide whether the punch is accepted at all.' },
   { stage: '2. Attach', detail: 'The punch is matched to a rostered shift. Unscheduled Shifts rules decide what happens when no shift exists.' },
   { stage: '3. Normalise', detail: 'Breaks are applied and Rounding adjusts start/end/break values. Net hours are recalculated.' },
   { stage: '4. Validate', detail: 'Timesheet Issues and Compliance thresholds raise info/warning/critical flags against the day and the week.' },
@@ -150,18 +150,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
             logic: [
               'Valid range 25–5,000 m. Values below 25 m are rejected because consumer GPS accuracy makes them unusable.',
               'Radius is per-location when overridden, otherwise the tenant value applies to all sites.',
-            ],
-          },
-          {
-            key: 'timeTracking.enableSmsClock',
-            label: 'SMS clock',
-            type: 'Boolean',
-            defaultValue: 'Off',
-            purpose: 'Allows clock events by text message for staff without smartphones.',
-            logic: [
-              'Inbound SMS is matched to a staff member by mobile number; unmatched numbers are discarded and logged.',
-              'The punch timestamp is the carrier receipt time, not the processing time, to avoid delivery-lag drift.',
-              'GPS and photo rules cannot apply to this channel, so SMS punches are always tagged `unverified_location`.',
             ],
           },
           {
@@ -329,7 +317,7 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
               'Beyond grace, the day is marked `late_start` with the exact minutes late recorded for reporting.',
               'The grace affects flagging and reporting only; paid time always starts at the actual (post-rounding) punch.',
             ],
-            interactions: ['Attendance reports', 'Timesheet Issues → shift time variance'],
+            interactions: ['Attendance reports', 'Timesheet Issues → clock-in/out boundary breach'],
           },
           {
             key: 'permissions.allowEarlyClockOut',
@@ -378,7 +366,7 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
               'When on, the shortened break is recorded as actual and evaluated against the short-break flag.',
               'Award-mandated minimum break durations still apply; ending early may raise a compliance flag even when permitted here.',
             ],
-            interactions: ['Breaks → Flag short or missed breaks', 'Awards → mandatory break rules'],
+            interactions: ['Timesheet Issues → break duration variance', 'Awards → mandatory break rules'],
           },
           {
             key: 'permissions.editOwnBreakDuration',
@@ -558,19 +546,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
               'Same interval mechanics as start rounding, applied to the payable end after any snap-to-schedule adjustment.',
               'Net hours and overtime are recalculated from rounded start/end, never from raw punches.',
             ],
-          },
-          {
-            key: 'approving.roundShortBreakUpToScheduled',
-            label: 'Round short breaks up to scheduled',
-            type: 'Boolean',
-            defaultValue: 'Off',
-            purpose: 'Deducts the full scheduled unpaid break even if the staff member returned early.',
-            logic: [
-              'If actual unpaid break < scheduled unpaid break, the scheduled duration is deducted from paid hours.',
-              'Applies to unpaid breaks only; paid breaks are never extended by this rule.',
-              'The gap between actual and deducted break is flagged so a manager can see a persistent pattern of shortened breaks.',
-            ],
-            interactions: ['Breaks → Flag short or missed breaks', 'Awards → minimum break entitlements'],
           },
           {
             key: 'approving.breakRoundingAdjustment',
@@ -820,20 +795,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
             example: 'Rostered 9:00–17:00 with a 30-min unpaid break; staff punched only in/out → 30 min deducted, day shows 7.5 net hours.',
           },
           {
-            key: 'breaks.flagShortOrMissedBreaks',
-            label: 'Flag short or missed breaks',
-            type: 'Boolean',
-            defaultValue: 'Off',
-            purpose: 'Surfaces break non-compliance for review.',
-            logic: [
-              'Compares recorded break minutes against the entitlement derived from the break rules library for the day’s worked hours.',
-              'Raises `missed_break` when zero break is recorded on a shift that requires one, and `short_break` when recorded < required.',
-              'Auto-inserted breaks satisfy the check for pay purposes but still raise an info-level note that the break was not punched.',
-              'Severity follows the Timesheet Issues configuration for break behaviour.',
-            ],
-            interactions: ['Break rules library', 'Timesheet Issues → break behaviour', 'Awards → mandatory break provisions'],
-          },
-          {
             key: 'breaks.paidMealBreaks',
             label: 'Paid meal breaks',
             type: 'Enum',
@@ -889,23 +850,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
         title: 'Time variance',
         summary: 'Compares actual punches to the rostered plan. Distinct from rounding: variance flags always use raw actual times so rounding cannot hide a variance.',
         items: [
-          {
-            key: 'issues.flagShiftTimeVariance',
-            label: 'Flag shift time variance',
-            type: 'Enum',
-            options: ['Never', 'Over 5m', 'Over 10m', 'Over 15m', 'Always'],
-            defaultValue: 'Never',
-            purpose: 'Detects starts and finishes that drift from the roster.',
-            logic: [
-              'Evaluates |actual start − scheduled start| and |actual end − scheduled end| independently against the threshold.',
-              '"Always" flags any non-zero difference; "Never" disables the rule.',
-              'Skipped for unscheduled shifts (no scheduled reference) — those are handled by the Unscheduled Shifts rules.',
-              'The late clock-in grace is applied first, so a punch inside grace never produces a start variance.',
-              'The flag carries the signed delta so reports can distinguish early starts from late finishes.',
-            ],
-            interactions: ['lateClockInGraceMinutes', 'Rounding (rounding does not suppress this flag)'],
-            example: 'Threshold "Over 10m". Rostered 9:00–17:00, worked 9:12–17:05 → start variance flagged (12 min), end within tolerance.',
-          },
           {
             key: 'issues.flagBreakDurationVariance',
             label: 'Flag break duration variance',
@@ -995,27 +939,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
         summary: 'Fatigue and cost controls. These duplicate the Compliance thresholds intentionally: Compliance governs approval blocking, Issues governs day-level visibility.',
         items: [
           {
-            key: 'issues.flagExcessiveDailyHours',
-            label: 'Flag excessive daily hours',
-            type: 'Severity + threshold',
-            defaultValue: 'Critical @ 12 hours',
-            purpose: 'Fatigue risk on a single day.',
-            logic: [
-              'Evaluated on net paid hours after break deduction and rounding.',
-              'A day exceeding the threshold raises the flag; the excess hours are recorded on the flag.',
-              'Feeds the fatigue score used by the roster compliance engine.',
-            ],
-            interactions: ['issues.excessiveDailyHoursThreshold', 'Roster fatigue scoring', 'Compliance → daily hours limit'],
-          },
-          {
-            key: 'issues.excessiveDailyHoursThreshold',
-            label: 'Daily hours threshold',
-            type: 'Number (hours)',
-            defaultValue: '12',
-            purpose: 'The daily ceiling that triggers the flag.',
-            logic: ['Typically aligned to the award or WHS policy. Setting it above 16 hours produces a configuration warning.'],
-          },
-          {
             key: 'issues.flagLongShiftWithoutBreak',
             label: 'Flag long shift without break',
             type: 'Severity + threshold',
@@ -1048,20 +971,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
         title: 'Break behaviour',
         summary: 'Detects overuse of break time.',
         items: [
-          {
-            key: 'issues.flagExceededBreak',
-            label: 'Flag exceeded break',
-            type: 'Severity + percentage',
-            defaultValue: 'Info @ 150%',
-            purpose: 'Identifies breaks materially longer than allowed.',
-            logic: [
-              'Raised when recorded break minutes > (scheduled/entitled break minutes × percentage ÷ 100).',
-              'Where no break is scheduled, the entitlement from the break rules library is used as the base.',
-              'For unpaid breaks the excess simply reduces paid hours; for paid breaks the excess is a cost leak, so consider a higher severity.',
-            ],
-            interactions: ['issues.exceededBreakPercent', 'breaks.paidMealBreaks'],
-            example: '30-min scheduled break at 150% → flag when the recorded break exceeds 45 minutes.',
-          },
         ],
       },
       {
@@ -1069,20 +978,6 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
         title: 'Behavioural patterns',
         summary: 'Statistical and anti-fraud detections that look across multiple records rather than a single day.',
         items: [
-          {
-            key: 'issues.flagPatternDrift',
-            label: 'Flag pattern drift',
-            type: 'Severity + minutes',
-            defaultValue: 'Info @ 60 minutes',
-            purpose: 'Detects a staff member whose punch behaviour is changing over time.',
-            logic: [
-              'Builds a rolling baseline of the staff member’s average start and end times over the previous 8 completed weeks at that location.',
-              'Requires at least 10 comparable shifts; below that the rule is skipped to avoid false positives for new starters.',
-              'Flag raised when the current day deviates from the baseline by more than the configured minutes.',
-              'Approved leave, callbacks and shift swaps are excluded from both the baseline and the comparison.',
-            ],
-            edgeCases: ['A roster pattern change (e.g. moving from early to late shifts) resets the baseline after two consistent weeks.'],
-          },
           {
             key: 'issues.flagBuddyPunching',
             label: 'Flag buddy punching',
@@ -1158,9 +1053,9 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
             logic: [
               'Uses net paid hours for the day after break deduction and rounding.',
               'Days spanning midnight are attributed to the clock-in date so a day is counted once.',
-              'Independent of the Issues "excessive daily hours" rule: this one gates approval, that one drives day-level visibility. Keep this value at or below that threshold.',
+              'This is the single daily-hours limit in the product: it gates approval and drives the day-level flag. There is no separate Issues daily-hours rule.',
             ],
-            interactions: ['Awards → ordinary hours', 'issues.flagExcessiveDailyHours'],
+            interactions: ['Awards → ordinary hours', 'approving.autoApprovalMaxDailyHours'],
           },
           {
             key: 'compliance.maxWeeklyHours',
@@ -1433,19 +1328,14 @@ export const conflictMatrix: { rule: string; conflictsWith: string; resolution: 
     resolution: 'The punch is blocked rather than downgraded to PIN. Enrol the staff member, or use "PIN + face" so identification still works while enrolment is completed.',
   },
   {
-    rule: 'Paid meal breaks + cap on paid minutes',
-    conflictsWith: 'Award-mandated paid meal duration',
-    resolution: 'The award duration wins. The cap can only reduce paid minutes below an award minimum where no award provision applies.',
+    rule: 'Paid meal breaks = Always paid',
+    conflictsWith: 'Award-mandated unpaid meal break',
+    resolution: 'The award wins. This fallback only applies when neither a break rule nor an award defines whether the meal break is paid.',
   },
   {
-    rule: 'Paid meal counts toward hours = Off',
-    conflictsWith: 'Excessive daily hours / overtime thresholds',
-    resolution: 'Paid meal minutes are paid but excluded from threshold maths, so a day can be paid above the cap without flagging. Leave on unless the award says otherwise.',
-  },
-  {
-    rule: 'Compliance daily limit 10h',
-    conflictsWith: 'Issues excessive daily hours 12h',
-    resolution: 'Both fire independently. Compliance gates approval at 10h; the Issues flag adds a second, louder signal at 12h. Keep compliance ≤ issues threshold.',
+    rule: 'Compliance daily limit',
+    conflictsWith: 'Auto-approval max daily hours',
+    resolution: 'Auto-approval stops first at its own cap; the compliance limit then gates manual approval. Keep the auto-approval cap at or below the compliance limit.',
   },
   {
     rule: 'SLA breach action "Auto-approve"',
