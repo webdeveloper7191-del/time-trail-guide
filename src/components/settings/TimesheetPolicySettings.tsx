@@ -510,6 +510,8 @@ export function PolicyApproving() {
               <>
                 <p className="font-medium mb-1">What it does</p>
                 <p>Turns on the rounding engine. When OFF, recorded times are used verbatim and the four rules below are ignored (even if individually set).</p>
+                <p className="font-medium mt-2 mb-1">Example</p>
+                <p>Clock-in 8:52 AM, clock-out 5:06 PM. With this <strong>OFF</strong> payroll sees 8:52 AM – 5:06 PM (8h 14m). With it <strong>ON</strong> and "Nearest 15 minutes" set, payroll sees 9:00 AM – 5:00 PM (8h 00m).</p>
               </>)}
             value={resolved.approving.roundingEnabled}
             onChange={v => setField('approving', 'roundingEnabled', v)}
