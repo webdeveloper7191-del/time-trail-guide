@@ -53,7 +53,7 @@ export const policyResolutionNotes = {
 };
 
 export const lifecycleStages = [
-  { stage: '1. Capture', detail: 'Clock-in/out via the Employee Portal (web), the Staff Mobile App, SMS, or the shared Rostered.ai Kiosk App. Time Tracking + Team Member Permissions decide whether the punch is accepted at all.' },
+  { stage: '1. Capture', detail: 'Clock-in/out via the Employee Portal (web), the Staff Mobile App, or the shared Rostered.ai Kiosk App. Time Tracking + Team Member Permissions decide whether the punch is accepted at all.' },
   { stage: '2. Attach', detail: 'The punch is matched to a rostered shift. Unscheduled Shifts rules decide what happens when no shift exists.' },
   { stage: '3. Normalise', detail: 'Breaks are applied and Rounding adjusts start/end/break values. Net hours are recalculated.' },
   { stage: '4. Validate', detail: 'Timesheet Issues and Compliance thresholds raise info/warning/critical flags against the day and the week.' },
@@ -317,7 +317,7 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
               'Beyond grace, the day is marked `late_start` with the exact minutes late recorded for reporting.',
               'The grace affects flagging and reporting only; paid time always starts at the actual (post-rounding) punch.',
             ],
-            interactions: ['Attendance reports', 'Timesheet Issues → shift time variance'],
+            interactions: ['Attendance reports', 'Timesheet Issues → clock-in/out boundary breach'],
           },
           {
             key: 'permissions.allowEarlyClockOut',
@@ -366,7 +366,7 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
               'When on, the shortened break is recorded as actual and evaluated against the short-break flag.',
               'Award-mandated minimum break durations still apply; ending early may raise a compliance flag even when permitted here.',
             ],
-            interactions: ['Breaks → Flag short or missed breaks', 'Awards → mandatory break rules'],
+            interactions: ['Timesheet Issues → break duration variance', 'Awards → mandatory break rules'],
           },
           {
             key: 'permissions.editOwnBreakDuration',
@@ -1053,9 +1053,9 @@ export const timesheetSettingsLogic: SettingLogicSection[] = [
             logic: [
               'Uses net paid hours for the day after break deduction and rounding.',
               'Days spanning midnight are attributed to the clock-in date so a day is counted once.',
-              'Independent of the Issues "excessive daily hours" rule: this one gates approval, that one drives day-level visibility. Keep this value at or below that threshold.',
+              'This is the single daily-hours limit in the product: it gates approval and drives the day-level flag. There is no separate Issues daily-hours rule.',
             ],
-            interactions: ['Awards → ordinary hours', 'issues.flagExcessiveDailyHours'],
+            interactions: ['Awards → ordinary hours', 'approving.autoApprovalMaxDailyHours'],
           },
           {
             key: 'compliance.maxWeeklyHours',
@@ -1328,19 +1328,14 @@ export const conflictMatrix: { rule: string; conflictsWith: string; resolution: 
     resolution: 'The punch is blocked rather than downgraded to PIN. Enrol the staff member, or use "PIN + face" so identification still works while enrolment is completed.',
   },
   {
-    rule: 'Paid meal breaks + cap on paid minutes',
-    conflictsWith: 'Award-mandated paid meal duration',
-    resolution: 'The award duration wins. The cap can only reduce paid minutes below an award minimum where no award provision applies.',
+    rule: 'Paid meal breaks = Always paid',
+    conflictsWith: 'Award-mandated unpaid meal break',
+    resolution: 'The award wins. This fallback only applies when neither a break rule nor an award defines whether the meal break is paid.',
   },
   {
-    rule: 'Paid meal counts toward hours = Off',
-    conflictsWith: 'Excessive daily hours / overtime thresholds',
-    resolution: 'Paid meal minutes are paid but excluded from threshold maths, so a day can be paid above the cap without flagging. Leave on unless the award says otherwise.',
-  },
-  {
-    rule: 'Compliance daily limit 10h',
-    conflictsWith: 'Issues excessive daily hours 12h',
-    resolution: 'Both fire independently. Compliance gates approval at 10h; the Issues flag adds a second, louder signal at 12h. Keep compliance ≤ issues threshold.',
+    rule: 'Compliance daily limit',
+    conflictsWith: 'Auto-approval max daily hours',
+    resolution: 'Auto-approval stops first at its own cap; the compliance limit then gates manual approval. Keep the auto-approval cap at or below the compliance limit.',
   },
   {
     rule: 'SLA breach action "Auto-approve"',
