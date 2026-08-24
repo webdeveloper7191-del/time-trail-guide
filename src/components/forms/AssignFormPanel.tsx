@@ -35,11 +35,14 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     []
   );
 
-  const [templateId, setTemplateId] = useState(defaultTemplateId ?? templates[0]?.id ?? '');
+  const [templateIds, setTemplateIds] = useState<string[]>(
+    defaultTemplateId ? [defaultTemplateId] : templates[0］ ? [templates[0].id] : []
+  );
   const [title, setTitle] = useState('');
   const [staffIds, setStaffIds] = useState<string[]>([]);
   const [staffSearch, setStaffSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [positionFilter, setPositionFilter] = useState('all');
   const [mode, setMode] = useState<DeliveryMode>('once');
   const [dueDate, setDueDate] = useState(todayKey());
   const [dueTime, setDueTime] = useState('17:00');
@@ -58,6 +61,10 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     activeStaff.forEach(s => (s.locations ?? []).forEach(l => set.add(l)));
     return Array.from(set).sort();
   }, [activeStaff]);
+  const positionOptions = useMemo(
+    () => Array.from(new Set(activeStaff.map(s => s.position).filter(Boolean) as string[])).sort(),
+    [activeStaff]
+  );
 
   const filteredStaff = useMemo(() => {
     const q = staffSearch.trim().toLowerCase();
@@ -65,9 +72,10 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
       const name = `${s.firstName} ${s.lastName}`.toLowerCase();
       const matchQ = !q || name.includes(q) || (s.position ?? '').toLowerCase().includes(q);
       const matchLoc = locationFilter === 'all' || (s.locations ?? []).includes(locationFilter);
-      return matchQ && matchLoc;
+      const matchPos = positionFilter === 'all' || s.position === positionFilter;
+      return matchQ && matchLoc && matchPos;
     });
-  }, [activeStaff, staffSearch, locationFilter]);
+  }, [activeStaff, staffSearch, locationFilter, positionFilter]);
 
   const recurrence = mode === 'recurring'
     ? {
@@ -85,9 +93,12 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     [mode, dueDate, frequency, daysOfWeek, dayOfMonth, startDate, endDate]
   );
 
-  const template = templates.find(t => t.id === templateId);
-  const totalTasks = occurrences.length * staffIds.length;
-  const canSubmit = !!templateId && staffIds.length > 0 && occurrences.length > 0;
+  const selectedTemplates = templates.filter(t => templateIds.includes(t.id));
+  const totalTasks = occurrences.length * staffIds.length * Math.max(selectedTemplates.length, 0);
+  const canSubmit = selectedTemplates.length > 0 && staffIds.length > 0 && occurrences.length > 0;
+
+  const toggleTemplate = (id: string) =>
+    setTemplateIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const toggleStaff = (id: string) =>
     setStaffIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
@@ -100,6 +111,19 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
       setStaffIds(prev => Array.from(new Set([...prev, ...filteredStaff.map(s => s.id)])));
     }
   };
+
+  const selectEveryone = () => setStaffIds(activeStaff.map(s => s.id));
+  const selectByLocation = (loc: string) =>
+    setStaffIds(prev => Array.from(new Set([
+      ...prev,
+      ...activeStaff.filter(s => (s.locations ?? []).includes(loc)).map(s => s.id),
+    ])));
+  const selectByPosition = (pos: string) =>
+    setStaffIds(prev => Array.from(new Set([
+      ...prev,
+      ...activeStaff.filter(s => s.position === pos).map(s => s.id),
+    ])));
+
 
   const reset = () => {
     setStaffIds([]); setTitle(''); setNotes(''); setStaffSearch('');
