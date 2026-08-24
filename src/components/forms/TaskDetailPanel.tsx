@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import {
   FileText, CheckCircle2, Bell, Clock, CalendarClock, User, AlertTriangle,
-  CircleDashed, XCircle, Download,
+  CircleDashed, XCircle, Download, ListChecks,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import {
   formDeliveryStore,
   deriveStatus,
@@ -160,12 +161,34 @@ interface Props {
 }
 
 const TaskDetailPanel = ({ task, assignment, open, onClose }: Props) => {
+  const navigate = useNavigate();
   const groups = useMemo(() => (task ? buildResponseGroups(task, assignment) : []), [task, assignment]);
   const totalQuestions = groups.reduce((n, g) => n + g.rows.length, 0);
   if (!task) return null;
 
   const status = deriveStatus(task);
   const isSubmitted = status === 'submitted';
+
+  const openInTasks = () => {
+    const params = new URLSearchParams({ module: 'forms', showCompleted: 'true', search: task.staffName });
+    navigate(`/my-tasks?${params.toString()}`);
+  };
+
+  const exportRecord = () => {
+    const esc = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows: string[][] = [
+      ['Section', 'Question', 'Answer'],
+      ...groups.flatMap(g => g.rows.map(r => [g.title, r.label, r.value])),
+    ];
+    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `submission-${task.staffName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${task.occurrenceDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Submission record exported');
+  };
 
   const timeline = [
     { label: 'Assigned', at: assignment?.createdAt, icon: <CalendarClock size={13} /> },
@@ -188,15 +211,17 @@ const TaskDetailPanel = ({ task, assignment, open, onClose }: Props) => {
         isSubmitted
           ? [
               { label: 'Close', onClick: onClose, variant: 'outlined' },
+              { label: 'Open in Tasks', variant: 'outlined', icon: <ListChecks size={14} />, onClick: openInTasks },
               {
                 label: 'Export record',
                 variant: 'primary',
                 icon: <Download size={14} />,
-                onClick: () => toast.success('Submission record exported'),
+                onClick: exportRecord,
               },
             ]
           : [
               { label: 'Close', onClick: onClose, variant: 'outlined' },
+              { label: 'Open in Tasks', variant: 'outlined', icon: <ListChecks size={14} />, onClick: openInTasks },
               {
                 label: 'Send reminder',
                 variant: 'outlined',
