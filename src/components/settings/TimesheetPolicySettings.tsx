@@ -704,7 +704,11 @@ export function PolicyUnscheduled() {
         <SelectRow
           {...fieldProps('unscheduled', 'noShiftClockInAction', 'When there is no rostered shift',
             'Controls whether the punch is accepted at all, and whether it is marked for review.',
-            noShiftClockInActionGuide)}
+            <>
+              <p className="font-medium mb-1">Example</p>
+              <p>Sana turns up on her day off because a colleague called in sick and clocks in at 7:00 AM. With <em>Allow and flag</em> she gets in and the day appears on the roster with a review marker. With <em>Block</em> the kiosk refuses: "No shift rostered — see your manager."</p>
+              {noShiftClockInActionGuide}
+            </>)}
           value={u.noShiftClockInAction}
           options={noShiftClockInActionOptions}
           onChange={v => setField('unscheduled', 'noShiftClockInAction', v as TimesheetPolicy['unscheduled']['noShiftClockInAction'])}
