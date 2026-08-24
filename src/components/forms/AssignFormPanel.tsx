@@ -249,12 +249,20 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
               <Input className="pl-8 h-9" placeholder="Search staff or position" value={staffSearch} onChange={e => setStaffSearch(e.target.value)} />
             </div>
             <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 <SelectItem value="all">All locations</SelectItem>
                 {locationOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">All positions</SelectItem>
+                {positionOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
             <button
               type="button"
               onClick={toggleAllFiltered}
