@@ -274,6 +274,13 @@ const StaffAssignmentsPage = () => {
       </div>
 
       <AssignFormPanel open={showAssign} onClose={() => setShowAssign(false)} />
+
+      <TaskDetailPanel
+        open={!!detailTaskId}
+        task={tasks.find(t => t.id === detailTaskId) ?? null}
+        assignment={assignments.find(a => a.id === tasks.find(t => t.id === detailTaskId)?.assignmentId)}
+        onClose={() => setDetailTaskId(null)}
+      />
     </div>
   );
 };
