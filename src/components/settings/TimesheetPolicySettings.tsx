@@ -673,7 +673,11 @@ export function PolicyUnscheduled() {
         <SelectRow
           {...fieldProps('unscheduled', 'linkUnscheduledToScheduled', 'Match unscheduled timesheets to a rostered shift',
             'If a suitable rostered shift exists, the timesheet is linked to it instead of being treated as unscheduled.',
-            linkUnscheduledOptionGuide)}
+            <>
+              <p className="font-medium mb-1">Example</p>
+              <p>Liam is rostered 9:00 AM – 5:00 PM in Room 1 but clocks in at the kiosk under Room 2 at 9:06 AM. With matching enabled, the punch attaches to his existing 9:00 AM shift instead of creating a second unrostered shift — so the roster shows one shift, not two.</p>
+              {linkUnscheduledOptionGuide}
+            </>)}
           value={u.linkUnscheduledToScheduled}
           options={linkUnscheduledOptions}
           onChange={v => setField('unscheduled', 'linkUnscheduledToScheduled', v as TimesheetPolicy['unscheduled']['linkUnscheduledToScheduled'])}
@@ -682,7 +686,11 @@ export function PolicyUnscheduled() {
           <SelectRow
             {...fieldProps('unscheduled', 'allowTimeDriftMatching', 'Allowed time difference when matching',
               'How far the clock-in can sit from the rostered start and still be treated as the same shift.',
-              timeDriftOptionGuide)}
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Set to <em>30 minutes</em>. Rostered start 9:00 AM: a 9:25 AM punch links to that shift; a 10:10 AM punch is 70 min out, so it is treated as a separate unrostered shift and follows the rules in step 2.</p>
+                {timeDriftOptionGuide}
+              </>)}
             value={u.allowTimeDriftMatching}
             options={timeDriftOptions}
             onChange={v => setField('unscheduled', 'allowTimeDriftMatching', v as TimesheetPolicy['unscheduled']['allowTimeDriftMatching'])}
@@ -696,7 +704,11 @@ export function PolicyUnscheduled() {
         <SelectRow
           {...fieldProps('unscheduled', 'noShiftClockInAction', 'When there is no rostered shift',
             'Controls whether the punch is accepted at all, and whether it is marked for review.',
-            noShiftClockInActionGuide)}
+            <>
+              <p className="font-medium mb-1">Example</p>
+              <p>Sana turns up on her day off because a colleague called in sick and clocks in at 7:00 AM. With <em>Allow and flag</em> she gets in and the day appears on the roster with a review marker. With <em>Block</em> the kiosk refuses: "No shift rostered — see your manager."</p>
+              {noShiftClockInActionGuide}
+            </>)}
           value={u.noShiftClockInAction}
           options={noShiftClockInActionOptions}
           onChange={v => setField('unscheduled', 'noShiftClockInAction', v as TimesheetPolicy['unscheduled']['noShiftClockInAction'])}
@@ -714,7 +726,11 @@ export function PolicyUnscheduled() {
           <SelectRow
             {...fieldProps('unscheduled', 'rosterFlagSeverity', 'Flag severity on the roster',
               'The marker shown on the roster cell. Critical also raises a compliance alert.',
-              rosterFlagSeverityGuide)}
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Set to <em>Warning</em>: the roster cell for Sana's unrostered Tuesday shows an amber marker the manager can clear during review. Set to <em>Critical</em>: the same cell turns red and a compliance alert is raised, so payroll cannot close the week until it is resolved.</p>
+                {rosterFlagSeverityGuide}
+              </>)}
             value={u.rosterFlagSeverity}
             options={unscheduledRosterFlagOptions}
             onChange={v => setField('unscheduled', 'rosterFlagSeverity', v as TimesheetPolicy['unscheduled']['rosterFlagSeverity'])}
@@ -739,7 +755,11 @@ export function PolicyUnscheduled() {
             <SelectRow
               {...fieldProps('unscheduled', 'createShiftInRoster', 'Create a shift in the roster',
                 'When the shift is created. Creating on clock-out gives exact times; creating on clock-in shows live coverage.',
-                createShiftGuide)}
+                <>
+                  <p className="font-medium mb-1">Example</p>
+                  <p>Set to <em>On clock-out</em>: Sana's 7:00 AM – 3:12 PM shift appears on Tuesday's roster once she leaves, with exact times. Set to <em>On clock-in</em>: a provisional shift appears at 7:00 AM so the floor manager can see live coverage, and the end time is corrected when she clocks out.</p>
+                  {createShiftGuide}
+                </>)}
               value={u.createShiftInRoster}
               options={unscheduledShiftCreationOptions}
               onChange={v => setField('unscheduled', 'createShiftInRoster', v as TimesheetPolicy['unscheduled']['createShiftInRoster'])}
@@ -750,7 +770,11 @@ export function PolicyUnscheduled() {
                 <SelectRow
                   {...fieldProps('unscheduled', 'createdShiftEndTimeRule', 'End time for the created shift',
                     'How the end time is set. On clock-in creation the end time is provisional and corrected at clock-out.',
-                    endTimeRuleGuide)}
+                    <>
+                      <p className="font-medium mb-1">Example</p>
+                      <p>Sana clocks in unrostered at 7:00 AM. <em>Fixed duration (8h)</em> creates a 7:00 AM – 3:00 PM shift. <em>Location close</em> ends it at the centre's 6:00 PM closing time. <em>Area default</em> uses Room 3's standard 7:00 AM – 3:30 PM pattern. Whichever is chosen, the end time is corrected to her actual clock-out.</p>
+                      {endTimeRuleGuide}
+                    </>)}
                   value={u.createdShiftEndTimeRule}
                   options={unscheduledEndTimeRuleOptions}
                   onChange={v => setField('unscheduled', 'createdShiftEndTimeRule', v as TimesheetPolicy['unscheduled']['createdShiftEndTimeRule'])}
