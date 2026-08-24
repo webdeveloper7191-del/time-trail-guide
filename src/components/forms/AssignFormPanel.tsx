@@ -36,7 +36,7 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
   );
 
   const [templateIds, setTemplateIds] = useState<string[]>(
-    defaultTemplateId ? [defaultTemplateId] : templates[0］ ? [templates[0].id] : []
+    defaultTemplateId ? [defaultTemplateId] : templates[0] ? [templates[0].id] : []
   );
   const [title, setTitle] = useState('');
   const [staffIds, setStaffIds] = useState<string[]>([]);
