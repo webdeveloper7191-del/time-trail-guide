@@ -13,6 +13,7 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Alert,
+  Chip,
 } from '@mui/material';
 import {
   X,
@@ -22,6 +23,10 @@ import {
   GripVertical,
   Check,
   Palette,
+  Lock,
+  Copy,
+  Users,
+  User,
 } from 'lucide-react';
 import { TaskPipeline, TaskPipelineStage } from '@/types/tasks';
 import { toast } from 'sonner';
@@ -34,6 +39,8 @@ interface PipelineManagerDrawerProps {
   onCreatePipeline: (pipeline: TaskPipeline) => void;
   onUpdatePipeline: (pipeline: TaskPipeline) => void;
   onDeletePipeline: (pipelineId: string) => void;
+  /** Owner id stamped on newly created personal pipelines. */
+  currentUserId?: string;
 }
 
 const defaultColors = [
@@ -48,6 +55,7 @@ export function PipelineManagerDrawer({
   onCreatePipeline,
   onUpdatePipeline,
   onDeletePipeline,
+  currentUserId = 'current-user',
 }: PipelineManagerDrawerProps) {
   const [selectedPipeline, setSelectedPipeline] = useState<TaskPipeline | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -74,12 +82,37 @@ export function PipelineManagerDrawer({
         { id: `stage-${Date.now()}-2`, name: 'In Progress', color: '#8b5cf6', order: 1 },
         { id: `stage-${Date.now()}-3`, name: 'Done', color: '#22c55e', order: 2 },
       ],
+      scope: 'personal',
+      ownerId: currentUserId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     setSelectedPipeline(newPipeline);
     setIsEditing(true);
   };
+
+  /** System pipelines stay at team level — users copy them into their own space. */
+  const handleDuplicateToPersonal = (pipeline: TaskPipeline) => {
+    const stamp = Date.now();
+    const copy: TaskPipeline = {
+      ...pipeline,
+      id: `pipeline-${stamp}`,
+      name: `${pipeline.name} (my copy)`,
+      isDefault: false,
+      scope: 'personal',
+      ownerId: currentUserId,
+      stages: pipeline.stages.map((st, i) => ({ ...st, id: `stage-${stamp}-${i}` })),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    onCreatePipeline(copy);
+    toast.success('Copied to your pipelines');
+  };
+
+  const isSystem = (p: TaskPipeline) => (p.scope ?? 'system') === 'system';
+  const systemPipelines = pipelines.filter(isSystem);
+  const personalPipelines = pipelines.filter(p => !isSystem(p));
+  const editingSystem = selectedPipeline ? isSystem(selectedPipeline) : false;
 
   const handleAddStage = () => {
     if (!newStageName.trim()) return;
@@ -112,6 +145,10 @@ export function PipelineManagerDrawer({
   };
 
   const handleSavePipeline = () => {
+    if (editingSystem) {
+      toast.error('System pipelines are read-only. Copy it to your pipelines to make changes.');
+      return;
+    }
     if (!editName.trim()) {
       toast.error('Pipeline name is required');
       return;
@@ -146,6 +183,10 @@ export function PipelineManagerDrawer({
       toast.error('Cannot delete the default pipeline');
       return;
     }
+    if (pipeline && isSystem(pipeline)) {
+      toast.error('System pipelines are managed at team level');
+      return;
+    }
     onDeletePipeline(pipelineId);
     if (selectedPipeline?.id === pipelineId) {
       setSelectedPipeline(null);
@@ -154,51 +195,62 @@ export function PipelineManagerDrawer({
     toast.success('Pipeline deleted');
   };
 
-  return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      PaperProps={{ sx: { width: 520 } }}
-    >
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6" fontWeight={600}>
-              {isEditing ? 'Edit Pipeline' : 'Task Pipelines'}
-            </Typography>
-            <IconButton size="small" onClick={onClose}>
-              <X size={18} />
-            </IconButton>
-          </Stack>
-        </Box>
+  const renderPipelineItem = (pipeline: TaskPipeline) => {
+    const system = isSystem(pipeline);
+    return (
+      <ListItem
+        key={pipeline.id}
+        sx={{
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
+          mb: 1,
+          pr: 12,
+          cursor: 'pointer',
+          '&:hover': { bgcolor: 'grey.50' },
+        }}
+        onClick={() => {
+          setSelectedPipeline(pipeline);
+          setIsEditing(true);
+        }}
+      >
+        <ListItemText
+          primary={
+            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+              <Typography variant="subtitle2" fontWeight={600}>
+                {pipeline.name}
+              </Typography>
+              <Chip
+                size="small"
+                icon={system ? <Users size={12} /> : <User size={12} />}
+                label={system ? 'Team' : 'Personal'}
+                sx={{ height: 20, '& .MuiChip-label': { px: 0.75, fontSize: '0.65rem' } }}
+              />
+              {pipeline.isDefault && (
+                <Typography variant="caption" color="primary.main">(Default)</Typography>                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    Team pipelines (system)
+                  </Typography>
+                  <List disablePadding sx={{ mt: 0.5 }}>
+                    {systemPipelines.map(renderPipelineItem)}
+                  </List>
+                </Box>
 
-        {/* Content */}
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {!isEditing ? (
-            <Box sx={{ p: 2 }}>
-              <Stack spacing={2}>
-                <MuiButton
-                  variant="outlined"
-                  startIcon={<Plus size={16} />}
-                  onClick={handleCreateNew}
-                  fullWidth
-                >
-                  Create New Pipeline
-                </MuiButton>
-
-                <Divider />
-
-                <List disablePadding>
-                  {pipelines.map(pipeline => (
-                    <ListItem
-                      key={pipeline.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    My pipelines
+                  </Typography>
+                  {personalPipelines.length === 0 ? (
+                    <Alert severity="info" sx={{ mt: 0.5 }}>
+                      You have no personal pipelines yet. Create one, or copy a team pipeline to
+                      customise it just for yourself.
+                    </Alert>
+                  ) : (
+                    <List disablePadding sx={{ mt: 0.5 }}>
+                      {personalPipelines.map(renderPipelineItem)}
+                    </List>
+                  )}
+                </Box>         mb: 1,
                         cursor: 'pointer',
                         '&:hover': { bgcolor: 'grey.50' },
                       }}
@@ -259,7 +311,29 @@ export function PipelineManagerDrawer({
           ) : (
             <Box sx={{ p: 2 }}>
               <Stack spacing={3}>
+                {editingSystem && (
+                  <Alert
+                    severity="info"
+                    icon={<Lock size={16} />}
+                    action={
+                      <MuiButton
+                        size="small"
+                        startIcon={<Copy size={14} />}
+                        onClick={() => {
+                          handleDuplicateToPersonal(selectedPipeline!);
+                          setIsEditing(false);
+                          setSelectedPipeline(null);
+                        }}
+                      >
+                        Copy to mine
+                      </MuiButton>
+                    }
+                  >
+                    This is a team (system) pipeline — read-only. Copy it to your pipelines to edit.
+                  </Alert>
+                )}
                 <TextField
+                  disabled={editingSystem}
                   label="Pipeline Name"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -269,6 +343,7 @@ export function PipelineManagerDrawer({
                 />
 
                 <TextField
+                  disabled={editingSystem}
                   label="Description"
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -386,7 +461,7 @@ export function PipelineManagerDrawer({
               >
                 Cancel
               </MuiButton>
-              <MuiButton variant="contained" onClick={handleSavePipeline}>
+              <MuiButton variant="contained" onClick={handleSavePipeline} disabled={editingSystem}>
                 Save Pipeline
               </MuiButton>
             </Stack>
