@@ -193,23 +193,52 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
       <div className="space-y-6">
         {/* 1. Form */}
         <section className="rounded-lg border border-border p-4">
-          {sectionTitle(<FileText size={16} />, 'Form', 'Only published templates in your workspace can be assigned.')}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Template</Label>
-              <Select value={templateId} onValueChange={setTemplateId}>
-                <SelectTrigger><SelectValue placeholder="Select a form" /></SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          {sectionTitle(
+            <FileText size={16} />,
+            'Forms',
+            `${selectedTemplates.length} selected · pick one or more published templates to send together.`
+          )}
+          <div className="flex items-center justify-end mb-2">
+            <button
+              type="button"
+              onClick={() => setTemplateIds(templateIds.length === templates.length ? [] : templates.map(t => t.id))}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {templateIds.length === templates.length ? 'Clear all' : 'Select all forms'}
+            </button>
+          </div>
+          <ScrollArea className="h-40 rounded-md border border-border">
+            <div className="divide-y divide-border">
+              {templates.map(t => {
+                const selected = templateIds.includes(t.id);
+                return (
+                  <label
+                    key={t.id}
+                    className={cn('flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50', selected && 'bg-primary/5')}
+                  >
+                    <Checkbox checked={selected} onCheckedChange={() => toggleTemplate(t.id)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{t.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{t.category ?? 'Form'}</p>
+                    </div>
+                  </label>
+                );
+              })}
+              {templates.length === 0 && (
+                <p className="text-sm text-muted-foreground px-3 py-6 text-center">No published templates available.</p>
+              )}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Assignment name (optional)</Label>
-              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={template?.name ?? 'e.g. Weekly safety check'} />
-            </div>
+          </ScrollArea>
+          <div className="space-y-1.5 mt-3">
+            <Label className="text-xs">Assignment name (optional)</Label>
+            <Input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder={selectedTemplates[0]?.name ?? 'e.g. Weekly safety check'}
+            />
           </div>
         </section>
+
 
         {/* 2. Recipients */}
         <section className="rounded-lg border border-border p-4">
