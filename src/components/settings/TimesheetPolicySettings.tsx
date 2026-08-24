@@ -673,7 +673,11 @@ export function PolicyUnscheduled() {
         <SelectRow
           {...fieldProps('unscheduled', 'linkUnscheduledToScheduled', 'Match unscheduled timesheets to a rostered shift',
             'If a suitable rostered shift exists, the timesheet is linked to it instead of being treated as unscheduled.',
-            linkUnscheduledOptionGuide)}
+            <>
+              <p className="font-medium mb-1">Example</p>
+              <p>Liam is rostered 9:00 AM – 5:00 PM in Room 1 but clocks in at the kiosk under Room 2 at 9:06 AM. With matching enabled, the punch attaches to his existing 9:00 AM shift instead of creating a second unrostered shift — so the roster shows one shift, not two.</p>
+              {linkUnscheduledOptionGuide}
+            </>)}
           value={u.linkUnscheduledToScheduled}
           options={linkUnscheduledOptions}
           onChange={v => setField('unscheduled', 'linkUnscheduledToScheduled', v as TimesheetPolicy['unscheduled']['linkUnscheduledToScheduled'])}
@@ -682,7 +686,11 @@ export function PolicyUnscheduled() {
           <SelectRow
             {...fieldProps('unscheduled', 'allowTimeDriftMatching', 'Allowed time difference when matching',
               'How far the clock-in can sit from the rostered start and still be treated as the same shift.',
-              timeDriftOptionGuide)}
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Set to <em>30 minutes</em>. Rostered start 9:00 AM: a 9:25 AM punch links to that shift; a 10:10 AM punch is 70 min out, so it is treated as a separate unrostered shift and follows the rules in step 2.</p>
+                {timeDriftOptionGuide}
+              </>)}
             value={u.allowTimeDriftMatching}
             options={timeDriftOptions}
             onChange={v => setField('unscheduled', 'allowTimeDriftMatching', v as TimesheetPolicy['unscheduled']['allowTimeDriftMatching'])}
