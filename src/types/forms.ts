@@ -246,6 +246,12 @@ export interface FormTemplate {
   createdBy?: string;
   createdByName?: string;
   duplicatedFrom?: string; // Original template ID if duplicated
+  /** Industry this template was authored for (system library) */
+  industry?: string;
+  /** System library template this tenant copy was installed from */
+  installedFromId?: string;
+  installedAt?: string;
+
 }
 
 export interface FormSubmission {
