@@ -231,7 +231,10 @@ const StaffAssignmentsPage = () => {
                       <td className="px-3 py-2.5 text-muted-foreground">
                         {t.submittedAt ? fmtDateTime(t.submittedAt) : '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" onClick={() => setDetailTaskId(t.id)}>
+                          <Eye size={13} className="mr-1" /> View
+                        </Button>
                         {status !== 'submitted' && status !== 'cancelled' && (
                           <>
                             <Button
