@@ -173,8 +173,9 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
 
   return (
     <PrimaryOffCanvas
-      title="Assign form to staff"
-      description="Choose recipients, set once-off or recurring delivery, and track completion."
+      title="Bulk assign forms to staff"
+      description="Select multiple forms and staff, then submit due dates and delivery settings in one step."
+
       icon={Users}
       size="2xl"
       open={open}
