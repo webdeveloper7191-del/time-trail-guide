@@ -443,7 +443,7 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
               ) : (
                 <>
                   <span className="font-medium text-foreground">{occurrences.length} occurrence{occurrences.length === 1 ? '' : 's'}</span>
-                  {' · '}{staffIds.length} staff{' · '}
+                  {' · '}{staffIds.length} staff{' · '}{selectedTemplates.length} form{selectedTemplates.length === 1 ? '' : 's'}{' · '}
                   <span className="font-medium text-foreground">{totalTasks} task{totalTasks === 1 ? '' : 's'}</span>
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {occurrences.slice(0, 8).map(d => <Badge key={d} variant="secondary" className="text-[10px]">{d}</Badge>)}
