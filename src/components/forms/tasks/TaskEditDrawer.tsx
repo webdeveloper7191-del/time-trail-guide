@@ -26,6 +26,7 @@ import {
   Image as ImageIcon,
   GitBranch,
 } from 'lucide-react';
+import { taskTypesStore } from '@/lib/masterData/taskTypesStore';
 import { Task, TaskFormData, TaskType, TaskPriority, TaskAttachment, TaskPipeline } from '@/types/tasks';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockLocations, mockAreas } from '@/data/mockLocationData';
@@ -44,7 +45,7 @@ interface TaskEditDrawerProps {
   onManagePipelines?: () => void;
 }
 
-const typeOptions: { value: TaskType; label: string }[] = [
+const fallbackTypeOptions: { value: string; label: string; color?: string }[] = [
   { value: 'work_order', label: 'Work Order' },
   { value: 'corrective_action', label: 'Corrective Action' },
   { value: 'maintenance_request', label: 'Maintenance Request' },
@@ -74,6 +75,11 @@ export function TaskEditDrawer({
   onSave,
   onManagePipelines,
 }: TaskEditDrawerProps) {
+  const masterTaskTypes = taskTypesStore.use();
+  const typeOptions = masterTaskTypes.length
+    ? masterTaskTypes.filter(t => t.status === 'active').map(t => ({ value: t.id, label: t.label, color: t.color }))
+    : fallbackTypeOptions;
+
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     description: '',
@@ -306,8 +312,14 @@ export function TaskEditDrawer({
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as TaskType }))}
                 >
                   {typeOptions.map(opt => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    <MenuItem key={opt.value} value={opt.value}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        {opt.color && <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: opt.color }} />}
+                        <span>{opt.label}</span>
+                      </Stack>
+                    </MenuItem>
                   ))}
+
                 </MuiSelect>
               </FormControl>
 

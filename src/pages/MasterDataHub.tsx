@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Database, Briefcase, IdCard, CalendarDays, Coffee, DollarSign, AlertTriangle, Sparkles } from 'lucide-react';
+import { Database, Briefcase, IdCard, CalendarDays, Coffee, DollarSign, AlertTriangle, Sparkles, ListChecks } from 'lucide-react';
 import { PositionsMasterPanel } from '@/components/settings/masterdata/PositionsMasterPanel';
 import { EmploymentTypesMasterPanel } from '@/components/settings/masterdata/EmploymentTypesMasterPanel';
 import { LeaveTypesMasterPanel } from '@/components/settings/masterdata/LeaveTypesMasterPanel';
@@ -9,6 +9,7 @@ import { ShiftTypesMasterPanel } from '@/components/settings/masterdata/ShiftTyp
 import { AllowanceTypesMasterPanel } from '@/components/settings/masterdata/AllowanceTypesMasterPanel';
 import { ExceptionReasonsMasterPanel } from '@/components/settings/masterdata/ExceptionReasonsMasterPanel';
 import { SkillsMasterPanel } from '@/components/settings/masterdata/SkillsMasterPanel';
+import { TaskTypesMasterPanel } from '@/components/settings/masterdata/TaskTypesMasterPanel';
 
 const sections = [
   { id: 'positions',          label: 'Positions',          icon: Briefcase,     Comp: PositionsMasterPanel },
@@ -17,6 +18,7 @@ const sections = [
   { id: 'leave-types',        label: 'Leave types',        icon: CalendarDays,  Comp: LeaveTypesMasterPanel },
   { id: 'shift-types',        label: 'Shift types',        icon: Coffee,        Comp: ShiftTypesMasterPanel },
   { id: 'allowance-types',    label: 'Allowance types',    icon: DollarSign,    Comp: AllowanceTypesMasterPanel },
+  { id: 'task-types',         label: 'Task types',         icon: ListChecks,    Comp: TaskTypesMasterPanel },
   { id: 'exception-reasons',  label: 'Exception reasons',  icon: AlertTriangle, Comp: ExceptionReasonsMasterPanel },
 ];
 
