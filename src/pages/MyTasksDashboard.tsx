@@ -24,6 +24,8 @@ import {
   getTaskStats 
 } from '@/lib/unifiedTaskService';
 import { UnifiedTask, TaskFilter, defaultTaskFilter } from '@/types/unifiedTasks';
+import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
+import { applyOverrides, useTaskBoard } from '@/lib/taskBoardStore';
 import { cn } from '@/lib/utils';
 
 // Mock current user
@@ -44,15 +46,18 @@ const MyTasksDashboard: React.FC = () => {
     modules: initialModule ? [initialModule as TaskFilter['modules'][number]] : defaultTaskFilter.modules,
     showCompleted: searchParams.get('showCompleted') === 'true' ? true : defaultTaskFilter.showCompleted,
   });
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'board'>('list');
   const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'module' | 'status'>('dueDate');
   const [selectedTask, setSelectedTask] = useState<UnifiedTask | null>(null);
   const [quickFilter, setQuickFilter] = useState<string>('all');
 
-  // Get tasks based on toggle
+  const board = useTaskBoard();
+
+  // Get tasks based on toggle, with any board (drag & drop) changes applied
   const baseTasks = useMemo(() => {
-    return showMyTasksOnly ? getMyTasks(CURRENT_USER.id) : getAllUnifiedTasks();
-  }, [showMyTasksOnly]);
+    const source = showMyTasksOnly ? getMyTasks(CURRENT_USER.id) : getAllUnifiedTasks();
+    return applyOverrides(source, board.overrides);
+  }, [showMyTasksOnly, board.overrides]);
 
   // Apply quick filter to the main filter
   const effectiveFilter = useMemo(() => {
@@ -217,6 +222,8 @@ const MyTasksDashboard: React.FC = () => {
                     : "No tasks match the current filters."}
                 </p>
               </div>
+            ) : viewMode === 'board' ? (
+              <TaskKanbanBoard tasks={filteredTasks} onTaskClick={handleTaskClick} />
             ) : (
               <ScrollArea className="h-[calc(100vh-420px)]">
                 <div className={cn(
