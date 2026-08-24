@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Box, 
   Stack, 
@@ -24,7 +25,9 @@ import { CustomTokenManager } from '@/components/forms/CustomTokenManager';
 import { FormSettingsDrawer } from '@/components/forms/FormSettingsDrawer';
 import { EditTemplateDetailsDrawer } from '@/components/forms/EditTemplateDetailsDrawer';
 import { CreateTemplateDrawer } from '@/components/forms/CreateTemplateDrawer';
-import { FormsListingPage } from '@/components/forms/FormsListingPage';
+import { SystemFormLibraryPage } from '@/components/forms/SystemFormLibraryPage';
+import { TenantFormsPage } from '@/components/forms/TenantFormsPage';
+import { InstallTemplatesPanel } from '@/components/forms/InstallTemplatesPanel';
 import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken, FormTemplateScope } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
 import { useFormBuilderUndoRedo } from '@/hooks/useFormBuilderUndoRedo';
@@ -50,15 +53,20 @@ import {
   Settings,
   Plus,
   FileText,
+  Globe,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'library' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
+type ViewMode = 'system' | 'tenant' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
 
 export default function FormBuilder() {
-  const [viewMode, setViewMode] = useState<ViewMode>('library');
+  const [viewMode, setViewMode] = useState<ViewMode>('tenant');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [showInstallPanel, setShowInstallPanel] = useState(false);
   const [templates, setTemplates] = useState<FormTemplate[]>(
     mockFormTemplates.map(t => ({
       ...t,
@@ -80,6 +88,14 @@ export default function FormBuilder() {
   const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
   const [targetTaskId, setTargetTaskId] = useState<string | null>(null);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+
+  // Deep link support: /forms?view=system|tenant|assignments|submissions|tasks|analytics
+  useEffect(() => {
+    const view = searchParams.get('view') as ViewMode | null;
+    const valid: ViewMode[] = ['system', 'tenant', 'assignments', 'submissions', 'tasks', 'analytics'];
+    if (view && valid.includes(view)) setViewMode(view);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleNavigateToSubmission = (submissionId: string) => {
     setTargetSubmissionId(submissionId);
@@ -217,6 +233,29 @@ export default function FormBuilder() {
     toast.success(`Created form from system template "${systemTemplate.name}"`);
   };
 
+  const handleInstallTemplates = (systemTemplates: FormTemplate[]) => {
+    const now = new Date().toISOString();
+    const installed: FormTemplate[] = systemTemplates.map((sys, i) => ({
+      ...sys,
+      id: `template-${Date.now()}-${i}`,
+      scope: 'tenant',
+      status: 'draft',
+      isIndustryTemplate: false,
+      isEnabled: true,
+      installedFromId: sys.id,
+      installedAt: now,
+      industry: sys.industry,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: 'current-user',
+      createdByName: 'Tenant Admin',
+    }));
+    setTemplates(prev => [...installed, ...prev]);
+    setViewMode('tenant');
+    toast.success(`${installed.length} template${installed.length === 1 ? '' : 's'} installed. Customise and publish when ready.`);
+  };
+
   const handleSaveTemplate = () => {
     const updatedTemplate = { ...template, updatedAt: new Date().toISOString() };
     setTemplate(updatedTemplate);
@@ -298,7 +337,7 @@ export default function FormBuilder() {
     return (
       <SurveyJSRenderer 
         template={previewTemplate} 
-        onClose={() => { setPreviewTemplate(null); setViewMode('library'); }}
+        onClose={() => { setPreviewTemplate(null); setViewMode(previewTemplate.scope === 'system' ? 'system' : 'tenant'); }}
         onComplete={(results) => {
           console.log('Form submitted:', results);
           toast.success('Form submitted successfully');
@@ -307,13 +346,23 @@ export default function FormBuilder() {
     );
   }
 
-  // Top-level tabs for non-builder views
+  // Sub-tabs within the "Assign & Track" sub-menu
   const topTabs: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
     { key: 'assignments', label: 'Assignment Rules', icon: <Send size={16} /> },
     { key: 'submissions', label: 'Submissions', icon: <ClipboardCheck size={16} /> },
     { key: 'tasks', label: 'Tasks', icon: <ListTodo size={16} /> },
     { key: 'analytics', label: 'Analytics', icon: <BarChart3 size={16} /> },
   ];
+
+  const deliveryModes: ViewMode[] = ['assignments', 'submissions', 'tasks', 'analytics'];
+
+  // Three primary sub-menus
+  const subMenus: { key: ViewMode | 'delivery'; label: string; icon: React.ReactNode }[] = [
+    { key: 'system', label: 'Industry Library (System Admin)', icon: <Globe size={16} /> },
+    { key: 'tenant', label: 'My Templates (Tenant Admin)', icon: <Building2 size={16} /> },
+    { key: 'delivery', label: 'Assign & Track', icon: <Users size={16} /> },
+  ];
+
 
   return (
     <div className="h-screen flex flex-col bg-[hsl(var(--background))]">
@@ -324,7 +373,7 @@ export default function FormBuilder() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {viewMode === 'builder' && (
-              <Button variant="ghost" size="sm" onClick={() => setViewMode('library')}>
+              <Button variant="ghost" size="sm" onClick={() => setViewMode(template?.scope === 'system' ? 'system' : 'tenant')}>
                 <ArrowLeft size={16} className="mr-1" /> Back
               </Button>
             )}
@@ -352,22 +401,13 @@ export default function FormBuilder() {
             ) : (
               <div>
                 <h1 className="text-xl font-semibold text-foreground">Forms</h1>
-                <p className="text-sm text-muted-foreground">Manage Form Templates & Submissions</p>
+                <p className="text-sm text-muted-foreground">Industry library, tenant templates and staff assignments</p>
               </div>
             )}
           </div>
 
           {/* Header actions */}
-          {viewMode !== 'builder' && (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => {}}>
-                <FileText className="h-4 w-4 mr-1" /> More Options
-              </Button>
-              <Button size="sm" onClick={handleCreateNew}>
-                <Plus className="h-4 w-4 mr-1" /> Create Template
-              </Button>
-            </div>
-          )}
+
 
           {viewMode === 'builder' && template && (
             <div className="flex items-center gap-1">
@@ -393,27 +433,42 @@ export default function FormBuilder() {
           )}
         </div>
 
-        {/* Secondary Tab Navigation - only in non-builder, non-library views */}
-        {viewMode !== 'builder' && viewMode !== 'library' && (
+        {/* Primary sub-menu navigation */}
+        {viewMode !== 'builder' && (
           <div className="flex items-center gap-1 mt-3 border-t border-border pt-3">
-            <button
-              onClick={() => setViewMode('library')}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              ← Templates
-            </button>
+            {subMenus.map(item => {
+              const active = item.key === 'delivery'
+                ? deliveryModes.includes(viewMode)
+                : viewMode === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleViewModeChange(item.key === 'delivery' ? 'assignments' : (item.key as ViewMode))}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Secondary tabs inside Assign & Track */}
+        {deliveryModes.includes(viewMode) && (
+          <div className="flex items-center gap-1 mt-2">
             {topTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => handleViewModeChange(tab.key)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                   viewMode === tab.key
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 )}
               >
                 {tab.icon}
@@ -422,17 +477,32 @@ export default function FormBuilder() {
             ))}
           </div>
         )}
+
       </div>
 
       {/* Main Content */}
-      {viewMode === 'library' && (
-        <FormsListingPage
+      {viewMode === 'system' && (
+        <SystemFormLibraryPage
           templates={templates}
           onTemplatesChange={setTemplates}
           onSelectTemplate={handleSelectTemplate}
           onPreviewTemplate={handlePreviewTemplate}
           onCreateNew={handleCreateNew}
-          onCreateFromSystemTemplate={(tmpl) => handleCreateFromSystemTemplate(tmpl)}
+          searchQuery={templateSearch}
+          onSearchChange={setTemplateSearch}
+        />
+      )}
+
+      {viewMode === 'tenant' && (
+        <TenantFormsPage
+          templates={templates}
+          onTemplatesChange={setTemplates}
+          onSelectTemplate={handleSelectTemplate}
+          onPreviewTemplate={handlePreviewTemplate}
+          onCreateNew={handleCreateNew}
+          onOpenInstall={() => setShowInstallPanel(true)}
+          searchQuery={templateSearch}
+          onSearchChange={setTemplateSearch}
         />
       )}
 
@@ -636,6 +706,16 @@ export default function FormBuilder() {
         onCreateFromScratch={handleCreateFromScratch}
         onCreateFromSystemTemplate={(tmpl, config) => handleCreateFromSystemTemplate(tmpl, config)}
         onPreviewTemplate={handlePreviewTemplate}
+      />
+
+      {/* Install from industry library */}
+      <InstallTemplatesPanel
+        open={showInstallPanel}
+        onClose={() => setShowInstallPanel(false)}
+        systemTemplates={templates.filter(t => t.scope === 'system')}
+        installedFromIds={templates.filter(t => t.installedFromId).map(t => t.installedFromId!)}
+        onInstall={handleInstallTemplates}
+        onPreview={handlePreviewTemplate}
       />
     </div>
   );
