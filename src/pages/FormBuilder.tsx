@@ -307,13 +307,23 @@ export default function FormBuilder() {
     );
   }
 
-  // Top-level tabs for non-builder views
+  // Sub-tabs within the "Assign & Track" sub-menu
   const topTabs: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
     { key: 'assignments', label: 'Assignment Rules', icon: <Send size={16} /> },
     { key: 'submissions', label: 'Submissions', icon: <ClipboardCheck size={16} /> },
     { key: 'tasks', label: 'Tasks', icon: <ListTodo size={16} /> },
     { key: 'analytics', label: 'Analytics', icon: <BarChart3 size={16} /> },
   ];
+
+  const deliveryModes: ViewMode[] = ['assignments', 'submissions', 'tasks', 'analytics'];
+
+  // Three primary sub-menus
+  const subMenus: { key: ViewMode | 'delivery'; label: string; icon: React.ReactNode }[] = [
+    { key: 'system', label: 'Industry Library (System Admin)', icon: <Globe size={16} /> },
+    { key: 'tenant', label: 'My Templates (Tenant Admin)', icon: <Building2 size={16} /> },
+    { key: 'delivery', label: 'Assign & Track', icon: <Users size={16} /> },
+  ];
+
 
   return (
     <div className="h-screen flex flex-col bg-[hsl(var(--background))]">
