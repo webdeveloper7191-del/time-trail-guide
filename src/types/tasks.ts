@@ -43,12 +43,22 @@ export interface TaskPipelineStage {
   order: number;
 }
 
+/**
+ * Pipeline visibility.
+ * - `system`: team-level pipeline shared with everyone; read-only for users.
+ * - `personal`: created by a user and visible only to them.
+ */
+export type TaskPipelineScope = 'system' | 'personal';
+
 export interface TaskPipeline {
   id: string;
   name: string;
   description?: string;
   stages: TaskPipelineStage[];
   isDefault?: boolean;
+  scope?: TaskPipelineScope;
+  /** Owner for personal pipelines. */
+  ownerId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,6 +76,9 @@ export interface Task {
   assigneeName?: string;
   dueDate?: string;
   location?: string;
+  locationId?: string;
+  areaId?: string;
+  areaName?: string;
   assetId?: string;
   assetName?: string;
   linkedSubmissionId?: string;
@@ -88,6 +101,9 @@ export interface TaskFormData {
   assigneeName: string;
   dueDate: string;
   location: string;
+  locationId?: string;
+  areaId?: string;
+  areaName?: string;
   pipelineId?: string;
   stageId?: string;
 }

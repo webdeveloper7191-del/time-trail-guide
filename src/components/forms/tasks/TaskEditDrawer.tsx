@@ -12,6 +12,7 @@ import {
   InputLabel,
   Select as MuiSelect,
   MenuItem,
+  ListSubheader,
   Autocomplete,
   Alert,
 } from '@mui/material';
@@ -23,17 +24,24 @@ import {
   Trash2,
   File,
   Image as ImageIcon,
+  GitBranch,
 } from 'lucide-react';
-import { Task, TaskFormData, TaskType, TaskPriority, TaskAttachment } from '@/types/tasks';
+import { Task, TaskFormData, TaskType, TaskPriority, TaskAttachment, TaskPipeline } from '@/types/tasks';
 import { mockStaff } from '@/data/mockStaffData';
+import { mockLocations, mockAreas } from '@/data/mockLocationData';
 import { toast } from 'sonner';
 
 interface TaskEditDrawerProps {
   open: boolean;
   task: Task | null;
   mode: 'create' | 'edit';
+  /** Pipelines the current user may pick from (team + personal). */
+  pipelines?: TaskPipeline[];
+  /** Pipeline pre-selected for new tasks. */
+  defaultPipelineId?: string;
   onClose: () => void;
   onSave: (data: TaskFormData, attachments: TaskAttachment[]) => void;
+  onManagePipelines?: () => void;
 }
 
 const typeOptions: { value: TaskType; label: string }[] = [
@@ -60,8 +68,11 @@ export function TaskEditDrawer({
   open,
   task,
   mode,
+  pipelines = [],
+  defaultPipelineId,
   onClose,
   onSave,
+  onManagePipelines,
 }: TaskEditDrawerProps) {
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
@@ -72,6 +83,11 @@ export function TaskEditDrawer({
     assigneeName: '',
     dueDate: '',
     location: '',
+    locationId: '',
+    areaId: '',
+    areaName: '',
+    pipelineId: defaultPipelineId || pipelines[0]?.id || '',
+    stageId: '',
   });
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -90,6 +106,11 @@ export function TaskEditDrawer({
           assigneeName: task.assigneeName || '',
           dueDate: task.dueDate || '',
           location: task.location || '',
+          locationId: task.locationId || '',
+          areaId: task.areaId || '',
+          areaName: task.areaName || '',
+          pipelineId: task.pipelineId || defaultPipelineId || pipelines[0]?.id || '',
+          stageId: task.stageId || '',
         });
         setAttachments(task.attachments || []);
       } else {
@@ -102,12 +123,51 @@ export function TaskEditDrawer({
           assigneeName: '',
           dueDate: '',
           location: '',
+          locationId: '',
+          areaId: '',
+          areaName: '',
+          pipelineId: defaultPipelineId || pipelines[0]?.id || '',
+          stageId: '',
         });
         setAttachments([]);
       }
       setErrors({});
     }
-  }, [open, mode, task]);
+  }, [open, mode, task, defaultPipelineId, pipelines]);
+
+  const systemPipelines = pipelines.filter(p => (p.scope ?? 'system') === 'system');
+  const personalPipelines = pipelines.filter(p => p.scope === 'personal');
+  const selectedPipeline = pipelines.find(p => p.id === formData.pipelineId) || null;
+  const pipelineStages = selectedPipeline
+    ? [...selectedPipeline.stages].sort((a, b) => a.order - b.order)
+    : [];
+
+  const handlePipelineChange = (pipelineId: string) => {
+    const pipeline = pipelines.find(p => p.id === pipelineId);
+    const firstStage = pipeline ? [...pipeline.stages].sort((a, b) => a.order - b.order)[0] : undefined;
+    setFormData(prev => ({ ...prev, pipelineId, stageId: firstStage?.id || '' }));
+  };
+
+  const areaOptions = mockAreas.filter(
+    a => !formData.locationId || a.locationId === formData.locationId,
+  );
+
+  const handleLocationChange = (locationId: string) => {
+    const location = mockLocations.find(l => l.id === locationId);
+    setFormData(prev => ({
+      ...prev,
+      locationId,
+      location: location?.name || '',
+      // Clear the area when it no longer belongs to the chosen location.
+      areaId: '',
+      areaName: '',
+    }));
+  };
+
+  const handleAreaChange = (areaId: string) => {
+    const area = mockAreas.find(a => a.id === areaId);
+    setFormData(prev => ({ ...prev, areaId, areaName: area?.name || '' }));
+  };
 
   const handleAssigneeChange = (_: any, value: typeof staffOptions[0] | null) => {
     setFormData(prev => ({
@@ -174,6 +234,9 @@ export function TaskEditDrawer({
 
   const handleSave = () => {
     if (!validate()) return;
+    if (!formData.stageId && pipelineStages[0]) {
+      formData.stageId = pipelineStages[0].id;
+    }
     onSave(formData, attachments);
     onClose();
   };
@@ -294,25 +357,108 @@ export function TaskEditDrawer({
               )}
             />
 
-            {/* Due Date & Location */}
+            {/* Due Date */}
+            <TextField
+              label="Due Date"
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <Divider />
+
+            {/* Pipeline & Stage */}
+            <Box>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                <Typography variant="body2" fontWeight={500}>Pipeline</Typography>
+                {onManagePipelines && (
+                  <MuiButton size="small" startIcon={<GitBranch size={14} />} onClick={onManagePipelines}>
+                    Manage
+                  </MuiButton>
+                )}
+              </Stack>
+              <Stack direction="row" spacing={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Pipeline</InputLabel>
+                  <MuiSelect
+                    value={pipelines.some(p => p.id === formData.pipelineId) ? formData.pipelineId : ''}
+                    label="Pipeline"
+                    onChange={(e) => handlePipelineChange(e.target.value as string)}
+                  >
+                    {systemPipelines.length > 0 && (
+                      <ListSubheader>Team pipelines (system)</ListSubheader>
+                    )}
+                    {systemPipelines.map(p => (
+                      <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                    ))}
+                    {personalPipelines.length > 0 && (
+                      <ListSubheader>My pipelines</ListSubheader>
+                    )}
+                    {personalPipelines.map(p => (
+                      <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                    ))}
+                  </MuiSelect>
+                </FormControl>
+
+                <FormControl fullWidth size="small" disabled={pipelineStages.length === 0}>
+                  <InputLabel>Stage</InputLabel>
+                  <MuiSelect
+                    value={pipelineStages.some(st => st.id === formData.stageId) ? formData.stageId : ''}
+                    label="Stage"
+                    onChange={(e) => setFormData(prev => ({ ...prev, stageId: e.target.value as string }))}
+                  >
+                    {pipelineStages.map(st => (
+                      <MenuItem key={st.id} value={st.id}>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: st.color }} />
+                          <span>{st.name}</span>
+                        </Stack>
+                      </MenuItem>
+                    ))}
+                  </MuiSelect>
+                </FormControl>
+              </Stack>
+              {selectedPipeline && (
+                <Typography variant="caption" color="text.secondary">
+                  {(selectedPipeline.scope ?? 'system') === 'system'
+                    ? 'Team pipeline — shared with everyone.'
+                    : 'Personal pipeline — visible only to you.'}
+                </Typography>
+              )}
+            </Box>
+
+            {/* Location & Area */}
             <Stack direction="row" spacing={2}>
-              <TextField
-                label="Due Date"
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-                fullWidth
-                size="small"
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Location"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                fullWidth
-                size="small"
-                placeholder="e.g., Building A - Room 101"
-              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Location</InputLabel>
+                <MuiSelect
+                  value={formData.locationId || ''}
+                  label="Location"
+                  onChange={(e) => handleLocationChange(e.target.value as string)}
+                >
+                  <MenuItem value="">No location</MenuItem>
+                  {mockLocations.map(loc => (
+                    <MenuItem key={loc.id} value={loc.id}>{loc.name}</MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
+
+              <FormControl fullWidth size="small" disabled={!formData.locationId}>
+                <InputLabel>Area</InputLabel>
+                <MuiSelect
+                  value={areaOptions.some(a => a.id === formData.areaId) ? formData.areaId : ''}
+                  label="Area"
+                  onChange={(e) => handleAreaChange(e.target.value as string)}
+                >
+                  <MenuItem value="">All areas</MenuItem>
+                  {areaOptions.map(a => (
+                    <MenuItem key={a.id} value={a.id}>{a.name}</MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
             </Stack>
 
             <Divider />
