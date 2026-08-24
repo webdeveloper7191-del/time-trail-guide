@@ -12,6 +12,13 @@ export type DeliveryMode = 'once' | 'recurring';
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
 export type RecipientTaskStatus = 'not_started' | 'in_progress' | 'submitted' | 'cancelled';
 export type DerivedTaskStatus = RecipientTaskStatus | 'overdue';
+/** Review outcome applied by an admin after a submission arrives. */
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
 
 export interface Recurrence {
   frequency: RecurrenceFrequency;
