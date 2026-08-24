@@ -17,7 +17,8 @@ import {
   SlidersHorizontal,
   X,
   LayoutGrid,
-  List
+  List,
+  Columns3
 } from 'lucide-react';
 import { TaskFilter, ModuleType, moduleLabels, defaultTaskFilter } from '@/types/unifiedTasks';
 import { cn } from '@/lib/utils';
@@ -25,8 +26,8 @@ import { cn } from '@/lib/utils';
 interface TaskFilterBarProps {
   filter: TaskFilter;
   onFilterChange: (filter: TaskFilter) => void;
-  viewMode: 'list' | 'grid';
-  onViewModeChange: (mode: 'list' | 'grid') => void;
+  viewMode: 'list' | 'grid' | 'board';
+  onViewModeChange: (mode: 'list' | 'grid' | 'board') => void;
   sortBy: 'dueDate' | 'priority' | 'module' | 'status';
   onSortChange: (sort: 'dueDate' | 'priority' | 'module' | 'status') => void;
 }
@@ -224,10 +225,20 @@ export const TaskFilterBar: React.FC<TaskFilterBarProps> = ({
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="sm"
-              className="rounded-l-none"
+              className="rounded-none border-x"
               onClick={() => onViewModeChange('grid')}
             >
               <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'board' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="rounded-l-none gap-1"
+              onClick={() => onViewModeChange('board')}
+              title="Kanban board"
+            >
+              <Columns3 className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs">Board</span>
             </Button>
           </div>
         </div>
