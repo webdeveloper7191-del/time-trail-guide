@@ -755,7 +755,11 @@ export function PolicyUnscheduled() {
             <SelectRow
               {...fieldProps('unscheduled', 'createShiftInRoster', 'Create a shift in the roster',
                 'When the shift is created. Creating on clock-out gives exact times; creating on clock-in shows live coverage.',
-                createShiftGuide)}
+                <>
+                  <p className="font-medium mb-1">Example</p>
+                  <p>Set to <em>On clock-out</em>: Sana's 7:00 AM – 3:12 PM shift appears on Tuesday's roster once she leaves, with exact times. Set to <em>On clock-in</em>: a provisional shift appears at 7:00 AM so the floor manager can see live coverage, and the end time is corrected when she clocks out.</p>
+                  {createShiftGuide}
+                </>)}
               value={u.createShiftInRoster}
               options={unscheduledShiftCreationOptions}
               onChange={v => setField('unscheduled', 'createShiftInRoster', v as TimesheetPolicy['unscheduled']['createShiftInRoster'])}
