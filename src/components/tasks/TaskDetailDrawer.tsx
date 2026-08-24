@@ -233,7 +233,74 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         </div>
       </div>
 
+      {/* Comment thread */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          <h4 className="text-sm font-semibold">Comments</h4>
+          {thread.length > 0 && (
+            <Badge variant="secondary" className="text-xs">{thread.length}</Badge>
+          )}
+        </div>
+
+        {thread.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+            No comments yet — start the thread for this card.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {thread.map(c => (
+              <div key={c.id} className="group flex gap-3">
+                <Avatar className="h-7 w-7 shrink-0">
+                  <AvatarFallback className="bg-muted text-xs">{initials(c.authorName)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1 rounded-lg border bg-card p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{c.authorName}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-label="Delete comment"
+                        onClick={() => taskBoardStore.deleteComment(task.id, c.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Textarea
+            rows={3}
+            placeholder={thread.length ? 'Reply to this thread…' : 'Start a comment thread on this card…'}
+            value={commentDraft}
+            onChange={e => setCommentDraft(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePostComment();
+            }}
+          />
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Cmd/Ctrl + Enter to post</span>
+            <Button size="sm" className="gap-2" disabled={!commentDraft.trim()} onClick={handlePostComment}>
+              <Send className="h-3.5 w-3.5" />
+              {thread.length ? 'Post comment' : 'Start thread'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {onOpenInModule && (
+
         <Button variant="outline" size="sm" className="gap-2" onClick={() => onOpenInModule(task)}>
           <ExternalLink className="h-4 w-4" /> Open in {task.moduleLabel}
         </Button>
