@@ -271,6 +271,48 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
               {allFilteredSelected ? 'Clear all' : 'Select all'}
             </button>
           </div>
+
+          {/* Bulk group selection */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <span className="text-xs text-muted-foreground mr-1">Quick add:</span>
+            <button
+              type="button"
+              onClick={selectEveryone}
+              className="text-[11px] rounded-full border border-border px-2 py-0.5 hover:bg-muted/60"
+            >
+              Everyone ({activeStaff.length})
+            </button>
+            {locationOptions.map(l => (
+              <button
+                key={`loc-${l}`}
+                type="button"
+                onClick={() => selectByLocation(l)}
+                className="text-[11px] rounded-full border border-border px-2 py-0.5 hover:bg-muted/60"
+              >
+                {l}
+              </button>
+            ))}
+            {positionOptions.slice(0, 6).map(p => (
+              <button
+                key={`pos-${p}`}
+                type="button"
+                onClick={() => selectByPosition(p)}
+                className="text-[11px] rounded-full border border-border px-2 py-0.5 hover:bg-muted/60"
+              >
+                {p}
+              </button>
+            ))}
+            {staffIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setStaffIds([])}
+                className="text-[11px] text-destructive hover:underline ml-1"
+              >
+                Clear {staffIds.length} selected
+              </button>
+            )}
+          </div>
+
           <ScrollArea className="h-56 rounded-md border border-border">
             <div className="divide-y divide-border">
               {filteredStaff.map(s => {
