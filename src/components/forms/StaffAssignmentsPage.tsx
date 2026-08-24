@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Plus, Users, Repeat, CalendarClock, Bell, Search, Trash2, CheckCircle2,
-  AlertTriangle, Clock, CircleDashed, XCircle,
+  AlertTriangle, Clock, CircleDashed, XCircle, Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import AssignFormPanel from './AssignFormPanel';
+import TaskDetailPanel from './TaskDetailPanel';
 import {
   useFormDelivery,
   formDeliveryStore,
@@ -47,6 +48,7 @@ const StaffAssignmentsPage = () => {
   const [selectedId, setSelectedId] = useState<string | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<DerivedTaskStatus | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
 
   const now = new Date();
 
@@ -209,8 +211,16 @@ const StaffAssignmentsPage = () => {
                   const status = deriveStatus(t, now);
                   const assignment = assignments.find(a => a.id === t.assignmentId);
                   return (
-                    <tr key={t.id} className="border-b border-border hover:bg-muted/30">
-                      <td className="px-6 py-2.5 font-medium text-foreground">{t.staffName}</td>
+                    <tr
+                      key={t.id}
+                      className="border-b border-border hover:bg-muted/30 cursor-pointer"
+                      onClick={() => setDetailTaskId(t.id)}
+                    >
+                      <td className="px-6 py-2.5 font-medium">
+                        <button className="text-primary hover:underline" onClick={e => { e.stopPropagation(); setDetailTaskId(t.id); }}>
+                          {t.staffName}
+                        </button>
+                      </td>
                       <td className="px-3 py-2.5 text-muted-foreground">{assignment?.templateName ?? '—'}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{fmtDate(t.occurrenceDate)}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{fmtDateTime(t.dueAt)}</td>
@@ -222,7 +232,10 @@ const StaffAssignmentsPage = () => {
                       <td className="px-3 py-2.5 text-muted-foreground">
                         {t.submittedAt ? fmtDateTime(t.submittedAt) : '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" onClick={() => setDetailTaskId(t.id)}>
+                          <Eye size={13} className="mr-1" /> View
+                        </Button>
                         {status !== 'submitted' && status !== 'cancelled' && (
                           <>
                             <Button
@@ -262,6 +275,13 @@ const StaffAssignmentsPage = () => {
       </div>
 
       <AssignFormPanel open={showAssign} onClose={() => setShowAssign(false)} />
+
+      <TaskDetailPanel
+        open={!!detailTaskId}
+        task={tasks.find(t => t.id === detailTaskId) ?? null}
+        assignment={assignments.find(a => a.id === tasks.find(t => t.id === detailTaskId)?.assignmentId)}
+        onClose={() => setDetailTaskId(null)}
+      />
     </div>
   );
 };
