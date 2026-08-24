@@ -770,7 +770,11 @@ export function PolicyUnscheduled() {
                 <SelectRow
                   {...fieldProps('unscheduled', 'createdShiftEndTimeRule', 'End time for the created shift',
                     'How the end time is set. On clock-in creation the end time is provisional and corrected at clock-out.',
-                    endTimeRuleGuide)}
+                    <>
+                      <p className="font-medium mb-1">Example</p>
+                      <p>Sana clocks in unrostered at 7:00 AM. <em>Fixed duration (8h)</em> creates a 7:00 AM – 3:00 PM shift. <em>Location close</em> ends it at the centre's 6:00 PM closing time. <em>Area default</em> uses Room 3's standard 7:00 AM – 3:30 PM pattern. Whichever is chosen, the end time is corrected to her actual clock-out.</p>
+                      {endTimeRuleGuide}
+                    </>)}
                   value={u.createdShiftEndTimeRule}
                   options={unscheduledEndTimeRuleOptions}
                   onChange={v => setField('unscheduled', 'createdShiftEndTimeRule', v as TimesheetPolicy['unscheduled']['createdShiftEndTimeRule'])}
