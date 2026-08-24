@@ -11,11 +11,14 @@ import {
   Circle,
   Loader2,
   Ban,
-  ExternalLink
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
 import { UnifiedTask, moduleColors, typeLabels } from '@/types/unifiedTasks';
+import { useTaskBoard } from '@/lib/taskBoardStore';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+
 
 interface UnifiedTaskCardProps {
   task: UnifiedTask;
