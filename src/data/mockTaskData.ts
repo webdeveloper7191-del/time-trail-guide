@@ -7,6 +7,7 @@ export const mockPipelines: TaskPipeline[] = [
     name: 'Default Workflow',
     description: 'Standard task progression workflow',
     isDefault: true,
+    scope: 'system',
     stages: [
       { id: 'stage-open', name: 'Open', color: '#3b82f6', order: 0 },
       { id: 'stage-in-progress', name: 'In Progress', color: '#8b5cf6', order: 1 },
@@ -20,6 +21,7 @@ export const mockPipelines: TaskPipeline[] = [
     id: 'pipeline-maintenance',
     name: 'Maintenance Pipeline',
     description: 'For scheduled and reactive maintenance tasks',
+    scope: 'system',
     stages: [
       { id: 'stage-m-requested', name: 'Requested', color: '#f59e0b', order: 0 },
       { id: 'stage-m-scheduled', name: 'Scheduled', color: '#3b82f6', order: 1 },
@@ -34,6 +36,7 @@ export const mockPipelines: TaskPipeline[] = [
     id: 'pipeline-corrective',
     name: 'Corrective Action Pipeline',
     description: 'For compliance and corrective action tracking',
+    scope: 'system',
     stages: [
       { id: 'stage-c-identified', name: 'Identified', color: '#ef4444', order: 0 },
       { id: 'stage-c-investigating', name: 'Investigating', color: '#f59e0b', order: 1 },
