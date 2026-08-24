@@ -131,27 +131,35 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
   };
 
   const handleAssign = () => {
-    if (!canSubmit || !template) return;
-    formDeliveryStore.createAssignment({
-      templateId: template.id,
-      templateName: template.name,
-      title: title.trim() || template.name,
-      mode,
-      dueDate: mode === 'once' ? dueDate : undefined,
-      dueTime,
-      recurrence,
-      staff: staffIds.map(id => {
-        const s = activeStaff.find(x => x.id === id);
-        return { id, name: s ? `${s.firstName} ${s.lastName}` : id };
-      }),
-      reminderEnabled,
-      reminderHoursBefore,
-      notes: notes.trim() || undefined,
+    if (!canSubmit) return;
+    const staff = staffIds.map(id => {
+      const s = activeStaff.find(x => x.id === id);
+      return { id, name: s ? `${s.firstName} ${s.lastName}` : id };
     });
-    toast.success(`Assigned to ${staffIds.length} staff · ${totalTasks} task${totalTasks === 1 ? '' : 's'} created`);
+    selectedTemplates.forEach(template => {
+      formDeliveryStore.createAssignment({
+        templateId: template.id,
+        templateName: template.name,
+        title: title.trim()
+          ? (selectedTemplates.length > 1 ? `${title.trim()} — ${template.name}` : title.trim())
+          : template.name,
+        mode,
+        dueDate: mode === 'once' ? dueDate : undefined,
+        dueTime,
+        recurrence,
+        staff,
+        reminderEnabled,
+        reminderHoursBefore,
+        notes: notes.trim() || undefined,
+      });
+    });
+    toast.success(
+      `${selectedTemplates.length} form${selectedTemplates.length === 1 ? '' : 's'} assigned to ${staffIds.length} staff · ${totalTasks} task${totalTasks === 1 ? '' : 's'} created`
+    );
     reset();
     onClose();
   };
+
 
   const sectionTitle = (icon: React.ReactNode, label: string, hint?: string) => (
     <div className="flex items-start gap-2 mb-3">
