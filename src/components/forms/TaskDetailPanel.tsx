@@ -17,6 +17,8 @@ import {
   type StaffFormAssignment,
   type DerivedTaskStatus,
 } from '@/lib/formDeliveryStore';
+import { mockFormTemplates } from '@/data/mockFormData';
+import type { FormField } from '@/types/forms';
 
 const STATUS_STYLES: Record<DerivedTaskStatus, string> = {
   not_started: 'bg-muted text-muted-foreground border-transparent',
@@ -42,21 +44,115 @@ const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
 
 /**
- * Deterministic sample answers so a submitted task always renders a readable
- * record. Replaced by real captured responses once submissions are persisted.
+ * Builds a full response set from the real template definition so every question
+ * in the form renders with an answer. Falls back to a generic set when the
+ * template can't be resolved. Answers are deterministic per task + field.
  */
-function buildResponses(task: RecipientTask, assignment?: StaffFormAssignment) {
-  const seedNum = task.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const pick = <T,>(arr: T[], offset = 0) => arr[(seedNum + offset) % arr.length];
-  return [
-    { label: 'Completed by', value: task.staffName },
-    { label: 'Location', value: pick(['Riverside Site', 'Northgate Site', 'Central Site']) },
-    { label: 'Shift', value: pick(['Morning (6:00 AM - 2:00 PM)', 'Afternoon (2:00 PM - 10:00 PM)', 'Night (10:00 PM - 6:00 AM)'], 3) },
-    { label: 'All checks passed?', value: pick(['Yes', 'Yes', 'No — see notes'], 5) },
-    { label: 'Issues identified', value: pick(['None', 'Minor — logged for follow up', 'None'], 7) },
-    { label: 'Notes', value: pick(['Everything in order at handover.', 'Reported to supervisor on shift.', 'No exceptions to record.'], 11) },
-    { label: 'Acknowledgement', value: `Signed electronically by ${task.staffName}` },
-  ].concat(assignment ? [{ label: 'Form version', value: `${assignment.templateName} · v1.0` }] : []);
+function hash(str: string) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+interface AnswerRow {
+  id: string;
+  label: string;
+  value: string;
+  required?: boolean;
+}
+interface AnswerGroup {
+  id: string;
+  title: string;
+  description?: string;
+  rows: AnswerRow[];
+}
+
+function answerForField(field: FormField, task: RecipientTask): string {
+  const seed = hash(task.id + field.id);
+  const pick = <T,>(arr: T[]) => arr[seed % arr.length];
+  const opts = field.options?.length ? field.options.map(o => o.label) : null;
+
+  switch (field.type) {
+    case 'checkbox':
+      return seed % 7 === 0 ? 'No' : 'Yes';
+    case 'radio':
+    case 'select':
+    case 'dropdown':
+    case 'multi_select':
+      return opts ? pick(opts) : 'Yes';
+    case 'number':
+      return String((seed % 12) + 1);
+    case 'rating':
+      return `${(seed % 5) + 1} / 5`;
+    case 'date':
+      return fmtDate(task.occurrenceDate);
+    case 'time':
+      return pick(['7:15 AM', '9:00 AM', '1:30 PM', '5:45 PM']);
+    case 'signature':
+      return `Signed electronically by ${task.staffName}`;
+    case 'photo_upload':
+    case 'file_upload':
+      return pick(['1 file attached', '2 files attached', 'No attachment']);
+    case 'long_text':
+      return pick([
+        'Everything in order at handover.',
+        'Minor issue logged and reported to the supervisor.',
+        'No exceptions to record for this shift.',
+      ]);
+    case 'short_text':
+    case 'text':
+      return pick([task.staffName, 'Completed as per procedure', 'N/A']);
+    default:
+      return pick(['Yes', 'Completed', 'N/A']);
+  }
+}
+
+function buildResponseGroups(task: RecipientTask, assignment?: StaffFormAssignment): AnswerGroup[] {
+  const template =
+    mockFormTemplates.find(t => t.id === assignment?.templateId) ??
+    mockFormTemplates.find(t => t.name === assignment?.templateName);
+
+  if (!template || !template.fields?.length) {
+    const seed = hash(task.id);
+    const pick = <T,>(arr: T[], o = 0) => arr[(seed + o) % arr.length];
+    return [
+      {
+        id: 'general',
+        title: 'Responses',
+        rows: [
+          { id: 'r1', label: 'Completed by', value: task.staffName },
+          { id: 'r2', label: 'Location', value: pick(['Riverside Site', 'Northgate Site', 'Central Site']) },
+          { id: 'r3', label: 'All checks passed?', value: pick(['Yes', 'Yes', 'No — see notes'], 5) },
+          { id: 'r4', label: 'Issues identified', value: pick(['None', 'Minor — logged for follow up'], 7) },
+          { id: 'r5', label: 'Notes', value: pick(['Everything in order at handover.', 'No exceptions to record.'], 11) },
+          { id: 'r6', label: 'Acknowledgement', value: `Signed electronically by ${task.staffName}` },
+        ],
+      },
+    ];
+  }
+
+  const fields = [...template.fields].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sections = [...(template.sections ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const groups: AnswerGroup[] = sections.map(s => ({
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    rows: fields
+      .filter(f => f.sectionId === s.id)
+      .map(f => ({ id: f.id, label: f.label, value: answerForField(f, task), required: f.required })),
+  }));
+
+  const ungrouped = fields.filter(f => !f.sectionId || !sections.some(s => s.id === f.sectionId));
+  if (ungrouped.length) {
+    groups.push({
+      id: 'ungrouped',
+      title: sections.length ? 'Other questions' : 'Questions',
+      rows: ungrouped.map(f => ({ id: f.id, label: f.label, value: answerForField(f, task), required: f.required })),
+    });
+  }
+
+  return groups.filter(g => g.rows.length > 0);
 }
 
 interface Props {
@@ -67,7 +163,8 @@ interface Props {
 }
 
 const TaskDetailPanel = ({ task, assignment, open, onClose }: Props) => {
-  const responses = useMemo(() => (task ? buildResponses(task, assignment) : []), [task, assignment]);
+  const groups = useMemo(() => (task ? buildResponseGroups(task, assignment) : []), [task, assignment]);
+  const totalQuestions = groups.reduce((n, g) => n + g.rows.length, 0);
   if (!task) return null;
 
   const status = deriveStatus(task);
@@ -161,13 +258,29 @@ const TaskDetailPanel = ({ task, assignment, open, onClose }: Props) => {
       <div className="rounded-lg border border-border bg-card">
         <div className="px-4 py-3 border-b border-border">
           <p className="text-sm font-semibold text-foreground">Submitted responses</p>
+          {isSubmitted && (
+            <p className="text-xs text-muted-foreground">{totalQuestions} question{totalQuestions === 1 ? '' : 's'} answered</p>
+          )}
         </div>
         {isSubmitted ? (
           <div className="divide-y divide-border">
-            {responses.map(r => (
-              <div key={r.label} className="px-4 py-2.5 grid grid-cols-[180px_1fr] gap-3 text-sm">
-                <span className="text-muted-foreground">{r.label}</span>
-                <span className="text-foreground">{r.value}</span>
+            {groups.map(g => (
+              <div key={g.id}>
+                <div className="px-4 py-2 bg-muted/40 border-b border-border">
+                  <p className="text-xs font-semibold text-foreground">{g.title}</p>
+                  {g.description && <p className="text-[11px] text-muted-foreground">{g.description}</p>}
+                </div>
+                <div className="divide-y divide-border">
+                  {g.rows.map(r => (
+                    <div key={r.id} className="px-4 py-2.5 grid grid-cols-[minmax(180px,45%)_1fr] gap-3 text-sm">
+                      <span className="text-muted-foreground">
+                        {r.label}
+                        {r.required && <span className="text-destructive ml-0.5">*</span>}
+                      </span>
+                      <span className="text-foreground">{r.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
