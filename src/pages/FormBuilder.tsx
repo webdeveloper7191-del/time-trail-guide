@@ -60,7 +60,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'system' | 'tenant' | 'builder' | 'preview' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
+type ViewMode = 'system' | 'tenant' | 'builder' | 'preview' | 'assign' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
 
 export default function FormBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('tenant');
@@ -92,7 +92,7 @@ export default function FormBuilder() {
   // Deep link support: /forms?view=system|tenant|assignments|submissions|tasks|analytics
   useEffect(() => {
     const view = searchParams.get('view') as ViewMode | null;
-    const valid: ViewMode[] = ['system', 'tenant', 'assignments', 'submissions', 'tasks', 'analytics'];
+    const valid: ViewMode[] = ['system', 'tenant', 'assign', 'assignments', 'submissions', 'tasks', 'analytics'];
     if (view && valid.includes(view)) setViewMode(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -348,13 +348,14 @@ export default function FormBuilder() {
 
   // Sub-tabs within the "Assign & Track" sub-menu
   const topTabs: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
-    { key: 'assignments', label: 'Assignment Rules', icon: <Send size={16} /> },
+    { key: 'assign', label: 'Staff Assignments', icon: <Users size={16} /> },
+    { key: 'assignments', label: 'Automation Rules', icon: <Send size={16} /> },
     { key: 'submissions', label: 'Submissions', icon: <ClipboardCheck size={16} /> },
     { key: 'tasks', label: 'Tasks', icon: <ListTodo size={16} /> },
     { key: 'analytics', label: 'Analytics', icon: <BarChart3 size={16} /> },
   ];
 
-  const deliveryModes: ViewMode[] = ['assignments', 'submissions', 'tasks', 'analytics'];
+  const deliveryModes: ViewMode[] = ['assign', 'assignments', 'submissions', 'tasks', 'analytics'];
 
   // Three primary sub-menus
   const subMenus: { key: ViewMode | 'delivery'; label: string; icon: React.ReactNode }[] = [
@@ -443,7 +444,7 @@ export default function FormBuilder() {
               return (
                 <button
                   key={item.key}
-                  onClick={() => handleViewModeChange(item.key === 'delivery' ? 'assignments' : (item.key as ViewMode))}
+                  onClick={() => handleViewModeChange(item.key === 'delivery' ? 'assign' : (item.key as ViewMode))}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
                     active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -504,6 +505,10 @@ export default function FormBuilder() {
           searchQuery={templateSearch}
           onSearchChange={setTemplateSearch}
         />
+      )}
+
+      {viewMode === 'assign' && (
+        <Box sx={{ flex: 1, overflow: 'hidden' }}><StaffAssignmentsPage /></Box>
       )}
 
       {viewMode === 'assignments' && (
