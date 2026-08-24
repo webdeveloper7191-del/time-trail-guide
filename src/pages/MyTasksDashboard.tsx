@@ -26,6 +26,7 @@ import {
 import { UnifiedTask, TaskFilter, defaultTaskFilter } from '@/types/unifiedTasks';
 import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
 import { applyOverrides, useTaskBoard } from '@/lib/taskBoardStore';
+import { TaskDetailDrawer } from '@/components/tasks/TaskDetailDrawer';
 import { cn } from '@/lib/utils';
 
 // Mock current user
@@ -105,14 +106,22 @@ const MyTasksDashboard: React.FC = () => {
     return getTaskStats(tasksForStats);
   }, [baseTasks]);
 
-  const handleTaskClick = (task: UnifiedTask) => {
-    // Navigate to the appropriate module's task detail
+  // Cards open the detail drawer; the drawer can jump through to the module.
+  const handleTaskClick = (task: UnifiedTask) => setSelectedTask(task);
+
+  const handleOpenInModule = (task: UnifiedTask) => {
     if (task.module === 'forms') {
       navigate(`/forms?tab=tasks&taskId=${task.id}`);
     } else if (task.module === 'performance') {
       navigate(`/performance?tab=tasks&taskId=${task.id}`);
     }
   };
+
+  // Keep the drawer in sync with saved edits.
+  const liveSelectedTask = useMemo(
+    () => (selectedTask ? baseTasks.find(t => t.id === selectedTask.id) ?? selectedTask : null),
+    [selectedTask, baseTasks],
+  );
 
   const handleQuickFilterClick = (filterId: string) => {
     setQuickFilter(quickFilter === filterId ? 'all' : filterId);
@@ -245,6 +254,13 @@ const MyTasksDashboard: React.FC = () => {
           </CardContent>
         </Card>
       </main>
+
+      <TaskDetailDrawer
+        task={liveSelectedTask}
+        open={Boolean(liveSelectedTask)}
+        onClose={() => setSelectedTask(null)}
+        onOpenInModule={handleOpenInModule}
+      />
     </div>
   );
 };
