@@ -78,7 +78,20 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     });
   }, [task]);
 
+  useEffect(() => { setCommentDraft(''); }, [task?.id]);
+
   if (!task) return null;
+
+  const thread = board.comments[task.id] ?? [];
+  const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const handlePostComment = () => {
+    if (!commentDraft.trim()) return;
+    taskBoardStore.addComment(task.id, commentDraft);
+    setCommentDraft('');
+    toast.success(thread.length ? 'Comment added' : 'Comment thread started');
+  };
+
 
   const dirty =
     form.title !== task.title ||
