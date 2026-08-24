@@ -26,6 +26,7 @@ import {
   Image as ImageIcon,
   GitBranch,
 } from 'lucide-react';
+import { taskTypesStore } from '@/lib/masterData/taskTypesStore';
 import { Task, TaskFormData, TaskType, TaskPriority, TaskAttachment, TaskPipeline } from '@/types/tasks';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockLocations, mockAreas } from '@/data/mockLocationData';
@@ -44,7 +45,7 @@ interface TaskEditDrawerProps {
   onManagePipelines?: () => void;
 }
 
-const typeOptions: { value: TaskType; label: string }[] = [
+const fallbackTypeOptions: { value: string; label: string; color?: string }[] = [
   { value: 'work_order', label: 'Work Order' },
   { value: 'corrective_action', label: 'Corrective Action' },
   { value: 'maintenance_request', label: 'Maintenance Request' },
