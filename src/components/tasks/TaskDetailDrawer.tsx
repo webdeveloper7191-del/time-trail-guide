@@ -7,14 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { ClipboardList, ExternalLink, Calendar, MapPin, AlertTriangle } from 'lucide-react';
+import { ClipboardList, ExternalLink, Calendar, MapPin, AlertTriangle, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UnifiedTask, moduleColors, typeLabels } from '@/types/unifiedTasks';
-import { taskBoardStore } from '@/lib/taskBoardStore';
+import { taskBoardStore, useTaskBoard } from '@/lib/taskBoardStore';
 import { mockStaff } from '@/data/mockStaffData';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
 
 interface TaskDetailDrawerProps {
   task: UnifiedTask | null;
