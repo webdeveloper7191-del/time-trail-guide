@@ -47,6 +47,7 @@ const StaffAssignmentsPage = () => {
   const [selectedId, setSelectedId] = useState<string | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<DerivedTaskStatus | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
 
   const now = new Date();
 
