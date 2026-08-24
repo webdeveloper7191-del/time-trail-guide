@@ -227,7 +227,82 @@ export function PipelineManagerDrawer({
                 sx={{ height: 20, '& .MuiChip-label': { px: 0.75, fontSize: '0.65rem' } }}
               />
               {pipeline.isDefault && (
-                <Typography variant="caption" color="primary.main">(Default)</Typography>                <Box>
+                <Typography variant="caption" color="primary.main">(Default)</Typography>
+              )}
+            </Stack>
+          }
+          secondary={
+            <Stack direction="row" spacing={0.5} sx={{ mt: 1 }}>
+              {pipeline.stages.slice(0, 5).map(stage => (
+                <Box
+                  key={stage.id}
+                  sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: stage.color }}
+                />
+              ))}
+              <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                {pipeline.stages.length} stages
+              </Typography>
+            </Stack>
+          }
+        />
+        <ListItemSecondaryAction>
+          <IconButton
+            size="small"
+            title="Copy to my pipelines"
+            onClick={(e) => { e.stopPropagation(); handleDuplicateToPersonal(pipeline); }}
+          >
+            <Copy size={16} />
+          </IconButton>
+          <IconButton
+            size="small"
+            title={system ? 'System pipelines are managed at team level' : 'Delete pipeline'}
+            onClick={(e) => { e.stopPropagation(); handleDeletePipeline(pipeline.id); }}
+            disabled={pipeline.isDefault || system}
+          >
+            {system ? <Lock size={16} /> : <Trash2 size={16} />}
+          </IconButton>
+        </ListItemSecondaryAction>
+      </ListItem>
+    );
+  };
+
+  return (
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      PaperProps={{ sx: { width: 520 } }}
+    >
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6" fontWeight={600}>
+              {isEditing ? (editingSystem ? 'Pipeline (team)' : 'Edit Pipeline') : 'Task Pipelines'}
+            </Typography>
+            <IconButton size="small" onClick={onClose}>
+              <X size={18} />
+            </IconButton>
+          </Stack>
+        </Box>
+
+        {/* Content */}
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {!isEditing ? (
+            <Box sx={{ p: 2 }}>
+              <Stack spacing={2}>
+                <MuiButton
+                  variant="outlined"
+                  startIcon={<Plus size={16} />}
+                  onClick={handleCreateNew}
+                  fullWidth
+                >
+                  Create My Pipeline
+                </MuiButton>
+
+                <Divider />
+
+                <Box>
                   <Typography variant="overline" color="text.secondary">
                     Team pipelines (system)
                   </Typography>
@@ -250,62 +325,7 @@ export function PipelineManagerDrawer({
                       {personalPipelines.map(renderPipelineItem)}
                     </List>
                   )}
-                </Box>         mb: 1,
-                        cursor: 'pointer',
-                        '&:hover': { bgcolor: 'grey.50' },
-                      }}
-                      onClick={() => {
-                        setSelectedPipeline(pipeline);
-                        setIsEditing(true);
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="subtitle2" fontWeight={600}>
-                              {pipeline.name}
-                            </Typography>
-                            {pipeline.isDefault && (
-                              <Typography variant="caption" color="primary.main">
-                                (Default)
-                              </Typography>
-                            )}
-                          </Stack>
-                        }
-                        secondary={
-                          <Stack direction="row" spacing={0.5} sx={{ mt: 1 }}>
-                            {pipeline.stages.slice(0, 5).map(stage => (
-                              <Box
-                                key={stage.id}
-                                sx={{
-                                  width: 8,
-                                  height: 8,
-                                  borderRadius: '50%',
-                                  bgcolor: stage.color,
-                                }}
-                              />
-                            ))}
-                            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                              {pipeline.stages.length} stages
-                            </Typography>
-                          </Stack>
-                        }
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePipeline(pipeline.id);
-                          }}
-                          disabled={pipeline.isDefault}
-                        >
-                          <Trash2 size={16} />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
+                </Box>
               </Stack>
             </Box>
           ) : (
