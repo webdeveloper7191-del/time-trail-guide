@@ -1,8 +1,18 @@
 import { useMemo, useState } from 'react';
 import {
   Plus, Users, Repeat, CalendarClock, Bell, Search, Trash2, CheckCircle2,
-  AlertTriangle, Clock, CircleDashed, XCircle, Eye,
+  AlertTriangle, Clock, CircleDashed, XCircle, Eye, Download, ChevronDown,
+  ExternalLink, ListChecks, FilterX,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { mockStaff } from '@/data/mockStaffData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +47,23 @@ const STATUS_ICONS: Record<DerivedTaskStatus, React.ReactNode> = {
   cancelled: <XCircle size={12} />,
 };
 
+/** staffId -> locations, sourced from the workforce master data. */
+const STAFF_LOCATIONS: Record<string, string[]> = Object.fromEntries(
+  mockStaff.map(s => [s.id, s.locations ?? []])
+);
+const staffLocations = (staffId: string) => STAFF_LOCATIONS[staffId] ?? [];
+
+const csvEscape = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+const downloadCsv = (filename: string, rows: string[][]) => {
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtDateTime = (iso: string) =>
@@ -49,8 +76,37 @@ const StaffAssignmentsPage = () => {
   const [statusFilter, setStatusFilter] = useState<DerivedTaskStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [templateFilter, setTemplateFilter] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const navigate = useNavigate();
 
   const now = new Date();
+
+  const locationOptions = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach(t => staffLocations(t.staffId).forEach(l => set.add(l)));
+    return Array.from(set).sort();
+  }, [tasks]);
+
+  const templateOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    assignments.forEach(a => map.set(a.templateId, a.templateName));
+    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [assignments]);
+
+  const filtersActive =
+    locationFilter !== 'all' || templateFilter !== 'all' || !!fromDate || !!toDate || statusFilter !== 'all' || !!search;
+
+  const clearFilters = () => {
+    setLocationFilter('all');
+    setTemplateFilter('all');
+    setFromDate('');
+    setToDate('');
+    setStatusFilter('all');
+    setSearch('');
+  };
 
   const scopedTasks = useMemo(
     () => (selectedId === 'all' ? tasks : tasks.filter(t => t.assignmentId === selectedId)),
@@ -69,9 +125,57 @@ const StaffAssignmentsPage = () => {
     return scopedTasks
       .filter(t => statusFilter === 'all' || deriveStatus(t, now) === statusFilter)
       .filter(t => !q || t.staffName.toLowerCase().includes(q))
+      .filter(t => locationFilter === 'all' || staffLocations(t.staffId).includes(locationFilter))
+      .filter(t => {
+        if (templateFilter === 'all') return true;
+        const a = assignments.find(x => x.id === t.assignmentId);
+        return a?.templateId === templateFilter;
+      })
+      .filter(t => (!fromDate || t.occurrenceDate >= fromDate) && (!toDate || t.occurrenceDate <= toDate))
       .sort((a, b) => a.dueAt.localeCompare(b.dueAt));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopedTasks, statusFilter, search]);
+  }, [scopedTasks, statusFilter, search, locationFilter, templateFilter, fromDate, toDate, assignments]);
+
+  const buildRows = (list: typeof tasks) => [
+    ['Assignment', 'Form', 'Staff', 'Locations', 'Occurrence', 'Due', 'Status', 'Submitted at', 'Reminders', 'Submission ID'],
+    ...list.map(t => {
+      const a = assignments.find(x => x.id === t.assignmentId);
+      return [
+        a?.title ?? '—',
+        a?.templateName ?? '—',
+        t.staffName,
+        staffLocations(t.staffId).join(' | '),
+        t.occurrenceDate,
+        t.dueAt,
+        TASK_STATUS_LABELS[deriveStatus(t, now)],
+        t.submittedAt ?? '',
+        String(t.remindersSent),
+        t.submissionId ?? '',
+      ];
+    }),
+  ];
+
+  const slug = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const exportCurrentView = () => {
+    if (!visibleTasks.length) { toast.info('Nothing to export in this view.'); return; }
+    downloadCsv(`form-tasks-${new Date().toISOString().slice(0, 10)}.csv`, buildRows(visibleTasks));
+    toast.success(`Exported ${visibleTasks.length} task${visibleTasks.length === 1 ? '' : 's'}`);
+  };
+
+  const exportAssignment = (assignmentId: string) => {
+    const a = assignments.find(x => x.id === assignmentId);
+    const list = tasks.filter(t => t.assignmentId === assignmentId);
+    if (!list.length) { toast.info('This assignment has no tasks yet.'); return; }
+    downloadCsv(`assignment-${slug(a?.title ?? assignmentId)}.csv`, buildRows(list));
+    toast.success(`Exported ${list.length} task${list.length === 1 ? '' : 's'} for ${a?.title ?? 'assignment'}`);
+  };
+
+  const openInTasks = (staffName?: string) => {
+    const params = new URLSearchParams({ module: 'forms', showCompleted: 'true' });
+    if (staffName) params.set('search', staffName);
+    navigate(`/my-tasks?${params.toString()}`);
+  };
 
   const overall = summariseAssignment(scopedTasks, now);
 
@@ -93,6 +197,34 @@ const StaffAssignmentsPage = () => {
           <p className="text-sm text-muted-foreground">Send forms to staff once-off or on a recurring schedule and follow submission status.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => openInTasks()}>
+            <ListChecks size={14} className="mr-1.5" /> Open in Tasks
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download size={14} className="mr-1.5" /> Export <ChevronDown size={13} className="ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 bg-popover z-50">
+              <DropdownMenuItem onClick={exportCurrentView}>
+                Current view ({visibleTasks.length})
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs">Export by assignment</DropdownMenuLabel>
+              {assignments.length === 0 && (
+                <DropdownMenuItem disabled>No assignments</DropdownMenuItem>
+              )}
+              {assignments.map(a => (
+                <DropdownMenuItem key={a.id} onClick={() => exportAssignment(a.id)}>
+                  <span className="truncate">{a.title}</span>
+                  <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                    {tasks.filter(t => t.assignmentId === a.id).length}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" size="sm" onClick={remindOutstanding}>
             <Bell size={14} className="mr-1.5" /> Remind outstanding
           </Button>
@@ -193,6 +325,38 @@ const StaffAssignmentsPage = () => {
             )}
           </div>
 
+          {/* Data filters */}
+          <div className="px-6 py-2.5 border-b border-border flex items-center gap-2 flex-wrap bg-muted/20">
+            <Select value={locationFilter} onValueChange={setLocationFilter}>
+              <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue placeholder="All locations" /></SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">All locations</SelectItem>
+                {locationOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={templateFilter} onValueChange={setTemplateFilter}>
+              <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue placeholder="All forms" /></SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">All forms</SelectItem>
+                {templateOptions.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">From</span>
+              <Input type="date" className="h-8 w-[150px] text-xs" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+              <span className="text-xs text-muted-foreground">To</span>
+              <Input type="date" className="h-8 w-[150px] text-xs" value={toDate} onChange={e => setToDate(e.target.value)} />
+            </div>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {visibleTasks.length} of {scopedTasks.length} tasks
+            </span>
+            {filtersActive && (
+              <Button variant="ghost" size="sm" className="h-8 ml-auto" onClick={clearFilters}>
+                <FilterX size={13} className="mr-1.5" /> Clear filters
+              </Button>
+            )}
+          </div>
+
           <ScrollArea className="flex-1">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/40 backdrop-blur">
@@ -235,6 +399,9 @@ const StaffAssignmentsPage = () => {
                       <td className="px-3 py-2.5 text-right whitespace-nowrap" onClick={e => e.stopPropagation()}>
                         <Button variant="ghost" size="sm" onClick={() => setDetailTaskId(t.id)}>
                           <Eye size={13} className="mr-1" /> View
+                        </Button>
+                        <Button variant="ghost" size="sm" title="Open in Tasks" onClick={() => openInTasks(t.staffName)}>
+                          <ExternalLink size={13} className="mr-1" /> Task
                         </Button>
                         {status !== 'submitted' && status !== 'cancelled' && (
                           <>
