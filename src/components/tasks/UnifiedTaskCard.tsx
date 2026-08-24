@@ -39,9 +39,13 @@ const priorityColors: Record<string, string> = {
 };
 
 export const UnifiedTaskCard: React.FC<UnifiedTaskCardProps> = ({ task, onClick, compact = false }) => {
+  const board = useTaskBoard();
+  const commentCount = board.comments[task.id]?.length ?? 0;
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
 
   return (
     <Card 
