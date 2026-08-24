@@ -193,7 +193,34 @@ export const taskBoardStore = {
     state.overrides = {};
     emit();
   },
+
+  /** Start or continue a card's comment thread. */
+  addComment(taskId: string, text: string, authorName = 'You') {
+    const body = text.trim();
+    if (!body) return;
+    const comment: BoardComment = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      taskId,
+      authorName,
+      text: body,
+      createdAt: new Date().toISOString(),
+    };
+    state.comments = {
+      ...state.comments,
+      [taskId]: [...(state.comments[taskId] ?? []), comment],
+    };
+    emit();
+  },
+
+  deleteComment(taskId: string, commentId: string) {
+    state.comments = {
+      ...state.comments,
+      [taskId]: (state.comments[taskId] ?? []).filter(c => c.id !== commentId),
+    };
+    emit();
+  },
 };
+
 
 export function useTaskBoard() {
   return useSyncExternalStore(taskBoardStore.subscribe, taskBoardStore.getSnapshot, taskBoardStore.getSnapshot);
