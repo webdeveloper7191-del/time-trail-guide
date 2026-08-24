@@ -726,7 +726,11 @@ export function PolicyUnscheduled() {
           <SelectRow
             {...fieldProps('unscheduled', 'rosterFlagSeverity', 'Flag severity on the roster',
               'The marker shown on the roster cell. Critical also raises a compliance alert.',
-              rosterFlagSeverityGuide)}
+              <>
+                <p className="font-medium mb-1">Example</p>
+                <p>Set to <em>Warning</em>: the roster cell for Sana's unrostered Tuesday shows an amber marker the manager can clear during review. Set to <em>Critical</em>: the same cell turns red and a compliance alert is raised, so payroll cannot close the week until it is resolved.</p>
+                {rosterFlagSeverityGuide}
+              </>)}
             value={u.rosterFlagSeverity}
             options={unscheduledRosterFlagOptions}
             onChange={v => setField('unscheduled', 'rosterFlagSeverity', v as TimesheetPolicy['unscheduled']['rosterFlagSeverity'])}
