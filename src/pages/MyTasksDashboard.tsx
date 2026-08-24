@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,8 +34,16 @@ const CURRENT_USER = {
 
 const MyTasksDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [showMyTasksOnly, setShowMyTasksOnly] = useState(true);
-  const [filter, setFilter] = useState<TaskFilter>(defaultTaskFilter);
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') ?? '';
+  const initialModule = searchParams.get('module');
+  const [showMyTasksOnly, setShowMyTasksOnly] = useState(!searchParams.get('search') && !initialModule);
+  const [filter, setFilter] = useState<TaskFilter>({
+    ...defaultTaskFilter,
+    search: initialSearch,
+    modules: initialModule ? [initialModule as TaskFilter['modules'][number]] : defaultTaskFilter.modules,
+    showCompleted: searchParams.get('showCompleted') === 'true' ? true : defaultTaskFilter.showCompleted,
+  });
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'module' | 'status'>('dueDate');
   const [selectedTask, setSelectedTask] = useState<UnifiedTask | null>(null);
