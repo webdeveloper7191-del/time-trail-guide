@@ -75,6 +75,11 @@ export function TaskEditDrawer({
   onSave,
   onManagePipelines,
 }: TaskEditDrawerProps) {
+  const masterTaskTypes = taskTypesStore.use();
+  const typeOptions = masterTaskTypes.length
+    ? masterTaskTypes.filter(t => t.status === 'active').map(t => ({ value: t.id, label: t.label, color: t.color }))
+    : fallbackTypeOptions;
+
   const [formData, setFormData] = useState<TaskFormData>({
     title: '',
     description: '',
