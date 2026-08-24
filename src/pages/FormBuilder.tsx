@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Box, 
   Stack, 
@@ -63,6 +64,7 @@ type ViewMode = 'system' | 'tenant' | 'builder' | 'preview' | 'assignments' | 's
 
 export default function FormBuilder() {
   const [viewMode, setViewMode] = useState<ViewMode>('tenant');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [templateSearch, setTemplateSearch] = useState('');
   const [showInstallPanel, setShowInstallPanel] = useState(false);
   const [templates, setTemplates] = useState<FormTemplate[]>(
@@ -86,6 +88,14 @@ export default function FormBuilder() {
   const [targetSubmissionId, setTargetSubmissionId] = useState<string | null>(null);
   const [targetTaskId, setTargetTaskId] = useState<string | null>(null);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+
+  // Deep link support: /forms?view=system|tenant|assignments|submissions|tasks|analytics
+  useEffect(() => {
+    const view = searchParams.get('view') as ViewMode | null;
+    const valid: ViewMode[] = ['system', 'tenant', 'assignments', 'submissions', 'tasks', 'analytics'];
+    if (view && valid.includes(view)) setViewMode(view);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleNavigateToSubmission = (submissionId: string) => {
     setTargetSubmissionId(submissionId);
