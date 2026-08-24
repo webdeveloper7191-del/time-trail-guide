@@ -209,8 +209,16 @@ const StaffAssignmentsPage = () => {
                   const status = deriveStatus(t, now);
                   const assignment = assignments.find(a => a.id === t.assignmentId);
                   return (
-                    <tr key={t.id} className="border-b border-border hover:bg-muted/30">
-                      <td className="px-6 py-2.5 font-medium text-foreground">{t.staffName}</td>
+                    <tr
+                      key={t.id}
+                      className="border-b border-border hover:bg-muted/30 cursor-pointer"
+                      onClick={() => setDetailTaskId(t.id)}
+                    >
+                      <td className="px-6 py-2.5 font-medium">
+                        <button className="text-primary hover:underline" onClick={e => { e.stopPropagation(); setDetailTaskId(t.id); }}>
+                          {t.staffName}
+                        </button>
+                      </td>
                       <td className="px-3 py-2.5 text-muted-foreground">{assignment?.templateName ?? '—'}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{fmtDate(t.occurrenceDate)}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{fmtDateTime(t.dueAt)}</td>
