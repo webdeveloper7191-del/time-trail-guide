@@ -352,17 +352,17 @@ export default function FormBuilder() {
     { key: 'assign', label: 'Staff Assignments', icon: <Users size={16} /> },
     { key: 'assignments', label: 'Automation Rules', icon: <Send size={16} /> },
     { key: 'submissions', label: 'Submissions', icon: <ClipboardCheck size={16} /> },
-    { key: 'tasks', label: 'Tasks', icon: <ListTodo size={16} /> },
     { key: 'analytics', label: 'Analytics', icon: <BarChart3 size={16} /> },
   ];
 
-  const deliveryModes: ViewMode[] = ['assign', 'assignments', 'submissions', 'tasks', 'analytics'];
+  const deliveryModes: ViewMode[] = ['assign', 'assignments', 'submissions', 'analytics'];
 
   // Three primary sub-menus
   const subMenus: { key: ViewMode | 'delivery'; label: string; icon: React.ReactNode }[] = [
     { key: 'system', label: 'Industry Library (System Admin)', icon: <Globe size={16} /> },
     { key: 'tenant', label: 'My Templates (Tenant Admin)', icon: <Building2 size={16} /> },
     { key: 'delivery', label: 'Assign & Track', icon: <Users size={16} /> },
+    { key: 'tasks', label: 'Tasks', icon: <ListTodo size={16} /> },
   ];
 
 
