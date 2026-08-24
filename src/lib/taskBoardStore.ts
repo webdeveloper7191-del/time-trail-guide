@@ -111,6 +111,7 @@ function load(): BoardState {
     swimlaneBy: 'none',
     customColumns: DEFAULT_CUSTOM_COLUMNS,
     overrides: {},
+    comments: {},
   };
   if (typeof window === 'undefined') return fallback;
   try {
@@ -122,7 +123,9 @@ function load(): BoardState {
       swimlaneBy: parsed.swimlaneBy ?? fallback.swimlaneBy,
       customColumns: parsed.customColumns?.length ? parsed.customColumns : fallback.customColumns,
       overrides: parsed.overrides ?? {},
+      comments: parsed.comments ?? {},
     };
+
   } catch {
     return fallback;
   }
