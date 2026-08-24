@@ -1,0 +1,226 @@
+import { useSyncExternalStore } from 'react';
+import { UnifiedTask } from '@/types/unifiedTasks';
+
+/**
+ * Kanban board configuration for the Tasks module.
+ *
+ * Boards can group cards by a built-in field (status, priority, module, due
+ * bucket) or by user-defined custom columns. Custom column placement and any
+ * drag-driven field changes are stored as per-task overrides so the mock data
+ * layer stays untouched.
+ */
+
+export type BoardGroupBy = 'status' | 'priority' | 'module' | 'due' | 'custom';
+
+export interface BoardColumn {
+  id: string;
+  title: string;
+  /** Semantic tone used for the column accent. */
+  tone: 'neutral' | 'info' | 'progress' | 'warning' | 'danger' | 'success';
+  /** Optional WIP limit — cards beyond this show a warning. */
+  wipLimit?: number;
+}
+
+export interface TaskOverride {
+  status?: string;
+  priority?: string;
+  customColumnId?: string;
+}
+
+interface BoardState {
+  groupBy: BoardGroupBy;
+  customColumns: BoardColumn[];
+  overrides: Record<string, TaskOverride>;
+}
+
+export const TONE_CLASSES: Record<BoardColumn['tone'], string> = {
+  neutral: 'bg-muted text-muted-foreground',
+  info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  progress: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  warning: 'bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100',
+  danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+};
+
+export const TONE_OPTIONS: BoardColumn['tone'][] = ['neutral', 'info', 'progress', 'warning', 'danger', 'success'];
+
+const STATUS_COLUMNS: BoardColumn[] = [
+  { id: 'open', title: 'Open', tone: 'info' },
+  { id: 'in_progress', title: 'In progress', tone: 'progress' },
+  { id: 'blocked', title: 'Blocked', tone: 'danger' },
+  { id: 'completed', title: 'Completed', tone: 'success' },
+  { id: 'cancelled', title: 'Cancelled', tone: 'neutral' },
+];
+
+const PRIORITY_COLUMNS: BoardColumn[] = [
+  { id: 'critical', title: 'Critical', tone: 'danger' },
+  { id: 'high', title: 'High', tone: 'warning' },
+  { id: 'medium', title: 'Medium', tone: 'info' },
+  { id: 'low', title: 'Low', tone: 'neutral' },
+];
+
+const MODULE_COLUMNS: BoardColumn[] = [
+  { id: 'forms', title: 'Forms & Audits', tone: 'info' },
+  { id: 'performance', title: 'Performance', tone: 'progress' },
+  { id: 'roster', title: 'Roster', tone: 'success' },
+  { id: 'timesheet', title: 'Timesheets', tone: 'warning' },
+];
+
+const DUE_COLUMNS: BoardColumn[] = [
+  { id: 'overdue', title: 'Overdue', tone: 'danger' },
+  { id: 'today', title: 'Due today', tone: 'warning' },
+  { id: 'week', title: 'Next 7 days', tone: 'info' },
+  { id: 'later', title: 'Later', tone: 'neutral' },
+  { id: 'no_date', title: 'No due date', tone: 'neutral' },
+];
+
+const DEFAULT_CUSTOM_COLUMNS: BoardColumn[] = [
+  { id: 'col-backlog', title: 'Backlog', tone: 'neutral' },
+  { id: 'col-ready', title: 'Ready', tone: 'info' },
+  { id: 'col-doing', title: 'Doing', tone: 'progress', wipLimit: 5 },
+  { id: 'col-review', title: 'Review', tone: 'warning' },
+  { id: 'col-done', title: 'Done', tone: 'success' },
+];
+
+const STORAGE_KEY = 'rostered.taskBoard.v1';
+
+function load(): BoardState {
+  const fallback: BoardState = { groupBy: 'status', customColumns: DEFAULT_CUSTOM_COLUMNS, overrides: {} };
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<BoardState>;
+    return {
+      groupBy: parsed.groupBy ?? fallback.groupBy,
+      customColumns: parsed.customColumns?.length ? parsed.customColumns : fallback.customColumns,
+      overrides: parsed.overrides ?? {},
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+let state: BoardState = load();
+const listeners = new Set<() => void>();
+
+function emit() {
+  state = { ...state };
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* storage unavailable — board still works in-memory */
+  }
+  listeners.forEach(l => l());
+}
+
+export const taskBoardStore = {
+  subscribe: (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; },
+  getSnapshot: () => state,
+
+  setGroupBy(groupBy: BoardGroupBy) {
+    state.groupBy = groupBy;
+    emit();
+  },
+
+  setCustomColumns(columns: BoardColumn[]) {
+    state.customColumns = columns;
+    // Drop placements pointing at deleted columns.
+    const ids = new Set(columns.map(c => c.id));
+    Object.entries(state.overrides).forEach(([taskId, o]) => {
+      if (o.customColumnId && !ids.has(o.customColumnId)) {
+        state.overrides[taskId] = { ...o, customColumnId: undefined };
+      }
+    });
+    emit();
+  },
+
+  /** Move a card into a column for the current grouping. */
+  moveTask(taskId: string, groupBy: BoardGroupBy, columnId: string) {
+    const current = state.overrides[taskId] ?? {};
+    const next: TaskOverride = { ...current };
+    if (groupBy === 'status') next.status = columnId;
+    else if (groupBy === 'priority') next.priority = columnId;
+    else if (groupBy === 'custom') next.customColumnId = columnId;
+    else return; // module/due groupings are read-only
+    state.overrides = { ...state.overrides, [taskId]: next };
+    emit();
+  },
+
+  resetOverrides() {
+    state.overrides = {};
+    emit();
+  },
+};
+
+export function useTaskBoard() {
+  return useSyncExternalStore(taskBoardStore.subscribe, taskBoardStore.getSnapshot, taskBoardStore.getSnapshot);
+}
+
+/** Apply stored board overrides on top of the source tasks. */
+export function applyOverrides(tasks: UnifiedTask[], overrides: Record<string, TaskOverride>): UnifiedTask[] {
+  return tasks.map(t => {
+    const o = overrides[t.id];
+    if (!o) return t;
+    return {
+      ...t,
+      status: (o.status ?? t.status) as UnifiedTask['status'],
+      priority: (o.priority ?? t.priority) as UnifiedTask['priority'],
+    };
+  });
+}
+
+export function columnsFor(groupBy: BoardGroupBy, customColumns: BoardColumn[]): BoardColumn[] {
+  switch (groupBy) {
+    case 'priority': return PRIORITY_COLUMNS;
+    case 'module': return MODULE_COLUMNS;
+    case 'due': return DUE_COLUMNS;
+    case 'custom': return customColumns;
+    case 'status':
+    default: return STATUS_COLUMNS;
+  }
+}
+
+export const GROUP_BY_LABELS: Record<BoardGroupBy, string> = {
+  status: 'Status',
+  priority: 'Priority / severity',
+  module: 'Module',
+  due: 'Due date',
+  custom: 'Custom columns',
+};
+
+function dueBucket(task: UnifiedTask): string {
+  if (!task.dueDate) return 'no_date';
+  if (task.isOverdue) return 'overdue';
+  if (task.daysUntilDue === null) return 'later';
+  if (task.daysUntilDue <= 0) return 'today';
+  if (task.daysUntilDue <= 7) return 'week';
+  return 'later';
+}
+
+/** Which column a task belongs to under the current grouping. */
+export function columnKeyFor(
+  task: UnifiedTask,
+  groupBy: BoardGroupBy,
+  overrides: Record<string, TaskOverride>,
+  columns: BoardColumn[],
+): string {
+  switch (groupBy) {
+    case 'priority': return task.priority;
+    case 'module': return task.module;
+    case 'due': return dueBucket(task);
+    case 'custom': {
+      const placed = overrides[task.id]?.customColumnId;
+      if (placed && columns.some(c => c.id === placed)) return placed;
+      // Sensible default placement so the board is never empty on first use.
+      if (task.status === 'completed') return columns[columns.length - 1]?.id ?? '';
+      if (task.status === 'in_progress') return columns[Math.min(2, columns.length - 1)]?.id ?? '';
+      return columns[0]?.id ?? '';
+    }
+    case 'status':
+    default: return task.status;
+  }
+}
+
+export const isGroupingEditable = (groupBy: BoardGroupBy) =>
+  groupBy === 'status' || groupBy === 'priority' || groupBy === 'custom';
