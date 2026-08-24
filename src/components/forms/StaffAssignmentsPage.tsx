@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   Plus, Users, Repeat, CalendarClock, Bell, Search, Trash2, CheckCircle2,
   AlertTriangle, Clock, CircleDashed, XCircle, Eye, Download, ChevronDown,
-  ExternalLink, ListChecks, FilterX,
+  ExternalLink, ListChecks, FilterX, ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,7 +21,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import AssignFormPanel from './AssignFormPanel';
-import TaskDetailPanel from './TaskDetailPanel';
+import TaskDetailPanel, { buildResponseGroups } from './TaskDetailPanel';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   useFormDelivery,
   formDeliveryStore,
@@ -69,6 +70,8 @@ const fmtDate = (iso: string) =>
 const fmtDateTime = (iso: string) =>
   new Date(iso).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
 
+type SortKey = 'staff' | 'location' | 'form' | 'occurrence' | 'due';
+
 const StaffAssignmentsPage = () => {
   const { assignments, tasks } = useFormDelivery();
   const [showAssign, setShowAssign] = useState(false);
@@ -80,6 +83,9 @@ const StaffAssignmentsPage = () => {
   const [templateFilter, setTemplateFilter] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('due');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const now = new Date();
@@ -132,9 +138,44 @@ const StaffAssignmentsPage = () => {
         return a?.templateId === templateFilter;
       })
       .filter(t => (!fromDate || t.occurrenceDate >= fromDate) && (!toDate || t.occurrenceDate <= toDate))
-      .sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+      .sort((a, b) => {
+        const formOf = (id: string) => assignments.find(x => x.id === id)?.templateName ?? '';
+        const val = (t: typeof a) => {
+          switch (sortKey) {
+            case 'staff': return t.staffName.toLowerCase();
+            case 'location': return staffLocations(t.staffId).join(', ').toLowerCase();
+            case 'form': return formOf(t.assignmentId).toLowerCase();
+            case 'occurrence': return t.occurrenceDate;
+            default: return t.dueAt;
+          }
+        };
+        const cmp = String(val(a)).localeCompare(String(val(b)), undefined, { numeric: true });
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopedTasks, statusFilter, search, locationFilter, templateFilter, fromDate, toDate, assignments]);
+  }, [scopedTasks, statusFilter, search, locationFilter, templateFilter, fromDate, toDate, assignments, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+
+  const SortHeader = ({ label, sortId, className }: { label: string; sortId: SortKey; className?: string }) => (
+    <th className={cn('py-2.5', className)}>
+      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => toggleSort(sortId)}>
+        {label}
+        {sortKey === sortId
+          ? (sortDir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />)
+          : <ArrowUpDown size={12} className="opacity-40" />}
+      </button>
+    </th>
+  );
+
+  const allVisibleSelected = visibleTasks.length > 0 && visibleTasks.every(t => selectedTaskIds.includes(t.id));
+  const toggleSelectAll = () =>
+    setSelectedTaskIds(allVisibleSelected ? [] : visibleTasks.map(t => t.id));
+  const toggleSelect = (id: string) =>
+    setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   const buildRows = (list: typeof tasks) => [
     ['Assignment', 'Form', 'Staff', 'Locations', 'Occurrence', 'Due', 'Status', 'Submitted at', 'Reminders', 'Submission ID'],
@@ -169,6 +210,32 @@ const StaffAssignmentsPage = () => {
     if (!list.length) { toast.info('This assignment has no tasks yet.'); return; }
     downloadCsv(`assignment-${slug(a?.title ?? assignmentId)}.csv`, buildRows(list));
     toast.success(`Exported ${list.length} task${list.length === 1 ? '' : 's'} for ${a?.title ?? 'assignment'}`);
+  };
+
+  const exportAllAssignments = () => {
+    if (!tasks.length) { toast.info('No tasks to export.'); return; }
+    downloadCsv(`all-assignments-${new Date().toISOString().slice(0, 10)}.csv`, buildRows(tasks));
+    toast.success(`Exported ${tasks.length} tasks across ${assignments.length} assignments`);
+  };
+
+  /** Long-format answer export: one row per question per selected task. */
+  const exportSelectedAnswers = () => {
+    const list = tasks.filter(t => selectedTaskIds.includes(t.id));
+    const submitted = list.filter(t => t.status === 'submitted');
+    if (!submitted.length) { toast.info('Select at least one submitted task to export answers.'); return; }
+    const rows: string[][] = [
+      ['Assignment', 'Form', 'Staff', 'Locations', 'Occurrence', 'Submitted at', 'Review', 'Section', 'Question', 'Answer'],
+    ];
+    submitted.forEach(t => {
+      const a = assignments.find(x => x.id === t.assignmentId);
+      buildResponseGroups(t, a).forEach(g => g.rows.forEach(r => rows.push([
+        a?.title ?? '—', a?.templateName ?? '—', t.staffName,
+        staffLocations(t.staffId).join(' | '), t.occurrenceDate, t.submittedAt ?? '',
+        t.reviewStatus ?? 'pending', g.title, r.label, r.value,
+      ])));
+    });
+    downloadCsv(`form-answers-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    toast.success(`Exported answers for ${submitted.length} submission${submitted.length === 1 ? '' : 's'}`);
   };
 
   const openInTasks = (staffName?: string) => {
@@ -209,6 +276,12 @@ const StaffAssignmentsPage = () => {
             <DropdownMenuContent align="end" className="w-64 bg-popover z-50">
               <DropdownMenuItem onClick={exportCurrentView}>
                 Current view ({visibleTasks.length})
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportAllAssignments}>
+                All assignments — single CSV ({tasks.length})
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportSelectedAnswers} disabled={selectedTaskIds.length === 0}>
+                Answer sets for selected ({selectedTaskIds.length})
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs">Export by assignment</DropdownMenuLabel>
@@ -357,14 +430,38 @@ const StaffAssignmentsPage = () => {
             )}
           </div>
 
+          {selectedTaskIds.length > 0 && (
+            <div className="px-6 py-2 border-b border-border bg-primary/5 flex items-center gap-2">
+              <span className="text-xs font-medium text-foreground">{selectedTaskIds.length} selected</span>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportSelectedAnswers}>
+                <Download size={12} className="mr-1.5" /> Export answer sets
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => { formDeliveryStore.sendReminder(selectedTaskIds); toast.success(`Reminder sent to ${selectedTaskIds.length} task(s)`); }}
+              >
+                <Bell size={12} className="mr-1.5" /> Remind selected
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs ml-auto" onClick={() => setSelectedTaskIds([])}>
+                Clear selection
+              </Button>
+            </div>
+          )}
+
           <ScrollArea className="flex-1">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/40 backdrop-blur">
                 <tr className="text-left text-xs font-semibold text-muted-foreground">
-                  <th className="px-6 py-2.5">Staff</th>
-                  <th className="px-3 py-2.5">Form</th>
-                  <th className="px-3 py-2.5">Occurrence</th>
-                  <th className="px-3 py-2.5">Due</th>
+                  <th className="pl-6 pr-2 py-2.5 w-9">
+                    <Checkbox checked={allVisibleSelected} onCheckedChange={toggleSelectAll} aria-label="Select all" />
+                  </th>
+                  <SortHeader label="Staff" sortId="staff" className="px-3" />
+                  <SortHeader label="Location" sortId="location" className="px-3" />
+                  <SortHeader label="Form" sortId="form" className="px-3" />
+                  <SortHeader label="Occurrence" sortId="occurrence" className="px-3" />
+                  <SortHeader label="Due" sortId="due" className="px-3" />
                   <th className="px-3 py-2.5">Status</th>
                   <th className="px-3 py-2.5">Submitted</th>
                   <th className="px-3 py-2.5 text-right">Actions</th>
@@ -380,10 +477,20 @@ const StaffAssignmentsPage = () => {
                       className="border-b border-border hover:bg-muted/30 cursor-pointer"
                       onClick={() => setDetailTaskId(t.id)}
                     >
-                      <td className="px-6 py-2.5 font-medium">
+                      <td className="pl-6 pr-2 py-2.5" onClick={e => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedTaskIds.includes(t.id)}
+                          onCheckedChange={() => toggleSelect(t.id)}
+                          aria-label={`Select ${t.staffName}`}
+                        />
+                      </td>
+                      <td className="px-3 py-2.5 font-medium">
                         <button className="text-primary hover:underline" onClick={e => { e.stopPropagation(); setDetailTaskId(t.id); }}>
                           {t.staffName}
                         </button>
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground truncate max-w-[180px]">
+                        {staffLocations(t.staffId).join(', ') || '—'}
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground">{assignment?.templateName ?? '—'}</td>
                       <td className="px-3 py-2.5 text-muted-foreground">{fmtDate(t.occurrenceDate)}</td>
@@ -430,7 +537,7 @@ const StaffAssignmentsPage = () => {
                 })}
                 {visibleTasks.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                    <td colSpan={9} className="px-6 py-12 text-center text-muted-foreground">
                       No tasks match this filter.
                     </td>
                   </tr>
@@ -447,6 +554,11 @@ const StaffAssignmentsPage = () => {
         open={!!detailTaskId}
         task={tasks.find(t => t.id === detailTaskId) ?? null}
         assignment={assignments.find(a => a.id === tasks.find(t => t.id === detailTaskId)?.assignmentId)}
+        siblingTasks={(() => {
+          const current = tasks.find(t => t.id === detailTaskId);
+          return current ? tasks.filter(t => t.assignmentId === current.assignmentId) : [];
+        })()}
+        onSelectTask={setDetailTaskId}
         onClose={() => setDetailTaskId(null)}
       />
     </div>

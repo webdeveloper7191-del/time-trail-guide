@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FileText, CheckCircle2, Bell, Clock, CalendarClock, User, AlertTriangle,
   CircleDashed, XCircle, Download, ListChecks,
@@ -14,6 +14,8 @@ import {
   formDeliveryStore,
   deriveStatus,
   TASK_STATUS_LABELS,
+  REVIEW_STATUS_LABELS,
+  type ReviewStatus,
   type RecipientTask,
   type StaffFormAssignment,
   type DerivedTaskStatus,
@@ -105,7 +107,7 @@ function answerForField(field: FormField, task: RecipientTask): string {
   }
 }
 
-function buildResponseGroups(task: RecipientTask, assignment?: StaffFormAssignment): AnswerGroup[] {
+export function buildResponseGroups(task: RecipientTask, assignment?: StaffFormAssignment): AnswerGroup[] {
   const template =
     mockFormTemplates.find(t => t.id === assignment?.templateId) ??
     mockFormTemplates.find(t => t.name === assignment?.templateName);
@@ -158,16 +160,38 @@ interface Props {
   assignment?: StaffFormAssignment;
   open: boolean;
   onClose: () => void;
+  /** Tasks in the same assignment, used for the Pending/Approved/Rejected tabs. */
+  siblingTasks?: RecipientTask[];
+  onSelectTask?: (taskId: string) => void;
 }
 
-const TaskDetailPanel = ({ task, assignment, open, onClose }: Props) => {
+const REVIEW_TABS: ReviewStatus[] = ['pending', 'approved', 'rejected'];
+const REVIEW_STYLES: Record<ReviewStatus, string> = {
+  pending: 'bg-amber-500/10 text-amber-700 border-transparent',
+  approved: 'bg-emerald-500/10 text-emerald-700 border-transparent',
+  rejected: 'bg-destructive/10 text-destructive border-transparent',
+};
+
+const TaskDetailPanel = ({ task, assignment, open, onClose, siblingTasks = [], onSelectTask }: Props) => {
   const navigate = useNavigate();
+  const [reviewTab, setReviewTab] = useState<ReviewStatus>('pending');
   const groups = useMemo(() => (task ? buildResponseGroups(task, assignment) : []), [task, assignment]);
   const totalQuestions = groups.reduce((n, g) => n + g.rows.length, 0);
+  useEffect(() => {
+    if (task?.status === 'submitted') setReviewTab(task.reviewStatus ?? 'pending');
+  }, [task?.id, task?.status, task?.reviewStatus]);
   if (!task) return null;
 
   const status = deriveStatus(task);
   const isSubmitted = status === 'submitted';
+  const currentReview: ReviewStatus = task.reviewStatus ?? 'pending';
+  const submittedSiblings = siblingTasks.filter(t => t.status === 'submitted');
+  const reviewCounts: Record<ReviewStatus, number> = {
+    pending: submittedSiblings.filter(t => (t.reviewStatus ?? 'pending') === 'pending').length,
+    approved: submittedSiblings.filter(t => t.reviewStatus === 'approved').length,
+    rejected: submittedSiblings.filter(t => t.reviewStatus === 'rejected').length,
+  };
+  const tabTasks = submittedSiblings.filter(t => (t.reviewStatus ?? 'pending') === reviewTab);
 
   const openInTasks = () => {
     const params = new URLSearchParams({ module: 'forms', showCompleted: 'true', search: task.staffName });
@@ -275,6 +299,70 @@ const TaskDetailPanel = ({ task, assignment, open, onClose }: Props) => {
           </div>
         </div>
       </div>
+
+      {/* Review queue */}
+      {siblingTasks.length > 0 && (
+        <div className="rounded-lg border border-border bg-card">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-foreground">Review</p>
+            <Badge className={cn('text-[11px] font-medium', REVIEW_STYLES[currentReview])}>
+              This submission: {REVIEW_STATUS_LABELS[currentReview]}
+            </Badge>
+          </div>
+          <div className="px-4 py-2 border-b border-border flex items-center gap-2">
+            {REVIEW_TABS.map(k => (
+              <button
+                key={k}
+                onClick={() => setReviewTab(k)}
+                className={cn(
+                  'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                  reviewTab === k ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50'
+                )}
+              >
+                {REVIEW_STATUS_LABELS[k]}
+                <span className="ml-1.5 tabular-nums opacity-70">{reviewCounts[k]}</span>
+              </button>
+            ))}
+            <div className="ml-auto flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => { formDeliveryStore.setReviewStatus([task.id], 'rejected'); toast.success('Submission rejected'); }}
+              >
+                <XCircle size={12} className="mr-1" /> Reject
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => { formDeliveryStore.setReviewStatus([task.id], 'approved'); toast.success('Submission approved'); }}
+              >
+                <CheckCircle2 size={12} className="mr-1" /> Approve
+              </Button>
+            </div>
+          </div>
+          <div className="max-h-56 overflow-auto divide-y divide-border">
+            {tabTasks.map(t => (
+              <button
+                key={t.id}
+                onClick={() => onSelectTask?.(t.id)}
+                className={cn(
+                  'w-full text-left px-4 py-2 flex items-center justify-between gap-3 hover:bg-muted/40',
+                  t.id === task.id && 'bg-primary/5'
+                )}
+              >
+                <span className="text-sm text-foreground truncate">{t.staffName}</span>
+                <span className="text-xs text-muted-foreground">{fmtDate(t.occurrenceDate)}</span>
+              </button>
+            ))}
+            {tabTasks.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                No {REVIEW_STATUS_LABELS[reviewTab].toLowerCase()} submissions.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Responses */}
       <div className="rounded-lg border border-border bg-card">

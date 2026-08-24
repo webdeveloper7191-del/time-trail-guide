@@ -12,6 +12,13 @@ export type DeliveryMode = 'once' | 'recurring';
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
 export type RecipientTaskStatus = 'not_started' | 'in_progress' | 'submitted' | 'cancelled';
 export type DerivedTaskStatus = RecipientTaskStatus | 'overdue';
+/** Review outcome applied by an admin after a submission arrives. */
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+export const REVIEW_STATUS_LABELS: Record<ReviewStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
 
 export interface Recurrence {
   frequency: RecurrenceFrequency;
@@ -36,6 +43,10 @@ export interface RecipientTask {
   submittedAt?: string;
   submissionId?: string;
   remindersSent: number;
+  /** Admin review outcome for a submitted task. */
+  reviewStatus?: ReviewStatus;
+  reviewedAt?: string;
+  reviewNote?: string;
 }
 
 export interface StaffFormAssignment {
@@ -199,6 +210,7 @@ function seed(): { assignments: StaffFormAssignment[]; tasks: RecipientTask[] } 
         t.status = 'submitted';
         t.submittedAt = t.dueAt;
         t.submissionId = `sub-${t.id}`;
+        t.reviewStatus = i % 3 === 0 ? 'approved' : i % 7 === 0 ? 'rejected' : 'pending';
       }
     } else if (i % 5 === 0) {
       t.status = 'in_progress';
@@ -266,6 +278,14 @@ export const formDeliveryStore = {
           submittedAt: status === 'submitted' ? new Date().toISOString() : undefined,
           submissionId: status === 'submitted' ? `sub-${t.id}` : undefined,
         }
+      : t);
+    emit();
+  },
+
+  setReviewStatus(taskIds: string[], reviewStatus: ReviewStatus, reviewNote?: string) {
+    const set = new Set(taskIds);
+    state.tasks = state.tasks.map(t => set.has(t.id)
+      ? { ...t, reviewStatus, reviewedAt: new Date().toISOString(), reviewNote }
       : t);
     emit();
   },
