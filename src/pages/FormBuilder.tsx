@@ -393,27 +393,42 @@ export default function FormBuilder() {
           )}
         </div>
 
-        {/* Secondary Tab Navigation - only in non-builder, non-library views */}
-        {viewMode !== 'builder' && viewMode !== 'library' && (
+        {/* Primary sub-menu navigation */}
+        {viewMode !== 'builder' && (
           <div className="flex items-center gap-1 mt-3 border-t border-border pt-3">
-            <button
-              onClick={() => setViewMode('library')}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
-            >
-              ← Templates
-            </button>
+            {subMenus.map(item => {
+              const active = item.key === 'delivery'
+                ? deliveryModes.includes(viewMode)
+                : viewMode === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => handleViewModeChange(item.key === 'delivery' ? 'assignments' : (item.key as ViewMode))}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                    active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Secondary tabs inside Assign & Track */}
+        {deliveryModes.includes(viewMode) && (
+          <div className="flex items-center gap-1 mt-2">
             {topTabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => handleViewModeChange(tab.key)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
                   viewMode === tab.key
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 )}
               >
                 {tab.icon}
@@ -422,6 +437,7 @@ export default function FormBuilder() {
             ))}
           </div>
         )}
+
       </div>
 
       {/* Main Content */}
