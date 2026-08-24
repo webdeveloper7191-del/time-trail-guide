@@ -35,12 +35,24 @@ export interface TaskOverride {
 /** Secondary grouping used to split the board into horizontal swimlanes. */
 export type BoardSwimlaneBy = 'none' | 'status' | 'priority' | 'module' | 'due';
 
+/** A single message in a card's comment thread. */
+export interface BoardComment {
+  id: string;
+  taskId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
+
 interface BoardState {
   groupBy: BoardGroupBy;
   swimlaneBy: BoardSwimlaneBy;
   customColumns: BoardColumn[];
   overrides: Record<string, TaskOverride>;
+  /** Comment threads keyed by task id. */
+  comments: Record<string, BoardComment[]>;
 }
+
 
 export const TONE_CLASSES: Record<BoardColumn['tone'], string> = {
   neutral: 'bg-muted text-muted-foreground',
@@ -99,6 +111,7 @@ function load(): BoardState {
     swimlaneBy: 'none',
     customColumns: DEFAULT_CUSTOM_COLUMNS,
     overrides: {},
+    comments: {},
   };
   if (typeof window === 'undefined') return fallback;
   try {
@@ -110,7 +123,9 @@ function load(): BoardState {
       swimlaneBy: parsed.swimlaneBy ?? fallback.swimlaneBy,
       customColumns: parsed.customColumns?.length ? parsed.customColumns : fallback.customColumns,
       overrides: parsed.overrides ?? {},
+      comments: parsed.comments ?? {},
     };
+
   } catch {
     return fallback;
   }
@@ -178,7 +193,34 @@ export const taskBoardStore = {
     state.overrides = {};
     emit();
   },
+
+  /** Start or continue a card's comment thread. */
+  addComment(taskId: string, text: string, authorName = 'You') {
+    const body = text.trim();
+    if (!body) return;
+    const comment: BoardComment = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      taskId,
+      authorName,
+      text: body,
+      createdAt: new Date().toISOString(),
+    };
+    state.comments = {
+      ...state.comments,
+      [taskId]: [...(state.comments[taskId] ?? []), comment],
+    };
+    emit();
+  },
+
+  deleteComment(taskId: string, commentId: string) {
+    state.comments = {
+      ...state.comments,
+      [taskId]: (state.comments[taskId] ?? []).filter(c => c.id !== commentId),
+    };
+    emit();
+  },
 };
+
 
 export function useTaskBoard() {
   return useSyncExternalStore(taskBoardStore.subscribe, taskBoardStore.getSnapshot, taskBoardStore.getSnapshot);

@@ -11,11 +11,14 @@ import {
   Circle,
   Loader2,
   Ban,
-  ExternalLink
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
 import { UnifiedTask, moduleColors, typeLabels } from '@/types/unifiedTasks';
+import { useTaskBoard } from '@/lib/taskBoardStore';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+
 
 interface UnifiedTaskCardProps {
   task: UnifiedTask;
@@ -39,9 +42,13 @@ const priorityColors: Record<string, string> = {
 };
 
 export const UnifiedTaskCard: React.FC<UnifiedTaskCardProps> = ({ task, onClick, compact = false }) => {
+  const board = useTaskBoard();
+  const commentCount = board.comments[task.id]?.length ?? 0;
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
 
   return (
     <Card 
@@ -109,7 +116,16 @@ export const UnifiedTaskCard: React.FC<UnifiedTaskCardProps> = ({ task, onClick,
                   <span className="truncate max-w-[120px]">{task.location}</span>
                 </span>
               )}
+
+              {/* Comment thread */}
+              {commentCount > 0 && (
+                <span className="flex items-center gap-1" title={`${commentCount} comment${commentCount === 1 ? '' : 's'}`}>
+                  <MessageSquare className="h-3 w-3" />
+                  {commentCount}
+                </span>
+              )}
             </div>
+
           </div>
 
           {/* Right side: Priority + Assignee */}
