@@ -312,8 +312,14 @@ export function TaskEditDrawer({
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as TaskType }))}
                 >
                   {typeOptions.map(opt => (
-                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                    <MenuItem key={opt.value} value={opt.value}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        {opt.color && <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: opt.color }} />}
+                        <span>{opt.label}</span>
+                      </Stack>
+                    </MenuItem>
                   ))}
+
                 </MuiSelect>
               </FormControl>
 
