@@ -95,8 +95,9 @@ const StaffAssignmentsPage = () => {
             <Bell size={14} className="mr-1.5" /> Remind outstanding
           </Button>
           <Button size="sm" onClick={() => setShowAssign(true)}>
-            <Plus size={14} className="mr-1.5" /> Assign form
+            <Plus size={14} className="mr-1.5" /> Bulk assign forms
           </Button>
+
         </div>
       </div>
 

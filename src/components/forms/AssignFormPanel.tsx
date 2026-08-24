@@ -35,11 +35,14 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     []
   );
 
-  const [templateId, setTemplateId] = useState(defaultTemplateId ?? templates[0]?.id ?? '');
+  const [templateIds, setTemplateIds] = useState<string[]>(
+    defaultTemplateId ? [defaultTemplateId] : templates[0] ? [templates[0].id] : []
+  );
   const [title, setTitle] = useState('');
   const [staffIds, setStaffIds] = useState<string[]>([]);
   const [staffSearch, setStaffSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [positionFilter, setPositionFilter] = useState('all');
   const [mode, setMode] = useState<DeliveryMode>('once');
   const [dueDate, setDueDate] = useState(todayKey());
   const [dueTime, setDueTime] = useState('17:00');
@@ -58,6 +61,10 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     activeStaff.forEach(s => (s.locations ?? []).forEach(l => set.add(l)));
     return Array.from(set).sort();
   }, [activeStaff]);
+  const positionOptions = useMemo(
+    () => Array.from(new Set(activeStaff.map(s => s.position).filter(Boolean) as string[])).sort(),
+    [activeStaff]
+  );
 
   const filteredStaff = useMemo(() => {
     const q = staffSearch.trim().toLowerCase();
@@ -65,9 +72,10 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
       const name = `${s.firstName} ${s.lastName}`.toLowerCase();
       const matchQ = !q || name.includes(q) || (s.position ?? '').toLowerCase().includes(q);
       const matchLoc = locationFilter === 'all' || (s.locations ?? []).includes(locationFilter);
-      return matchQ && matchLoc;
+      const matchPos = positionFilter === 'all' || s.position === positionFilter;
+      return matchQ && matchLoc && matchPos;
     });
-  }, [activeStaff, staffSearch, locationFilter]);
+  }, [activeStaff, staffSearch, locationFilter, positionFilter]);
 
   const recurrence = mode === 'recurring'
     ? {
@@ -85,9 +93,12 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     [mode, dueDate, frequency, daysOfWeek, dayOfMonth, startDate, endDate]
   );
 
-  const template = templates.find(t => t.id === templateId);
-  const totalTasks = occurrences.length * staffIds.length;
-  const canSubmit = !!templateId && staffIds.length > 0 && occurrences.length > 0;
+  const selectedTemplates = templates.filter(t => templateIds.includes(t.id));
+  const totalTasks = occurrences.length * staffIds.length * Math.max(selectedTemplates.length, 0);
+  const canSubmit = selectedTemplates.length > 0 && staffIds.length > 0 && occurrences.length > 0;
+
+  const toggleTemplate = (id: string) =>
+    setTemplateIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const toggleStaff = (id: string) =>
     setStaffIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
@@ -101,33 +112,54 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
     }
   };
 
+  const selectEveryone = () => setStaffIds(activeStaff.map(s => s.id));
+  const selectByLocation = (loc: string) =>
+    setStaffIds(prev => Array.from(new Set([
+      ...prev,
+      ...activeStaff.filter(s => (s.locations ?? []).includes(loc)).map(s => s.id),
+    ])));
+  const selectByPosition = (pos: string) =>
+    setStaffIds(prev => Array.from(new Set([
+      ...prev,
+      ...activeStaff.filter(s => s.position === pos).map(s => s.id),
+    ])));
+
+
   const reset = () => {
     setStaffIds([]); setTitle(''); setNotes(''); setStaffSearch('');
     setMode('once'); setDueDate(todayKey()); setDueTime('17:00');
   };
 
   const handleAssign = () => {
-    if (!canSubmit || !template) return;
-    formDeliveryStore.createAssignment({
-      templateId: template.id,
-      templateName: template.name,
-      title: title.trim() || template.name,
-      mode,
-      dueDate: mode === 'once' ? dueDate : undefined,
-      dueTime,
-      recurrence,
-      staff: staffIds.map(id => {
-        const s = activeStaff.find(x => x.id === id);
-        return { id, name: s ? `${s.firstName} ${s.lastName}` : id };
-      }),
-      reminderEnabled,
-      reminderHoursBefore,
-      notes: notes.trim() || undefined,
+    if (!canSubmit) return;
+    const staff = staffIds.map(id => {
+      const s = activeStaff.find(x => x.id === id);
+      return { id, name: s ? `${s.firstName} ${s.lastName}` : id };
     });
-    toast.success(`Assigned to ${staffIds.length} staff · ${totalTasks} task${totalTasks === 1 ? '' : 's'} created`);
+    selectedTemplates.forEach(template => {
+      formDeliveryStore.createAssignment({
+        templateId: template.id,
+        templateName: template.name,
+        title: title.trim()
+          ? (selectedTemplates.length > 1 ? `${title.trim()} — ${template.name}` : title.trim())
+          : template.name,
+        mode,
+        dueDate: mode === 'once' ? dueDate : undefined,
+        dueTime,
+        recurrence,
+        staff,
+        reminderEnabled,
+        reminderHoursBefore,
+        notes: notes.trim() || undefined,
+      });
+    });
+    toast.success(
+      `${selectedTemplates.length} form${selectedTemplates.length === 1 ? '' : 's'} assigned to ${staffIds.length} staff · ${totalTasks} task${totalTasks === 1 ? '' : 's'} created`
+    );
     reset();
     onClose();
   };
+
 
   const sectionTitle = (icon: React.ReactNode, label: string, hint?: string) => (
     <div className="flex items-start gap-2 mb-3">
@@ -141,8 +173,9 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
 
   return (
     <PrimaryOffCanvas
-      title="Assign form to staff"
-      description="Choose recipients, set once-off or recurring delivery, and track completion."
+      title="Bulk assign forms to staff"
+      description="Select multiple forms and staff, then submit due dates and delivery settings in one step."
+
       icon={Users}
       size="2xl"
       open={open}
@@ -161,23 +194,52 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
       <div className="space-y-6">
         {/* 1. Form */}
         <section className="rounded-lg border border-border p-4">
-          {sectionTitle(<FileText size={16} />, 'Form', 'Only published templates in your workspace can be assigned.')}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Template</Label>
-              <Select value={templateId} onValueChange={setTemplateId}>
-                <SelectTrigger><SelectValue placeholder="Select a form" /></SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          {sectionTitle(
+            <FileText size={16} />,
+            'Forms',
+            `${selectedTemplates.length} selected · pick one or more published templates to send together.`
+          )}
+          <div className="flex items-center justify-end mb-2">
+            <button
+              type="button"
+              onClick={() => setTemplateIds(templateIds.length === templates.length ? [] : templates.map(t => t.id))}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              {templateIds.length === templates.length ? 'Clear all' : 'Select all forms'}
+            </button>
+          </div>
+          <ScrollArea className="h-40 rounded-md border border-border">
+            <div className="divide-y divide-border">
+              {templates.map(t => {
+                const selected = templateIds.includes(t.id);
+                return (
+                  <label
+                    key={t.id}
+                    className={cn('flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50', selected && 'bg-primary/5')}
+                  >
+                    <Checkbox checked={selected} onCheckedChange={() => toggleTemplate(t.id)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{t.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{t.category ?? 'Form'}</p>
+                    </div>
+                  </label>
+                );
+              })}
+              {templates.length === 0 && (
+                <p className="text-sm text-muted-foreground px-3 py-6 text-center">No published templates available.</p>
+              )}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Assignment name (optional)</Label>
-              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder={template?.name ?? 'e.g. Weekly safety check'} />
-            </div>
+          </ScrollArea>
+          <div className="space-y-1.5 mt-3">
+            <Label className="text-xs">Assignment name (optional)</Label>
+            <Input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder={selectedTemplates[0]?.name ?? 'e.g. Weekly safety check'}
+            />
           </div>
         </section>
+
 
         {/* 2. Recipients */}
         <section className="rounded-lg border border-border p-4">
@@ -188,12 +250,20 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
               <Input className="pl-8 h-9" placeholder="Search staff or position" value={staffSearch} onChange={e => setStaffSearch(e.target.value)} />
             </div>
             <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover z-50">
                 <SelectItem value="all">All locations</SelectItem>
                 {locationOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">All positions</SelectItem>
+                {positionOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
             <button
               type="button"
               onClick={toggleAllFiltered}
@@ -202,6 +272,48 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
               {allFilteredSelected ? 'Clear all' : 'Select all'}
             </button>
           </div>
+
+          {/* Bulk group selection */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <span className="text-xs text-muted-foreground mr-1">Quick add:</span>
+            <button
+              type="button"
+              onClick={selectEveryone}
+              className="text-[11px] rounded-full border border-border px-2 py-0.5 hover:bg-muted/60"
+            >
+              Everyone ({activeStaff.length})
+            </button>
+            {locationOptions.map(l => (
+              <button
+                key={`loc-${l}`}
+                type="button"
+                onClick={() => selectByLocation(l)}
+                className="text-[11px] rounded-full border border-border px-2 py-0.5 hover:bg-muted/60"
+              >
+                {l}
+              </button>
+            ))}
+            {positionOptions.slice(0, 6).map(p => (
+              <button
+                key={`pos-${p}`}
+                type="button"
+                onClick={() => selectByPosition(p)}
+                className="text-[11px] rounded-full border border-border px-2 py-0.5 hover:bg-muted/60"
+              >
+                {p}
+              </button>
+            ))}
+            {staffIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setStaffIds([])}
+                className="text-[11px] text-destructive hover:underline ml-1"
+              >
+                Clear {staffIds.length} selected
+              </button>
+            )}
+          </div>
+
           <ScrollArea className="h-56 rounded-md border border-border">
             <div className="divide-y divide-border">
               {filteredStaff.map(s => {
@@ -331,7 +443,7 @@ const AssignFormPanel = ({ open, onClose, defaultTemplateId }: AssignFormPanelPr
               ) : (
                 <>
                   <span className="font-medium text-foreground">{occurrences.length} occurrence{occurrences.length === 1 ? '' : 's'}</span>
-                  {' · '}{staffIds.length} staff{' · '}
+                  {' · '}{staffIds.length} staff{' · '}{selectedTemplates.length} form{selectedTemplates.length === 1 ? '' : 's'}{' · '}
                   <span className="font-medium text-foreground">{totalTasks} task{totalTasks === 1 ? '' : 's'}</span>
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {occurrences.slice(0, 8).map(d => <Badge key={d} variant="secondary" className="text-[10px]">{d}</Badge>)}
