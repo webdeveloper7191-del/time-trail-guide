@@ -35,12 +35,24 @@ export interface TaskOverride {
 /** Secondary grouping used to split the board into horizontal swimlanes. */
 export type BoardSwimlaneBy = 'none' | 'status' | 'priority' | 'module' | 'due';
 
+/** A single message in a card's comment thread. */
+export interface BoardComment {
+  id: string;
+  taskId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
+
 interface BoardState {
   groupBy: BoardGroupBy;
   swimlaneBy: BoardSwimlaneBy;
   customColumns: BoardColumn[];
   overrides: Record<string, TaskOverride>;
+  /** Comment threads keyed by task id. */
+  comments: Record<string, BoardComment[]>;
 }
+
 
 export const TONE_CLASSES: Record<BoardColumn['tone'], string> = {
   neutral: 'bg-muted text-muted-foreground',
