@@ -91,6 +91,9 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string }> = {
   critical: { label: 'Critical', color: 'error' },
 };
 
+// Mock signed-in user until auth exists.
+const CURRENT_USER_ID = 'current-user';
+
 interface TaskManagementPanelProps {
   onNavigateToSubmission?: (submissionId: string) => void;
   initialTaskId?: string | null;
@@ -100,6 +103,11 @@ interface TaskManagementPanelProps {
 export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onTaskViewed }: TaskManagementPanelProps = {}) {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [pipelines, setPipelines] = useState<TaskPipeline[]>(mockPipelines);
+  // Team pipelines plus the current user's own pipelines.
+  const visiblePipelines = useMemo(
+    () => pipelines.filter(p => (p.scope ?? 'system') === 'system' || p.ownerId === CURRENT_USER_ID),
+    [pipelines],
+  );
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(mockPipelines[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
@@ -259,8 +267,12 @@ export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onT
         id: `task-${Date.now()}`,
         ...formData,
         status: 'open',
-        pipelineId: selectedPipelineId,
-        stageId: selectedPipeline.stages[0]?.id,
+        pipelineId: formData.pipelineId || selectedPipelineId,
+        stageId:
+          formData.stageId ||
+          (pipelines.find(p => p.id === (formData.pipelineId || selectedPipelineId))?.stages ?? [])
+            .slice()
+            .sort((a, b) => a.order - b.order)[0]?.id,
         attachments,
         comments: [],
         activityLog: [
@@ -441,14 +453,27 @@ export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onT
 
   // Pipeline management
   const handleCreatePipeline = (pipeline: TaskPipeline) => {
-    setPipelines(prev => [...prev, pipeline]);
+    // New pipelines default to personal so system (team) pipelines stay untouched.
+    setPipelines(prev => [
+      ...prev,
+      { ...pipeline, scope: pipeline.scope ?? 'personal', ownerId: pipeline.ownerId ?? CURRENT_USER_ID },
+    ]);
   };
 
   const handleUpdatePipeline = (pipeline: TaskPipeline) => {
+    if ((pipeline.scope ?? 'system') === 'system') {
+      toast.error('System pipelines are managed at team level and cannot be edited.');
+      return;
+    }
     setPipelines(prev => prev.map(p => p.id === pipeline.id ? pipeline : p));
   };
 
   const handleDeletePipeline = (pipelineId: string) => {
+    const target = pipelines.find(p => p.id === pipelineId);
+    if (target && (target.scope ?? 'system') === 'system') {
+      toast.error('System pipelines are managed at team level and cannot be deleted.');
+      return;
+    }
     setPipelines(prev => prev.filter(p => p.id !== pipelineId));
     if (selectedPipelineId === pipelineId) {
       setSelectedPipelineId(pipelines[0].id);
@@ -591,7 +616,7 @@ export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onT
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {pipelines.map(p => (
+                {visiblePipelines.map(p => (
                   <SelectItem key={p.id} value={p.id}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Stack direction="row" spacing={0.25}>
@@ -1013,14 +1038,17 @@ export function TaskManagementPanel({ onNavigateToSubmission, initialTaskId, onT
         open={showEditDrawer}
         task={selectedTask}
         mode={editMode}
+        pipelines={visiblePipelines}
+        defaultPipelineId={selectedPipelineId}
         onClose={() => setShowEditDrawer(false)}
         onSave={handleSaveTask}
+        onManagePipelines={() => { setShowEditDrawer(false); setShowPipelineDrawer(true); }}
       />
 
       {/* Pipeline Manager Drawer */}
       <PipelineManagerDrawer
         open={showPipelineDrawer}
-        pipelines={pipelines}
+        pipelines={visiblePipelines}
         onClose={() => setShowPipelineDrawer(false)}
         onSave={(p) => setPipelines(p)}
         onCreatePipeline={handleCreatePipeline}
