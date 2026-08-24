@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Plus, Users, Repeat, CalendarClock, Bell, Search, Trash2, CheckCircle2,
-  AlertTriangle, Clock, CircleDashed, XCircle,
+  AlertTriangle, Clock, CircleDashed, XCircle, Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
