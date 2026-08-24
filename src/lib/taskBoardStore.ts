@@ -25,10 +25,19 @@ export interface TaskOverride {
   status?: string;
   priority?: string;
   customColumnId?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  dueDate?: string;
+  title?: string;
+  description?: string;
 }
+
+/** Secondary grouping used to split the board into horizontal swimlanes. */
+export type BoardSwimlaneBy = 'none' | 'status' | 'priority' | 'module' | 'due';
 
 interface BoardState {
   groupBy: BoardGroupBy;
+  swimlaneBy: BoardSwimlaneBy;
   customColumns: BoardColumn[];
   overrides: Record<string, TaskOverride>;
 }
@@ -85,7 +94,12 @@ const DEFAULT_CUSTOM_COLUMNS: BoardColumn[] = [
 const STORAGE_KEY = 'rostered.taskBoard.v1';
 
 function load(): BoardState {
-  const fallback: BoardState = { groupBy: 'status', customColumns: DEFAULT_CUSTOM_COLUMNS, overrides: {} };
+  const fallback: BoardState = {
+    groupBy: 'status',
+    swimlaneBy: 'none',
+    customColumns: DEFAULT_CUSTOM_COLUMNS,
+    overrides: {},
+  };
   if (typeof window === 'undefined') return fallback;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -93,6 +107,7 @@ function load(): BoardState {
     const parsed = JSON.parse(raw) as Partial<BoardState>;
     return {
       groupBy: parsed.groupBy ?? fallback.groupBy,
+      swimlaneBy: parsed.swimlaneBy ?? fallback.swimlaneBy,
       customColumns: parsed.customColumns?.length ? parsed.customColumns : fallback.customColumns,
       overrides: parsed.overrides ?? {},
     };
@@ -120,6 +135,18 @@ export const taskBoardStore = {
 
   setGroupBy(groupBy: BoardGroupBy) {
     state.groupBy = groupBy;
+    emit();
+  },
+
+  setSwimlaneBy(swimlaneBy: BoardSwimlaneBy) {
+    state.swimlaneBy = swimlaneBy;
+    emit();
+  },
+
+  /** Patch a task from the detail drawer's edit form. */
+  updateTask(taskId: string, patch: TaskOverride) {
+    const current = state.overrides[taskId] ?? {};
+    state.overrides = { ...state.overrides, [taskId]: { ...current, ...patch } };
     emit();
   },
 
@@ -164,10 +191,25 @@ export function applyOverrides(tasks: UnifiedTask[], overrides: Record<string, T
     if (!o) return t;
     return {
       ...t,
+      title: o.title ?? t.title,
+      description: o.description ?? t.description,
       status: (o.status ?? t.status) as UnifiedTask['status'],
       priority: (o.priority ?? t.priority) as UnifiedTask['priority'],
+      assigneeId: o.assigneeId ?? t.assigneeId,
+      assigneeName: o.assigneeName ?? t.assigneeName,
+      ...(o.dueDate !== undefined ? recomputeDue(o.dueDate) : {}),
     };
   });
+}
+
+function recomputeDue(dueDate: string): Pick<UnifiedTask, 'dueDate' | 'isOverdue' | 'daysUntilDue'> {
+  if (!dueDate) return { dueDate: undefined, isOverdue: false, daysUntilDue: null };
+  const due = new Date(dueDate);
+  const today = new Date();
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  const daysUntilDue = Math.round((due.getTime() - today.getTime()) / 86400000);
+  return { dueDate, isOverdue: daysUntilDue < 0, daysUntilDue };
 }
 
 export function columnsFor(groupBy: BoardGroupBy, customColumns: BoardColumn[]): BoardColumn[] {
@@ -188,6 +230,35 @@ export const GROUP_BY_LABELS: Record<BoardGroupBy, string> = {
   due: 'Due date',
   custom: 'Custom columns',
 };
+
+export const SWIMLANE_LABELS: Record<BoardSwimlaneBy, string> = {
+  none: 'No swimlanes',
+  status: 'Status',
+  priority: 'Priority / severity',
+  module: 'Module',
+  due: 'Due date',
+};
+
+/** Swimlane rows for a secondary grouping (never the same axis as the columns). */
+export function swimlanesFor(swimlaneBy: BoardSwimlaneBy): BoardColumn[] {
+  switch (swimlaneBy) {
+    case 'status': return STATUS_COLUMNS;
+    case 'priority': return PRIORITY_COLUMNS;
+    case 'module': return MODULE_COLUMNS;
+    case 'due': return DUE_COLUMNS;
+    default: return [];
+  }
+}
+
+export function swimlaneKeyFor(task: UnifiedTask, swimlaneBy: BoardSwimlaneBy): string {
+  switch (swimlaneBy) {
+    case 'status': return task.status;
+    case 'priority': return task.priority;
+    case 'module': return task.module;
+    case 'due': return dueBucket(task);
+    default: return 'none';
+  }
+}
 
 function dueBucket(task: UnifiedTask): string {
   if (!task.dueDate) return 'no_date';
