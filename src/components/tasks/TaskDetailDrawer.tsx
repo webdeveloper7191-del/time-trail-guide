@@ -53,15 +53,18 @@ const UNASSIGNED = '__unassigned__';
 export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   task, open, onClose, onOpenInModule,
 }) => {
+  const board = useTaskBoard();
   const staffOptions = useMemo(
     () => mockStaff.map(s => ({ id: s.id, name: `${s.firstName} ${s.lastName}`, position: s.position })),
     [],
   );
 
+  const [commentDraft, setCommentDraft] = useState('');
   const [form, setForm] = useState({
     title: '', description: '', status: 'open', priority: 'medium',
     assigneeId: UNASSIGNED, dueDate: '',
   });
+
 
   useEffect(() => {
     if (!task) return;
