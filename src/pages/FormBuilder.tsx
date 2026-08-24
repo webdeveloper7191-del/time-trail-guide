@@ -27,6 +27,7 @@ import { EditTemplateDetailsDrawer } from '@/components/forms/EditTemplateDetail
 import { CreateTemplateDrawer } from '@/components/forms/CreateTemplateDrawer';
 import { SystemFormLibraryPage } from '@/components/forms/SystemFormLibraryPage';
 import { TenantFormsPage } from '@/components/forms/TenantFormsPage';
+import StaffAssignmentsPage from '@/components/forms/StaffAssignmentsPage';
 import { InstallTemplatesPanel } from '@/components/forms/InstallTemplatesPanel';
 import { FormTemplate, FormField, FormSection, FieldType, FIELD_TYPES, AutoPopulateToken, FormTemplateScope } from '@/types/forms';
 import { mockFormTemplates } from '@/data/mockFormData';
