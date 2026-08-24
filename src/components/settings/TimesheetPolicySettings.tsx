@@ -176,8 +176,8 @@ export function PolicyTimeTracking() {
         />
         <ToggleRow
           {...fieldProps('timeTracking', 'enableMobileClock', 'Enable Rostered.ai Kiosk App (Fixed Location)',
-            'Allow clock in and out from a shared, fixed-location kiosk device. This is not a self-service channel — it is a shared device at the location.',
-            <><p className="font-medium mb-1">Example</p><p>At the front desk of a location, a shared tablet displays the Rostered.ai Kiosk App. Staff enter their PIN or scan a QR code to clock in before their shift starts.</p></>)}
+            'Allow clock in and out from a shared, fixed-location kiosk device. Staff identify themselves by entering a PIN or using face verification. This is not a self-service channel — it is a shared device at the location.',
+            <><p className="font-medium mb-1">Example</p><p>At the front desk of a location, a shared tablet displays the Rostered.ai Kiosk App. A staff member taps "Clock in", enters their personal PIN (or looks at the camera for face verification), and the kiosk records the clock event. No QR code is used.</p></>)}
           value={resolved.timeTracking.enableMobileClock}
           onChange={v => setField('timeTracking', 'enableMobileClock', v)}
         />
