@@ -76,14 +76,12 @@ function answerForField(field: FormField, task: RecipientTask): string {
     case 'checkbox':
       return seed % 7 === 0 ? 'No' : 'Yes';
     case 'radio':
-    case 'select':
     case 'dropdown':
     case 'multi_select':
       return opts ? pick(opts) : 'Yes';
     case 'number':
       return String((seed % 12) + 1);
-    case 'rating':
-      return `${(seed % 5) + 1} / 5`;
+    case 'datetime':
     case 'date':
       return fmtDate(task.occurrenceDate);
     case 'time':
@@ -100,7 +98,6 @@ function answerForField(field: FormField, task: RecipientTask): string {
         'No exceptions to record for this shift.',
       ]);
     case 'short_text':
-    case 'text':
       return pick([task.staffName, 'Completed as per procedure', 'N/A']);
     default:
       return pick(['Yes', 'Completed', 'N/A']);
