@@ -35,15 +35,12 @@ import {
   feedback360StatusLabels,
   FeedbackSourceType,
 } from '@/types/advancedPerformance';
-import { 
-  mock360Requests, 
-  mock360Responses, 
-  mock360Competencies 
-} from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { format } from 'date-fns';
 import { Request360FeedbackDrawer } from './Request360FeedbackDrawer';
 import { toast } from 'sonner';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 interface Feedback360PanelProps {
   currentUserId: string;
@@ -73,6 +70,10 @@ const getSourceChipStyle = (source: string) => {
 };
 
 export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
+  const operations = usePerformanceOperations();
+  const performanceConfig = usePerformanceConfig();
+  const competencies = performanceConfig.competencies.filter(item => item.isActive);
+  const maxRating = Math.max(...(performanceConfig.ratingScales.find(scale => scale.isDefault && scale.isActive)?.points.map(point => point.value) ?? [5]));
   const [selectedRequest, setSelectedRequest] = useState<Feedback360Request | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showRequest360Drawer, setShowRequest360Drawer] = useState(false);
@@ -84,7 +85,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   };
 
   const getResponsesForRequest = (requestId: string) => {
-    return mock360Responses.filter(r => r.requestId === requestId);
+    return operations.feedback360Responses.filter(r => r.requestId === requestId);
   };
 
   const getCompletionStats = (requestId: string) => {
@@ -94,8 +95,8 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
     return { completed, total, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 };
   };
 
-  const activeRequests = mock360Requests.filter(r => ['pending', 'in_progress'].includes(r.status));
-  const completedRequests = mock360Requests.filter(r => r.status === 'completed');
+  const activeRequests = operations.feedback360Requests.filter(r => ['pending', 'in_progress'].includes(r.status));
+  const completedRequests = operations.feedback360Requests.filter(r => r.status === 'completed');
 
   const handleViewRequest = (request: Feedback360Request) => {
     setSelectedRequest(request);
@@ -112,8 +113,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
     selectedCompetencies: string[];
     responders: { staffId: string; sourceType: FeedbackSourceType }[];
   }) => {
-    // In a real app, this would call an API
-    console.log('Creating 360 feedback request:', data);
+    performanceOperationsStore.create360Request({ ...data, requesterId: currentUserId });
     toast.success(`360° feedback request created for ${getStaffName(data.subjectStaffId)}`);
   };
 
@@ -338,7 +338,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
 
               <TabsContent value="competencies" className="mt-4">
                 <Stack spacing={2}>
-                  {mock360Competencies.map(comp => {
+                  {competencies.map(comp => {
                     const avg = calculateAverageByCompetency(comp.id);
                     return (
                       <Card key={comp.id} sx={{ p: 2 }}>
@@ -356,7 +356,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                               <Typography variant="h6" fontWeight={700} color="primary.main">
                                 {avg.toFixed(1)}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">/5</Typography>
+                              <Typography variant="caption" color="text.secondary">/{maxRating}</Typography>
                             </Stack>
                           ) : (
                             <Typography variant="body2" color="text.secondary">
@@ -367,7 +367,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                         {avg !== null && (
                           <LinearProgress 
                             variant="determinate" 
-                            value={(avg / 5) * 100}
+                            value={(avg / maxRating) * 100}
                             sx={{ mt: 1, height: 4, borderRadius: 1 }}
                           />
                         )}

@@ -32,6 +32,8 @@ export interface PerformanceReview {
   periodEnd: string;
   status: ReviewStatus;
   ratings: ReviewRating[];
+  /** Snapshot of tenant competencies selected when the review was created. */
+  customCriteria?: ReviewCriteria[];
   overallSelfRating?: number;
   overallManagerRating?: number;
   selfSummary?: string;

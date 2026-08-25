@@ -39,11 +39,12 @@ import {
   okrLevelLabels,
   okrStatusLabels,
 } from '@/types/okr';
-import { mockObjectives as initialMockObjectives, mockOKRCycles, mockTeams } from '@/data/mockOKRData';
+import { mockOKRCycles, mockTeams } from '@/data/mockOKRData';
 import { mockStaff } from '@/data/mockStaffData';
 import { format } from 'date-fns';
 import { CreateOKRDrawer } from './CreateOKRDrawer';
 import { toast } from 'sonner';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 
 interface OKRCascadePanelProps {
   currentUserId: string;
@@ -86,7 +87,7 @@ const getProgressColor = (progress: number) => {
 };
 
 export function OKRCascadePanel({ currentUserId, embedded = false }: OKRCascadePanelProps) {
-  const [objectives, setObjectives] = useState<Objective[]>(initialMockObjectives);
+  const { objectives } = usePerformanceOperations();
   const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set(['obj-company-1']));
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
@@ -122,20 +123,7 @@ export function OKRCascadePanel({ currentUserId, embedded = false }: OKRCascadeP
   };
 
   const handleUpdateKRProgress = (objectiveId: string, krId: string, newValue: number) => {
-    setObjectives(prev => prev.map(obj => {
-      if (obj.id === objectiveId) {
-        const updatedKRs = obj.keyResults.map(kr => {
-          if (kr.id === krId) {
-            const progress = Math.round(((newValue - kr.startValue) / (kr.targetValue - kr.startValue)) * 100);
-            return { ...kr, currentValue: newValue, progress: Math.max(0, Math.min(100, progress)) };
-          }
-          return kr;
-        });
-        const avgProgress = Math.round(updatedKRs.reduce((sum, kr) => sum + kr.progress, 0) / updatedKRs.length);
-        return { ...obj, keyResults: updatedKRs, progress: avgProgress };
-      }
-      return obj;
-    }));
+    performanceOperationsStore.updateKeyResult(objectiveId, krId, newValue);
     toast.success('Progress updated');
   };
 
@@ -148,7 +136,7 @@ export function OKRCascadePanel({ currentUserId, embedded = false }: OKRCascadeP
       startDate: new Date().toISOString(),
       endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
-    setObjectives(prev => [...prev, objective]);
+    performanceOperationsStore.saveObjective(objective);
     toast.success('Objective created successfully');
   };
 

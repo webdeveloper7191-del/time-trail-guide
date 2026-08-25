@@ -39,10 +39,10 @@ const getNineBoxPositions = () =>
     color: c.tone,
     recommendations: c.recommendations,
   }));
-import { mockTalentAssessments as initialMockAssessments } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { TalentAssessmentDrawer } from './TalentAssessmentDrawer';
 import { toast } from 'sonner';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 
 interface NineBoxTalentGridProps {
   assessments?: TalentAssessment[];
@@ -79,7 +79,8 @@ const getFlightRiskStyle = (risk: string) => {
 };
 
 export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff }: NineBoxTalentGridProps) {
-  const [assessments, setAssessments] = useState(initialAssessments || initialMockAssessments);
+  const operations = usePerformanceOperations();
+  const assessments = initialAssessments ?? operations.talentAssessments;
   const [selectedAssessment, setSelectedAssessment] = useState<TalentAssessment | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showAssessmentDrawer, setShowAssessmentDrawer] = useState(false);
@@ -120,9 +121,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
 
   const handleSaveAssessment = (newAssessment: Partial<TalentAssessment>) => {
     if (editingAssessment) {
-      setAssessments(prev => prev.map(a => 
-        a.id === editingAssessment.id ? { ...a, ...newAssessment } as TalentAssessment : a
-      ));
+      performanceOperationsStore.saveTalentAssessment({ ...editingAssessment, ...newAssessment, updatedAt: new Date().toISOString() } as TalentAssessment);
       toast.success('Assessment updated');
     } else {
       const completeAssessment: TalentAssessment = {
@@ -130,7 +129,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      setAssessments(prev => [...prev, completeAssessment]);
+      performanceOperationsStore.saveTalentAssessment(completeAssessment);
       toast.success('Assessment created');
     }
     setEditingAssessment(null);
