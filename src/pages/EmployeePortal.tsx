@@ -31,6 +31,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
+import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
+import { getEmployeeWorkspaceMeta, getDashboardKpis } from '@/components/employee/employeeWorkspaceConfig';
+
 import {
   format, parseISO, startOfWeek, endOfWeek, isWithinInterval,
   startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subWeeks, subMonths,
@@ -99,22 +102,8 @@ export function EmployeePortal() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-  const pageTitles: Record<string, { title: string; subtitle: string }> = {
-    dashboard: { title: 'Dashboard', subtitle: 'Your activity at a glance' },
-    onboarding: { title: 'Onboarding', subtitle: 'Complete your setup' },
-    schedule: { title: 'My Schedule', subtitle: 'Shifts, open shifts and swap requests' },
-    current: { title: 'My Timesheets', subtitle: 'Review your hours and compliance' },
-    'leave-balances': { title: 'Leave Balances', subtitle: 'RDO, ADO and TOIL accruals' },
-    documents: { title: 'Contracts & Documents', subtitle: 'Review, sign and download your documents' },
-    recognition: { title: 'Recognition', subtitle: 'Celebrate your team' },
-    performance: { title: 'Performance', subtitle: 'Reviews, goals and feedback' },
-    okrs: { title: 'My OKRs', subtitle: 'Track objectives and key results' },
-    career: { title: 'Career Path', subtitle: 'Explore your growth journey' },
-    surveys: { title: 'Surveys', subtitle: 'Share your voice' },
-    '360': { title: '360° Feedback', subtitle: 'Multi-source feedback' },
-    learning: { title: 'Learning', subtitle: 'Courses and certifications' },
-  };
-  const currentPage = pageTitles[activeTab] ?? pageTitles.dashboard;
+  const workspaceMeta = getEmployeeWorkspaceMeta(activeTab);
+
 
   const renderContent = () => {
     switch (activeTab) {
@@ -201,16 +190,6 @@ export function EmployeePortal() {
           </div>
         </div>
 
-        {/* Page header banner */}
-        <div className="bg-primary/5 border-b border-border px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{currentPage.title}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">{currentPage.subtitle}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Page content */}
         <main className="flex-1 px-8 py-6 overflow-x-hidden">
           {/* Onboarding Banner */}
@@ -221,61 +200,18 @@ export function EmployeePortal() {
             />
           )}
 
-          {/* Stats Cards (only on dashboard) */}
-          {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Total Hours</p>
-                      <p className="text-2xl font-bold text-blue-600">{stats.totalHours}h</p>
-                    </div>
-                    <Clock className="h-8 w-8 text-blue-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Overtime</p>
-                      <p className="text-2xl font-bold text-amber-600">{stats.totalOvertime}h</p>
-                    </div>
-                    <Hourglass className="h-8 w-8 text-amber-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Approved</p>
-                      <p className="text-2xl font-bold text-emerald-600">{stats.approvedCount}</p>
-                    </div>
-                    <CheckCircle2 className="h-8 w-8 text-emerald-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Est. Pay</p>
-                      <p className="text-2xl font-bold text-purple-600">${stats.estimatedPay}</p>
-                    </div>
-                    <DollarSign className="h-8 w-8 text-purple-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {renderContent()}
+          <ModuleWorkspace
+            storageKey={`employeePortal.${activeTab}`}
+            icon={workspaceMeta.icon}
+            title={workspaceMeta.title}
+            description={workspaceMeta.description}
+            steps={workspaceMeta.steps}
+            kpis={activeTab === 'dashboard' ? getDashboardKpis(stats) : []}
+          >
+            {renderContent()}
+          </ModuleWorkspace>
         </main>
+
       </div>
     </div>
   );
