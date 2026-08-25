@@ -72,6 +72,8 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
           <TabsTrigger value="scales" className="gap-1.5"><Star className="h-3.5 w-3.5" /> Rating scales</TabsTrigger>
           <TabsTrigger value="competencies" className="gap-1.5"><ListChecks className="h-3.5 w-3.5" /> Competency library</TabsTrigger>
           <TabsTrigger value="cycles" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Review cycles</TabsTrigger>
+          <TabsTrigger value="rewards" className="gap-1.5"><Gift className="h-3.5 w-3.5" /> Rewards &amp; recognition</TabsTrigger>
+
         </TabsList>
 
         {/* Rating scales */}
