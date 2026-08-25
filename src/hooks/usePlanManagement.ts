@@ -1,7 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
 import { AssignedPlan, PerformancePlanTemplate, PlanStatus } from '@/types/performancePlan';
-import { mockAssignedPlans, performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { toast } from 'sonner';
+import { performancePlanStore, usePerformancePlanStore } from '@/lib/performancePlanStore';
 
 interface UsePlanManagementReturn {
   // Plans
@@ -21,57 +20,23 @@ interface UsePlanManagementReturn {
 }
 
 export function usePlanManagement(): UsePlanManagementReturn {
-  const [assignedPlans, setAssignedPlans] = useState<AssignedPlan[]>(() => {
-    try {
-      const saved = localStorage.getItem('rostered.performance.assignedPlans');
-      return saved ? JSON.parse(saved) as AssignedPlan[] : mockAssignedPlans;
-    } catch {
-      return mockAssignedPlans;
-    }
-  });
-  const [customTemplates, setCustomTemplates] = useState<PerformancePlanTemplate[]>(() => {
-    try {
-      const saved = localStorage.getItem('rostered.performance.customTemplates');
-      return saved ? JSON.parse(saved) as PerformancePlanTemplate[] : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('rostered.performance.assignedPlans', JSON.stringify(assignedPlans));
-  }, [assignedPlans]);
-
-  useEffect(() => {
-    localStorage.setItem('rostered.performance.customTemplates', JSON.stringify(customTemplates));
-  }, [customTemplates]);
+  const { assignedPlans, customTemplates } = usePerformancePlanStore();
 
   // Plan management
-  const createPlan = useCallback(async (data: Omit<AssignedPlan, 'id' | 'createdAt' | 'updatedAt' | 'progress'>): Promise<AssignedPlan | null> => {
+  const createPlan = async (data: Omit<AssignedPlan, 'id' | 'createdAt' | 'updatedAt' | 'progress'>): Promise<AssignedPlan | null> => {
     try {
-      const newPlan: AssignedPlan = {
-        ...data,
-        id: `plan-${Date.now()}`,
-        progress: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setAssignedPlans(prev => [...prev, newPlan]);
+      const newPlan = performancePlanStore.createPlan(data);
       toast.success('Performance plan created successfully');
       return newPlan;
     } catch (error) {
       toast.error('Failed to create plan');
       return null;
     }
-  }, []);
+  };
 
-  const updatePlanStatus = useCallback(async (planId: string, status: PlanStatus): Promise<boolean> => {
+  const updatePlanStatus = async (planId: string, status: PlanStatus): Promise<boolean> => {
     try {
-      setAssignedPlans(prev => prev.map(p => 
-        p.id === planId 
-          ? { ...p, status, updatedAt: new Date().toISOString() } 
-          : p
-      ));
+      if (!performancePlanStore.updatePlanStatus(planId, status)) throw new Error('Plan not found');
       
       const statusMessages: Record<PlanStatus, string> = {
         active: 'Plan activated',
@@ -87,101 +52,77 @@ export function usePlanManagement(): UsePlanManagementReturn {
       toast.error('Failed to update plan status');
       return false;
     }
-  }, []);
+  };
 
-  const deletePlan = useCallback(async (planId: string): Promise<boolean> => {
+  const deletePlan = async (planId: string): Promise<boolean> => {
     try {
-      setAssignedPlans(prev => prev.filter(p => p.id !== planId));
+      if (!performancePlanStore.deletePlan(planId)) throw new Error('Plan not found');
       toast.success('Plan deleted successfully');
       return true;
     } catch (error) {
       toast.error('Failed to delete plan');
       return false;
     }
-  }, []);
+  };
 
-  const extendPlan = useCallback(async (planId: string, newEndDate: string): Promise<boolean> => {
+  const extendPlan = async (planId: string, newEndDate: string): Promise<boolean> => {
     try {
-      setAssignedPlans(prev => prev.map(p => 
-        p.id === planId 
-          ? { ...p, endDate: newEndDate, updatedAt: new Date().toISOString() } 
-          : p
-      ));
+      if (!performancePlanStore.extendPlan(planId, newEndDate)) throw new Error('Plan not found');
       toast.success('Plan extended successfully');
       return true;
     } catch (error) {
       toast.error('Failed to extend plan');
       return false;
     }
-  }, []);
+  };
 
   // Template management
-  const createTemplate = useCallback(async (data: Omit<PerformancePlanTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<PerformancePlanTemplate | null> => {
+  const createTemplate = async (data: Omit<PerformancePlanTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<PerformancePlanTemplate | null> => {
     try {
-      const newTemplate: PerformancePlanTemplate = {
-        ...data,
-        id: `tpl-custom-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setCustomTemplates(prev => [...prev, newTemplate]);
+      const newTemplate = performancePlanStore.createTemplate(data);
       toast.success('Template created successfully');
       return newTemplate;
     } catch (error) {
       toast.error('Failed to create template');
       return null;
     }
-  }, []);
+  };
 
-  const updateTemplate = useCallback(async (templateId: string, updates: Partial<PerformancePlanTemplate>): Promise<PerformancePlanTemplate | null> => {
+  const updateTemplate = async (templateId: string, updates: Partial<PerformancePlanTemplate>): Promise<PerformancePlanTemplate | null> => {
     try {
-      let updatedTemplate: PerformancePlanTemplate | null = null;
-      setCustomTemplates(prev => prev.map(t => {
-        if (t.id === templateId) {
-          updatedTemplate = { ...t, ...updates, updatedAt: new Date().toISOString() };
-          return updatedTemplate;
-        }
-        return t;
-      }));
+      const updatedTemplate = performancePlanStore.updateTemplate(templateId, updates);
+      if (!updatedTemplate) throw new Error('Template not found');
       toast.success('Template updated successfully');
       return updatedTemplate;
     } catch (error) {
       toast.error('Failed to update template');
       return null;
     }
-  }, []);
+  };
 
-  const deleteTemplate = useCallback(async (templateId: string): Promise<boolean> => {
+  const deleteTemplate = async (templateId: string): Promise<boolean> => {
     try {
-      // Check if template is system template
-      const isSystem = performancePlanTemplates.find(t => t.id === templateId)?.isSystem;
-      if (isSystem) {
-        toast.error('Cannot delete system templates');
-        return false;
-      }
-      
-      setCustomTemplates(prev => prev.filter(t => t.id !== templateId));
+      if (!performancePlanStore.deleteTemplate(templateId)) throw new Error('Template cannot be deleted');
       toast.success('Template deleted successfully');
       return true;
     } catch (error) {
       toast.error('Failed to delete template');
       return false;
     }
-  }, []);
+  };
 
-  const archiveTemplate = useCallback(async (templateId: string): Promise<boolean> => {
+  const archiveTemplate = async (templateId: string): Promise<boolean> => {
     try {
-      // In a real app, this would set an 'archived' flag
-      setCustomTemplates(prev => prev.filter(t => t.id !== templateId));
+      if (!performancePlanStore.archiveTemplate(templateId)) throw new Error('Template cannot be archived');
       toast.success('Template archived');
       return true;
     } catch (error) {
       toast.error('Failed to archive template');
       return false;
     }
-  }, []);
+  };
 
-  const duplicateTemplate = useCallback((template: PerformancePlanTemplate): PerformancePlanTemplate => {
+  const duplicateTemplate = (template: PerformancePlanTemplate): PerformancePlanTemplate => {
     const duplicated: PerformancePlanTemplate = {
       ...template,
       id: `tpl-custom-${Date.now()}`,
@@ -204,7 +145,7 @@ export function usePlanManagement(): UsePlanManagementReturn {
       updatedAt: new Date().toISOString(),
     };
     return duplicated;
-  }, []);
+  };
 
   return {
     assignedPlans,
