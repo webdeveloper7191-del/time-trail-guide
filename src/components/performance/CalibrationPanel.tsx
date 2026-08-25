@@ -25,6 +25,7 @@ import {
   Minus,
   BarChart3,
   AlertCircle,
+  Pencil,
 } from 'lucide-react';
 import { 
   CalibrationSession, 
@@ -75,6 +76,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+  const [editingSession, setEditingSession] = useState<CalibrationSession | null>(null);
 
   useEffect(() => {
     if (!selectedSession) return;
@@ -87,8 +89,26 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
   const completedSessions = sessions.filter(s => s.status === 'completed');
 
-  const handleScheduleSession = (draft: Partial<CalibrationSession>) => {
+  const handleSaveSession = (draft: Partial<CalibrationSession>) => {
     if (!draft.title || !draft.scheduledDate || !draft.facilitatorId) return;
+    const existing = draft.id ? sessions.find(item => item.id === draft.id) : undefined;
+    if (existing) {
+      const updated = performanceOperationsStore.updateCalibrationSession(existing.id, {
+        title: draft.title,
+        reviewCycle: draft.reviewCycle ?? existing.reviewCycle,
+        facilitatorId: draft.facilitatorId,
+        participantIds: draft.participantIds ?? existing.participantIds,
+        scheduledDate: draft.scheduledDate,
+        status: draft.status ?? existing.status,
+        notes: draft.notes,
+      });
+      if (updated) {
+        setSelectedSession(updated);
+        toast.success('Calibration session updated');
+      }
+      setEditingSession(null);
+      return;
+    }
     const timestamp = new Date().toISOString();
     const session: CalibrationSession = {
       id: draft.id ?? `calibration-${Date.now()}`,
@@ -264,6 +284,18 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
               />
             </Stack>
 
+            <Button
+              variant="outlined"
+              startIcon={<Pencil size={16} />}
+              onClick={() => {
+                setEditingSession(selectedSession);
+                setShowDetailSheet(false);
+              }}
+              sx={{ mb: 3 }}
+            >
+              Edit Session
+            </Button>
+
             <Stack spacing={2} sx={{ mb: 3 }}>
               <Stack direction="row" alignItems="center" spacing={2}>
                 <Calendar size={16} className="text-muted-foreground" />
@@ -418,7 +450,10 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
             Ensure fair and consistent performance ratings across teams
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => {
+          setEditingSession(null);
+          setShowCreateDrawer(true);
+        }}>
           Schedule Session
         </Button>
       </Stack>
@@ -458,7 +493,15 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
       </Tabs>
 
       {renderDetailSheet()}
-      <CreateCalibrationSessionDrawer open={showCreateDrawer} onClose={() => setShowCreateDrawer(false)} onSave={handleScheduleSession} />
+      <CreateCalibrationSessionDrawer
+        open={showCreateDrawer || Boolean(editingSession)}
+        session={editingSession}
+        onClose={() => {
+          setShowCreateDrawer(false);
+          setEditingSession(null);
+        }}
+        onSave={handleSaveSession}
+      />
     </Box>
   );
 }
