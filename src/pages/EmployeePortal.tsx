@@ -102,22 +102,8 @@ export function EmployeePortal() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-  const pageTitles: Record<string, { title: string; subtitle: string }> = {
-    dashboard: { title: 'Dashboard', subtitle: 'Your activity at a glance' },
-    onboarding: { title: 'Onboarding', subtitle: 'Complete your setup' },
-    schedule: { title: 'My Schedule', subtitle: 'Shifts, open shifts and swap requests' },
-    current: { title: 'My Timesheets', subtitle: 'Review your hours and compliance' },
-    'leave-balances': { title: 'Leave Balances', subtitle: 'RDO, ADO and TOIL accruals' },
-    documents: { title: 'Contracts & Documents', subtitle: 'Review, sign and download your documents' },
-    recognition: { title: 'Recognition', subtitle: 'Celebrate your team' },
-    performance: { title: 'Performance', subtitle: 'Reviews, goals and feedback' },
-    okrs: { title: 'My OKRs', subtitle: 'Track objectives and key results' },
-    career: { title: 'Career Path', subtitle: 'Explore your growth journey' },
-    surveys: { title: 'Surveys', subtitle: 'Share your voice' },
-    '360': { title: '360° Feedback', subtitle: 'Multi-source feedback' },
-    learning: { title: 'Learning', subtitle: 'Courses and certifications' },
-  };
-  const currentPage = pageTitles[activeTab] ?? pageTitles.dashboard;
+  const workspaceMeta = getEmployeeWorkspaceMeta(activeTab);
+
 
   const renderContent = () => {
     switch (activeTab) {
