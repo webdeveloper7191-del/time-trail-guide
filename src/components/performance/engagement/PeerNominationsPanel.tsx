@@ -172,7 +172,7 @@ export function PeerNominationsPanel({ staff, currentUserId, embedded = false }:
               <Box>
                 <Typography variant="h5" fontWeight={700}>{myNominations.length}</Typography>
                 <Typography variant="caption" color="text.secondary">My Nominations</Typography>
-              </Box>}}
+              </Box>
             </Stack>
           </Box>
         </Card>
@@ -260,7 +260,7 @@ export function PeerNominationsPanel({ staff, currentUserId, embedded = false }:
               <Typography variant="h6" color="text.secondary" mb={1}>No nominations found</Typography>
               <Typography variant="body2" color="text.secondary">
                 {viewMode === 'my_nominations' 
-                  ? 'You haven't nominated any peers yet. Start by clicking "Nominate Peer".'
+                  ? 'You haven\'t nominated any peers yet. Start by clicking "Nominate Peer".'
                   : 'No nominations match your current filters.'}
               </Typography>
             </Box>
