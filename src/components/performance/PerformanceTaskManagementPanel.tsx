@@ -134,9 +134,7 @@ const staffOptions = mockStaff.map(s => ({
 }));
 
 interface PerformanceTaskManagementPanelProps {
-  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
-  embedded?: boolean;
-currentUserId: string;
+  currentUserId: string;
   goals?: Goal[];
   reviews?: PerformanceReview[];
   conversations?: Conversation[];
@@ -153,7 +151,6 @@ export function PerformanceTaskManagementPanel({
   onNavigateToGoal,
   onNavigateToReview,
   onNavigateToConversation,
-  embedded = false,
 }: PerformanceTaskManagementPanelProps) {
   const [tasks, setTasks] = useState<PerformanceTask[]>(mockPerformanceTasks);
   const [pipelines, setPipelines] = useState<PerformanceTaskPipeline[]>(mockPerformancePipelines);
@@ -480,13 +477,13 @@ export function PerformanceTaskManagementPanel({
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" justifyContent={embedded ? "flex-end" : "space-between"} sx={{ mb: 2 }}>
-          {!embedded && <div>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <div>
             <Typography variant="h6" fontWeight={600}>Performance Tasks</Typography>
             <Typography variant="body2" color="text.secondary">
               Track development tasks, coaching, reviews, and PIP actions
             </Typography>
-          </div>}
+          </div>
           <Stack direction="row" spacing={1} alignItems="center">
             <FormControlLabel
               control={
@@ -520,9 +517,10 @@ export function PerformanceTaskManagementPanel({
               <Plus className="h-4 w-4 mr-1" /> New Task
             </Button>
           </Stack>
-        </Stack>}
+        </Stack>
 
-        {!embedded && <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        {/* Stats */}
+        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
           <Chip label={`Total: ${stats.total}`} size="small" sx={{ bgcolor: 'rgba(107, 114, 128, 0.1)', color: 'rgb(55, 65, 81)' }} />
           <Chip label={`Open: ${stats.open}`} size="small" sx={{ bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' }} />
           <Chip label={`In Progress: ${stats.inProgress}`} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.12)', color: 'rgb(29, 78, 216)' }} />
@@ -533,134 +531,100 @@ export function PerformanceTaskManagementPanel({
           )}
         </Stack>
 
-        {/* Filters & Inline Bulk Actions */}
-        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" sx={{ flex: 1 }}>
-            <TextField
-              placeholder="Search tasks..."
-              size="small"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ width: 220 }}
-            />
-            
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as PerformanceTaskStatus | 'all')}>
-              <SelectTrigger className="w-[120px] h-9">
-                <SelectValue placeholder="Status" />
+        {/* Filters */}
+        <Stack direction="row" spacing={2} alignItems="center">
+          <TextField
+            placeholder="Search tasks..."
+            size="small"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: 250 }}
+          />
+          
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as PerformanceTaskStatus | 'all')}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {Object.entries(performanceTaskStatusConfig).map(([key, config]) => (
+                <SelectItem key={key} value={key}>{config.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as PerformanceTaskType | 'all')}>
+            <SelectTrigger className="w-[160px] h-9">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {Object.entries(performanceTaskTypeConfig).map(([key, config]) => (
+                <SelectItem key={key} value={key}>{config.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as PerformanceTaskPriority | 'all')}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priority</SelectItem>
+              {Object.entries(performanceTaskPriorityConfig).map(([key, config]) => (
+                <SelectItem key={key} value={key}>{config.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {viewMode === 'kanban' && (
+            <Select value={selectedPipelineId} onValueChange={setSelectedPipelineId}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Pipeline" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                {pipelines.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </Stack>
+
+        {/* Bulk Actions */}
+        {selectedTaskIds.size > 0 && (
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 2, p: 1.5, bgcolor: 'action.selected', borderRadius: 1 }}>
+            <Typography variant="body2" fontWeight={500}>
+              {selectedTaskIds.size} selected
+            </Typography>
+            <Select onValueChange={(v) => handleBulkStatusChange(v as PerformanceTaskStatus)}>
+              <SelectTrigger className="w-[150px] h-8">
+                <SelectValue placeholder="Change Status" />
+              </SelectTrigger>
+              <SelectContent>
                 {Object.entries(performanceTaskStatusConfig).map(([key, config]) => (
                   <SelectItem key={key} value={key}>{config.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as PerformanceTaskType | 'all')}>
-              <SelectTrigger className="w-[130px] h-9">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(performanceTaskTypeConfig).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as PerformanceTaskPriority | 'all')}>
-              <SelectTrigger className="w-[120px] h-9">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priority</SelectItem>
-                {Object.entries(performanceTaskPriorityConfig).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {viewMode === 'kanban' && (
-              <Select value={selectedPipelineId} onValueChange={setSelectedPipelineId}>
-                <SelectTrigger className="w-[160px] h-9">
-                  <SelectValue placeholder="Pipeline" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pipelines.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Button variant="outline" size="sm" onClick={(e) => setBulkAssignAnchor(e.currentTarget as HTMLElement)}>
+              <UserPlus className="h-3 w-3 mr-1" /> Assign
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleBulkDelete} className="text-destructive">
+              <Trash2 className="h-3 w-3 mr-1" /> Delete
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedTaskIds(new Set())}>
+              <X className="h-3 w-3" />
+            </Button>
           </Stack>
-
-          {/* Inline Bulk Actions */}
-          {selectedTaskIds.size > 0 && (
-            <Stack 
-              direction="row" 
-              spacing={1} 
-              alignItems="center" 
-              sx={{ 
-                px: 1.5, 
-                py: 0.75, 
-                bgcolor: 'primary.50', 
-                borderRadius: 1.5,
-                border: '1px solid',
-                borderColor: 'primary.200',
-              }}
-            >
-              <Box
-                sx={{
-                  minWidth: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                }}
-              >
-                {selectedTaskIds.size}
-              </Box>
-              <Typography variant="body2" sx={{ fontWeight: 500, color: 'primary.700', fontSize: '0.8125rem' }}>
-                selected
-              </Typography>
-              
-              <Box sx={{ width: 1, height: 20, bgcolor: 'primary.200', mx: 0.5 }} />
-              
-              <Select onValueChange={(v) => handleBulkStatusChange(v as PerformanceTaskStatus)}>
-                <SelectTrigger className="w-[120px] h-7 text-xs">
-                  <SelectValue placeholder="Change Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(performanceTaskStatusConfig).map(([key, config]) => (
-                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={(e) => setBulkAssignAnchor(e.currentTarget as HTMLElement)}>
-                <UserPlus className="h-3 w-3 mr-1" /> Assign
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive" onClick={handleBulkDelete}>
-                <Trash2 className="h-3 w-3 mr-1" /> Delete
-              </Button>
-              <IconButton size="small" onClick={() => setSelectedTaskIds(new Set())} sx={{ p: 0.25, color: 'primary.600' }}>
-                <X size={16} />
-              </IconButton>
-            </Stack>
-          )}
-        </Stack>
+        )}
       </Box>
 
       {/* Content */}

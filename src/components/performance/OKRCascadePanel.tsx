@@ -15,8 +15,6 @@ import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RowActionsMenu } from './shared/RowActionsMenu';
-import { CollapsibleStatsGrid, ScrollableTable } from './shared';
 import { 
   Target, 
   Plus, 
@@ -32,9 +30,6 @@ import {
   Check,
   Edit3,
   Clock,
-  Eye,
-  Edit,
-  Trash2,
 } from 'lucide-react';
 import { 
   Objective, 
@@ -51,8 +46,6 @@ import { CreateOKRDrawer } from './CreateOKRDrawer';
 import { toast } from 'sonner';
 
 interface OKRCascadePanelProps {
-  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
-  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -91,8 +84,7 @@ const getProgressColor = (progress: number) => {
   return 'error.main';
 };
 
-export function OKRCascadePanel({
-  embedded = false, currentUserId }: OKRCascadePanelProps) {
+export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
   const [objectives, setObjectives] = useState<Objective[]>(initialMockObjectives);
   const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set(['obj-company-1']));
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
@@ -345,50 +337,18 @@ export function OKRCascadePanel({
                     </Stack>
                   </Box>
 
-                  <Stack direction="row" alignItems="flex-start" spacing={1}>
-                    <Box sx={{ textAlign: 'right', minWidth: 80 }}>
-                      <Typography 
-                        variant="h5" 
-                        fontWeight={700} 
-                        sx={{ color: getProgressColor(objective.progress) }}
-                      >
-                        {objective.progress}%
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {objective.keyResults.length} Key Results
-                      </Typography>
-                    </Box>
-                    <RowActionsMenu
-                      actions={[
-                        {
-                          label: 'View Details',
-                          icon: <Eye size={14} />,
-                          onClick: (e) => { e.stopPropagation(); handleViewObjective(objective); },
-                        },
-                        {
-                          label: 'Edit Objective',
-                          icon: <Edit size={14} />,
-                          onClick: (e) => { e.stopPropagation(); toast.info('Edit OKR drawer would open'); },
-                        },
-                        {
-                          label: 'Add Key Result',
-                          icon: <Plus size={14} />,
-                          onClick: (e) => { e.stopPropagation(); toast.info('Add Key Result drawer would open'); },
-                        },
-                        {
-                          label: 'Delete',
-                          icon: <Trash2 size={14} />,
-                          variant: 'destructive',
-                          separator: true,
-                          onClick: (e) => { 
-                            e.stopPropagation(); 
-                            setObjectives(prev => prev.filter(o => o.id !== objective.id));
-                            toast.success('Objective deleted');
-                          },
-                        },
-                      ]}
-                    />
-                  </Stack>
+                  <Box sx={{ textAlign: 'right', minWidth: 100 }}>
+                    <Typography 
+                      variant="h5" 
+                      fontWeight={700} 
+                      sx={{ color: getProgressColor(objective.progress) }}
+                    >
+                      {objective.progress}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {objective.keyResults.length} Key Results
+                    </Typography>
+                  </Box>
                 </Stack>
 
                 {/* Progress Bar */}
@@ -618,79 +578,62 @@ export function OKRCascadePanel({
       </Sheet>
     );
   };
-      <Stack 
-        direction={{ xs: "column", sm: "row" }} 
-        justifyContent="space-between" 
-        alignItems={{ xs: "stretch", sm: "center" }} 
-        spacing={2}
-        sx={{ mb: 3 }}
-      >
-        {!embedded && (
-          <Box>
-            <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
-              OKR Alignment
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
-              Company, team, and individual objectives with cascading alignment
-            </Typography>
-          </Box>
-        )}
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)} sx={{ ml: embedded ? "auto" : 0 }}>
-          <span className="hidden sm:inline">Create Objective</span>
-      {!embedded && (
-        <Box sx={{ 
-          display: "grid", 
-          gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, 
-          gap: { xs: 1.5, md: 2 }, 
-          mb: { xs: 3, md: 4 } 
-        }}>
-        <Card sx={{ p: { xs: 2, md: 3 } }}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-            <Target size={16} className="text-primary" />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
-              Total OKRs
-            </Typography>
+
+  return (
+    <Box>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={600} color="text.primary">
+            OKR Alignment
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Company, team, and individual objectives with cascading alignment
+          </Typography>
+        </Box>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
+          Create Objective
+        </Button>
+      </Stack>
+
+      {/* Summary Stats */}
+      <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <Card sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <Target size={18} className="text-primary" />
+            <Typography variant="caption" fontWeight={600} color="text.secondary">Total OKRs</Typography>
           </Stack>
-          <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>{totalObjectives}</Typography>
+          <Typography variant="h4" fontWeight={700}>{totalObjectives}</Typography>
         </Card>
-        <Card sx={{ p: { xs: 2, md: 3 } }}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-            <TrendingUp size={16} className="text-green-600" />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
-              On Track
-            </Typography>
+        <Card sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <TrendingUp size={18} className="text-green-600" />
+            <Typography variant="caption" fontWeight={600} color="text.secondary">On Track</Typography>
           </Stack>
-          <Typography variant="h4" fontWeight={700} color="success.main" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>{onTrackCount}</Typography>
+          <Typography variant="h4" fontWeight={700} color="success.main">{onTrackCount}</Typography>
         </Card>
-        <Card sx={{ p: { xs: 2, md: 3 } }}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-            <AlertTriangle size={16} className="text-red-600" />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
-              At Risk
-            </Typography>
+        <Card sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <AlertTriangle size={18} className="text-red-600" />
+            <Typography variant="caption" fontWeight={600} color="text.secondary">At Risk</Typography>
           </Stack>
-          <Typography variant="h4" fontWeight={700} color="error.main" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>{atRiskCount}</Typography>
+          <Typography variant="h4" fontWeight={700} color="error.main">{atRiskCount}</Typography>
         </Card>
-        <Card sx={{ p: { xs: 2, md: 3 }, display: { xs: 'none', sm: 'block' } }}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
-            <BarChart3 size={16} className="text-blue-600" />
-            <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
-              Avg Progress
-            </Typography>
+        <Card sx={{ p: 3 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <BarChart3 size={18} className="text-blue-600" />
+            <Typography variant="caption" fontWeight={600} color="text.secondary">Avg Progress</Typography>
           </Stack>
-          <Typography variant="h4" fontWeight={700} color="primary.main" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>{avgProgress}%</Typography>
+          <Typography variant="h4" fontWeight={700} color="primary.main">{avgProgress}%</Typography>
         </Card>
-      </Box>
+      </div>
 
       <Tabs defaultValue="hierarchy" className="w-full">
-        <div className="overflow-x-auto">
-          <TabsList className="mb-4 whitespace-nowrap">
-            <TabsTrigger value="hierarchy" className="text-xs sm:text-sm">Hierarchy</TabsTrigger>
-            <TabsTrigger value="company" className="text-xs sm:text-sm">Company ({companyObjectives.length})</TabsTrigger>
-            <TabsTrigger value="team" className="text-xs sm:text-sm">Team ({teamObjectives.length})</TabsTrigger>
-            <TabsTrigger value="individual" className="text-xs sm:text-sm">Individual ({individualObjectives.length})</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="mb-4">
+          <TabsTrigger value="hierarchy">Hierarchy View</TabsTrigger>
+          <TabsTrigger value="company">Company ({companyObjectives.length})</TabsTrigger>
+          <TabsTrigger value="team">Team ({teamObjectives.length})</TabsTrigger>
+          <TabsTrigger value="individual">Individual ({individualObjectives.length})</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="hierarchy">
           {companyObjectives.map(obj => renderObjectiveCard(obj, 0))}

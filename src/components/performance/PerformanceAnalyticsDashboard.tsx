@@ -39,7 +39,6 @@ import {
 } from 'lucide-react';
 
 interface PerformanceAnalyticsDashboardProps {
-  embedded?: boolean;
   goals: Goal[];
   reviews: PerformanceReview[];
   feedback: Feedback[];
@@ -53,7 +52,6 @@ export function PerformanceAnalyticsDashboard({
   reviews,
   feedback,
   conversations,
-  embedded = false,
 }: PerformanceAnalyticsDashboardProps) {
   // Goal Statistics
   const goalStats = useMemo(() => {
@@ -236,14 +234,12 @@ export function PerformanceAnalyticsDashboard({
 
   return (
     <Box sx={{ p: 3 }}>
-      {!embedded && (
-        <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
+      <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
         Performance Analytics
       </Typography>
-      )}
 
-      {!embedded && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             icon={<Target className="h-5 w-5 text-primary" />}
@@ -285,7 +281,6 @@ export function PerformanceAnalyticsDashboard({
           />
         </Grid>
       </Grid>
-      )}
 
       {/* Charts Row 1 */}
       <Grid container spacing={3} sx={{ mb: 4 }}>

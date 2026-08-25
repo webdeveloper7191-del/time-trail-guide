@@ -15,15 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { 
   Briefcase, 
@@ -45,12 +36,7 @@ import {
   History,
   Save,
   X,
-  Eye,
-  MoreHorizontal,
-  Trash2,
-  Archive,
 } from 'lucide-react';
-import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
 import { 
   Skill, 
   StaffSkill, 
@@ -92,9 +78,7 @@ interface RatingHistoryEntry {
 }
 
 interface SkillsCareerPanelProps {
-  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
-  embedded?: boolean;
-staffId?: string;
+  staffId?: string;
 }
 
 const getSkillLevelColor = (level: string) => {
@@ -128,7 +112,7 @@ const pastelColors = {
   teal: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
 };
 
-export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: SkillsCareerPanelProps) {
+export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProps) {
   const [selectedStaffId, setSelectedStaffId] = useState(staffId);
   const [showCareerPathSheet, setShowCareerPathSheet] = useState(false);
   const [showAssessDrawer, setShowAssessDrawer] = useState(false);
@@ -466,152 +450,92 @@ export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: Ski
         </Stack>
       </Stack>
 
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="text-xs uppercase tracking-wider font-semibold">Skill</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Category</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Current Level</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Target</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-36">Progress</TableHead>
-              <TableHead className="w-20"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {skillsList.map(skill => {
-              const level = getStaffSkillLevel(skill.id);
-              const levelStyle = getSkillLevelColor(level);
-              const progress = getSkillProgress(skill.id);
-              const staffSkill = staffSkills.find(s => s.skillId === skill.id);
-              const isExpert = level === 'expert';
+      <Stack spacing={3}>
+        {Object.entries(skillsByCategory).map(([category, skills]) => (
+          <Card key={category} sx={{ p: 3 }}>
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+              {category}
+            </Typography>
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              {skills.map(skill => {
+                const level = getStaffSkillLevel(skill.id);
+                const levelStyle = getSkillLevelColor(level);
+                const progress = getSkillProgress(skill.id);
+                const staffSkill = staffSkills.find(s => s.skillId === skill.id);
 
-              return (
-                <TableRow 
-                  key={skill.id}
-                  className="group hover:bg-muted/50 cursor-pointer"
-                  onClick={() => handleAssessSkill(skill)}
-                  style={{
-                    borderLeft: isExpert ? '3px solid hsl(var(--chart-2))' : undefined,
-                  }}
-                >
-                  <TableCell className="py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{skill.name}</span>
-                      {skill.isCore && (
-                        <Badge className="text-[10px] py-0 bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-50">
-                          Core
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Badge variant="outline" className="text-xs font-normal">
-                      {skill.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Chip 
-                      label={skillLevelLabels[level as keyof typeof skillLevelLabels]}
-                      size="small"
-                      sx={{ 
-                        fontSize: 11,
-                        bgcolor: levelStyle.bg,
-                        color: levelStyle.color,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="py-3">
-                    {staffSkill && staffSkill.currentLevel !== staffSkill.targetLevel ? (
-                      <div className="flex items-center gap-1">
-                        <ArrowRight size={14} className="text-muted-foreground" />
-                        <Badge variant="outline" className="text-xs">
-                          {skillLevelLabels[staffSkill.targetLevel]}
-                        </Badge>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    {staffSkill ? (
-                      <div className="flex items-center gap-2">
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={progress}
+                return (
+                  <Box 
+                    key={skill.id}
+                    sx={{ 
+                      cursor: 'pointer',
+                      p: 1.5,
+                      borderRadius: 1,
+                      transition: 'background-color 0.2s',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                    onClick={() => handleAssessSkill(skill)}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="body2" fontWeight={500}>
+                          {skill.name}
+                        </Typography>
+                        {skill.isCore && (
+                          <Chip 
+                            label="Core" 
+                            size="small" 
+                            sx={{ 
+                              fontSize: 10, 
+                              height: 18,
+                              bgcolor: 'rgba(59, 130, 246, 0.12)',
+                              color: 'rgb(37, 99, 235)',
+                            }} 
+                          />
+                        )}
+                      </Stack>
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Chip 
+                          label={skillLevelLabels[level as keyof typeof skillLevelLabels]}
+                          size="small"
                           sx={{ 
-                            flex: 1,
-                            height: 6, 
-                            borderRadius: 1,
-                            bgcolor: 'rgba(0,0,0,0.08)',
+                            fontSize: 11,
+                            bgcolor: levelStyle.bg,
+                            color: levelStyle.color,
                           }}
                         />
-                        <span className="text-xs text-muted-foreground w-8">
-                          {Math.round(progress)}%
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">Not assessed</span>
-                    )}
-                  </TableCell>
-                <TableCell className="py-3">
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <RowActionsMenu
-                        actions={getSkillActions(skill)}
-                        size="sm"
-                        align="end"
+                        {staffSkill && staffSkill.currentLevel !== staffSkill.targetLevel && (
+                          <>
+                            <ArrowRight size={14} className="text-muted-foreground" />
+                            <Chip 
+                              label={skillLevelLabels[staffSkill.targetLevel]}
+                              size="small"
+                              variant="outlined"
+                              sx={{ fontSize: 11 }}
+                            />
+                          </>
+                        )}
+                      </Stack>
+                    </Stack>
+                    {staffSkill && (
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={progress}
+                        sx={{ 
+                          height: 4, 
+                          borderRadius: 1,
+                          bgcolor: 'rgba(0,0,0,0.08)',
+                        }}
                       />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+                    )}
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Card>
+        ))}
+      </Stack>
     </Box>
   );
-
-  const getSkillActions = (skill: Skill): RowAction[] => {
-    const staffSkill = staffSkills.find(s => s.skillId === skill.id);
-    return [
-      {
-        label: 'View Assessment',
-        icon: <Eye className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          handleAssessSkill(skill);
-        },
-      },
-      {
-        label: 'Edit Skill',
-        icon: <Pencil className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          toast.info('Edit skill functionality coming soon');
-        },
-      },
-      {
-        label: staffSkill ? 'Update Assessment' : 'Assess Now',
-        icon: <Target className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          handleAssessSkill(skill);
-        },
-      },
-      {
-        label: 'Delete Skill',
-        icon: <Trash2 className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          setSkillsList(prev => prev.filter(s => s.id !== skill.id));
-          toast.success('Skill removed');
-        },
-        variant: 'destructive',
-        separator: true,
-      },
-    ];
-  };
 
   const renderSkillGaps = () => {
     const gapsToShow = skillGapsList.length > 0 ? skillGapsList : (careerProgress?.skillGaps || []);
@@ -636,101 +560,65 @@ export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: Ski
           </Button>
         </Stack>
 
-        {gapsToShow.length === 0 ? (
-          <Card sx={{ p: 3, textAlign: 'center' }} className="border-dashed">
-            <AlertCircle size={32} className="mx-auto mb-2 text-muted-foreground" />
-            <Typography variant="body2" color="text.secondary">
-              No skill gaps identified. Click "Add Skill Gap" to define areas for development.
-            </Typography>
-          </Card>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold">Skill</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Current Level</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Required Level</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Gap Size</TableHead>
-                  <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Priority</TableHead>
-                  <TableHead className="w-16"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {gapsToShow.map(gap => {
-                  const priorityStyle = getGapPriorityColor(gap.priority);
-                  const currentStyle = getSkillLevelColor(gap.currentLevel);
-                  const requiredStyle = getSkillLevelColor(gap.requiredLevel);
-                  const isHighPriority = gap.priority === 'high' || gap.priority === 'critical';
+        <Stack spacing={2}>
+          {gapsToShow.map(gap => {
+            const priorityStyle = getGapPriorityColor(gap.priority);
+            const currentStyle = getSkillLevelColor(gap.currentLevel);
+            const requiredStyle = getSkillLevelColor(gap.requiredLevel);
 
-                  return (
-                    <TableRow 
-                      key={gap.skillId}
-                      className="group hover:bg-muted/50"
-                      style={{
-                        borderLeft: isHighPriority ? '3px solid hsl(var(--destructive))' : undefined,
-                      }}
-                    >
-                      <TableCell className="py-3">
-                        <span className="font-medium">{gap.skillName}</span>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <Chip 
-                          label={skillLevelLabels[gap.currentLevel]}
-                          size="small"
-                          sx={{ 
-                            fontSize: 10,
-                            height: 20,
-                            bgcolor: currentStyle.bg,
-                            color: currentStyle.color,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-1">
-                          <ArrowRight size={14} className="text-muted-foreground" />
-                          <Chip 
-                            label={skillLevelLabels[gap.requiredLevel]}
-                            size="small"
-                            sx={{ 
-                              fontSize: 10,
-                              height: 20,
-                              bgcolor: requiredStyle.bg,
-                              color: requiredStyle.color,
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <span className={cn("font-semibold", gap.gapSize >= 2 ? "text-red-600" : "")}>
-                          {gap.gapSize} {gap.gapSize === 1 ? 'level' : 'levels'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <Chip 
-                          label={gap.priority}
-                          size="small"
-                          sx={{ 
-                            textTransform: 'capitalize',
-                            bgcolor: priorityStyle.bg,
-                            color: priorityStyle.color,
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1 hover:bg-muted rounded">
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+            return (
+              <Card key={gap.skillId} sx={{ p: 2 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {gap.skillName}
+                    </Typography>
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
+                      <Chip 
+                        label={skillLevelLabels[gap.currentLevel]}
+                        size="small"
+                        sx={{ 
+                          fontSize: 10,
+                          height: 20,
+                          bgcolor: currentStyle.bg,
+                          color: currentStyle.color,
+                        }}
+                      />
+                      <ArrowRight size={14} className="text-muted-foreground" />
+                      <Chip 
+                        label={skillLevelLabels[gap.requiredLevel]}
+                        size="small"
+                        sx={{ 
+                          fontSize: 10,
+                          height: 20,
+                          bgcolor: requiredStyle.bg,
+                          color: requiredStyle.color,
+                        }}
+                      />
+                    </Stack>
+                  </Box>
+                  <Chip 
+                    label={gap.priority}
+                    size="small"
+                    sx={{ 
+                      textTransform: 'capitalize',
+                      bgcolor: priorityStyle.bg,
+                      color: priorityStyle.color,
+                    }}
+                  />
+                </Stack>
+              </Card>
+            );
+          })}
+          {gapsToShow.length === 0 && (
+            <Card sx={{ p: 3, textAlign: 'center' }} className="border-dashed">
+              <AlertCircle size={32} className="mx-auto mb-2 text-muted-foreground" />
+              <Typography variant="body2" color="text.secondary">
+                No skill gaps identified. Click "Add Skill Gap" to define areas for development.
+              </Typography>
+            </Card>
+          )}
+        </Stack>
       </Box>
     );
   };
@@ -769,50 +657,19 @@ export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: Ski
               </Typography>
             </Card>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="text-xs uppercase tracking-wider font-semibold">Path Name</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider font-semibold">Description</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider font-semibold w-24 text-center">Levels</TableHead>
-                    <TableHead className="w-20"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {careerPathsList.map(p => (
-                    <TableRow key={p.id} className="group hover:bg-muted/50 cursor-pointer">
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 rounded-lg bg-primary/10">
-                            <Briefcase size={16} className="text-primary" />
-                          </div>
-                          <span className="font-medium">{p.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <span className="text-muted-foreground text-sm line-clamp-1">
-                          {p.description || '—'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-3 text-center">
-                        <Badge variant="secondary">{p.levels.length} levels</Badge>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1 hover:bg-muted rounded">
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                          <button className="p-1 hover:bg-muted rounded">
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <Stack spacing={2}>
+              {careerPathsList.map(p => (
+                <Card key={p.id} sx={{ p: 3 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={600}>{p.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">{p.description}</Typography>
+                    </Box>
+                    <Chip label={`${p.levels.length} levels`} size="small" />
+                  </Stack>
+                </Card>
+              ))}
+            </Stack>
           )}
         </Box>
       );
@@ -1011,102 +868,75 @@ export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: Ski
           </Stack>
         </Card>
 
-        {/* Competency Ratings - Table format */}
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="text-xs uppercase tracking-wider font-semibold">Competency</TableHead>
-                <TableHead className="text-xs uppercase tracking-wider font-semibold">Comment</TableHead>
-                <TableHead className="text-xs uppercase tracking-wider font-semibold w-32 text-center">Rating</TableHead>
-                <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Progress</TableHead>
-                <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Updated</TableHead>
-                <TableHead className="w-16"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {managerRatings.map((item, index) => {
-                const ratingColor = item.rating >= 4 ? pastelColors.green : 
-                                   item.rating >= 3 ? pastelColors.amber : pastelColors.rose;
-                const isHighRating = item.rating >= 4.5;
-                const isLowRating = item.rating < 3;
-                
-                return (
-                  <TableRow 
-                    key={item.id} 
-                    className="group hover:bg-muted/50"
-                    style={{
-                      borderLeft: isHighRating 
-                        ? '3px solid hsl(var(--chart-2))' 
-                        : isLowRating 
-                          ? '3px solid hsl(var(--destructive))' 
-                          : undefined,
-                    }}
-                  >
-                    <TableCell className="py-3">
-                      <span className="font-semibold">{item.competency}</span>
-                    </TableCell>
-                    <TableCell className="py-3 max-w-xs">
-                      <span className="text-muted-foreground text-sm line-clamp-2">
-                        {item.comment}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="flex gap-0.5">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star 
-                              key={star} 
-                              className={cn(
-                                "h-3.5 w-3.5",
-                                star <= Math.round(item.rating) 
-                                  ? "text-amber-400 fill-amber-400" 
-                                  : "text-muted-foreground/30"
-                              )} 
-                            />
-                          ))}
-                        </div>
-                        <Badge className={cn("text-xs", ratingColor.bg, ratingColor.text, ratingColor.border, "border")}>
-                          {item.rating.toFixed(1)}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1">
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(item.rating / 5) * 100}
-                          sx={{ 
-                            flex: 1,
-                            height: 6, 
-                            borderRadius: 1,
-                            bgcolor: 'rgba(0,0,0,0.08)',
-                          }}
+        {/* Competency Ratings - Editable */}
+        <Stack spacing={2}>
+          {managerRatings.map((item, index) => {
+            const ratingColor = item.rating >= 4 ? pastelColors.green : 
+                               item.rating >= 3 ? pastelColors.amber : pastelColors.rose;
+            
+            return (
+              <Card key={item.id} sx={{ p: 2.5 }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Box sx={{ flex: 1 }}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography variant="subtitle2" fontWeight={600}>
+                        {item.competency}
+                      </Typography>
+                      <button 
+                        onClick={() => handleEditRating(index)}
+                        className="p-1 rounded hover:bg-muted/50 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      <MessageSquare className="inline h-3 w-3 mr-1" />
+                      {item.comment}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                      Last updated: {item.lastUpdated}
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" spacing={0.25}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          className={cn(
+                            "h-4 w-4",
+                            star <= Math.round(item.rating) 
+                              ? "text-amber-400 fill-amber-400" 
+                              : "text-muted-foreground/30"
+                          )} 
                         />
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <span className="text-xs text-muted-foreground">{item.lastUpdated}</span>
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleEditRating(index)}
-                          className="p-1 hover:bg-muted rounded"
-                        >
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                        <button className="p-1 hover:bg-muted rounded">
-                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                      ))}
+                    </Stack>
+                    <Chip 
+                      label={item.rating.toFixed(1)}
+                      size="small"
+                      sx={{ 
+                        fontSize: 11,
+                        minWidth: 40,
+                      }}
+                      className={cn(ratingColor.bg, ratingColor.text)}
+                    />
+                  </Stack>
+                </Stack>
+                <Box sx={{ mt: 2 }}>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={(item.rating / 5) * 100}
+                    sx={{ 
+                      height: 6, 
+                      borderRadius: 1,
+                      bgcolor: 'rgba(0,0,0,0.08)',
+                    }}
+                  />
+                </Box>
+              </Card>
+            );
+          })}
+        </Stack>
 
         {/* Rating Trend Chart */}
         <Card sx={{ p: 3, mt: 3 }}>
@@ -1212,7 +1042,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: Ski
   return (
     <Box>
       {/* Header with searchable employee selector */}
-      {!embedded && <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
         <Avatar sx={{ width: 48, height: 48 }} className={pastelColors.purple.bg}>
           <span className={pastelColors.purple.text}>
             {staff?.firstName.charAt(0) || '?'}

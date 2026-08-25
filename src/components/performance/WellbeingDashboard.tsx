@@ -6,37 +6,37 @@ import {
   Chip,
   Avatar,
   LinearProgress,
+  Divider,
+  IconButton,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
   Heart, 
   AlertTriangle, 
   Clock, 
   Calendar,
+  TrendingUp,
+  TrendingDown,
+  Minus,
   Activity,
   Coffee,
   Sun,
+  Moon,
+  Battery,
+  Zap,
   ChevronRight,
-  Eye,
-  MessageSquare,
+  Users,
 } from 'lucide-react';
 import { 
   WellbeingIndicator, 
+  WellbeingCheckIn,
   wellbeingRiskLabels,
   WellbeingRiskLevel,
 } from '@/types/advancedPerformance';
-import { mockWellbeingIndicators } from '@/data/mockAdvancedPerformanceData';
+import { mockWellbeingIndicators, mockWellbeingCheckIns } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { 
   RadarChart, 
@@ -45,11 +45,16 @@ import {
   PolarRadiusAxis, 
   Radar, 
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
 } from 'recharts';
+import { format, differenceInDays } from 'date-fns';
 
 interface WellbeingDashboardProps {
-  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
-  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -65,17 +70,16 @@ const getRiskLevelStyle = (level: WellbeingRiskLevel) => {
 
 const getRiskIcon = (level: WellbeingRiskLevel) => {
   switch (level) {
-    case 'low': return <Heart size={14} className="text-green-600" />;
-    case 'moderate': return <Activity size={14} className="text-amber-600" />;
-    case 'high': return <AlertTriangle size={14} className="text-orange-600" />;
-    case 'critical': return <AlertTriangle size={14} className="text-red-600" />;
+    case 'low': return <Heart size={16} className="text-green-600" />;
+    case 'moderate': return <Activity size={16} className="text-amber-600" />;
+    case 'high': return <AlertTriangle size={16} className="text-orange-600" />;
+    case 'critical': return <AlertTriangle size={16} className="text-red-600" />;
   }
 };
 
-export function WellbeingDashboard({ currentUserId, embedded = false , embedded = false }: WellbeingDashboardProps) {
+export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
   const [selectedIndicator, setSelectedIndicator] = useState<WellbeingIndicator | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
@@ -84,6 +88,9 @@ export function WellbeingDashboard({ currentUserId, embedded = false , embedded 
     acc[ind.riskLevel] = (acc[ind.riskLevel] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  const avgWorkload = mockWellbeingIndicators.reduce((sum, ind) => sum + ind.workloadScore, 0) / mockWellbeingIndicators.length;
+  const avgEngagement = mockWellbeingIndicators.reduce((sum, ind) => sum + ind.engagementScore, 0) / mockWellbeingIndicators.length;
 
   const handleViewIndicator = (indicator: WellbeingIndicator) => {
     setSelectedIndicator(indicator);
@@ -131,193 +138,133 @@ export function WellbeingDashboard({ currentUserId, embedded = false , embedded 
     </div>
   );
 
-  const renderIndicatorsTable = (indicators: WellbeingIndicator[]) => {
-    if (indicators.length === 0) {
-      return (
-        <Card sx={{ p: 4, textAlign: 'center' }}>
-          <Heart size={40} className="mx-auto mb-2 text-muted-foreground" />
-          <Typography variant="subtitle1" fontWeight={600}>No indicators found</Typography>
-          <Typography variant="body2" color="text.secondary">
-            All staff are within healthy ranges
-          </Typography>
-        </Card>
-      );
-    }
+  const renderIndicatorCard = (indicator: WellbeingIndicator) => {
+    const staff = getStaffInfo(indicator.staffId);
+    const staffName = staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown';
+    const riskStyle = getRiskLevelStyle(indicator.riskLevel);
 
     return (
-      <Card sx={{ overflow: 'hidden' }}>
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/30">
-              <TableHead className="font-semibold">Employee</TableHead>
-              <TableHead className="font-semibold">Risk Level</TableHead>
-              <TableHead className="font-semibold text-center">Overtime</TableHead>
-              <TableHead className="font-semibold text-center">Avg Day</TableHead>
-              <TableHead className="font-semibold">Workload</TableHead>
-              <TableHead className="font-semibold">Engagement</TableHead>
-              <TableHead className="font-semibold">Risk Factors</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {indicators.map((indicator) => {
-              const staff = getStaffInfo(indicator.staffId);
-              const staffName = staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown';
-              const riskStyle = getRiskLevelStyle(indicator.riskLevel);
-              const isHovered = hoveredRow === indicator.id;
-              const isHighRisk = indicator.riskLevel === 'critical' || indicator.riskLevel === 'high';
-
-              return (
-                <TableRow 
-                  key={indicator.id}
-                  className="cursor-pointer transition-colors"
-                  style={{
-                    borderLeft: isHighRisk ? `3px solid ${riskStyle.border}` : undefined,
-                  }}
-                  onMouseEnter={() => setHoveredRow(indicator.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  onClick={() => handleViewIndicator(indicator)}
-                >
-                  <TableCell>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      <Avatar sx={{ width: 32, height: 32, fontSize: 13 }}>
-                        {staff?.firstName.charAt(0) || '?'}
-                      </Avatar>
-                      {!embedded && {!embedded && <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
-              <Activity size={20} style={{ color: \'var(--primary)\' }} />
-            </Box>}
-            <Typography variant="h6" fontWeight={600}>
-              Wellbeing Dashboard
-            </Typography>
+      <Card 
+        key={indicator.id}
+        sx={{ 
+          p: 3,
+          cursor: 'pointer',
+          border: '1px solid',
+          borderColor: indicator.riskLevel === 'critical' || indicator.riskLevel === 'high' 
+            ? riskStyle.border 
+            : 'divider',
+          transition: 'all 0.2s ease',
+          '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+        }}
+        onClick={() => handleViewIndicator(indicator)}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar sx={{ width: 40, height: 40 }}>
+              {staff?.firstName.charAt(0) || '?'}
+            </Avatar>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {staffName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {staff?.position}
+              </Typography>
+            </Box>
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            Monitor team health and burnout risk indicators
-          </Typography>
-        </Box>}
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      icon={getRiskIcon(indicator.riskLevel)}
-                      label={wellbeingRiskLabels[indicator.riskLevel]}
-                      size="small"
-                      sx={{ 
-                        bgcolor: riskStyle.bg,
-                        color: riskStyle.color,
-                        fontWeight: 500,
-                        '& .MuiChip-icon': { color: 'inherit', marginLeft: '6px' },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Typography 
-                      variant="body2" 
-                      fontWeight={indicator.overtimeHours > 10 ? 600 : 400}
-                      color={indicator.overtimeHours > 10 ? 'error.main' : 'text.primary'}
-                    >
-                      {indicator.overtimeHours}h
-                    </Typography>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Typography 
-                      variant="body2"
-                      fontWeight={indicator.averageWorkdayLength > 9 ? 600 : 400}
-                      color={indicator.averageWorkdayLength > 9 ? 'warning.main' : 'text.primary'}
-                    >
-                      {indicator.averageWorkdayLength}h
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Stack spacing={0.5}>
-                      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"}>
-                        <Typography variant="caption" color="text.secondary">
-                          {indicator.workloadScore}/10
-                        </Typography>
-                      </Stack>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={indicator.workloadScore * 10}
-                        sx={{ 
-                          height: 4, 
-                          borderRadius: 1,
-                          width: 80,
-                          bgcolor: 'rgba(0,0,0,0.08)',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: indicator.workloadScore > 7 ? 'error.main' : indicator.workloadScore > 5 ? 'warning.main' : 'success.main',
-                          }
-                        }}
-                      />
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    <Stack spacing={0.5}>
-                      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"}>
-                        <Typography variant="caption" color="text.secondary">
-                          {indicator.engagementScore}/10
-                        </Typography>
-                      </Stack>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={indicator.engagementScore * 10}
-                        sx={{ 
-                          height: 4, 
-                          borderRadius: 1,
-                          width: 80,
-                          bgcolor: 'rgba(0,0,0,0.08)',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: indicator.engagementScore < 5 ? 'error.main' : indicator.engagementScore < 7 ? 'warning.main' : 'success.main',
-                          }
-                        }}
-                      />
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" flexWrap="wrap" gap={0.5}>
-                      {indicator.riskFactors.slice(0, 2).map((factor, index) => (
-                        <Chip 
-                          key={index}
-                          label={factor}
-                          size="small"
-                          sx={{ 
-                            fontSize: 10,
-                            height: 20,
-                            bgcolor: 'rgba(239, 68, 68, 0.08)',
-                            color: 'rgb(185, 28, 28)',
-                          }}
-                        />
-                      ))}
-                      {indicator.riskFactors.length > 2 && (
-                        <Chip 
-                          label={`+${indicator.riskFactors.length - 2}`}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontSize: 10, height: 20 }}
-                        />
-                      )}
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    <Stack 
-                      direction="row" 
-                      spacing={0.5} 
-                      justifyContent="flex-end"
-                      sx={{ opacity: isHovered ? 1 : 0, transition: 'opacity 0.2s' }}
-                    >
-                      <Button variant="ghost" size="small" sx={{ minWidth: 32, p: 0.5 }}>
-                        <Eye size={16} />
-                      </Button>
-                      <Button variant="ghost" size="small" sx={{ minWidth: 32, p: 0.5 }}>
-                        <MessageSquare size={16} />
-                      </Button>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+          <Chip 
+            icon={getRiskIcon(indicator.riskLevel)}
+            label={wellbeingRiskLabels[indicator.riskLevel]}
+            size="small"
+            sx={{ 
+              bgcolor: riskStyle.bg,
+              color: riskStyle.color,
+              '& .MuiChip-icon': { color: 'inherit' },
+            }}
+          />
+        </Stack>
+
+        <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Overtime</Typography>
+            <Typography variant="body2" fontWeight={600}>{indicator.overtimeHours}h</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Avg Day</Typography>
+            <Typography variant="body2" fontWeight={600}>{indicator.averageWorkdayLength}h</Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Days Since Leave</Typography>
+            <Typography variant="body2" fontWeight={600}>{indicator.daysSinceLastLeave}</Typography>
+          </Box>
+        </Stack>
+
+        <Stack direction="row" spacing={2}>
+          <Box sx={{ flex: 1 }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">Workload</Typography>
+              <Typography variant="caption" fontWeight={600}>{indicator.workloadScore}/10</Typography>
+            </Stack>
+            <LinearProgress 
+              variant="determinate" 
+              value={indicator.workloadScore * 10}
+              sx={{ 
+                height: 4, 
+                borderRadius: 1,
+                bgcolor: 'rgba(0,0,0,0.08)',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: indicator.workloadScore > 7 ? 'error.main' : indicator.workloadScore > 5 ? 'warning.main' : 'success.main',
+                }
+              }}
+            />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+              <Typography variant="caption" color="text.secondary">Engagement</Typography>
+              <Typography variant="caption" fontWeight={600}>{indicator.engagementScore}/10</Typography>
+            </Stack>
+            <LinearProgress 
+              variant="determinate" 
+              value={indicator.engagementScore * 10}
+              sx={{ 
+                height: 4, 
+                borderRadius: 1,
+                bgcolor: 'rgba(0,0,0,0.08)',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: indicator.engagementScore < 5 ? 'error.main' : indicator.engagementScore < 7 ? 'warning.main' : 'success.main',
+                }
+              }}
+            />
+          </Box>
+        </Stack>
+
+        {indicator.riskFactors.length > 0 && (
+          <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Stack direction="row" flexWrap="wrap" gap={0.5}>
+              {indicator.riskFactors.slice(0, 2).map((factor, index) => (
+                <Chip 
+                  key={index}
+                  label={factor}
+                  size="small"
+                  sx={{ 
+                    fontSize: 10,
+                    height: 22,
+                    bgcolor: 'rgba(239, 68, 68, 0.08)',
+                    color: 'rgb(185, 28, 28)',
+                  }}
+                />
+              ))}
+              {indicator.riskFactors.length > 2 && (
+                <Chip 
+                  label={`+${indicator.riskFactors.length - 2} more`}
+                  size="small"
+                  variant="outlined"
+                  sx={{ fontSize: 10, height: 22 }}
+                />
+              )}
+            </Stack>
+          </Box>
+        )}
       </Card>
     );
   };
@@ -391,60 +338,40 @@ export function WellbeingDashboard({ currentUserId, embedded = false , embedded 
               </Box>
             </Card>
 
-            {/* Metrics Table */}
-            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+            {/* Metrics */}
+            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
               Key Metrics
             </Typography>
-            <Card sx={{ overflow: 'hidden', mb: 3 }}>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Clock size={14} className="text-muted-foreground" />
-                        <Typography variant="body2">Overtime Hours</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Typography variant="body2" fontWeight={600}>{selectedIndicator.overtimeHours}h</Typography>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Sun size={14} className="text-muted-foreground" />
-                        <Typography variant="body2">Avg Day Length</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Typography variant="body2" fontWeight={600}>{selectedIndicator.averageWorkdayLength}h</Typography>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Calendar size={14} className="text-muted-foreground" />
-                        <Typography variant="body2">Days Since Leave</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Typography variant="body2" fontWeight={600}>{selectedIndicator.daysSinceLastLeave}</Typography>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Coffee size={14} className="text-muted-foreground" />
-                        <Typography variant="body2">Missed Breaks</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Typography variant="body2" fontWeight={600}>{selectedIndicator.missedBreaks}</Typography>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </Card>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <Card sx={{ p: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Clock size={16} className="text-muted-foreground" />
+                  <Typography variant="caption" color="text.secondary">Overtime</Typography>
+                </Stack>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.overtimeHours}h</Typography>
+              </Card>
+              <Card sx={{ p: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Sun size={16} className="text-muted-foreground" />
+                  <Typography variant="caption" color="text.secondary">Avg Day Length</Typography>
+                </Stack>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.averageWorkdayLength}h</Typography>
+              </Card>
+              <Card sx={{ p: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Calendar size={16} className="text-muted-foreground" />
+                  <Typography variant="caption" color="text.secondary">Days Since Leave</Typography>
+                </Stack>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.daysSinceLastLeave}</Typography>
+              </Card>
+              <Card sx={{ p: 2 }}>
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Coffee size={16} className="text-muted-foreground" />
+                  <Typography variant="caption" color="text.secondary">Missed Breaks</Typography>
+                </Stack>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.missedBreaks}</Typography>
+              </Card>
+            </div>
 
             {/* Risk Factors */}
             {selectedIndicator.riskFactors.length > 0 && (
@@ -491,40 +418,48 @@ export function WellbeingDashboard({ currentUserId, embedded = false , embedded 
     return order[a.riskLevel] - order[b.riskLevel];
   });
 
-  const attentionNeeded = sortedIndicators.filter(i => i.riskLevel === 'critical' || i.riskLevel === 'high');
-
   return (
     <Box>
-      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="center" sx={{ mb: 3 }}>
-        {!embedded && }t React, { useState } from 'react';
-import { 
-  Box, 
-  Stack, 
-  Typography, 
-  Chip,
-  Avatar,
-  LinearProgress,
-} from '@mui/material';
-import { Card } from '@/components/mui/Card';
-import { Button } from '@/components/mui/Button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
-  Heart, 
-  AlertTriangle, 
-  Clock, 
-  Calendar,
-  Activity,
-  Coffee,
-  Sun,
-  ChevronRight,
-  Eye,
-  MessageSquare,
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+        <Box>
+          <Typography variant="h6" fontWeight={600} color="text.primary">
+            Wellbeing & Burnout Indicators
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Monitor workload patterns and identify burnout risks
+          </Typography>
+        </Box>
+        <Button variant="outlined" startIcon={<Activity size={16} />}>
+          Run Analysis
+        </Button>
+      </Stack>
+
+      {renderSummaryCards()}
+
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="all">All Staff</TabsTrigger>
+          <TabsTrigger value="attention">
+            Needs Attention ({(riskCounts.high || 0) + (riskCounts.critical || 0)})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all">
+          <div className="grid gap-4 md:grid-cols-2">
+            {sortedIndicators.map(renderIndicatorCard)}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="attention">
+          <div className="grid gap-4 md:grid-cols-2">
+            {sortedIndicators
+              .filter(i => i.riskLevel === 'high' || i.riskLevel === 'critical')
+              .map(renderIndicatorCard)}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {renderDetailSheet()}
+    </Box>
+  );
+}

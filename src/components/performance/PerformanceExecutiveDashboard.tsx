@@ -41,7 +41,6 @@ import {
 import { Goal, PerformanceReview, Conversation, Feedback } from '@/types/performance';
 
 interface PerformanceExecutiveDashboardProps {
-  embedded?: boolean;
   goals: Goal[];
   reviews: PerformanceReview[];
   conversations: Conversation[];
@@ -70,8 +69,7 @@ export function PerformanceExecutiveDashboard({
   goals, 
   reviews, 
   conversations, 
-  feedback,
-  embedded = false
+  feedback 
 }: PerformanceExecutiveDashboardProps) {
   // Calculate metrics
   const totalGoals = goals.length;
@@ -193,94 +191,93 @@ export function PerformanceExecutiveDashboard({
 
   return (
     <div className="space-y-6">
-      {!embedded && (
-        <Box>
-          <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Performance Analytics Summary
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Executive overview of team performance metrics
-          </Typography>
-        </Box>
-      )}
+      {/* Header */}
+      <Box>
+        <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <BarChart3 className="h-5 w-5 text-primary" />
+          Performance Analytics Summary
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Executive overview of team performance metrics
+        </Typography>
+      </Box>
 
-      {!embedded && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Goal Completion Rate"
-            value={`${goalCompletionRate}%`}
-            icon={Target}
-            color={COLORS.primary}
-            progress={goalCompletionRate}
-          />
-          <StatCard
-            title="Review Completion Rate"
-            value={`${reviewCompletionRate}%`}
-            icon={ClipboardCheck}
-            color={COLORS.success}
-            progress={reviewCompletionRate}
-          />
-          <StatCard
-            title="Happiness Score"
-            value={currentHappinessScore.toFixed(1)}
-            subtitle="/10"
-            change={happinessChange}
-            icon={Smile}
-            color={COLORS.warning}
-          />
-          <StatCard
-            title="eNPS Score"
-            value={eNPSScore > 0 ? `+${eNPSScore}` : eNPSScore}
-            change={enpsChange}
-            icon={Award}
-            color={COLORS.purple}
-          />
-        </div>
-      )}
+      {/* Key Metrics Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Goal Completion Rate"
+          value={`${goalCompletionRate}%`}
+          icon={Target}
+          color={COLORS.primary}
+          progress={goalCompletionRate}
+        />
+        <StatCard
+          title="Review Completion Rate"
+          value={`${reviewCompletionRate}%`}
+          icon={ClipboardCheck}
+          color={COLORS.success}
+          progress={reviewCompletionRate}
+        />
+        <StatCard
+          title="Happiness Score"
+          value={currentHappinessScore.toFixed(1)}
+          subtitle="/10"
+          change={happinessChange}
+          icon={Smile}
+          color={COLORS.warning}
+        />
+        <StatCard
+          title="eNPS Score"
+          value={eNPSScore > 0 ? `+${eNPSScore}` : eNPSScore}
+          change={enpsChange}
+          icon={Award}
+          color={COLORS.purple}
+        />
+      </div>
 
-      {!embedded && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Card sx={{ p: 2.5 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <Box>
-                <Typography variant="h6" fontWeight={700}>{completedGoals}</Typography>
-                <Typography variant="caption" color="text.secondary">Goals Completed</Typography>
-              </Box>
-            </Stack>
-          </Card>
-          <Card sx={{ p: 2.5 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <Box>
-                <Typography variant="h6" fontWeight={700}>{overdueGoals}</Typography>
-                <Typography variant="caption" color="text.secondary">Overdue Goals</Typography>
-              </Box>
-            </Stack>
-          </Card>
-          <Card sx={{ p: 2.5 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Clock className="h-5 w-5 text-amber-600" />
-              <Box>
-                <Typography variant="h6" fontWeight={700}>{pendingReviews}</Typography>
-                <Typography variant="caption" color="text.secondary">Pending Reviews</Typography>
-              </Box>
-            </Stack>
-          </Card>
-          <Card sx={{ p: 2.5 }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <Box>
-                <Typography variant="h6" fontWeight={700}>{upcomingConversations}</Typography>
-                <Typography variant="caption" color="text.secondary">Upcoming 1:1s</Typography>
-              </Box>
-            </Stack>
-          </Card>
-        </div>
-      )}
+      {/* Secondary Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card sx={{ p: 2.5 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <Box>
+              <Typography variant="h6" fontWeight={700}>{completedGoals}</Typography>
+              <Typography variant="caption" color="text.secondary">Goals Completed</Typography>
+            </Box>
+          </Stack>
+        </Card>
+        <Card sx={{ p: 2.5 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <Box>
+              <Typography variant="h6" fontWeight={700}>{overdueGoals}</Typography>
+              <Typography variant="caption" color="text.secondary">Overdue Goals</Typography>
+            </Box>
+          </Stack>
+        </Card>
+        <Card sx={{ p: 2.5 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Clock className="h-5 w-5 text-amber-600" />
+            <Box>
+              <Typography variant="h6" fontWeight={700}>{pendingReviews}</Typography>
+              <Typography variant="caption" color="text.secondary">Pending Reviews</Typography>
+            </Box>
+          </Stack>
+        </Card>
+        <Card sx={{ p: 2.5 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Calendar className="h-5 w-5 text-blue-600" />
+            <Box>
+              <Typography variant="h6" fontWeight={700}>{upcomingConversations}</Typography>
+              <Typography variant="caption" color="text.secondary">Upcoming 1:1s</Typography>
+            </Box>
+          </Stack>
+        </Card>
+      </div>
 
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Trend Chart */}
         <Card sx={{ p: 3 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Performance Trends
@@ -288,85 +285,47 @@ export function PerformanceExecutiveDashboard({
           <Box sx={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={mockTrendData}>
-                <defs>
-                  <linearGradient id="goalGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0.05}/>
-                  </linearGradient>
-                  <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={COLORS.success} stopOpacity={0.05}/>
-                  </linearGradient>
-                  <linearGradient id="engagementGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.purple} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={COLORS.purple} stopOpacity={0.05}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 12, fill: '#64748b' }} 
-                  axisLine={{ stroke: '#e2e8f0' }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12, fill: '#64748b' }} 
-                  domain={[0, 100]} 
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'rgba(255,255,255,0.95)',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Legend 
-                  wrapperStyle={{ paddingTop: 16 }}
-                  iconType="circle"
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
+                <Tooltip />
+                <Legend />
                 <Area 
                   type="monotone" 
                   dataKey="goalCompletion" 
                   name="Goals"
                   stroke={COLORS.primary} 
-                  fill="url(#goalGradient)"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.primary, strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                  fill={`${COLORS.primary}20`}
+                  strokeWidth={2}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="reviewCompletion" 
                   name="Reviews"
                   stroke={COLORS.success} 
-                  fill="url(#reviewGradient)"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.success, strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                  fill={`${COLORS.success}20`}
+                  strokeWidth={2}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="engagement" 
                   name="Engagement"
                   stroke={COLORS.purple} 
-                  fill="url(#engagementGradient)"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: COLORS.purple, strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
+                  fill={`${COLORS.purple}20`}
+                  strokeWidth={2}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </Box>
         </Card>
 
+        {/* Distribution Charts */}
         <Card sx={{ p: 3 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Status Distribution
           </Typography>
           <div className="grid grid-cols-2 gap-4">
+            {/* Goals Pie */}
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', mb: 1 }}>
                 Goals
@@ -408,6 +367,7 @@ export function PerformanceExecutiveDashboard({
               </Stack>
             </Box>
 
+            {/* Reviews Pie */}
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', mb: 1 }}>
                 Reviews
@@ -452,6 +412,7 @@ export function PerformanceExecutiveDashboard({
         </Card>
       </div>
 
+      {/* Feedback & Recognition Summary */}
       <Card sx={{ p: 3 }}>
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>
           Feedback & Recognition Activity
@@ -473,13 +434,13 @@ export function PerformanceExecutiveDashboard({
             <Typography variant="h4" fontWeight={700} color="warning.main">
               {feedback.filter(f => f.type === 'coaching').length}
             </Typography>
-            <Typography variant="caption" color="text.secondary">Coaching Notes</Typography>
+            <Typography variant="caption" color="text.secondary">Coaching Sessions</Typography>
           </Box>
           <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Typography variant="h4" fontWeight={700} color="info.main">
-              {feedback.length}
+            <Typography variant="h4" fontWeight={700} color="secondary.main">
+              {completedConversations}
             </Typography>
-            <Typography variant="caption" color="text.secondary">Total Feedback</Typography>
+            <Typography variant="caption" color="text.secondary">1:1s Completed</Typography>
           </Box>
         </div>
       </Card>

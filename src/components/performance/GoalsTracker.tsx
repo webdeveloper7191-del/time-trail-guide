@@ -10,18 +10,9 @@ import {
   Button as MuiButton,
   Select as MuiSelect,
   FormControl,
-  Checkbox,
-  Badge,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
-import { 
-  SemanticProgressBar, 
-  getProgressStatus, 
-  StatusBadge,
-  EnhancedCard,
-  CollapsibleStatsGrid,
-  ScrollableTable,
-} from './shared';
+import { Progress } from '@/components/ui/progress';
 import { 
   Goal, 
   GoalStatus,
@@ -29,7 +20,7 @@ import {
   goalStatusLabels, 
   goalPriorityLabels,
 } from '@/types/performance';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { 
   Target, 
   Calendar, 
@@ -41,31 +32,17 @@ import {
   Search,
   X,
   Users,
-  Filter,
-  MoreVertical,
-  Eye,
   Edit,
-  Trash2,
 } from 'lucide-react';
-import { createGoalBulkActions } from './shared/BulkActionsBar';
-import { InlineBulkActions } from './shared/InlineBulkActions';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface GoalsTrackerProps {
-  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
-  embedded?: boolean;
   goals: Goal[];
   onCreateGoal: () => void;
   onAssignGoal?: () => void;
   onViewGoal: (goal: Goal) => void;
   onEditGoal?: (goal: Goal) => void;
-  onDeleteGoal?: (goalId: string) => void;
   onUpdateProgress: (goalId: string, progress: number) => void;
-  onBulkUpdateStatus?: (goalIds: string[], status: GoalStatus) => void;
-  onBulkUpdatePriority?: (goalIds: string[], priority: GoalPriority) => void;
-  onBulkDelete?: (goalIds: string[]) => void;
   compact?: boolean;
   showFilters?: boolean;
 }
@@ -77,30 +54,29 @@ const priorityColors: Record<string, { bg: string; text: string }> = {
   critical: { bg: 'rgba(239, 68, 68, 0.12)', text: 'rgb(185, 28, 28)' },
 };
 
-// Map goal status to StatusBadge type
-const getStatusBadgeType = (status: GoalStatus): 'not_started' | 'in_progress' | 'completed' | 'overdue' | 'cancelled' => {
-  switch (status) {
-    case 'not_started': return 'not_started';
-    case 'in_progress': return 'in_progress';
-    case 'completed': return 'completed';
-    case 'overdue': return 'overdue';
-    case 'cancelled': return 'cancelled';
-    default: return 'not_started';
-  }
+const statusColors: Record<string, { bg: string; text: string }> = {
+  not_started: { bg: 'grey.100', text: 'grey.600' },
+  in_progress: { bg: 'info.light', text: 'info.dark' },
+  completed: { bg: 'success.light', text: 'success.dark' },
+  overdue: { bg: 'error.light', text: 'error.dark' },
+  cancelled: { bg: 'grey.200', text: 'grey.500' },
 };
 
-export function GoalsTracker({
-  embedded = false, 
+const statusIcons: Record<string, React.ReactNode> = {
+  not_started: <Clock className="h-3.5 w-3.5" />,
+  in_progress: <Target className="h-3.5 w-3.5" />,
+  completed: <CheckCircle2 className="h-3.5 w-3.5" />,
+  overdue: <AlertTriangle className="h-3.5 w-3.5" />,
+  cancelled: <Clock className="h-3.5 w-3.5" />,
+};
+
+export function GoalsTracker({ 
   goals, 
   onCreateGoal, 
   onAssignGoal,
   onViewGoal, 
   onEditGoal,
-  onDeleteGoal,
   onUpdateProgress,
-  onBulkUpdateStatus,
-  onBulkUpdatePriority,
-  onBulkDelete,
   compact = false,
   showFilters = true,
 }: GoalsTrackerProps) {
@@ -108,7 +84,6 @@ export function GoalsTracker({
   const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<GoalPriority | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || priorityFilter !== 'all' || categoryFilter !== 'all';
 
@@ -171,64 +146,6 @@ export function GoalsTracker({
     overdue: goals.filter(g => g.status === 'overdue').length,
   }), [goals]);
 
-  // Bulk selection handlers
-  const handleToggleSelect = (goalId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedGoalIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(goalId)) {
-        newSet.delete(goalId);
-      } else {
-        newSet.add(goalId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSelectAll = () => {
-    setSelectedGoalIds(new Set(activeGoals.map(g => g.id)));
-  };
-
-  const handleClearSelection = () => {
-    setSelectedGoalIds(new Set());
-  };
-
-  const handleBulkComplete = () => {
-    if (onBulkUpdateStatus) {
-      onBulkUpdateStatus(Array.from(selectedGoalIds), 'completed');
-      toast.success(`${selectedGoalIds.size} goals marked as completed`);
-    } else {
-      toast.success(`${selectedGoalIds.size} goals would be marked as completed`);
-    }
-    handleClearSelection();
-  };
-
-  const handleBulkHighPriority = () => {
-    if (onBulkUpdatePriority) {
-      onBulkUpdatePriority(Array.from(selectedGoalIds), 'high');
-      toast.success(`${selectedGoalIds.size} goals set to high priority`);
-    } else {
-      toast.success(`${selectedGoalIds.size} goals would be set to high priority`);
-    }
-    handleClearSelection();
-  };
-
-  const handleBulkDelete = () => {
-    if (onBulkDelete) {
-      onBulkDelete(Array.from(selectedGoalIds));
-      toast.success(`${selectedGoalIds.size} goals deleted`);
-    } else {
-      toast.success(`${selectedGoalIds.size} goals would be deleted`);
-    }
-    handleClearSelection();
-  };
-
-  const bulkActions = createGoalBulkActions(
-    handleBulkComplete,
-    handleBulkHighPriority,
-    handleBulkDelete
-  );
-
   if (compact) {
     return (
       <Card>
@@ -256,12 +173,7 @@ export function GoalsTracker({
               >
                 <Typography variant="body2" fontWeight={500} noWrap>{goal.title}</Typography>
                 <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
-                  <SemanticProgressBar 
-                    value={goal.progress} 
-                    status={getProgressStatus(goal.progress, undefined, goal.status === 'overdue')}
-                    size="xs"
-                    showPercentage={false}
-                  />
+                  <Progress value={goal.progress} className="h-1.5 flex-1" />
                   <Typography variant="caption" color="text.secondary">{goal.progress}%</Typography>
                 </Stack>
               </Box>
@@ -278,130 +190,101 @@ export function GoalsTracker({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 4, md: 5 } }}>
-      {/* Premium Header */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
+      {/* Header */}
       <Stack 
-        direction={{ xs: "column", sm: "row" }}
+        direction={{ xs: 'column', sm: 'row' }}
         justifyContent="space-between" 
-        alignItems={{ xs: "stretch", sm: "center" }}
-        spacing={2}
+        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+        spacing={{ xs: 2, sm: 0 }}
       >
-        {!embedded && (
-          <Box>
-            <Typography 
-              sx={{ 
-                fontSize: { xs: "1.25rem", md: "1.5rem" },
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                color: "grey.900",
-              }}
-            >
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
+              <Target className="h-5 w-5" style={{ color: 'var(--primary)' }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
               Goals & Objectives
             </Typography>
-            <Typography 
-              sx={{ 
-                mt: 0.5,
-                fontSize: "0.875rem",
-                color: "grey.500",
-                display: { xs: "none", sm: "block" },
-              }}
-            >
-              Track progress on personal and professional development
-            </Typography>
-          </Box>
-        )}
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ ml: embedded ? "auto" : 0 }}>
-            <Box
-              component="button"
-              onClick={onAssignGoal}
-              sx={{
-                display: { xs: 'none', sm: 'flex' },
-                alignItems: 'center',
-                gap: 1,
-                px: 2,
-                py: 1,
-                border: '1px solid',
-                borderColor: 'grey.200',
-                borderRadius: 2,
-                bgcolor: 'white',
-                color: 'grey.700',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                '&:hover': {
-                  borderColor: 'grey.300',
-                  bgcolor: 'grey.50',
-                },
-              }}
-            >
-              <Users size={16} />
-              Assign
-            </Box>
-          )}
-          <Box
-            component="button"
-            onClick={onCreateGoal}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 2.5,
-              py: 1,
-              border: 'none',
-              borderRadius: 2,
-              bgcolor: 'primary.main',
-              color: 'white',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              '&:hover': {
-                bgcolor: 'primary.dark',
-                transform: 'translateY(-1px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              },
-            }}
+          </Stack>
+          <Typography 
+            variant="body2" 
+            color="text.secondary"
+            sx={{ display: { xs: 'none', sm: 'block' } }}
           >
-            <Plus size={16} />
+            Track progress on personal and professional development goals
+          </Typography>
+        </Box>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={1}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
+          {onAssignGoal && (
+            <MuiButton 
+              variant="outlined" 
+              startIcon={<Users size={16} />} 
+              onClick={onAssignGoal}
+              fullWidth
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+            >
+              Assign Goal
+            </MuiButton>
+          )}
+          <MuiButton 
+            variant="contained" 
+            startIcon={<Plus size={16} />} 
+            onClick={onCreateGoal}
+            fullWidth
+            sx={{ width: { sm: 'auto' } }}
+          >
             New Goal
-      {!embedded && (
-        <CollapsibleStatsGrid
-          title="Goal Statistics"
-          stats={[
-            { 
-              label: "Total", 
-              value: stats.total, 
-              icon: <Target size={18} />, 
-              gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" 
-            },
-            { 
-              label: "In Progress", 
-              value: stats.active, 
-              icon: <Clock size={18} />, 
-              gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" 
-            },
-            { 
-              label: "Completed", 
-              value: stats.completed, 
-              icon: <CheckCircle2 size={18} />, 
-              gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
-            },
-            { 
-              label: "Overdue", 
-              value: stats.overdue, 
-              icon: <AlertTriangle size={18} />, 
-              gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" 
-            },
-          ]}
-        />
-      )}
-            icon: <AlertTriangle size={18} />, 
-            gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
-          },
-        ]}
-      />
+          </MuiButton>
+        </Stack>
+      </Stack>
+
+      {/* Stats Cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+        {[
+          { label: 'Total Goals', value: stats.total, icon: Target, color: 'primary' },
+          { label: 'In Progress', value: stats.active, icon: Clock, color: 'info' },
+          { label: 'Completed', value: stats.completed, icon: CheckCircle2, color: 'success' },
+          { label: 'Overdue', value: stats.overdue, icon: AlertTriangle, color: 'error' },
+        ].map((stat) => (
+          <Card key={stat.label} sx={{ p: 0 }}>
+            <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary" 
+                    fontWeight={500}
+                    sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
+                  >
+                    {stat.label}
+                  </Typography>
+                  <Typography 
+                    variant="h4" 
+                    fontWeight={600} 
+                    mt={0.5}
+                    sx={{ fontSize: { xs: '1.5rem', md: '2.125rem' } }}
+                  >
+                    {stat.value}
+                  </Typography>
+                </Box>
+                <Box sx={{ 
+                  p: { xs: 1, md: 1.5 }, 
+                  borderRadius: '50%', 
+                  bgcolor: `${stat.color}.light`,
+                  display: { xs: 'none', sm: 'flex' },
+                }}>
+                  <stat.icon size={20} style={{ color: `var(--${stat.color === 'primary' ? 'primary' : stat.color})` }} />
+                </Box>
+              </Stack>
+            </Box>
+          </Card>
+        ))}
+      </Box>
 
       {/* Filters */}
       {showFilters && (
@@ -410,420 +293,240 @@ export function GoalsTracker({
           spacing={{ xs: 1.5, md: 2 }} 
           flexWrap="wrap" 
           alignItems={{ xs: 'stretch', md: 'center' }}
-          justifyContent="space-between"
         >
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
-            spacing={{ xs: 1.5, sm: 2 }} 
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            sx={{ flex: 1 }}
-          >
-            <TextField
-              placeholder="Search goals..."
-              size="small"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              sx={{ minWidth: { xs: '100%', sm: 220 }, maxWidth: { sm: 320 } }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search size={18} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-              <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 120 } }}>
-                <MuiSelect
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as GoalStatus | 'all')}
-                >
-                  <MenuItem value="all">All Statuses</MenuItem>
-                  {Object.entries(goalStatusLabels).map(([value, label]) => (
-                    <MenuItem key={value} value={value}>{label}</MenuItem>
-                  ))}
-                </MuiSelect>
-              </FormControl>
+          <TextField
+            placeholder="Search goals..."
+            size="small"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            sx={{ minWidth: { xs: '100%', md: 220 }, maxWidth: { md: 360 }, flex: { md: 1 } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
+              <MuiSelect
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as GoalStatus | 'all')}
+              >
+                <MenuItem value="all">All Statuses</MenuItem>
+                {Object.entries(goalStatusLabels).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
+              </MuiSelect>
+            </FormControl>
 
-              <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 120 } }}>
-                <MuiSelect
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value as GoalPriority | 'all')}
-                >
-                  <MenuItem value="all">All Priorities</MenuItem>
-                  {Object.entries(goalPriorityLabels).map(([value, label]) => (
-                    <MenuItem key={value} value={value}>{label}</MenuItem>
-                  ))}
-                </MuiSelect>
-              </FormControl>
+            <FormControl size="small" sx={{ minWidth: { xs: 'calc(50% - 4px)', sm: 140 }, flex: { xs: 1, sm: 'none' } }}>
+              <MuiSelect
+                value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value as GoalPriority | 'all')}
+            >
+              <MenuItem value="all">All Priorities</MenuItem>
+              {Object.entries(goalPriorityLabels).map(([value, label]) => (
+                <MenuItem key={value} value={value}>{label}</MenuItem>
+              ))}
+            </MuiSelect>
+          </FormControl>
 
-              <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 130 } }}>
-                <MuiSelect
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value as string)}
-                >
-                  <MenuItem value="all">All Categories</MenuItem>
-                  {availableCategories.map(cat => (
-                    <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                  ))}
-                </MuiSelect>
-              </FormControl>
-
-              {hasActiveFilters && (
-                <MuiButton 
-                  variant="text"
-                  size="small" 
-                  startIcon={<X size={16} />}
-                  onClick={clearFilters}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  Clear
-                </MuiButton>
-              )}
-            </Stack>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: 1, sm: 'none' } }}>
+              <MuiSelect
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as string)}
+              >
+                <MenuItem value="all">All Categories</MenuItem>
+                {availableCategories.map(cat => (
+                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                ))}
+              </MuiSelect>
+            </FormControl>
           </Stack>
 
-          {/* Inline Bulk Actions */}
-          <InlineBulkActions
-            selectedCount={selectedGoalIds.size}
-            totalCount={activeGoals.length}
-            onClearSelection={handleClearSelection}
-            onSelectAll={handleSelectAll}
-            actions={bulkActions}
-            entityName="goals"
-          />
+          {hasActiveFilters && (
+            <MuiButton 
+              variant="text"
+              size="small" 
+              startIcon={<X size={16} />}
+              onClick={clearFilters}
+              sx={{ color: 'text.secondary', alignSelf: { xs: 'flex-start', md: 'center' } }}
+            >
+              Clear filters
+            </MuiButton>
+          )}
         </Stack>
       )}
 
-      {/* Active Goals - Table Layout */}
-      <Box sx={{ 
-        bgcolor: 'background.paper', 
-        borderRadius: 2, 
-        border: 1, 
-        borderColor: 'divider',
-        overflow: 'hidden',
-      }}>
-        {/* Table Header */}
-        <Box sx={{ 
-          px: 2, 
-          py: 1.5, 
-          bgcolor: 'grey.50', 
-          borderBottom: 1, 
-          borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'grey.600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Active Goals
-            </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: 'grey.500' }}>
-              {activeGoals.length} items
-            </Typography>
-          </Stack>
-          {activeGoals.length > 0 && (
-            <MuiButton
-              size="small"
-              variant="text"
-              onClick={selectedGoalIds.size === activeGoals.length ? handleClearSelection : handleSelectAll}
-              sx={{ fontSize: '0.75rem', color: 'primary.main' }}
-            >
-              {selectedGoalIds.size === activeGoals.length ? 'Deselect All' : 'Select All'}
-            </MuiButton>
-          )}
-        </Box>
+      {/* Active Goals */}
+      <Box>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="overline" color="text.secondary" fontWeight={600}>
+            Active Goals
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {activeGoals.length} items
+          </Typography>
+        </Stack>
         
         {activeGoals.length === 0 ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <Box sx={{ 
-              p: 2, 
-              borderRadius: '50%', 
-              bgcolor: 'grey.100', 
-              width: 'fit-content', 
-              mx: 'auto', 
-              mb: 2 
-            }}>
-              <Target size={28} style={{ color: 'var(--muted-foreground)' }} />
+          <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+            <Box sx={{ py: 6, textAlign: 'center' }}>
+              <Box sx={{ 
+                p: 2, 
+                borderRadius: '50%', 
+                bgcolor: 'action.hover', 
+                width: 'fit-content', 
+                mx: 'auto', 
+                mb: 2 
+              }}>
+                <Target size={32} style={{ color: 'var(--muted-foreground)' }} />
+              </Box>
+              <Typography fontWeight={500}>
+                {hasActiveFilters ? 'No goals match your filters' : 'No active goals'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mt={0.5} maxWidth={360} mx="auto">
+                {hasActiveFilters 
+                  ? 'Try adjusting your search or filters'
+                  : 'Create your first goal to start tracking'
+                }
+              </Typography>
+              {!hasActiveFilters && (
+                <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal} sx={{ mt: 2 }}>
+                  Create Goal
+                </MuiButton>
+              )}
             </Box>
-            <Typography sx={{ fontWeight: 500, color: 'grey.700' }}>
-              {hasActiveFilters ? 'No goals match your filters' : 'No active goals'}
-            </Typography>
-            <Typography sx={{ fontSize: '0.875rem', color: 'grey.500', mt: 0.5, maxWidth: 320, mx: 'auto' }}>
-              {hasActiveFilters 
-                ? 'Try adjusting your search or filters'
-                : 'Create your first goal to start tracking'
-              }
-            </Typography>
-            {!hasActiveFilters && (
-              <MuiButton variant="contained" startIcon={<Plus size={16} />} onClick={onCreateGoal} sx={{ mt: 2.5 }}>
-                Create Goal
-              </MuiButton>
-            )}
-          </Box>
+          </Card>
         ) : (
-          <Box>
-            {activeGoals.map((goal, index) => {
-              const isSelected = selectedGoalIds.has(goal.id);
-              const daysRemaining = differenceInDays(parseISO(goal.targetDate), new Date());
-              const progressStatus = getProgressStatus(goal.progress, daysRemaining, goal.status === 'overdue');
-              const isOverdue = goal.status === 'overdue';
-              
-              return (
-                <Box
-                  key={goal.id}
-                  onClick={() => onViewGoal(goal)}
-                  className="group"
-                  sx={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    px: 2,
-                    py: 1.5,
-                    cursor: 'pointer',
-                    borderBottom: index < activeGoals.length - 1 ? 1 : 0,
-                    borderColor: 'divider',
-                    bgcolor: isSelected ? 'primary.50' : 'transparent',
-                    borderLeft: isOverdue ? 3 : 0,
-                    borderLeftColor: 'error.main',
-                    transition: 'all 0.15s ease',
-                    '&:hover': { 
-                      bgcolor: isSelected ? 'primary.100' : 'grey.50',
-                      '& .row-actions': { opacity: 1 },
-                    },
-                  }}
-                >
-                  {/* Checkbox */}
-                  <Checkbox
-                    checked={isSelected}
-                    onClick={(e) => handleToggleSelect(goal.id, e)}
-                    size="small"
-                    sx={{ p: 0.5 }}
-                  />
-
-                  {/* Goal Info */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} mb={0.25}>
-                      <Typography sx={{ 
-                        fontSize: '0.875rem', 
-                        fontWeight: 500, 
-                        color: 'grey.900',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
+          <Box sx={{ display: 'grid', gap: { xs: 1.5, md: 2 }, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
+            {activeGoals.map((goal) => (
+              <Card
+                key={goal.id} 
+                sx={{ 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { 
+                    boxShadow: 3,
+                    '& .chevron-icon': { opacity: 1 }
+                  }
+                }}
+                onClick={() => onViewGoal(goal)}
+              >
+                <Box sx={{ p: { xs: 2, md: 2.5 } }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                    <Box flex={1} minWidth={0}>
+                      <Stack direction="row" spacing={0.5} mb={1} flexWrap="wrap" gap={0.5}>
+                        <Chip label={goal.category} size="small" variant="outlined" sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }} />
+                        <Chip 
+                          label={goalPriorityLabels[goal.priority]} 
+                          size="small" 
+                          sx={{ 
+                            bgcolor: priorityColors[goal.priority]?.bg,
+                            color: priorityColors[goal.priority]?.text,
+                            fontSize: { xs: '0.7rem', sm: '0.8125rem' },
+                          }}
+                        />
+                      </Stack>
+                      <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ fontSize: { xs: '0.95rem', md: '1rem' } }}>
                         {goal.title}
                       </Typography>
-                    </Stack>
-                    <Typography sx={{ 
-                      fontSize: '0.8125rem', 
-                      color: 'grey.500',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {goal.description}
-                    </Typography>
-                  </Box>
-
-                  {/* Category & Priority */}
-                  <Stack direction="row" spacing={0.75} sx={{ display: { xs: 'none', md: 'flex' } }}>
-                    <Chip 
-                      label={goal.category} 
-                      size="small" 
-                      variant="outlined" 
-                      sx={{ fontSize: '0.75rem', height: 24 }} 
-                    />
-                    <Chip 
-                      label={goalPriorityLabels[goal.priority]} 
-                      size="small" 
-                      sx={{ 
-                        bgcolor: priorityColors[goal.priority]?.bg,
-                        color: priorityColors[goal.priority]?.text,
-                        fontSize: '0.75rem',
-                        height: 24,
-                      }}
+                      <Typography variant="body2" color="text.secondary" sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        fontSize: { xs: '0.8rem', md: '0.875rem' },
+                      }}>
+                        {goal.description}
+                      </Typography>
+                    </Box>
+                    <ChevronRight 
+                      className="chevron-icon" 
+                      size={20} 
+                      style={{ opacity: 0, transition: 'opacity 0.2s', marginLeft: 8, flexShrink: 0 }} 
                     />
                   </Stack>
 
-                  {/* Progress */}
-                  <Box sx={{ width: 120, display: { xs: 'none', sm: 'block' } }}>
-                    <SemanticProgressBar
-                      value={goal.progress}
-                      status={progressStatus}
-                      showPercentage
-                      size="xs"
-                    />
+                  <Box>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
+                      <Typography variant="body2" color="text.secondary">Progress</Typography>
+                      <Typography variant="body2" fontWeight={600}>{goal.progress}%</Typography>
+                    </Stack>
+                    <Progress value={goal.progress} className="h-2" />
                   </Box>
 
-                  {/* Due Date */}
-                  <Box sx={{ width: 100, display: { xs: 'none', lg: 'block' } }}>
+                  <Stack 
+                    direction={{ xs: 'column', sm: 'row' }}
+                    justifyContent="space-between" 
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    spacing={{ xs: 1, sm: 0 }}
+                    mt={2} 
+                    pt={2} 
+                    sx={{ borderTop: 1, borderColor: 'divider' }}
+                  >
                     <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <Calendar size={12} style={{ color: isOverdue ? 'var(--destructive)' : 'var(--muted-foreground)' }} />
-                      <Typography sx={{ 
-                        fontSize: '0.75rem', 
-                        color: isOverdue ? 'error.main' : 'grey.500',
-                      }}>
-                        {format(parseISO(goal.targetDate), 'MMM d, yyyy')}
+                      <Calendar size={14} style={{ color: 'var(--muted-foreground)' }} />
+                      <Typography variant="caption" color="text.secondary">
+                        Due {format(parseISO(goal.targetDate), 'MMM d, yyyy')}
                       </Typography>
                     </Stack>
-                  </Box>
-
-                  {/* Status */}
-                  <Box sx={{ width: 100 }}>
-                    <StatusBadge 
-                      status={getStatusBadgeType(goal.status)}
+                    <Chip 
+                      size="small"
+                      variant="outlined"
+                      icon={statusIcons[goal.status] as any}
                       label={goalStatusLabels[goal.status]}
-                      pulse={goal.status === 'overdue'}
+                      sx={{ fontSize: { xs: '0.7rem', sm: '0.8125rem' } }}
                     />
-                  </Box>
-
-                  {/* Actions Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity row-actions"
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        onViewGoal(goal);
-                      }}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      {onEditGoal && (
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          onEditGoal(goal);
-                        }}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Goal
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      {onDeleteGoal && (
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteGoal(goal.id);
-                          }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Goal
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  </Stack>
                 </Box>
-              );
-            })}
+              </Card>
+            ))}
           </Box>
         )}
       </Box>
 
-      {/* Completed Goals - Table Layout */}
+      {/* Completed Goals */}
       {completedGoals.length > 0 && (
-        <Box sx={{ 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          border: 1, 
-          borderColor: 'divider',
-          overflow: 'hidden',
-        }}>
-          {/* Table Header */}
-          <Box sx={{ 
-            px: 2, 
-            py: 1.5, 
-            bgcolor: 'grey.50', 
-            borderBottom: 1, 
-            borderColor: 'divider',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'grey.600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Completed Goals
-              </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: 'grey.500' }}>
-                {completedGoals.length} items
-              </Typography>
-            </Stack>
-          </Box>
-          
-          <Box>
-            {completedGoals.map((goal, index) => (
-              <Box
-                key={goal.id}
-                onClick={() => onViewGoal(goal)}
+        <Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="overline" color="text.secondary" fontWeight={600}>
+              Completed Goals
+            </Typography>
+          <Typography variant="body2" color="text.secondary">
+              {completedGoals.length} items
+            </Typography>
+          </Stack>
+          <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' } }}>
+            {completedGoals.map((goal) => (
+              <Card 
+                key={goal.id} 
                 sx={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  px: 2,
-                  py: 1.5,
                   cursor: 'pointer',
-                  borderBottom: index < completedGoals.length - 1 ? 1 : 0,
-                  borderColor: 'divider',
-                  opacity: 0.75,
-                  transition: 'all 0.15s ease',
-                  '&:hover': { 
-                    bgcolor: 'grey.50',
-                    opacity: 1,
-                  },
+                  opacity: 0.85,
+                  '&:hover': { boxShadow: 2 }
                 }}
+                onClick={() => onViewGoal(goal)}
               >
-                {/* Success Icon */}
-                <Box sx={{ 
-                  p: 0.75, 
-                  borderRadius: '50%', 
-                  bgcolor: 'success.50', 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
+                <Box sx={{ p: 2 }}>
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Box sx={{ p: 1, borderRadius: '50%', bgcolor: 'success.light', display: 'flex' }}>
+                      <CheckCircle2 size={16} style={{ color: 'var(--success)' }} />
+                    </Box>
+                    <Box flex={1} minWidth={0}>
+                      <Typography variant="body2" fontWeight={500} noWrap>{goal.title}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Completed {goal.completedAt ? format(parseISO(goal.completedAt), 'MMM d, yyyy') : ''}
+                      </Typography>
+                    </Box>
+                    <Chip label={goal.category} size="small" variant="outlined" />
+                  </Stack>
                 </Box>
-
-                {/* Goal Info */}
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ 
-                    fontSize: '0.875rem', 
-                    fontWeight: 500, 
-                    color: 'grey.700',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {goal.title}
-                  </Typography>
-                </Box>
-
-                {/* Category */}
-                <Chip 
-                  label={goal.category} 
-                  size="small" 
-                  variant="outlined" 
-                  sx={{ fontSize: '0.75rem', height: 24, display: { xs: 'none', sm: 'flex' } }} 
-                />
-
-                {/* Completed Date */}
-                <Typography sx={{ fontSize: '0.75rem', color: 'grey.500', display: { xs: 'none', md: 'block' } }}>
-                  Completed {goal.completedAt ? format(parseISO(goal.completedAt), 'MMM d, yyyy') : ''}
-                </Typography>
-
-                {/* Chevron */}
-                <ChevronRight size={16} style={{ opacity: 0.4, color: 'var(--muted-foreground)' }} />
-              </Box>
+              </Card>
             ))}
           </Box>
         </Box>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
@@ -29,8 +30,6 @@ import {
   GraduationCap,
   UserPlus,
   Trash2,
-  AlertTriangle,
-  Eye,
 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { 
@@ -49,12 +48,8 @@ import { StaffMember } from '@/types/staff';
 import { Goal, PerformanceReview, Conversation } from '@/types/performance';
 import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
 import { mockCourses, mockLearningPaths, mockEnrollments } from '@/data/mockLmsData';
-import { SemanticProgressBar, getProgressStatus, StatusBadge } from './shared';
-import { cn } from '@/lib/utils';
 
 interface PlanManagementPanelProps {
-  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
-  embedded?: boolean;
   staff: StaffMember[];
   goals: Goal[];
   reviews: PerformanceReview[];
@@ -62,18 +57,15 @@ interface PlanManagementPanelProps {
   onAssignPlan: (template: PerformancePlanTemplate) => void;
   onBulkAssignPlan: (template: PerformancePlanTemplate) => void;
   onViewPlan: (plan: AssignedPlan) => void;
-  onEditPlan?: (plan: AssignedPlan) => void;
   onViewTemplate: (template: PerformancePlanTemplate) => void;
   onCreateTemplate: () => void;
   onEditTemplate: (template: PerformancePlanTemplate) => void;
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
   onQuickAssignPlan: () => void;
   onDeleteTemplate?: (templateId: string) => void;
-  onDeletePlan?: (planId: string) => void;
 }
 
 export function PlanManagementPanel({
-  embedded = false,
   staff,
   goals,
   reviews,
@@ -81,14 +73,12 @@ export function PlanManagementPanel({
   onAssignPlan,
   onBulkAssignPlan,
   onViewPlan,
-  onEditPlan,
   onViewTemplate,
   onCreateTemplate,
   onEditTemplate,
   onDuplicateTemplate,
   onQuickAssignPlan,
   onDeleteTemplate,
-  onDeletePlan,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,21 +133,23 @@ export function PlanManagementPanel({
     if (days === 0) return 'Due today';
     return `${days} days left`;
   };
-      {!embedded && (
-        <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-          <div className="space-y-1">
-            <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-2.5">
-              <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
-                <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-              </div>
-              Performance Plans
-            </h2>
-            <p className="text-sm text-muted-foreground hidden sm:block">
-              Create and manage development plans for team members
-            </p>
-          </div>
+
+  return (
+    <div className="space-y-6 md:space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-2.5">
+            <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+              <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            </div>
+            Performance Plans
+          </h2>
+          <p className="text-sm text-muted-foreground hidden sm:block">
+            Create and manage development plans for team members
+          </p>
         </div>
-      )}
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'assigned' | 'templates')}>
@@ -257,356 +249,261 @@ export function PlanManagementPanel({
           )}
         </div>
 
-        {/* Assigned Plans Tab - Table Layout */}
+        {/* Assigned Plans Tab */}
         <TabsContent value="assigned" className="mt-4 md:mt-6">
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            {/* Table Header */}
-            <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Assigned Plans
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {filteredPlans.length} items
-                </span>
-              </div>
-            </div>
-
-            {filteredPlans.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-3">
-                  <FileText className="h-7 w-7 text-muted-foreground" />
+          {filteredPlans.length === 0 ? (
+            <Card className="border-dashed border-2 bg-transparent">
+              <CardContent className="py-10 md:py-16 text-center">
+                <div className="p-3 md:p-4 rounded-full bg-muted/50 w-fit mx-auto mb-3 md:mb-4">
+                  <FileText className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                 </div>
-                <h3 className="text-sm font-medium text-foreground mb-1">No Plans Found</h3>
-                <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
+                <h3 className="text-base md:text-lg font-medium mb-2">No Plans Found</h3>
+                <p className="text-sm text-muted-foreground mb-4 md:mb-5 max-w-sm mx-auto">
                   {searchTerm || typeFilter !== 'all' || statusFilter !== 'all'
                     ? 'Try adjusting your filters'
                     : 'Start by assigning a plan template to a team member'}
                 </p>
-                <Button onClick={() => setActiveTab('templates')} size="sm">
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                <Button onClick={() => setActiveTab('templates')} className="shadow-sm">
+                  <Plus className="h-4 w-4 mr-2" />
                   Browse Templates
                 </Button>
-              </div>
-            ) : (
-              <div>
-                {filteredPlans.map((plan, index) => {
-                  const staffMember = getStaffById(plan.staffId);
-                  const isOverdueStatus = differenceInDays(parseISO(plan.endDate), new Date()) < 0;
-                  const lmsData: LMSData = {
-                    enrollments: mockEnrollments,
-                    learningPaths: mockLearningPaths,
-                    courses: mockCourses,
-                  };
-                  const breakdown = calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
-                  const daysRemaining = differenceInDays(parseISO(plan.endDate), new Date());
-                  const progressStatus = getProgressStatus(breakdown.totalProgress, daysRemaining, isOverdueStatus);
-                  
-                  return (
-                    <div 
-                      key={plan.id} 
-                      className={cn(
-                        "flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors group",
-                        "hover:bg-muted/40",
-                        index < filteredPlans.length - 1 && "border-b border-border",
-                        isOverdueStatus && "border-l-[3px] border-l-destructive"
-                      )}
-                      onClick={() => onViewPlan(plan)}
-                    >
-                      {/* Avatar */}
-                      <Avatar className="h-9 w-9 border border-border shrink-0">
-                        <AvatarImage src={staffMember?.avatar} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                          {staffMember?.firstName[0]}{staffMember?.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      
-                      {/* Name & Plan */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground truncate">
-                            {staffMember?.firstName} {staffMember?.lastName}
-                          </span>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3 md:gap-4">
+              {filteredPlans.map((plan) => {
+                const staffMember = getStaffById(plan.staffId);
+                
+                return (
+                  <Card 
+                    key={plan.id} 
+                    className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                    onClick={() => onViewPlan(plan)}
+                  >
+                    <CardContent className="p-3 md:p-5">
+                      <div className="flex items-start gap-3 md:gap-4">
+                        <Avatar className="h-10 w-10 md:h-12 md:w-12 border-2 border-background shadow-sm shrink-0">
+                          <AvatarImage src={staffMember?.avatar} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm md:text-base">
+                            {staffMember?.firstName[0]}{staffMember?.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2">
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-foreground text-sm md:text-base truncate">
+                                {staffMember?.firstName} {staffMember?.lastName}
+                              </h3>
+                              <p className="text-xs md:text-sm text-muted-foreground mt-0.5 truncate">
+                                {plan.templateName}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1 sm:mt-0 shrink-0">
+                              <Badge className={planTypeColors[plan.type]} variant="secondary">
+                                {planTypeLabels[plan.type].replace(' Plan', '')}
+                              </Badge>
+                              <Badge className={planStatusColors[plan.status]}>
+                                {planStatusLabels[plan.status]}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              <span className="hidden sm:inline">{format(parseISO(plan.startDate), 'MMM d')} - </span>
+                              {format(parseISO(plan.endDate), 'MMM d, yyyy')}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              {getDaysRemaining(plan.endDate)}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Target className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              {plan.goalIds.length} goals
+                            </div>
+                          </div>
+                          
+                          <div className="mt-3 md:mt-4 flex items-center gap-3 md:gap-4">
+                            <div className="flex-1">
+                              {(() => {
+                                const lmsData: LMSData = {
+                                  enrollments: mockEnrollments,
+                                  learningPaths: mockLearningPaths,
+                                  courses: mockCourses,
+                                };
+                                const breakdown = calculatePlanProgress(plan, goals, reviews, conversations, lmsData);
+                                const hasLearning = breakdown.totalCourses > 0;
+                                return (
+                                  <>
+                                    <div className="flex items-center justify-between text-xs md:text-sm mb-1 md:mb-1.5">
+                                      <span className="text-muted-foreground">
+                                        Progress
+                                        <span className="text-xs ml-1 md:ml-2 hidden sm:inline">
+                                          ({breakdown.completedGoals}/{breakdown.totalGoals} goals
+                                          {hasLearning && `, ${breakdown.completedCourses}/${breakdown.totalCourses} courses`})
+                                        </span>
+                                      </span>
+                                      <span className="font-semibold">{breakdown.totalProgress}%</span>
+                                    </div>
+                                    <Progress value={breakdown.totalProgress} className="h-1.5 md:h-2" />
+                                    {hasLearning && (
+                                      <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
+                                        <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
+                                        <span>{plan.learningPathIds?.length || 0} learning paths</span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
+                          </div>
                         </div>
-                        <span className="text-xs text-muted-foreground truncate block">
-                          {plan.templateName}
-                        </span>
                       </div>
-
-                      {/* Type & Status Badges */}
-                      <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                        <Badge className={cn(planTypeColors[plan.type], "text-[10px] h-5")} variant="secondary">
-                          {planTypeLabels[plan.type].replace(' Plan', '')}
-                        </Badge>
-                        <Badge className={cn(planStatusColors[plan.status], "text-[10px] h-5")}>
-                          {planStatusLabels[plan.status]}
-                        </Badge>
-                      </div>
-
-                      {/* Progress */}
-                      <div className="hidden sm:block w-28 shrink-0">
-                        <SemanticProgressBar
-                          value={breakdown.totalProgress}
-                          status={progressStatus}
-                          showPercentage
-                          size="xs"
-                        />
-                      </div>
-
-                      {/* Due Date */}
-                      <div className="hidden lg:flex items-center gap-1.5 w-24 shrink-0">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className={cn(
-                          "text-xs",
-                          isOverdueStatus ? "text-destructive" : "text-muted-foreground"
-                        )}>
-                          {format(parseISO(plan.endDate), 'MMM d, yyyy')}
-                        </span>
-                      </div>
-
-                      {/* Time Remaining */}
-                      <div className="hidden xl:flex items-center gap-1.5 w-20 shrink-0">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        <span className={cn(
-                          "text-xs",
-                          isOverdueStatus ? "text-destructive font-medium" : "text-muted-foreground"
-                        )}>
-                          {getDaysRemaining(plan.endDate)}
-                        </span>
-                      </div>
-
-                      {/* Actions Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => {
-                            e.stopPropagation();
-                            onViewPlan(plan);
-                          }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          {onEditPlan && (
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              onEditPlan(plan);
-                            }}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Plan
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          {onDeletePlan && (
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeletePlan(plan.id);
-                              }}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Plan
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
-        {/* Templates Tab - Table Layout */}
+        {/* Templates Tab */}
         <TabsContent value="templates" className="mt-4 md:mt-6">
-          <div className="space-y-6">
-            {Object.entries(templatesByIndustry).map(([industry, templates]) => (
-              <div key={industry} className="bg-card border border-border rounded-lg overflow-hidden">
-                {/* Industry Header */}
-                <div className="px-4 py-3 bg-muted/30 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {industry}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {templates.length} templates
-                    </span>
+          <ScrollArea className="h-[calc(100vh-300px)] md:h-[calc(100vh-360px)]">
+            <div className="space-y-6 md:space-y-8 pr-2 md:pr-4">
+              {Object.entries(templatesByIndustry).map(([industry, templates]) => (
+                <div key={industry}>
+                  <div className="flex items-center gap-2 mb-3 md:mb-4">
+                    <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+                    <h3 className="text-xs md:text-sm font-medium text-muted-foreground uppercase tracking-wider">{industry}</h3>
+                    <Badge variant="outline" className="ml-1.5 md:ml-2 text-xs">{templates.length}</Badge>
+                  </div>
+                  
+                  <div className="grid gap-3 md:gap-4 grid-cols-1 lg:grid-cols-2">
+                    {templates.map((template) => (
+                      <Card key={template.id} className="group border-0 shadow-sm hover:shadow-md transition-all duration-200">
+                        <CardContent className="p-3 md:p-5">
+                          <div className="flex items-start justify-between gap-2 mb-2 md:mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-foreground line-clamp-1 text-sm md:text-base">{template.name}</h4>
+                              <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-1 md:mt-1.5">
+                                {template.description}
+                              </p>
+                            </div>
+                            <Badge className={`${planTypeColors[template.type]} text-xs shrink-0`} variant="secondary">
+                              {planTypeLabels[template.type].replace(' Plan', '').replace(' (PIP)', '')}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs text-muted-foreground mt-3 md:mt-4 py-2 md:py-3 border-t border-border/50">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.durationDays}d
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Target className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.goals.length}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <ClipboardCheck className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.reviews.length}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                              {template.conversations.length}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mt-3 md:mt-4">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewTemplate(template);
+                              }}
+                            >
+                              Preview
+                            </Button>
+                            <Button 
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (template.isSystem) {
+                                  onDuplicateTemplate(template);
+                                } else {
+                                  onEditTemplate(template);
+                                }
+                              }}
+                            >
+                              <Edit className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                              <span className="hidden sm:inline">{template.isSystem ? 'Customize' : 'Edit'}</span>
+                            </Button>
+                            <Button 
+                              size="sm"
+                              className="h-8 px-2 md:px-3 text-xs md:text-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onAssignPlan(template);
+                              }}
+                            >
+                              <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                              Assign
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost" className="ml-auto">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  onBulkAssignPlan(template);
+                                }}>
+                                  <Users className="h-4 w-4 mr-2" />
+                                  Bulk Assign
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDuplicateTemplate(template);
+                                }}>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Duplicate
+                                </DropdownMenuItem>
+                                {!template.isSystem && onDeleteTemplate && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteTemplate(template.id);
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete Template
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-                
-                {/* Template Rows */}
-                <div>
-                  {templates.map((template, index) => (
-                    <div 
-                      key={template.id}
-                      className={cn(
-                        "flex items-center gap-4 px-4 py-3 cursor-pointer transition-colors group",
-                        "hover:bg-muted/40",
-                        index < templates.length - 1 && "border-b border-border"
-                      )}
-                      onClick={() => onViewTemplate(template)}
-                    >
-                      {/* Template Icon */}
-                      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                      </div>
-                      
-                      {/* Name & Description */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground truncate">
-                            {template.name}
-                          </span>
-                          {template.isSystem && (
-                            <Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0">
-                              System
-                            </Badge>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground truncate block">
-                          {template.description}
-                        </span>
-                      </div>
-
-                      {/* Type Badge */}
-                      <Badge 
-                        className={cn(planTypeColors[template.type], "text-[10px] h-5 hidden md:flex shrink-0")} 
-                        variant="secondary"
-                      >
-                        {planTypeLabels[template.type].replace(' Plan', '').replace(' (PIP)', '')}
-                      </Badge>
-
-                      {/* Stats */}
-                      <div className="hidden lg:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
-                        <div className="flex items-center gap-1 w-12">
-                          <Clock className="h-3 w-3" />
-                          {template.durationDays}d
-                        </div>
-                        <div className="flex items-center gap-1 w-8">
-                          <Target className="h-3 w-3" />
-                          {template.goals.length}
-                        </div>
-                        <div className="flex items-center gap-1 w-8">
-                          <ClipboardCheck className="h-3 w-3" />
-                          {template.reviews.length}
-                        </div>
-                        <div className="flex items-center gap-1 w-8">
-                          <MessageSquare className="h-3 w-3" />
-                          {template.conversations.length}
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          className="h-7 px-2 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (template.isSystem) {
-                              onDuplicateTemplate(template);
-                            } else {
-                              onEditTemplate(template);
-                            }
-                          }}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button 
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAssignPlan(template);
-                          }}
-                        >
-                          <UserPlus className="h-3 w-3" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="ghost" className="h-7 px-1.5">
-                              <MoreVertical className="h-3.5 w-3.5" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              onViewTemplate(template);
-                            }}>
-                              <BookOpen className="h-4 w-4 mr-2" />
-                              Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              onBulkAssignPlan(template);
-                            }}>
-                              <Users className="h-4 w-4 mr-2" />
-                              Bulk Assign
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              onDuplicateTemplate(template);
-                            }}>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Duplicate
-                            </DropdownMenuItem>
-                            {!template.isSystem && onDeleteTemplate && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteTemplate(template.id);
-                                  }}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Template
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Chevron */}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            
-            {filteredTemplates.length === 0 && (
-              <div className="bg-card border border-border rounded-lg py-16 text-center">
-                <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-3">
-                  <Sparkles className="h-7 w-7 text-muted-foreground" />
-                </div>
-                <h3 className="text-sm font-medium text-foreground mb-1">No Templates Found</h3>
-                <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
-                  Try adjusting your filters or create a new template
-                </p>
-                <Button onClick={onCreateTemplate} size="sm">
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
-                  Create Template
-                </Button>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
     </div>
