@@ -59,7 +59,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session 
   };
 
   const handleSave = () => {
-    const session: Partial<CalibrationSession> = {
+    const draft: Partial<CalibrationSession> = {
       id: session?.id ?? `session-new-${Date.now()}`,
       title,
       reviewCycle,
@@ -69,7 +69,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session 
       status: session?.status ?? 'scheduled',
       notes,
     };
-    onSave(session);
+    onSave(draft);
     resetForm();
     onClose();
   };
