@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
+import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
+
 import { GoalsTracker } from '@/components/performance/GoalsTracker';
 import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
 import { FeedbackPanel } from '@/components/performance/FeedbackPanel';
@@ -359,28 +361,9 @@ export default function PerformanceManagement() {
             />
           </Stack>
 
-          {/* Tab Navigation */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-            <Tabs
-              value={activeTab}
-              onChange={(_, value) => setActiveTab(value)}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              {tabConfig.map(tab => (
-                <Tab
-                  key={tab.value}
-                  value={tab.value}
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <tab.icon size={16} />
-                      <span>{tab.label}</span>
-                    </Stack>
-                  }
-                />
-              ))}
-            </Tabs>
-          </Box>
+          {/* Grouped Tab Navigation */}
+          <PerformanceNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
 
           {/* Tab Content */}
           <Box>
