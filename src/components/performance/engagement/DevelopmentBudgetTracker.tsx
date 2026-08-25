@@ -213,7 +213,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
                 <Stack direction="row" spacing={4} mb={2}>
                   <Box>
                     <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-                    <Typography variant="h5" fontWeight={700}>{formatCurrency(myBudget.totalBudget)}}</Typography>
+                    <Typography variant="h5" fontWeight={700}>{formatCurrency(myBudget.totalBudget)}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">Used</Typography>
@@ -262,7 +262,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
               <Box>
                 <Typography variant="h6" fontWeight={700}>{formatCurrency(stats.totalBudget)}</Typography>
                 <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-              </Box>}}
+              </Box>
             </Stack>
           </Box>
         </Card>
@@ -993,3 +993,5 @@ function EditBudgetDrawer({ open, onClose, budget, staff, onSave }: EditBudgetDr
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
