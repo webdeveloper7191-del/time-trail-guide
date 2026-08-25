@@ -56,7 +56,7 @@ import { HappinessScoreWidget } from '@/components/performance/HappinessScoreWid
 import { PerformanceExecutiveDashboard } from '@/components/performance/PerformanceExecutiveDashboard';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
-import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
+import { performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
 import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';

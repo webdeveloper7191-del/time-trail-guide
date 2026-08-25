@@ -44,6 +44,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface CalibrationPanelProps {
   currentUserId: string;
@@ -68,13 +69,34 @@ const mockRatingDistribution: RatingDistribution[] = [
 ];
 
 export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
+  const [sessions, setSessions] = useState<CalibrationSession[]>(mockCalibrationSessions);
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
-  const upcomingSessions = mockCalibrationSessions.filter(s => s.status === 'scheduled');
-  const completedSessions = mockCalibrationSessions.filter(s => s.status === 'completed');
+  const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
+  const completedSessions = sessions.filter(s => s.status === 'completed');
+
+  const handleScheduleSession = () => {
+    const scheduledDate = new Date();
+    scheduledDate.setDate(scheduledDate.getDate() + 7);
+    scheduledDate.setHours(10, 0, 0, 0);
+    const now = new Date().toISOString();
+    const session: CalibrationSession = {
+      id: `calibration-${Date.now()}`,
+      title: 'Performance Rating Calibration',
+      reviewCycle: 'Current review cycle',
+      facilitatorId: currentUserId,
+      participantIds: [currentUserId],
+      status: 'scheduled',
+      scheduledDate: scheduledDate.toISOString(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setSessions(prev => [session, ...prev]);
+    toast.success(`Calibration session scheduled for ${format(scheduledDate, 'MMM d, yyyy h:mm a')}`);
+  };
 
   const handleViewSession = (session: CalibrationSession) => {
     setSelectedSession(session);
@@ -366,7 +388,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
             Ensure fair and consistent performance ratings across teams
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={handleScheduleSession}>
           Schedule Session
         </Button>
       </Stack>
