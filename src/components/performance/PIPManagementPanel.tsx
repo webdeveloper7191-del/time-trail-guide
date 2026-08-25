@@ -77,7 +77,7 @@ const getStatusBadgeVariant = (status: PIPStatus) => {
   }
 };
 
-export function PIPManagementPanel({ staff, currentUserId, embedded = false , embedded = false }: PIPManagementPanelProps) {
+export function PIPManagementPanel({ staff, currentUserId, embedded = false }: PIPManagementPanelProps) {
   const [pips, setPips] = useState<PerformanceImprovementPlan[]>(mockPIPs);
   const [selectedPIP, setSelectedPIP] = useState<PerformanceImprovementPlan | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

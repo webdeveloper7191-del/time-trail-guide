@@ -55,7 +55,7 @@ interface DevelopmentBudgetTrackerProps {
   currentUserId: string;
 }
 
-export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = false , embedded = false }: DevelopmentBudgetTrackerProps) {
+export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = false }: DevelopmentBudgetTrackerProps) {
   const [budgets, setBudgets] = useState<DevelopmentBudget[]>(initialBudgets);
   const [requests, setRequests] = useState<BudgetRequest[]>(initialRequests);
   const [showRequestDrawer, setShowRequestDrawer] = useState(false);
