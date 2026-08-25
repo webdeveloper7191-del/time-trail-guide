@@ -45,6 +45,7 @@ const CalendarIntegrationPanel = lazy(() => import('@/components/performance/eng
 const GoalRecommendationsPanel = lazy(() => import('@/components/performance/goals/GoalRecommendationsPanel').then(m => ({ default: m.GoalRecommendationsPanel })));
 const CareerPathingVisualization = lazy(() => import('@/components/performance/talent/CareerPathingVisualization').then(m => ({ default: m.CareerPathingVisualization })));
 const SentimentAnalysisPanel = lazy(() => import('@/components/performance/insights/SentimentAnalysisPanel').then(m => ({ default: m.SentimentAnalysisPanel })));
+const PerformanceAdminPanel = lazy(() => import('@/components/performance/admin/PerformanceAdminPanel').then(m => ({ default: m.PerformanceAdminPanel })));
 const BenchmarkingDashboard = lazy(() => import('@/components/performance/insights/BenchmarkingDashboard').then(m => ({ default: m.BenchmarkingDashboard })));
 
 // Eagerly load sheets/drawers as they're used across tabs
@@ -74,7 +75,7 @@ const VALID_TABS = [
   'recognition', 'happiness', 'pulse', 'wellbeing', 'nominations', 'mentorship', 'budget',
   'talent', 'skills', 'career-pathing', 'succession', 'team',
   'tasks', 'conversations', 'calendar',
-  'summary', 'analytics', 'sentiment', 'benchmarking', 'compensation'
+  'summary', 'analytics', 'sentiment', 'benchmarking', 'compensation', 'admin-config'
 ];
 
 // Loading fallback component
@@ -624,6 +625,10 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
             reviews={reviews}
             feedback={feedback}
           />
+        )}
+
+        {activeTab === 'admin-config' && (
+          <PerformanceAdminPanel />
         )}
       </Suspense>
     );
