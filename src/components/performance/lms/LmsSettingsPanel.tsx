@@ -203,7 +203,7 @@ export function LmsSettingsPanel() {
                   <SelectItem value="none">Not set yet</SelectItem>
                   {mockLearningPaths.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.title}
+                      {p.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
