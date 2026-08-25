@@ -14,6 +14,9 @@ import { StaffMember } from '@/types/staff';
 import { Settings, Database } from 'lucide-react';
 import { Button } from '@/components/mui/Button';
 import { toast } from 'sonner';
+import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
+import { getWorkspaceMeta } from '@/components/performance/workspaceConfig';
+
 
 // Lazy load tab panels for code splitting
 const PlanManagementPanel = lazy(() => import('@/components/performance/PlanManagementPanel').then(m => ({ default: m.PlanManagementPanel })));
@@ -367,12 +370,30 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
     toast.success('Plan extended successfully');
   };
 
+  // Shared workspace framing (header, plain-English guide, KPI strip) per tab
+  const workspaceMeta = useMemo(
+    () =>
+      activeTab === 'lms'
+        ? null
+        : getWorkspaceMeta(activeTab, {
+            goals,
+            reviews,
+            feedback,
+            conversations,
+            staff: mockStaff,
+            goTo: handleTabChange,
+          }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeTab, goals, reviews, feedback, conversations],
+  );
+
   // Render the active tab content with Suspense
   const renderTabContent = () => {
-    return (
+    const panels = (
       <Suspense fallback={<TabLoadingFallback />}>
+
         {activeTab === 'plans' && (
-          <PlanManagementPanel
+          <PlanManagementPanel embedded
             staff={mockStaff}
             goals={goals}
             reviews={reviews}
@@ -397,7 +418,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'okr' && (
-          <OKRCascadePanel currentUserId={CURRENT_USER_ID} />
+          <OKRCascadePanel embedded currentUserId={CURRENT_USER_ID} />
         )}
 
         {activeTab === 'lms' && (
@@ -408,7 +429,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'tasks' && (
-          <PerformanceTaskManagementPanel
+          <PerformanceTaskManagementPanel embedded
             currentUserId={CURRENT_USER_ID}
             goals={goals}
             reviews={reviews}
@@ -420,7 +441,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'goals' && (
-          <GoalsTracker
+          <GoalsTracker embedded
             goals={goals}
             onCreateGoal={() => setShowCreateGoalDrawer(true)}
             onAssignGoal={() => setShowAssignGoalDrawer(true)}
@@ -431,7 +452,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'reviews' && (
-          <ReviewsDashboard
+          <ReviewsDashboard embedded
             reviews={reviews}
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
@@ -443,7 +464,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'feedback' && (
-          <FeedbackPanel
+          <FeedbackPanel embedded
             feedback={feedback}
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
@@ -454,25 +475,25 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === '360feedback' && (
-          <Feedback360Panel currentUserId={CURRENT_USER_ID} />
+          <Feedback360Panel embedded currentUserId={CURRENT_USER_ID} />
         )}
 
         {activeTab === 'recognition' && (
-          <UnifiedRecognitionPanel
+          <UnifiedRecognitionPanel embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'happiness' && (
-          <HappinessScoreWidget
+          <HappinessScoreWidget embedded
             currentUserId={CURRENT_USER_ID}
             isManager={true}
           />
         )}
 
         {activeTab === 'conversations' && (
-          <ConversationsList
+          <ConversationsList embedded
             conversations={conversations}
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
@@ -482,27 +503,27 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'talent' && (
-          <NineBoxTalentGrid />
+          <NineBoxTalentGrid embedded />
         )}
 
         {activeTab === 'skills' && (
-          <SkillsCareerPanel staffId="staff-1" />
+          <SkillsCareerPanel embedded staffId="staff-1" />
         )}
 
         {activeTab === 'pulse' && (
-          <PulseSurveyPanel currentUserId={CURRENT_USER_ID} />
+          <PulseSurveyPanel embedded currentUserId={CURRENT_USER_ID} />
         )}
 
         {activeTab === 'wellbeing' && (
-          <WellbeingDashboard currentUserId={CURRENT_USER_ID} />
+          <WellbeingDashboard embedded currentUserId={CURRENT_USER_ID} />
         )}
 
         {activeTab === 'calibration' && (
-          <CalibrationPanel currentUserId={CURRENT_USER_ID} />
+          <CalibrationPanel embedded currentUserId={CURRENT_USER_ID} />
         )}
 
         {activeTab === 'team' && (
-          <TeamOverviewDashboard
+          <TeamOverviewDashboard embedded
             staff={mockStaff}
             goals={goals}
             reviews={reviews}
@@ -516,7 +537,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'summary' && (
-          <PerformanceExecutiveDashboard
+          <PerformanceExecutiveDashboard embedded
             goals={goals}
             reviews={reviews}
             conversations={conversations}
@@ -525,7 +546,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'analytics' && (
-          <PerformanceAnalyticsDashboard
+          <PerformanceAnalyticsDashboard embedded
             goals={goals}
             reviews={reviews}
             feedback={feedback}
@@ -534,53 +555,53 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'compensation' && (
-          <CompensationPanel
+          <CompensationPanel embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'pip' && (
-          <PIPManagementPanel
+          <PIPManagementPanel embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'succession' && (
-          <SuccessionPlanningPanel
+          <SuccessionPlanningPanel embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'nominations' && (
-          <PeerNominationsPanel
+          <PeerNominationsPanel embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'mentorship' && (
-          <MentorshipMatchingPanel
+          <MentorshipMatchingPanel embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'budget' && (
-          <DevelopmentBudgetTracker
+          <DevelopmentBudgetTracker embedded
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
           />
         )}
 
         {activeTab === 'calendar' && (
-          <CalendarIntegrationPanel />
+          <CalendarIntegrationPanel embedded />
         )}
 
         {activeTab === 'goal-recommendations' && (
-          <GoalRecommendationsPanel
+          <GoalRecommendationsPanel embedded
             staff={mockStaff}
             currentStaffId={CURRENT_USER_ID}
             existingGoals={goals}
@@ -608,11 +629,11 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'career-pathing' && (
-          <CareerPathingVisualization staffId={CURRENT_USER_ID} />
+          <CareerPathingVisualization embedded staffId={CURRENT_USER_ID} />
         )}
 
         {activeTab === 'sentiment' && (
-          <SentimentAnalysisPanel
+          <SentimentAnalysisPanel embedded
             feedback={feedback}
             staff={mockStaff}
             currentUserId={CURRENT_USER_ID}
@@ -620,7 +641,7 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'benchmarking' && (
-          <BenchmarkingDashboard
+          <BenchmarkingDashboard embedded
             goals={goals}
             reviews={reviews}
             feedback={feedback}
@@ -628,11 +649,28 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         )}
 
         {activeTab === 'admin-config' && (
-          <PerformanceAdminPanel />
+          <PerformanceAdminPanel embedded />
         )}
       </Suspense>
     );
+
+    if (!workspaceMeta) return panels;
+
+    return (
+      <ModuleWorkspace
+        storageKey={activeTab}
+        icon={workspaceMeta.icon}
+        title={workspaceMeta.title}
+        description={workspaceMeta.description}
+        kpis={workspaceMeta.kpis}
+        steps={workspaceMeta.steps}
+        guideTitle={workspaceMeta.guideTitle}
+      >
+        {panels}
+      </ModuleWorkspace>
+    );
   };
+
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>

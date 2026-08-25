@@ -59,6 +59,8 @@ import {
 import { format } from 'date-fns';
 
 interface CalibrationPanelProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -80,7 +82,8 @@ const mockRatingDistribution: RatingDistribution[] = [
   { rating: 5, count: 0, percentage: 10, expectedPercentage: 5, variance: 5 },
 ];
 
-export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
+export function CalibrationPanel({
+  embedded = false, currentUserId }: CalibrationPanelProps) {
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -432,30 +435,30 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
       </Sheet>
     );
   };
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
       <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
+        direction={{ xs: "column", sm: "row" }} 
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        alignItems={{ xs: "stretch", sm: "center" }} 
         spacing={2}
       >
-        <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
-            Calibration Sessions
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-            Ensure fair and consistent performance ratings across teams
-          </Typography>
-        </Box>
+        {!embedded && (
+          <Box>
+            <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
+              Calibration Sessions
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
+              Ensure fair and consistent performance ratings across teams
+            </Typography>
+          </Box>
+        )}
+        <Button variant="contained" startIcon={<Plus size={16} />} className="w-full sm:w-auto" sx={{ ml: embedded ? "auto" : 0 }}>
         <Button variant="contained" startIcon={<Plus size={16} />} className="w-full sm:w-auto">
           <span className="hidden sm:inline">Schedule Session</span>
           <span className="sm:hidden">New Session</span>
         </Button>
       </Stack>
 
-      {renderDistributionChart()}
+      {!embedded && renderDistributionChart()}
 
       <Tabs defaultValue="upcoming" className="w-full">
         <TabsList className="mb-4">

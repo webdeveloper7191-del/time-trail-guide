@@ -38,6 +38,8 @@ import { format, subMonths } from 'date-fns';
 import { toast } from 'sonner';
 
 interface HappinessScoreWidgetProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   currentUserId: string;
   isManager?: boolean;
 }
@@ -74,7 +76,7 @@ const mockDistribution = [
   { range: '9-10', count: 3, label: 'Excellent', color: 'rgb(34, 197, 94)' },
 ];
 
-export function HappinessScoreWidget({ currentUserId, isManager = false }: HappinessScoreWidgetProps) {
+export function HappinessScoreWidget({ currentUserId, isManager = false, embedded = false , embedded = false }: HappinessScoreWidgetProps) {
   const [showSubmitSheet, setShowSubmitSheet] = useState(false);
   const [score, setScore] = useState<number>(7);
   const [comment, setComment] = useState('');
@@ -118,19 +120,19 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
+        justifyContent={embedded ? "flex-end" : "space-between"} 
         alignItems={{ xs: 'stretch', sm: 'flex-start' }}
         spacing={2}
       >
-        <Box>
-          <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {!embedded && {!embedded && {!embedded && <Box>
+          <Typography variant="h6" fontWeight={600} sx={{ display: \'flex\', alignItems: \'center\', gap: 1 }}>
             <Smile className="h-5 w-5 text-primary" />
             Happiness Score
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Monthly team happiness tracking
           </Typography>
-        </Box>
+        </Box>}}
         {!hasSubmittedThisMonth && (
           <Button 
             variant="contained" 
@@ -143,9 +145,9 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
       </Stack>
 
       {/* Main Score Card */}
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+      {!embedded && {!embedded && {!embedded && <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
         <Card sx={{ flex: 1, p: 3 }}>
-          <Stack direction="row" alignItems="flex-start" justifyContent="space-between">
+          <Stack direction="row" alignItems="flex-start" justifyContent={embedded ? "flex-end" : "space-between"}>
             <Box>
               <Typography variant="caption" color="text.secondary">
                 Team Happiness Score
@@ -159,7 +161,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
                   {currentScore.toFixed(1)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">/10</Typography>
-              </Stack>
+              </Stack>}}}
               <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
                 {getTrendIcon(trend)}
                 <Typography 
@@ -216,7 +218,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
             </ResponsiveContainer>
           </Box>
         </Card>
-      </Stack>
+      </Stack>}
 
       {/* Trend Chart */}
       <Card sx={{ p: 3 }}>
@@ -407,7 +409,3 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
             </Button>
           </SheetFooter>
         </SheetContent>
-      </Sheet>
-    </div>
-  );
-}

@@ -48,6 +48,7 @@ import { formatDistanceToNow, parseISO, format, subMonths } from 'date-fns';
 import { SentimentSettingsDrawer, SentimentSettings } from './SentimentSettingsDrawer';
 
 interface SentimentAnalysisPanelProps {
+  embedded?: boolean;
   feedback: Feedback[];
   staff: StaffMember[];
   currentUserId: string;
@@ -151,7 +152,7 @@ const sentimentColors: Record<SentimentLabel, { bg: string; text: string; icon: 
   neutral: { bg: 'bg-slate-50', text: 'text-slate-700', icon: <Minus className="h-4 w-4" /> },
 };
 
-export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: SentimentAnalysisPanelProps) {
+export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedded = false }: SentimentAnalysisPanelProps) {
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<SentimentResult[]>([]);
   const [timeRange, setTimeRange] = useState<'all' | '3m' | '6m' | '1y'>('all');
@@ -287,6 +288,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: Senti
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2}>
+        {!embedded && (
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'secondary.light', display: 'flex' }}>
@@ -300,8 +302,9 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId }: Senti
             AI-powered analysis of feedback text for sentiment trends
           </Typography>
         </Box>
+      )}
         
-        <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ ml: "auto" }}>
           {(['3m', '6m', '1y', 'all'] as const).map((range) => (
             <Button
               key={range}

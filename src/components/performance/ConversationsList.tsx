@@ -46,7 +46,9 @@ import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
 import { toast } from 'sonner';
 
 interface ConversationsListProps {
-  conversations: Conversation[];
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+conversations: Conversation[];
   staff: StaffMember[];
   currentUserId: string;
   onScheduleConversation: () => void;
@@ -74,7 +76,8 @@ export function ConversationsList({
   staff, 
   currentUserId,
   onScheduleConversation, 
-  onViewConversation 
+  onViewConversation, 
+  embedded = false 
 }: ConversationsListProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
@@ -299,11 +302,12 @@ export function ConversationsList({
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between" 
+        justifyContent={embedded ? "flex-end" : "space-between"} 
         alignItems={{ xs: 'stretch', sm: 'flex-start' }}
         spacing={{ xs: 2, sm: 0 }}
+        sx={{ mb: embedded ? 0 : 0 }}
       >
-        <Box>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <MessageSquare size={20} style={{ color: 'var(--primary)' }} />
@@ -319,7 +323,7 @@ export function ConversationsList({
           >
             Schedule and track 1:1s, check-ins, and coaching sessions
           </Typography>
-        </Box>
+        </Box>}
         <Button onClick={onScheduleConversation} className="gap-2">
           <Plus size={16} />
           Schedule Meeting

@@ -47,11 +47,13 @@ import {
 import { toast } from 'sonner';
 
 interface MentorshipMatchingProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
 }
 
-export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatchingProps) {
+export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false }: MentorshipMatchingProps) {
   const [mentors, setMentors] = useState<MentorProfile[]>(initialMentors);
   const [mentees, setMentees] = useState<MenteeProfile[]>(initialMentees);
   const [matches, setMatches] = useState<MentorshipMatch[]>(initialMatches);
@@ -191,20 +193,25 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
               }}
             >
               <Box sx={{ p: 2.5 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+                <Stack direction="row" alignItems="center" justifyContent={embedded ? "flex-end" : "space-between"} mb={2}>
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <AvatarGroup max={2}>
                       <Avatar src={mentorStaff?.avatar}>{mentorStaff?.firstName?.[0]}</Avatar>
                       <Avatar src={menteeStaff?.avatar}>{menteeStaff?.firstName?.[0]}</Avatar>
                     </AvatarGroup>
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {mentorStaff?.firstName} → {menteeStaff?.firstName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Match Score: {match.matchScore}%
-                      </Typography>
-                    </Box>
+                    {!embedded && <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <Users size={20} style={{ color: \'var(--primary)\' }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Mentorship Program
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Connect mentors and mentees to support career growth
+          </Typography>
+        </Box>}
                   </Stack>
                   <Chip 
                     label={mentorshipStatusLabels[match.status]}
@@ -280,7 +287,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
                   {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
                 </Avatar>
                 <Box flex={1}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="flex-start">
                     <Box>
                       <Typography variant="subtitle1" fontWeight={600}>
                         {staffMember?.firstName} {staffMember?.lastName}
@@ -350,7 +357,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
                   {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
                 </Avatar>
                 <Box flex={1}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                  <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="flex-start">
                     <Box>
                       <Typography variant="subtitle1" fontWeight={600}>
                         {staffMember?.firstName} {staffMember?.lastName}
@@ -444,7 +451,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
                         key={mentor.id}
                         sx={{ p: 1.5, bgcolor: 'grey.50', borderRadius: 1, border: 1, borderColor: 'grey.200' }}
                       >
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Stack direction="row" alignItems="center" justifyContent={embedded ? "flex-end" : "space-between"}>
                           <Stack direction="row" alignItems="center" spacing={1.5}>
                             <Avatar src={mentorStaff?.avatar} sx={{ width: 36, height: 36, fontSize: '0.9rem' }}>
                               {mentorStaff?.firstName?.[0]}
@@ -497,12 +504,12 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-        <Box>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <Heart size={20} style={{ color: 'var(--primary)' }} />
-            </Box>
+            </Box>}
             <Typography variant="h6" fontWeight={600}>
               Mentorship Matching
             </Typography>
@@ -514,7 +521,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
       </Stack>
 
       {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      {!embedded && {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -522,7 +529,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
               <Box>
                 <Typography variant="h5" fontWeight={700}>{stats.activeMentors}</Typography>
                 <Typography variant="caption" color="text.secondary">Active Mentors</Typography>
-              </Box>
+              </Box>}
             </Stack>
           </Box>
         </Card>
@@ -552,40 +559,36 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Check size={20} style={{ color: 'var(--muted-foreground)' }} />
-              <Box>
-                <Typography variant="h5" fontWeight={700}>{stats.completedMatches}</Typography>
-                <Typography variant="caption" color="text.secondary">Completed</Typography>
-              </Box>
-            </Stack>
-          </Box>
-        </Card>
-      </Box>
-
-      {/* View Tabs */}
-      <Stack direction="row" spacing={1} flexWrap="wrap">
-        <Button variant={activeView === 'matches' ? 'default' : 'outline'} size="small" onClick={() => setActiveView('matches')}>
-          Active Matches
-        </Button>
-        <Button variant={activeView === 'find_match' ? 'default' : 'outline'} size="small" onClick={() => setActiveView('find_match')}>
-          <Sparkles size={14} className="mr-1" /> Find Matches
-        </Button>
-        <Button variant={activeView === 'mentors' ? 'default' : 'outline'} size="small" onClick={() => setActiveView('mentors')}>
-          Mentors
-        </Button>
-        <Button variant={activeView === 'mentees' ? 'default' : 'outline'} size="small" onClick={() => setActiveView('mentees')}>
-          Mentees
-        </Button>
-      </Stack>
-
-      {/* Content */}
-      {activeView === 'matches' && renderMatchesView()}
-      {activeView === 'mentors' && renderMentorsView()}
-      {activeView === 'mentees' && renderMenteesView()}
-      {activeView === 'find_match' && renderFindMatchView()}
-
-      {/* Drawers would go here for mentor/mentee registration and match details */}
-    </Box>
-  );
-}
-
-export default MentorshipMatchingPanel;
+              {!embedded && }t React, { useState, useMemo } from 'react';
+import {
+  Box,
+  Stack,
+  Typography,
+  Avatar,
+  Chip,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Slider,
+  LinearProgress,
+  Divider,
+  AvatarGroup,
+} from '@mui/material';
+import { Card } from '@/components/mui/Card';
+import { Button } from '@/components/mui/Button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { Progress } from '@/components/ui/progress';
+import {
+  Users,
+  UserPlus,
+  Heart,
+  Target,
+  Sparkles,
+  Calendar,
+  MessageSquare,
+  Check,
+  X,
+  Link2,
+  Star,

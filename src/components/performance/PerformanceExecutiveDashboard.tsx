@@ -41,6 +41,7 @@ import {
 import { Goal, PerformanceReview, Conversation, Feedback } from '@/types/performance';
 
 interface PerformanceExecutiveDashboardProps {
+  embedded?: boolean;
   goals: Goal[];
   reviews: PerformanceReview[];
   conversations: Conversation[];
@@ -69,7 +70,8 @@ export function PerformanceExecutiveDashboard({
   goals, 
   reviews, 
   conversations, 
-  feedback 
+  feedback,
+  embedded = false
 }: PerformanceExecutiveDashboardProps) {
   // Calculate metrics
   const totalGoals = goals.length;
@@ -191,93 +193,94 @@ export function PerformanceExecutiveDashboard({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Box>
-        <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <BarChart3 className="h-5 w-5 text-primary" />
-          Performance Analytics Summary
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Executive overview of team performance metrics
-        </Typography>
-      </Box>
+      {!embedded && (
+        <Box>
+          <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Performance Analytics Summary
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Executive overview of team performance metrics
+          </Typography>
+        </Box>
+      )}
 
-      {/* Key Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Goal Completion Rate"
-          value={`${goalCompletionRate}%`}
-          icon={Target}
-          color={COLORS.primary}
-          progress={goalCompletionRate}
-        />
-        <StatCard
-          title="Review Completion Rate"
-          value={`${reviewCompletionRate}%`}
-          icon={ClipboardCheck}
-          color={COLORS.success}
-          progress={reviewCompletionRate}
-        />
-        <StatCard
-          title="Happiness Score"
-          value={currentHappinessScore.toFixed(1)}
-          subtitle="/10"
-          change={happinessChange}
-          icon={Smile}
-          color={COLORS.warning}
-        />
-        <StatCard
-          title="eNPS Score"
-          value={eNPSScore > 0 ? `+${eNPSScore}` : eNPSScore}
-          change={enpsChange}
-          icon={Award}
-          color={COLORS.purple}
-        />
-      </div>
+      {!embedded && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Goal Completion Rate"
+            value={`${goalCompletionRate}%`}
+            icon={Target}
+            color={COLORS.primary}
+            progress={goalCompletionRate}
+          />
+          <StatCard
+            title="Review Completion Rate"
+            value={`${reviewCompletionRate}%`}
+            icon={ClipboardCheck}
+            color={COLORS.success}
+            progress={reviewCompletionRate}
+          />
+          <StatCard
+            title="Happiness Score"
+            value={currentHappinessScore.toFixed(1)}
+            subtitle="/10"
+            change={happinessChange}
+            icon={Smile}
+            color={COLORS.warning}
+          />
+          <StatCard
+            title="eNPS Score"
+            value={eNPSScore > 0 ? `+${eNPSScore}` : eNPSScore}
+            change={enpsChange}
+            icon={Award}
+            color={COLORS.purple}
+          />
+        </div>
+      )}
 
-      {/* Secondary Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Card sx={{ p: 2.5 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-            <Box>
-              <Typography variant="h6" fontWeight={700}>{completedGoals}</Typography>
-              <Typography variant="caption" color="text.secondary">Goals Completed</Typography>
-            </Box>
-          </Stack>
-        </Card>
-        <Card sx={{ p: 2.5 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <Box>
-              <Typography variant="h6" fontWeight={700}>{overdueGoals}</Typography>
-              <Typography variant="caption" color="text.secondary">Overdue Goals</Typography>
-            </Box>
-          </Stack>
-        </Card>
-        <Card sx={{ p: 2.5 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Clock className="h-5 w-5 text-amber-600" />
-            <Box>
-              <Typography variant="h6" fontWeight={700}>{pendingReviews}</Typography>
-              <Typography variant="caption" color="text.secondary">Pending Reviews</Typography>
-            </Box>
-          </Stack>
-        </Card>
-        <Card sx={{ p: 2.5 }}>
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Calendar className="h-5 w-5 text-blue-600" />
-            <Box>
-              <Typography variant="h6" fontWeight={700}>{upcomingConversations}</Typography>
-              <Typography variant="caption" color="text.secondary">Upcoming 1:1s</Typography>
-            </Box>
-          </Stack>
-        </Card>
-      </div>
+      {!embedded && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Card sx={{ p: 2.5 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{completedGoals}</Typography>
+                <Typography variant="caption" color="text.secondary">Goals Completed</Typography>
+              </Box>
+            </Stack>
+          </Card>
+          <Card sx={{ p: 2.5 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{overdueGoals}</Typography>
+                <Typography variant="caption" color="text.secondary">Overdue Goals</Typography>
+              </Box>
+            </Stack>
+          </Card>
+          <Card sx={{ p: 2.5 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Clock className="h-5 w-5 text-amber-600" />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{pendingReviews}</Typography>
+                <Typography variant="caption" color="text.secondary">Pending Reviews</Typography>
+              </Box>
+            </Stack>
+          </Card>
+          <Card sx={{ p: 2.5 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{upcomingConversations}</Typography>
+                <Typography variant="caption" color="text.secondary">Upcoming 1:1s</Typography>
+              </Box>
+            </Stack>
+          </Card>
+        </div>
+      )}
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Trend Chart */}
         <Card sx={{ p: 3 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Performance Trends
@@ -359,13 +362,11 @@ export function PerformanceExecutiveDashboard({
           </Box>
         </Card>
 
-        {/* Distribution Charts */}
         <Card sx={{ p: 3 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Status Distribution
           </Typography>
           <div className="grid grid-cols-2 gap-4">
-            {/* Goals Pie */}
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', mb: 1 }}>
                 Goals
@@ -407,7 +408,6 @@ export function PerformanceExecutiveDashboard({
               </Stack>
             </Box>
 
-            {/* Reviews Pie */}
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', mb: 1 }}>
                 Reviews
@@ -452,7 +452,6 @@ export function PerformanceExecutiveDashboard({
         </Card>
       </div>
 
-      {/* Feedback & Recognition Summary */}
       <Card sx={{ p: 3 }}>
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>
           Feedback & Recognition Activity
@@ -474,13 +473,13 @@ export function PerformanceExecutiveDashboard({
             <Typography variant="h4" fontWeight={700} color="warning.main">
               {feedback.filter(f => f.type === 'coaching').length}
             </Typography>
-            <Typography variant="caption" color="text.secondary">Coaching Sessions</Typography>
+            <Typography variant="caption" color="text.secondary">Coaching Notes</Typography>
           </Box>
           <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Typography variant="h4" fontWeight={700} color="secondary.main">
-              {completedConversations}
+            <Typography variant="h4" fontWeight={700} color="info.main">
+              {feedback.length}
             </Typography>
-            <Typography variant="caption" color="text.secondary">1:1s Completed</Typography>
+            <Typography variant="caption" color="text.secondary">Total Feedback</Typography>
           </Box>
         </div>
       </Card>

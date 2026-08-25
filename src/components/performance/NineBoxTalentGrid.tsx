@@ -34,7 +34,9 @@ import { TalentAssessmentDrawer } from './TalentAssessmentDrawer';
 import { toast } from 'sonner';
 
 interface NineBoxTalentGridProps {
-  assessments?: TalentAssessment[];
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+assessments?: TalentAssessment[];
   onSelectStaff?: (staffId: string) => void;
 }
 
@@ -67,7 +69,7 @@ const getFlightRiskStyle = (risk: string) => {
   return styles[risk] || styles.low;
 };
 
-export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff }: NineBoxTalentGridProps) {
+export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff, embedded = false }: NineBoxTalentGridProps) {
   const [assessments, setAssessments] = useState(initialAssessments || initialMockAssessments);
   const [selectedAssessment, setSelectedAssessment] = useState<TalentAssessment | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
@@ -339,15 +341,17 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary">
-            9-Box Talent Grid
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Visual talent mapping for succession planning and calibration
-          </Typography>
-        </Box>
+      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="center" sx={{ mb: embedded ? 0 : 3 }}>
+        {!embedded && (
+          <Box>
+            <Typography variant="h6" fontWeight={600} color="text.primary">
+              9-Box Talent Grid
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Visual talent mapping for succession planning and calibration
+            </Typography>
+          </Box>
+        )}
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<TrendingUp size={16} />}>
             Run Calibration

@@ -118,7 +118,12 @@ const mockUpcomingEvents: CalendarEvent[] = [
   },
 ];
 
-export function CalendarIntegrationPanel() {
+interface CalendarIntegrationPanelProps {
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+}
+
+export function CalendarIntegrationPanel({ embedded = false }: CalendarIntegrationPanelProps) {
   const [calendars, setCalendars] = useState<ConnectedCalendar[]>(mockConnectedCalendars);
   const [events] = useState<CalendarEvent[]>(mockUpcomingEvents);
   const [syncing, setSyncing] = useState(false);
@@ -191,8 +196,8 @@ export function CalendarIntegrationPanel() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-        <Box>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2} sx={{ mb: embedded ? 0 : 0 }}>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <Calendar className="h-5 w-5" style={{ color: 'var(--primary)' }} />
@@ -204,7 +209,7 @@ export function CalendarIntegrationPanel() {
           <Typography variant="body2" color="text.secondary">
             Sync your 1:1s with Google Calendar, Outlook, or Apple Calendar
           </Typography>
-        </Box>
+        </Box>}
         <MuiButton
           variant="outlined"
           startIcon={syncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}

@@ -47,6 +47,8 @@ import {
 } from '@/components/ui/table';
 
 interface UnifiedRecognitionPanelProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
 }
@@ -129,7 +131,7 @@ const defaultRewards: RewardCatalogItem[] = [
   { id: 6, name: 'Team Shoutout', points: 25, emoji: '📣', description: 'Featured in team newsletter' },
 ];
 
-export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecognitionPanelProps) {
+export function UnifiedRecognitionPanel({ staff, currentUserId, embedded = false , embedded = false }: UnifiedRecognitionPanelProps) {
   const [posts, setPosts] = useState<PraisePost[]>(initialPosts);
   const [showCompose, setShowCompose] = useState(false);
   const [recipient, setRecipient] = useState('');
@@ -247,15 +249,23 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
       {/* Header with Quick Stats */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
+        justifyContent={embedded ? "flex-end" : "space-between"} 
         alignItems={{ xs: 'stretch', sm: 'flex-start' }}
         spacing={2}
       >
-        <Box>
+        {!embedded && {!embedded && {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'hsl(var(--primary) / 0.1)', display: 'flex' }}>
-              <Sparkles size={20} style={{ color: 'hsl(var(--primary))' }} />
-            </Box>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'hsl(var(--primary) / 0.1)\', display: \'flex\' }}>
+              <Sparkles size={20} style={{ color: \'hsl(var(--primary))\' }} />
+            </Box>}
+            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: \'1.1rem\', md: \'1.25rem\' } }}>
+              Recognition & Rewards
+            </Typography>
+          </Stack>
+          <Typography variant="body2" sx={{ color: \'hsl(var(--muted-foreground))\' }}>
+            Celebrate achievements and reward your team
+          </Typography>
+        </Box>}
             <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
               Recognition & Rewards
             </Typography>
@@ -263,7 +273,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
           <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
             Celebrate achievements and reward your team
           </Typography>
-        </Box>
+        </Box>}
         <Stack direction="row" spacing={1}>
           <Button variant="outline" className="gap-2" onClick={() => setShowAwardPoints(true)}>
             <Gift size={16} />
@@ -277,7 +287,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
       </Stack>
 
       {/* Points Overview Cards */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+      {!embedded && {!embedded && {!embedded && <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
         <Paper variant="outlined" sx={{ flex: 1, p: 2.5, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Box sx={{ 
@@ -291,7 +301,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
               <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>Your Points</Typography>
               <Typography variant="h5" fontWeight={700}>{currentUserPoints?.totalPoints || 0}</Typography>
             </Box>
-          </Stack>
+          </Stack>}}}
         </Paper>
         <Paper variant="outlined" sx={{ flex: 1, p: 2.5, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
           <Stack direction="row" alignItems="center" spacing={2}>
@@ -327,7 +337,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
             </Box>
           </Stack>
         </Paper>
-      </Stack>
+      </Stack>}
 
       <Tabs defaultValue="feed" className="w-full">
         <TabsList>
@@ -632,7 +642,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
         </TabsContent>
 
         <TabsContent value="rewards" className="mt-4">
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+          <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="center" sx={{ mb: 3 }}>
             <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
               Redeem your points for these rewards. Contact HR to claim your reward.
             </Typography>
@@ -883,7 +893,3 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
             </Stack>
           </Paper>
         </Box>
-      )}
-    </div>
-  );
-}

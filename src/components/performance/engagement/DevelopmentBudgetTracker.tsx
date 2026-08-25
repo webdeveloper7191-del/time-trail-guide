@@ -49,11 +49,13 @@ import {
 import { toast } from 'sonner';
 
 interface DevelopmentBudgetTrackerProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
 }
 
-export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBudgetTrackerProps) {
+export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = false , embedded = false }: DevelopmentBudgetTrackerProps) {
   const [budgets, setBudgets] = useState<DevelopmentBudget[]>(initialBudgets);
   const [requests, setRequests] = useState<BudgetRequest[]>(initialRequests);
   const [showRequestDrawer, setShowRequestDrawer] = useState(false);
@@ -170,11 +172,11 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-        <Box>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
-              <Wallet size={20} style={{ color: 'var(--primary)' }} />
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <Wallet size={20} style={{ color: \'var(--primary)\' }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
               Development Budget
@@ -183,7 +185,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
           <Typography variant="body2" color="text.secondary">
           Track training and development budgets with approval workflow
         </Typography>
-      </Box>
+      </Box>}
       <Stack direction="row" spacing={1}>
         <Button variant="outline" size="small" onClick={() => {
           if (myBudget) {
@@ -200,7 +202,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
     </Stack>
 
       {/* My Budget Card */}
-      {myBudget && viewMode === 'my_budget' && (
+      {!embedded && {!embedded && myBudget && viewMode === 'my_budget' && (
         <Card sx={{ bgcolor: 'primary.50', border: 1, borderColor: 'primary.200' }}>
           <Box sx={{ p: 3 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems={{ xs: 'stretch', md: 'center' }}>
@@ -211,7 +213,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
                 <Stack direction="row" spacing={4} mb={2}>
                   <Box>
                     <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-                    <Typography variant="h5" fontWeight={700}>{formatCurrency(myBudget.totalBudget)}</Typography>
+                    <Typography variant="h5" fontWeight={700}>{formatCurrency(myBudget.totalBudget)}}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">Used</Typography>
@@ -233,7 +235,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
                   </Box>
                 </Stack>
                 <Box>
-                  <Stack direction="row" justifyContent="space-between" mb={0.5}>
+                  <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} mb={0.5}>
                     <Typography variant="caption" color="text.secondary">Budget Utilization</Typography>
                     <Typography variant="caption" fontWeight={600}>
                       {Math.round(((myBudget.usedBudget + myBudget.pendingBudget) / myBudget.totalBudget) * 100)}%
@@ -252,7 +254,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
       )}
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      {!embedded && {!embedded && {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -260,7 +262,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
               <Box>
                 <Typography variant="h6" fontWeight={700}>{formatCurrency(stats.totalBudget)}</Typography>
                 <Typography variant="caption" color="text.secondary">Total Budget</Typography>
-              </Box>
+              </Box>}}
             </Stack>
           </Box>
         </Card>
@@ -297,7 +299,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId }: DevelopmentBu
             </Stack>
           </Box>
         </Card>
-      </Box>
+      </Box>}
 
       {/* Filters */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -991,7 +993,3 @@ function EditBudgetDrawer({ open, onClose, budget, staff, onSave }: EditBudgetDr
         </SheetFooter>
       </SheetContent>
     </Sheet>
-  );
-}
-
-export default DevelopmentBudgetTracker;

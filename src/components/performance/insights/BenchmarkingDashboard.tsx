@@ -50,6 +50,7 @@ import { Goal, PerformanceReview, Feedback } from '@/types/performance';
 import { BenchmarkingSettingsDrawer, BenchmarkingSettings } from './BenchmarkingSettingsDrawer';
 
 interface BenchmarkingDashboardProps {
+  embedded?: boolean;
   goals: Goal[];
   reviews: PerformanceReview[];
   feedback: Feedback[];
@@ -148,7 +149,7 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
   retention: { bg: 'bg-amber-50', text: 'text-amber-700' },
 };
 
-export function BenchmarkingDashboard({ goals, reviews, feedback }: BenchmarkingDashboardProps) {
+export function BenchmarkingDashboard({ goals, reviews, feedback, embedded = false }: BenchmarkingDashboardProps) {
   const [selectedIndustry, setSelectedIndustry] = useState<Industry>('technology');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
@@ -261,6 +262,7 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2}>
+        {!embedded && (
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'info.light', display: 'flex' }}>
@@ -274,8 +276,9 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
             Compare your performance metrics against industry standards
           </Typography>
         </Box>
+      )}
         
-        <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ ml: "auto" }}>
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel>Industry</InputLabel>
             <MuiSelect
@@ -315,7 +318,8 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
         </Stack>
       </Stack>
 
-      {/* Overall Score Card */}
+      {!embedded && (
+        /* Overall Score Card */
       <Card className="bg-gradient-to-r from-primary/5 to-transparent border-primary/20">
         <Box sx={{ p: 3 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems={{ md: 'center' }}>
@@ -355,6 +359,7 @@ export function BenchmarkingDashboard({ goals, reviews, feedback }: Benchmarking
           </Stack>
         </Box>
       </Card>
+      )}
 
       {/* Charts Row */}
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3 }}>

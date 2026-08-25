@@ -54,6 +54,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface GoalsTrackerProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   goals: Goal[];
   onCreateGoal: () => void;
   onAssignGoal?: () => void;
@@ -87,7 +89,8 @@ const getStatusBadgeType = (status: GoalStatus): 'not_started' | 'in_progress' |
   }
 };
 
-export function GoalsTracker({ 
+export function GoalsTracker({
+  embedded = false, 
   goals, 
   onCreateGoal, 
   onAssignGoal,
@@ -278,35 +281,36 @@ export function GoalsTracker({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 4, md: 5 } }}>
       {/* Premium Header */}
       <Stack 
-        direction={{ xs: 'column', sm: 'row' }}
+        direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }}
+        alignItems={{ xs: "stretch", sm: "center" }}
         spacing={2}
       >
-        <Box>
-          <Typography 
-            sx={{ 
-              fontSize: { xs: '1.25rem', md: '1.5rem' },
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: 'grey.900',
-            }}
-          >
-            Goals & Objectives
-          </Typography>
-          <Typography 
-            sx={{ 
-              mt: 0.5,
-              fontSize: '0.875rem',
-              color: 'grey.500',
-              display: { xs: 'none', sm: 'block' },
-            }}
-          >
-            Track progress on personal and professional development
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          {onAssignGoal && (
+        {!embedded && (
+          <Box>
+            <Typography 
+              sx={{ 
+                fontSize: { xs: "1.25rem", md: "1.5rem" },
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "grey.900",
+              }}
+            >
+              Goals & Objectives
+            </Typography>
+            <Typography 
+              sx={{ 
+                mt: 0.5,
+                fontSize: "0.875rem",
+                color: "grey.500",
+                display: { xs: "none", sm: "block" },
+              }}
+            >
+              Track progress on personal and professional development
+            </Typography>
+          </Box>
+        )}
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ ml: embedded ? "auto" : 0 }}>
             <Box
               component="button"
               onClick={onAssignGoal}
@@ -362,35 +366,37 @@ export function GoalsTracker({
           >
             <Plus size={16} />
             New Goal
-          </Box>
-        </Stack>
-      </Stack>
-
-      {/* Premium Stats Grid - Using CollapsibleStatsGrid for mobile */}
-      <CollapsibleStatsGrid
-        title="Goal Statistics"
-        stats={[
-          { 
-            label: 'Total', 
-            value: stats.total, 
-            icon: <Target size={18} />, 
-            gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-          },
-          { 
-            label: 'In Progress', 
-            value: stats.active, 
-            icon: <Clock size={18} />, 
-            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
-          },
-          { 
-            label: 'Completed', 
-            value: stats.completed, 
-            icon: <CheckCircle2 size={18} />, 
-            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
-          },
-          { 
-            label: 'Overdue', 
-            value: stats.overdue, 
+      {!embedded && (
+        <CollapsibleStatsGrid
+          title="Goal Statistics"
+          stats={[
+            { 
+              label: "Total", 
+              value: stats.total, 
+              icon: <Target size={18} />, 
+              gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" 
+            },
+            { 
+              label: "In Progress", 
+              value: stats.active, 
+              icon: <Clock size={18} />, 
+              gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" 
+            },
+            { 
+              label: "Completed", 
+              value: stats.completed, 
+              icon: <CheckCircle2 size={18} />, 
+              gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+            },
+            { 
+              label: "Overdue", 
+              value: stats.overdue, 
+              icon: <AlertTriangle size={18} />, 
+              gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" 
+            },
+          ]}
+        />
+      )}
             icon: <AlertTriangle size={18} />, 
             gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
           },

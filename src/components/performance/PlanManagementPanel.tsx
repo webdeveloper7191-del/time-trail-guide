@@ -53,6 +53,8 @@ import { SemanticProgressBar, getProgressStatus, StatusBadge } from './shared';
 import { cn } from '@/lib/utils';
 
 interface PlanManagementPanelProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   goals: Goal[];
   reviews: PerformanceReview[];
@@ -71,6 +73,7 @@ interface PlanManagementPanelProps {
 }
 
 export function PlanManagementPanel({
+  embedded = false,
   staff,
   goals,
   reviews,
@@ -140,23 +143,21 @@ export function PlanManagementPanel({
     if (days === 0) return 'Due today';
     return `${days} days left`;
   };
-
-  return (
-    <div className="space-y-6 md:space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-2.5">
-            <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
-              <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-            </div>
-            Performance Plans
-          </h2>
-          <p className="text-sm text-muted-foreground hidden sm:block">
-            Create and manage development plans for team members
-          </p>
+      {!embedded && (
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-2.5">
+              <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+              </div>
+              Performance Plans
+            </h2>
+            <p className="text-sm text-muted-foreground hidden sm:block">
+              Create and manage development plans for team members
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'assigned' | 'templates')}>

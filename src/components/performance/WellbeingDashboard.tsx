@@ -48,6 +48,8 @@ import {
 } from 'recharts';
 
 interface WellbeingDashboardProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -70,7 +72,7 @@ const getRiskIcon = (level: WellbeingRiskLevel) => {
   }
 };
 
-export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
+export function WellbeingDashboard({ currentUserId, embedded = false , embedded = false }: WellbeingDashboardProps) {
   const [selectedIndicator, setSelectedIndicator] = useState<WellbeingIndicator | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -181,14 +183,19 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
                       <Avatar sx={{ width: 32, height: 32, fontSize: 13 }}>
                         {staff?.firstName.charAt(0) || '?'}
                       </Avatar>
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {staffName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {staff?.position}
-                        </Typography>
-                      </Box>
+                      {!embedded && {!embedded && <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <Activity size={20} style={{ color: \'var(--primary)\' }} />
+            </Box>}
+            <Typography variant="h6" fontWeight={600}>
+              Wellbeing Dashboard
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Monitor team health and burnout risk indicators
+          </Typography>
+        </Box>}
                     </Stack>
                   </TableCell>
                   <TableCell>
@@ -224,7 +231,7 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
                   </TableCell>
                   <TableCell>
                     <Stack spacing={0.5}>
-                      <Stack direction="row" justifyContent="space-between">
+                      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"}>
                         <Typography variant="caption" color="text.secondary">
                           {indicator.workloadScore}/10
                         </Typography>
@@ -246,7 +253,7 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
                   </TableCell>
                   <TableCell>
                     <Stack spacing={0.5}>
-                      <Stack direction="row" justifyContent="space-between">
+                      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"}>
                         <Typography variant="caption" color="text.secondary">
                           {indicator.engagementScore}/10
                         </Typography>
@@ -488,40 +495,36 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary">
-            Wellbeing & Burnout Indicators
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Monitor workload patterns and identify burnout risks
-          </Typography>
-        </Box>
-        <Button variant="outlined" startIcon={<Activity size={16} />}>
-          Run Analysis
-        </Button>
-      </Stack>
-
-      {renderSummaryCards()}
-
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="all">All Staff</TabsTrigger>
-          <TabsTrigger value="attention">
-            Needs Attention ({attentionNeeded.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all">
-          {renderIndicatorsTable(sortedIndicators)}
-        </TabsContent>
-
-        <TabsContent value="attention">
-          {renderIndicatorsTable(attentionNeeded)}
-        </TabsContent>
-      </Tabs>
-
-      {renderDetailSheet()}
-    </Box>
-  );
-}
+      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="center" sx={{ mb: 3 }}>
+        {!embedded && }t React, { useState } from 'react';
+import { 
+  Box, 
+  Stack, 
+  Typography, 
+  Chip,
+  Avatar,
+  LinearProgress,
+} from '@mui/material';
+import { Card } from '@/components/mui/Card';
+import { Button } from '@/components/mui/Button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { 
+  Heart, 
+  AlertTriangle, 
+  Clock, 
+  Calendar,
+  Activity,
+  Coffee,
+  Sun,
+  ChevronRight,
+  Eye,
+  MessageSquare,

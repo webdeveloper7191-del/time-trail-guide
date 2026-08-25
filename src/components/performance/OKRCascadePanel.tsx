@@ -51,6 +51,8 @@ import { CreateOKRDrawer } from './CreateOKRDrawer';
 import { toast } from 'sonner';
 
 interface OKRCascadePanelProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -89,7 +91,8 @@ const getProgressColor = (progress: number) => {
   return 'error.main';
 };
 
-export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
+export function OKRCascadePanel({
+  embedded = false, currentUserId }: OKRCascadePanelProps) {
   const [objectives, setObjectives] = useState<Objective[]>(initialMockObjectives);
   const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set(['obj-company-1']));
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
@@ -615,37 +618,32 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
       </Sheet>
     );
   };
-
-  return (
-    <Box>
       <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
+        direction={{ xs: "column", sm: "row" }} 
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        alignItems={{ xs: "stretch", sm: "center" }} 
         spacing={2}
         sx={{ mb: 3 }}
       >
-        <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
-            OKR Alignment
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-            Company, team, and individual objectives with cascading alignment
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
+        {!embedded && (
+          <Box>
+            <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
+              OKR Alignment
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
+              Company, team, and individual objectives with cascading alignment
+            </Typography>
+          </Box>
+        )}
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)} sx={{ ml: embedded ? "auto" : 0 }}>
           <span className="hidden sm:inline">Create Objective</span>
-          <span className="sm:hidden">New OKR</span>
-        </Button>
-      </Stack>
-
-      {/* Summary Stats */}
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, 
-        gap: { xs: 1.5, md: 2 }, 
-        mb: { xs: 3, md: 4 } 
-      }}>
+      {!embedded && (
+        <Box sx={{ 
+          display: "grid", 
+          gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, 
+          gap: { xs: 1.5, md: 2 }, 
+          mb: { xs: 3, md: 4 } 
+        }}>
         <Card sx={{ p: { xs: 2, md: 3 } }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
             <Target size={16} className="text-primary" />

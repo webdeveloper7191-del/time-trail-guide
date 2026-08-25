@@ -75,6 +75,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface PulseSurveyPanelProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -120,7 +122,7 @@ const getRatingColor = (rating: number) => {
   return 'hsl(var(--destructive))';
 };
 
-export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
+export function PulseSurveyPanel({ currentUserId, embedded = false , embedded = false }: PulseSurveyPanelProps) {
   const [surveys, setSurveys] = useState(initialSurveys);
   const [selectedSurvey, setSelectedSurvey] = useState<PulseSurvey | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
@@ -178,23 +180,20 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
 
   const renderENPSCard = () => (
     <Card sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
-        <Box>
-          <Typography variant="subtitle2" color="text.secondary">
-            Employee Net Promoter Score
-          </Typography>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-            <Typography variant="h3" fontWeight={700} sx={{ color: getENPSColor(latestENPS.score) }}>
-              {latestENPS.score > 0 ? '+' : ''}{latestENPS.score}
+      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} alignItems="flex-start" sx={{ mb: 3 }}>
+        {!embedded && <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <BarChart3 size={20} style={{ color: \'var(--primary)\' }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Pulse Surveys
             </Typography>
-            {getTrendIcon(latestENPS.trend)}
-            {latestENPS.previousScore !== undefined && (
-              <Typography variant="body2" color="text.secondary">
-                vs {latestENPS.previousScore > 0 ? '+' : ''}{latestENPS.previousScore}
-              </Typography>
-            )}
           </Stack>
-        </Box>
+          <Typography variant="body2" color="text.secondary">
+            Gather continuous feedback and measure employee engagement
+          </Typography>
+        </Box>}
         <Box sx={{ textAlign: 'right' }}>
           <Typography variant="caption" color="text.secondary">Response Rate</Typography>
           <Typography variant="h6" fontWeight={600}>{latestENPS.responseRate}%</Typography>
@@ -256,6 +255,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   const renderSurveyTable = (surveyList: PulseSurvey[], emptyMessage: string, emptyIcon: React.ReactNode) => {
     if (surveyList.length === 0) {
       return (
+    <>
         <Card sx={{ p: 4, textAlign: 'center' }}>
           {emptyIcon}
           <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 1 }}>
@@ -272,6 +272,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
     }
 
     return (
+    <>
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
@@ -292,6 +293,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
               const isActive = survey.status === 'active';
               
               return (
+    <>
                 <TableRow 
                   key={survey.id}
                   className="group hover:bg-muted/50 cursor-pointer"
@@ -446,6 +448,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
     if (!selectedSurvey) return null;
 
     return (
+    <>
       <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
@@ -473,22 +476,19 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                     <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: 'primary.main' }}>
                       {index + 1}
                     </Avatar>
-                    <Box>
-                      <Typography variant="body2">{q.text}</Typography>
-                      <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {q.type}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] capitalize">
-                          {q.category}
-                        </Badge>
-                        {q.required && (
-                          <Badge className="text-[10px] bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">
-                            Required
-                          </Badge>
-                        )}
-                      </Stack>
-                    </Box>
+                    {!embedded && {!embedded && <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <BarChart3 size={20} style={{ color: \'var(--primary)\' }} />
+            </Box>}
+            <Typography variant="h6" fontWeight={600}>
+              Pulse Surveys
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Gather continuous feedback and measure employee engagement
+          </Typography>
+        </Box>}
                   </Stack>
                 </Card>
               ))}
@@ -517,6 +517,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
     const responses = getSurveyResponses(selectedSurvey.id);
 
     return (
+    <>
       <Sheet open={showResultsSheet} onOpenChange={setShowResultsSheet}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
@@ -675,21 +676,27 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   };
 
   return (
+    <>
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
+        justifyContent={embedded ? "flex-end" : "space-between"} 
         alignItems={{ xs: 'stretch', sm: 'center' }} 
         spacing={2}
       >
-        <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
-            Pulse Surveys & eNPS
+        {!embedded && <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <BarChart3 size={20} style={{ color: \'var(--primary)\' }} />
+            </Box>
+            <Typography variant="h6" fontWeight={600}>
+              Pulse Surveys
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Gather continuous feedback and measure employee engagement
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-            Quick engagement checks and employee satisfaction tracking
-          </Typography>
-        </Box>
+        </Box>}
         <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)} className="w-full sm:w-auto">
           <span className="hidden sm:inline">Create Survey</span>
           <span className="sm:hidden">New Survey</span>
@@ -744,7 +751,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
         </div>
 
         <TabsContent value="enps">
-          {renderENPSCard()}
+          {!embedded && renderENPSCard()}
         </TabsContent>
 
         <TabsContent value="surveys">
@@ -773,13 +780,3 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
       </Tabs>
 
       {renderSurveyDetailSheet()}
-      {renderResultsSheet()}
-      
-      <CreateSurveyDrawer
-        open={showCreateDrawer}
-        onClose={() => setShowCreateDrawer(false)}
-        onSave={handleCreateSurvey}
-      />
-    </Box>
-  );
-}

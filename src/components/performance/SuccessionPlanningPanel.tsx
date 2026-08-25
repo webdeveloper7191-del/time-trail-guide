@@ -64,11 +64,13 @@ import {
 } from './succession';
 
 interface SuccessionPlanningPanelProps {
-  staff: StaffMember[];
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+staff: StaffMember[];
   currentUserId: string;
 }
 
-export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlanningPanelProps) {
+export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false }: SuccessionPlanningPanelProps) {
   const [keyRoles, setKeyRoles] = useState<KeyRole[]>(initialMockKeyRoles);
   const [candidates, setCandidates] = useState<SuccessionCandidate[]>(initialMockCandidates);
   
@@ -577,11 +579,12 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
+        justifyContent={embedded ? "flex-end" : "space-between"} 
         alignItems={{ xs: 'stretch', sm: 'flex-start' }}
         spacing={2}
+        sx={{ mb: embedded ? 0 : 0 }}
       >
-        <Box>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <Crown size={18} style={{ color: 'var(--primary)' }} />
@@ -593,7 +596,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
           <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Build leadership pipeline and manage talent readiness
           </Typography>
-        </Box>
+        </Box>}
         <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
           <Button
             variant={activeView === 'pipeline' ? 'default' : 'outline'}
@@ -617,8 +620,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId }: SuccessionPlan
         </Stack>
       </Stack>
 
-      {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+      {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
         <Card>
           <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'primary.50' }}>
             <Stack direction="row" alignItems="center" spacing={1}>

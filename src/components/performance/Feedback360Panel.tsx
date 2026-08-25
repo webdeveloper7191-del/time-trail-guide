@@ -58,6 +58,8 @@ import {
 import { StatusBadge } from './shared/StatusBadge';
 
 interface Feedback360PanelProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   currentUserId: string;
 }
 
@@ -84,7 +86,8 @@ const getSourceChipStyle = (source: string) => {
   return styles[source] || styles.peer;
 };
 
-export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
+export function Feedback360Panel({
+  embedded = false, currentUserId }: Feedback360PanelProps) {
   const [selectedRequest, setSelectedRequest] = useState<Feedback360Request | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showRequest360Drawer, setShowRequest360Drawer] = useState(false);
@@ -489,28 +492,28 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
       </Sheet>
     );
   };
-
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
       <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
+        direction={{ xs: "column", sm: "row" }} 
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        alignItems={{ xs: "stretch", sm: "center" }} 
         spacing={2}
       >
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'hsl(var(--primary) / 0.1)', display: 'flex' }}>
-              <Users size={18} style={{ color: 'hsl(var(--primary))' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
-              360° Feedback
+        {!embedded && (
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+              <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: "hsl(var(--primary) / 0.1)", display: "flex" }}>
+                <Users size={18} style={{ color: "hsl(var(--primary))" }} />
+              </Box>
+              <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: "1rem", md: "1.25rem" } }}>
+                360° Feedback
+              </Typography>
+            </Stack>
+            <Typography variant="body2" sx={{ color: "hsl(var(--muted-foreground))", display: { xs: "none", sm: "block" } }}>
+              Multi-source feedback collection for comprehensive evaluations
             </Typography>
-          </Stack>
-          <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', display: { xs: 'none', sm: 'block' } }}>
-            Multi-source feedback collection for comprehensive evaluations
-          </Typography>
-        </Box>
+          </Box>
+        )}
+        <Button onClick={() => setShowRequest360Drawer(true)} className="gap-2 w-full sm:w-auto" style={{ marginLeft: embedded ? "auto" : 0 }}>
         <Button onClick={() => setShowRequest360Drawer(true)} className="gap-2 w-full sm:w-auto">
           <Plus size={16} />
           <span className="hidden sm:inline">Request 360° Feedback</span>

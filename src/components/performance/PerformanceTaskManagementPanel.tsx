@@ -134,7 +134,9 @@ const staffOptions = mockStaff.map(s => ({
 }));
 
 interface PerformanceTaskManagementPanelProps {
-  currentUserId: string;
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+currentUserId: string;
   goals?: Goal[];
   reviews?: PerformanceReview[];
   conversations?: Conversation[];
@@ -151,6 +153,7 @@ export function PerformanceTaskManagementPanel({
   onNavigateToGoal,
   onNavigateToReview,
   onNavigateToConversation,
+  embedded = false,
 }: PerformanceTaskManagementPanelProps) {
   const [tasks, setTasks] = useState<PerformanceTask[]>(mockPerformanceTasks);
   const [pipelines, setPipelines] = useState<PerformanceTaskPipeline[]>(mockPerformancePipelines);
@@ -477,13 +480,13 @@ export function PerformanceTaskManagementPanel({
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-          <div>
+        <Stack direction="row" alignItems="center" justifyContent={embedded ? "flex-end" : "space-between"} sx={{ mb: 2 }}>
+          {!embedded && <div>
             <Typography variant="h6" fontWeight={600}>Performance Tasks</Typography>
             <Typography variant="body2" color="text.secondary">
               Track development tasks, coaching, reviews, and PIP actions
             </Typography>
-          </div>
+          </div>}
           <Stack direction="row" spacing={1} alignItems="center">
             <FormControlLabel
               control={
@@ -517,10 +520,9 @@ export function PerformanceTaskManagementPanel({
               <Plus className="h-4 w-4 mr-1" /> New Task
             </Button>
           </Stack>
-        </Stack>
+        </Stack>}
 
-        {/* Stats */}
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        {!embedded && <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
           <Chip label={`Total: ${stats.total}`} size="small" sx={{ bgcolor: 'rgba(107, 114, 128, 0.1)', color: 'rgb(55, 65, 81)' }} />
           <Chip label={`Open: ${stats.open}`} size="small" sx={{ bgcolor: 'rgba(34, 197, 94, 0.12)', color: 'rgb(21, 128, 61)' }} />
           <Chip label={`In Progress: ${stats.inProgress}`} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.12)', color: 'rgb(29, 78, 216)' }} />

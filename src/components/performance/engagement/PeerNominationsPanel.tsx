@@ -40,11 +40,13 @@ import {
 import { toast } from 'sonner';
 
 interface PeerNominationsProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
 }
 
-export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsProps) {
+export function PeerNominationsPanel({ staff, currentUserId, embedded = false }: PeerNominationsProps) {
   const [nominations, setNominations] = useState<PeerNomination[]>(initialNominations);
   const [showNominateDrawer, setShowNominateDrawer] = useState(false);
   const [showApprovalDrawer, setShowApprovalDrawer] = useState(false);
@@ -113,11 +115,11 @@ export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsPr
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-        <Box>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
-              <Users size={20} style={{ color: 'var(--primary)' }} />
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
+              <Users size={20} style={{ color: \'var(--primary)\' }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
               Peer Nominations
@@ -126,7 +128,7 @@ export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsPr
           <Typography variant="body2" color="text.secondary">
             Nominate peers for 360° feedback reviews
           </Typography>
-        </Box>
+        </Box>}
         <Stack direction="row" spacing={1}>
           {activeCycle && (
             <Button variant="default" size="small" onClick={() => setShowNominateDrawer(true)}>
@@ -140,7 +142,7 @@ export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsPr
       {activeCycle && (
         <Card sx={{ bgcolor: 'primary.50', border: 1, borderColor: 'primary.200' }}>
           <Box sx={{ p: 2 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" justifyContent={embedded ? "flex-end" : "space-between"}>
               <Box>
                 <Typography variant="subtitle2" fontWeight={600} color="primary.main">
                   {activeCycle.name}
@@ -162,7 +164,7 @@ export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsPr
       )}
 
       {/* Stats */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      {!embedded && {!embedded && {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -170,7 +172,7 @@ export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsPr
               <Box>
                 <Typography variant="h5" fontWeight={700}>{myNominations.length}</Typography>
                 <Typography variant="caption" color="text.secondary">My Nominations</Typography>
-              </Box>
+              </Box>}}
             </Stack>
           </Box>
         </Card>
@@ -211,7 +213,7 @@ export function PeerNominationsPanel({ staff, currentUserId }: PeerNominationsPr
             </Stack>
           </Box>
         </Card>
-      </Box>
+      </Box>}
 
       {/* Filters */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -629,7 +631,3 @@ function NominationDetailDrawer({ open, onClose, nomination, staff, onApprove, o
         </SheetFooter>
       </SheetContent>
     </Sheet>
-  );
-}
-
-export default PeerNominationsPanel;

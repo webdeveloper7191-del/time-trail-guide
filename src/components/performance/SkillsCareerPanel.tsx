@@ -92,7 +92,9 @@ interface RatingHistoryEntry {
 }
 
 interface SkillsCareerPanelProps {
-  staffId?: string;
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+staffId?: string;
 }
 
 const getSkillLevelColor = (level: string) => {
@@ -126,7 +128,7 @@ const pastelColors = {
   teal: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
 };
 
-export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProps) {
+export function SkillsCareerPanel({ staffId = 'staff-1', embedded = false }: SkillsCareerPanelProps) {
   const [selectedStaffId, setSelectedStaffId] = useState(staffId);
   const [showCareerPathSheet, setShowCareerPathSheet] = useState(false);
   const [showAssessDrawer, setShowAssessDrawer] = useState(false);
@@ -1210,7 +1212,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   return (
     <Box>
       {/* Header with searchable employee selector */}
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
+      {!embedded && <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
         <Avatar sx={{ width: 48, height: 48 }} className={pastelColors.purple.bg}>
           <span className={pastelColors.purple.text}>
             {staff?.firstName.charAt(0) || '?'}

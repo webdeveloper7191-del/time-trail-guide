@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/table';
 
 interface FeedbackPanelProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   feedback: Feedback[];
   staff: StaffMember[];
   currentUserId: string;
@@ -65,7 +67,8 @@ const typeIcons: Record<FeedbackType, React.ReactNode> = {
   general: <MessageCircle size={14} />,
 };
 
-export function FeedbackPanel({ 
+export function FeedbackPanel({
+  embedded = false, 
   feedback, 
   staff, 
   currentUserId,
@@ -194,32 +197,32 @@ export function FeedbackPanel({
     );
   };
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {/* Header */}
       <Stack 
-        direction={{ xs: 'column', sm: 'row' }}
+        direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+        alignItems={{ xs: "stretch", sm: "flex-start" }}
         spacing={{ xs: 2, sm: 0 }}
       >
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
-              <MessageSquareHeart size={20} style={{ color: 'var(--primary)' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
-              Feedback & Recognition
+        {!embedded && (
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+              <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: "primary.light", display: "flex" }}>
+                <MessageSquareHeart size={20} style={{ color: "var(--primary)" }} />
+              </Box>
+              <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: "1.1rem", md: "1.25rem" } }}>
+                Feedback & Recognition
+              </Typography>
+            </Stack>
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
+              Give and receive feedback from your team
             </Typography>
-          </Stack>
-          <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ display: { xs: 'none', sm: 'block' } }}
-          >
-            Give and receive feedback from your team
-          </Typography>
-        </Box>
+          </Box>
+        )}
+        <Button onClick={() => setShowFeedbackDrawer(true)} className="gap-2" style={{ marginLeft: embedded ? "auto" : 0 }}>
         <Button onClick={() => setShowFeedbackDrawer(true)} className="gap-2">
           <Plus size={16} />
           Give Feedback

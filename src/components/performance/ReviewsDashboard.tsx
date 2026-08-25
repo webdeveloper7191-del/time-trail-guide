@@ -42,6 +42,8 @@ import { toast } from 'sonner';
 import { TextField, InputAdornment, FormControl, Select as MuiSelect, MenuItem } from '@mui/material';
 
 interface ReviewsDashboardProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   reviews: PerformanceReview[];
   staff: StaffMember[];
   currentUserId: string;
@@ -71,7 +73,8 @@ const statusIcons: Record<string, React.ReactNode> = {
   cancelled: <Clock size={14} />,
 };
 
-export function ReviewsDashboard({ 
+export function ReviewsDashboard({
+  embedded = false, 
   reviews, 
   staff, 
   currentUserId,
@@ -175,33 +178,32 @@ export function ReviewsDashboard({
     handleBulkCancel
   );
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
-      {/* Header */}
       <Stack 
-        direction={{ xs: 'column', sm: 'row' }}
+        direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+        alignItems={{ xs: "stretch", sm: "flex-start" }}
         spacing={{ xs: 2, sm: 0 }}
       >
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
-              <ClipboardCheck size={20} style={{ color: 'var(--primary)' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
-              Performance Reviews
+        {!embedded && (
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+              <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: "primary.light", display: "flex" }}>
+                <ClipboardCheck size={20} style={{ color: "var(--primary)" }} />
+              </Box>
+              <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: "1.1rem", md: "1.25rem" } }}>
+                Performance Reviews
+              </Typography>
+            </Stack>
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
+              Manage appraisals and track performance cycles
             </Typography>
-          </Stack>
-          <Typography 
-            variant="body2" 
-            color="text.secondary"
-            sx={{ display: { xs: 'none', sm: 'block' } }}
-          >
-            Manage appraisals and track performance cycles
-          </Typography>
-        </Box>
-        <MuiButton 
+          </Box>
+        )}
+        <MuiButton variant="contained" size="small" startIcon={<Plus size={16} />} onClick={onCreateReview} sx={{ width: { xs: "100%", sm: "auto" }, ml: embedded ? "auto" : 0 }}>
           variant="contained" 
           size="small"
           startIcon={<Plus size={16} />} 
@@ -270,38 +272,34 @@ export function ReviewsDashboard({
                 );
               })}
             </Stack>
-          </Box>
-        </Card>
+      {!embedded && (
+        <CollapsibleStatsGrid
+          title="Review Statistics"
+          stats={[
+            { 
+              label: "Pending", 
+              value: upcomingReviews.length, 
+              icon: <Clock size={18} />, 
+              gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" 
+            },
+            { 
+              label: "Completed", 
+              value: completedReviews.length, 
+              icon: <CheckCircle2 size={18} />, 
+              gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+            },
+            { 
+              label: "Avg Rating", 
+              value: completedReviews.length > 0 
+                ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
+                : "-", 
+              icon: <Star size={18} />, 
+              gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" 
+            },
+          ]}
+          columns={{ xs: 2, sm: 3, md: 3 }}
+        />
       )}
-
-      {/* Stats Cards - Using CollapsibleStatsGrid for mobile */}
-      <CollapsibleStatsGrid
-        title="Review Statistics"
-        stats={[
-          { 
-            label: 'Pending', 
-            value: upcomingReviews.length, 
-            icon: <Clock size={18} />, 
-            gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
-          },
-          { 
-            label: 'Completed', 
-            value: completedReviews.length, 
-            icon: <CheckCircle2 size={18} />, 
-            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
-          },
-          { 
-            label: 'Avg Rating', 
-            value: completedReviews.length > 0 
-              ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
-              : '-', 
-            icon: <Star size={18} />, 
-            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
-          },
-        ]}
-        columns={{ xs: 2, sm: 3, md: 3 }}
-      />
-
       {/* Filters & Search Row */}
       <Stack 
         direction={{ xs: 'column', md: 'row' }} 

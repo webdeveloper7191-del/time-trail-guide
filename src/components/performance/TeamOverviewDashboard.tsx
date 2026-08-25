@@ -34,7 +34,9 @@ import {
 import { cn } from '@/lib/utils';
 
 interface TeamOverviewDashboardProps {
-  staff: StaffMember[];
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+staff: StaffMember[];
   goals: Goal[];
   reviews: PerformanceReview[];
   feedback: Feedback[];
@@ -72,6 +74,7 @@ export function TeamOverviewDashboard({
   onViewGoal,
   onViewReview,
   onViewConversation,
+  embedded = false,
 }: TeamOverviewDashboardProps) {
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
 
@@ -155,7 +158,7 @@ export function TeamOverviewDashboard({
 
   return (
     <Box sx={{ p: 3 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+      {!embedded && <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Box>
           <Typography variant="h5" fontWeight={600}>
             <Users className="h-5 w-5 inline mr-2" />
@@ -165,10 +168,9 @@ export function TeamOverviewDashboard({
             Performance snapshot of your direct reports
           </Typography>
         </Box>
-      </Stack>
+      </Stack>}
 
-      {/* Team Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
+      {!embedded && <Grid container spacing={2} sx={{ mb: 4 }}>
         <Grid item xs={6} md={3}>
           <Card>
             <CardContent className="pt-4 pb-4">
@@ -245,7 +247,7 @@ export function TeamOverviewDashboard({
             </CardContent>
           </Card>
         </Grid>
-      </Grid>
+      </Grid>}
 
       {/* Team Member List */}
       <Card>
