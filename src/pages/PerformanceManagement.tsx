@@ -4,7 +4,7 @@ import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
 import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
-import { getWorkspaceMeta } from '@/components/performance/workspaceConfig';
+import { getWorkspaceMeta, type WorkspaceMeta } from '@/components/performance/workspaceConfig';
 import { GoalRecommendationsPanel } from '@/components/performance/goals/GoalRecommendationsPanel';
 import { PIPManagementPanel } from '@/components/performance/PIPManagementPanel';
 
@@ -93,7 +93,7 @@ export default function PerformanceManagement() {
     addConversationNote, completeConversation
   } = usePerformanceData();
 
-  const workspaceMeta = useMemo(
+  const workspaceMeta: WorkspaceMeta = useMemo(
     () =>
       getWorkspaceMeta(activeTab, {
         goals,
