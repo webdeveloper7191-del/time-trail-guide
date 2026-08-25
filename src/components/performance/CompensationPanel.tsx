@@ -47,11 +47,12 @@ import {
 import { toast } from 'sonner';
 
 interface CompensationPanelProps {
+  embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
 }
 
-export function CompensationPanel({ staff, currentUserId }: CompensationPanelProps) {
+export function CompensationPanel({ staff, currentUserId, embedded = false }: CompensationPanelProps) {
   const [activeView, setActiveView] = useState<'overview' | 'merit' | 'bonus'>('overview');
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
@@ -116,6 +117,7 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
         alignItems={{ xs: 'stretch', sm: 'flex-start' }} 
         spacing={2}
       >
+        {!embedded && (
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'success.light', display: 'flex' }}>
@@ -129,6 +131,7 @@ export function CompensationPanel({ staff, currentUserId }: CompensationPanelPro
             Manage salary bands, merit increases, and bonus calculations
           </Typography>
         </Box>
+      )}
         <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
           {(['overview', 'merit', 'bonus'] as const).map((view) => (
             <Button

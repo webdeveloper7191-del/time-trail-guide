@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Box, 
   Stack, 
   Typography, 
   Chip,
+  Button as MuiButton,
   Avatar,
-  Paper,
+  Divider,
 } from '@mui/material';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/mui/Card';
 import { 
   Conversation, 
   ConversationType,
@@ -21,29 +22,12 @@ import {
   Clock,
   CheckCircle2,
   Plus,
+  ChevronRight,
   Video,
   Users,
   StickyNote,
-  ListChecks,
-  MoreHorizontal,
-  Eye,
-  Pencil,
-  Trash2,
-  Archive,
-  Copy,
-  Send,
+  ListChecks
 } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { StatusBadge } from './shared/StatusBadge';
-import { RowActionsMenu, RowAction } from './shared/RowActionsMenu';
-import { toast } from 'sonner';
 
 interface ConversationsListProps {
   conversations: Conversation[];
@@ -53,12 +37,12 @@ interface ConversationsListProps {
   onViewConversation: (conversation: Conversation) => void;
 }
 
-const typeColors: Record<ConversationType, { bg: string; text: string; border: string }> = {
-  one_on_one: { bg: 'hsl(var(--chart-1) / 0.15)', text: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1) / 0.3)' },
-  check_in: { bg: 'hsl(var(--chart-2) / 0.15)', text: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2) / 0.3)' },
-  coaching: { bg: 'hsl(var(--chart-5) / 0.15)', text: 'hsl(var(--chart-5))', border: 'hsl(var(--chart-5) / 0.3)' },
-  feedback: { bg: 'hsl(var(--chart-4) / 0.15)', text: 'hsl(var(--chart-4))', border: 'hsl(var(--chart-4) / 0.3)' },
-  career: { bg: 'hsl(var(--chart-3) / 0.15)', text: 'hsl(var(--chart-3))', border: 'hsl(var(--chart-3) / 0.3)' },
+const typeColors: Record<ConversationType, { bg: string; text: string }> = {
+  one_on_one: { bg: 'info.light', text: 'info.dark' },
+  check_in: { bg: 'success.light', text: 'success.dark' },
+  coaching: { bg: 'secondary.light', text: 'secondary.dark' },
+  feedback: { bg: 'warning.light', text: 'warning.dark' },
+  career: { bg: 'primary.light', text: 'primary.dark' },
 };
 
 const typeIcons: Record<ConversationType, React.ReactNode> = {
@@ -76,10 +60,9 @@ export function ConversationsList({
   onScheduleConversation, 
   onViewConversation 
 }: ConversationsListProps) {
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
+  const now = new Date();
   const upcoming = conversations
     .filter(c => !c.completed && !isPast(parseISO(c.scheduledDate)))
     .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
@@ -95,207 +78,8 @@ export function ConversationsList({
     return format(date, 'EEE, MMM d');
   };
 
-  const renderConversationRow = (conv: Conversation, isUpcoming: boolean) => {
-    const isManager = conv.managerId === currentUserId;
-    const staffMember = getStaffMember(conv.staffId);
-    const otherPerson = isManager ? staffMember : getStaffMember(conv.managerId);
-    const meetingDate = parseISO(conv.scheduledDate);
-    const isHovered = hoveredRow === conv.id;
-    const colors = typeColors[conv.type];
-    const isTodayMeeting = isToday(meetingDate);
-    const isMissed = !conv.completed && isPast(meetingDate);
-
-    return (
-      <TableRow 
-        key={conv.id}
-        className="group cursor-pointer hover:bg-muted/50 transition-colors"
-        onMouseEnter={() => setHoveredRow(conv.id)}
-        onMouseLeave={() => setHoveredRow(null)}
-        onClick={() => onViewConversation(conv)}
-        style={{
-          borderLeft: isTodayMeeting && isUpcoming 
-            ? '3px solid hsl(var(--chart-1))' 
-            : isMissed 
-              ? '3px solid hsl(var(--destructive))' 
-              : undefined,
-          backgroundColor: isTodayMeeting && isUpcoming ? 'hsl(var(--chart-1) / 0.05)' : undefined,
-        }}
-      >
-        <TableCell className="py-3">
-          <div className="flex items-center gap-3">
-            <Avatar 
-              src={otherPerson?.avatar} 
-              sx={{ width: 36, height: 36, fontSize: '0.85rem', bgcolor: 'hsl(var(--muted))' }}
-            >
-              {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium">{conv.title}</p>
-              <p className="text-xs text-muted-foreground">
-                with {otherPerson?.firstName} {otherPerson?.lastName}
-              </p>
-            </div>
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          <Chip
-            icon={typeIcons[conv.type] as React.ReactElement}
-            label={conversationTypeLabels[conv.type]}
-            size="small"
-            sx={{
-              height: 24,
-              fontSize: '0.7rem',
-              fontWeight: 500,
-              bgcolor: colors.bg,
-              color: colors.text,
-              border: `1px solid ${colors.border}`,
-              '& .MuiChip-icon': { color: colors.text, fontSize: 14 },
-            }}
-          />
-        </TableCell>
-        <TableCell className="py-3">
-          <div>
-            <p className={`text-sm ${isTodayMeeting ? 'font-semibold text-primary' : ''}`}>
-              {getDateLabel(conv.scheduledDate)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {format(meetingDate, 'h:mm a')} • {conv.duration} min
-            </p>
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          {conv.completed ? (
-            <StatusBadge status="completed" size="small" />
-          ) : isMissed ? (
-            <StatusBadge status="overdue" size="small" label="Missed" />
-          ) : (
-            <StatusBadge status="pending" size="small" label="Scheduled" />
-          )}
-        </TableCell>
-        <TableCell className="py-3">
-          <div className="flex gap-1.5">
-            {conv.notes.length > 0 && (
-              <Chip
-                icon={<StickyNote size={12} />}
-                label={conv.notes.length}
-                size="small"
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.7rem',
-                  bgcolor: 'hsl(var(--muted))',
-                  color: 'hsl(var(--muted-foreground))',
-                  border: '1px solid hsl(var(--border))',
-                  '& .MuiChip-icon': { color: 'hsl(var(--muted-foreground))' },
-                }}
-              />
-            )}
-            {conv.actionItems.length > 0 && (
-              <Chip
-                icon={<ListChecks size={12} />}
-                label={conv.actionItems.length}
-                size="small"
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.7rem',
-                  bgcolor: 'hsl(var(--muted))',
-                  color: 'hsl(var(--muted-foreground))',
-                  border: '1px solid hsl(var(--border))',
-                  '& .MuiChip-icon': { color: 'hsl(var(--muted-foreground))' },
-                }}
-              />
-            )}
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          <div onClick={(e) => e.stopPropagation()}>
-            <RowActionsMenu
-              actions={getConversationActions(conv)}
-              size="sm"
-              align="end"
-            />
-          </div>
-        </TableCell>
-      </TableRow>
-    );
-  };
-
-  const getConversationActions = (conv: Conversation): RowAction[] => {
-    const actions: RowAction[] = [
-      {
-        label: 'View Details',
-        icon: <Eye className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          onViewConversation(conv);
-        },
-      },
-      {
-        label: 'Edit',
-        icon: <Pencil className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          toast.info('Edit conversation functionality coming soon');
-        },
-      },
-    ];
-
-    if (!conv.completed) {
-      actions.push({
-        label: 'Send Reminder',
-        icon: <Send className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          toast.success('Reminder sent');
-        },
-      });
-      actions.push({
-        label: 'Mark Complete',
-        icon: <CheckCircle2 className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          toast.success('Conversation marked as complete');
-        },
-      });
-    }
-
-    actions.push({
-      label: 'Reschedule',
-      icon: <Calendar className="h-4 w-4" />,
-      onClick: (e) => {
-        e.stopPropagation();
-        toast.info('Reschedule functionality coming soon');
-      },
-      separator: true,
-    });
-
-    actions.push({
-      label: 'Cancel Meeting',
-      icon: <Trash2 className="h-4 w-4" />,
-      onClick: (e) => {
-        e.stopPropagation();
-        toast.success('Meeting cancelled');
-      },
-      variant: 'destructive',
-    });
-
-    return actions;
-  };
-
-  const renderEmptyState = () => (
-    <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed' }}>
-      <Calendar size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px', opacity: 0.5 }} />
-      <Typography variant="body1" fontWeight={500}>No upcoming meetings</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        Schedule 1:1s, check-ins, and coaching sessions
-      </Typography>
-      <Button className="mt-4" onClick={onScheduleConversation}>
-        <Plus className="h-4 w-4 mr-2" /> Schedule Meeting
-      </Button>
-    </Paper>
-  );
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }}
@@ -320,13 +104,18 @@ export function ConversationsList({
             Schedule and track 1:1s, check-ins, and coaching sessions
           </Typography>
         </Box>
-        <Button onClick={onScheduleConversation} className="gap-2">
-          <Plus size={16} />
+        <MuiButton 
+          variant="contained" 
+          startIcon={<Plus size={16} />} 
+          onClick={onScheduleConversation}
+          fullWidth
+          sx={{ width: { sm: 'auto' } }}
+        >
           Schedule Meeting
-        </Button>
+        </MuiButton>
       </Stack>
 
-      {/* Upcoming Meetings Table */}
+      {/* Upcoming Meetings */}
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="overline" color="text.secondary" fontWeight={600}>
@@ -338,52 +127,161 @@ export function ConversationsList({
         </Stack>
         
         {upcoming.length === 0 ? (
-          renderEmptyState()
+          <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Calendar size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
+              <Typography color="text.secondary">No upcoming meetings</Typography>
+              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onScheduleConversation}>
+                Schedule a meeting
+              </MuiButton>
+            </Box>
+          </Card>
         ) : (
-          <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-                  <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Meeting</TableHead>
-                  <TableHead className="w-32 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Type</TableHead>
-                  <TableHead className="w-36 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Schedule</TableHead>
-                  <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
-                  <TableHead className="w-24 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Items</TableHead>
-                  <TableHead className="w-28"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {upcoming.map(conv => renderConversationRow(conv, true))}
-              </TableBody>
-            </Table>
-          </Paper>
+          <Stack spacing={1.5}>
+            {upcoming.map((conv) => {
+              const staffMember = getStaffMember(conv.staffId);
+              const isManager = conv.managerId === currentUserId;
+              const otherPerson = isManager ? staffMember : getStaffMember(conv.managerId);
+              const meetingDate = parseISO(conv.scheduledDate);
+
+              return (
+                <Card 
+                  key={conv.id}
+                  sx={{ 
+                    cursor: 'pointer',
+                    '&:hover': { boxShadow: 3 },
+                    ...(isToday(meetingDate) && { 
+                      borderColor: 'primary.main', 
+                      bgcolor: 'primary.50' 
+                    })
+                  }}
+                  onClick={() => onViewConversation(conv)}
+                >
+                  <Box sx={{ p: 2 }}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Box sx={{ textAlign: 'center', minWidth: 60 }}>
+                        <Typography variant="overline" color="text.secondary">
+                          {getDateLabel(conv.scheduledDate)}
+                        </Typography>
+                        <Typography variant="h6" fontWeight={700}>
+                          {format(meetingDate, 'h:mm a')}
+                        </Typography>
+                      </Box>
+
+                      <Divider orientation="vertical" flexItem />
+
+                      <Avatar src={otherPerson?.avatar} sx={{ width: 40, height: 40 }}>
+                        {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
+                      </Avatar>
+
+                      <Box flex={1} minWidth={0}>
+                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+                          <Typography variant="subtitle2" fontWeight={600} noWrap>
+                            {conv.title}
+                          </Typography>
+                          <Chip
+                            size="small"
+                            icon={typeIcons[conv.type] as any}
+                            label={conversationTypeLabels[conv.type]}
+                            sx={{ 
+                              bgcolor: typeColors[conv.type]?.bg,
+                              color: typeColors[conv.type]?.text,
+                            }}
+                          />
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          with {otherPerson?.firstName} {otherPerson?.lastName} • {conv.duration} min
+                        </Typography>
+                      </Box>
+
+                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
+                    </Stack>
+                  </Box>
+                </Card>
+              );
+            })}
+          </Stack>
         )}
       </Box>
 
-      {/* Past Meetings Table */}
+      {/* Past Meetings */}
       {past.length > 0 && (
         <Box>
           <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
             Past Meetings ({past.length})
           </Typography>
           
-          <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-                  <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Meeting</TableHead>
-                  <TableHead className="w-32 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Type</TableHead>
-                  <TableHead className="w-36 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Date</TableHead>
-                  <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
-                  <TableHead className="w-24 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Items</TableHead>
-                  <TableHead className="w-28"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {past.slice(0, 5).map(conv => renderConversationRow(conv, false))}
-              </TableBody>
-            </Table>
-          </Paper>
+          <Stack spacing={1.5}>
+            {past.slice(0, 5).map((conv) => {
+              const staffMember = getStaffMember(conv.staffId);
+              const isManager = conv.managerId === currentUserId;
+              const otherPerson = isManager ? staffMember : getStaffMember(conv.managerId);
+
+              return (
+                <Card 
+                  key={conv.id}
+                  sx={{ 
+                    cursor: 'pointer',
+                    opacity: 0.85,
+                    '&:hover': { boxShadow: 2 }
+                  }}
+                  onClick={() => onViewConversation(conv)}
+                >
+                  <Box sx={{ p: 2 }}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar src={otherPerson?.avatar} sx={{ width: 40, height: 40 }}>
+                        {otherPerson?.firstName?.[0]}{otherPerson?.lastName?.[0]}
+                      </Avatar>
+
+                      <Box flex={1} minWidth={0}>
+                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+                          <Typography variant="body2" fontWeight={500} noWrap>
+                            {conv.title}
+                          </Typography>
+                          {conv.completed && (
+                            <Chip
+                              size="small"
+                              variant="outlined"
+                              icon={<CheckCircle2 size={12} />}
+                              label="Completed"
+                              sx={{ 
+                                bgcolor: 'rgba(34, 197, 94, 0.1)', 
+                                color: 'rgb(21, 128, 61)', 
+                                borderColor: 'rgba(34, 197, 94, 0.3)' 
+                              }}
+                            />
+                          )}
+                        </Stack>
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                          <Typography variant="caption" color="text.secondary">
+                            {format(parseISO(conv.scheduledDate), 'MMM d, yyyy')}
+                          </Typography>
+                          {conv.notes.length > 0 && (
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <StickyNote size={14} style={{ color: 'var(--muted-foreground)' }} />
+                              <Typography variant="caption" color="text.secondary">
+                                {conv.notes.length} notes
+                              </Typography>
+                            </Stack>
+                          )}
+                          {conv.actionItems.length > 0 && (
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <ListChecks size={14} style={{ color: 'var(--muted-foreground)' }} />
+                              <Typography variant="caption" color="text.secondary">
+                                {conv.actionItems.length} action items
+                              </Typography>
+                            </Stack>
+                          )}
+                        </Stack>
+                      </Box>
+
+                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
+                    </Stack>
+                  </Box>
+                </Card>
+              );
+            })}
+          </Stack>
         </Box>
       )}
     </Box>

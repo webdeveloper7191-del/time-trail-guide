@@ -5,15 +5,14 @@ import {
   Typography, 
   Avatar,
   Chip,
-  Paper,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/mui/Card';
+import { Button } from '@/components/mui/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { 
   Sparkles, 
   Plus, 
@@ -27,9 +26,6 @@ import {
   Coins,
   Star,
   TrendingUp,
-  Eye,
-  MoreHorizontal,
-  X,
 } from 'lucide-react';
 import { PraisePost, PraiseCategory, praiseCategoryLabels, praiseCategoryEmojis } from '@/types/recognition';
 import { StaffMember } from '@/types/staff';
@@ -37,14 +33,6 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { praiseWallBadges, mockPraisePosts as initialPosts } from '@/data/mockRecognitionData';
 import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 
 interface UnifiedRecognitionPanelProps {
   staff: StaffMember[];
@@ -111,24 +99,6 @@ const mockRewardPoints: RewardPoints[] = [
   },
 ];
 
-// Reward catalog item type
-interface RewardCatalogItem {
-  id: number;
-  name: string;
-  points: number;
-  emoji: string;
-  description: string;
-}
-
-const defaultRewards: RewardCatalogItem[] = [
-  { id: 1, name: 'Coffee Voucher', points: 50, emoji: '☕', description: 'Free coffee at the local café' },
-  { id: 2, name: 'Extra Break', points: 100, emoji: '⏰', description: 'Extra 15-min break' },
-  { id: 3, name: 'Lunch on Us', points: 200, emoji: '🍽️', description: 'Free lunch at any restaurant' },
-  { id: 4, name: 'Half Day Off', points: 500, emoji: '🏖️', description: 'Leave 4 hours early' },
-  { id: 5, name: 'Gift Card', points: 300, emoji: '🎁', description: '$25 gift card of your choice' },
-  { id: 6, name: 'Team Shoutout', points: 25, emoji: '📣', description: 'Featured in team newsletter' },
-];
-
 export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecognitionPanelProps) {
   const [posts, setPosts] = useState<PraisePost[]>(initialPosts);
   const [showCompose, setShowCompose] = useState(false);
@@ -142,14 +112,6 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
   const [awardRecipient, setAwardRecipient] = useState('');
   const [awardReason, setAwardReason] = useState('');
   const [awardAmount, setAwardAmount] = useState('50');
-  
-  // Rewards catalog state
-  const [rewardsCatalog, setRewardsCatalog] = useState<RewardCatalogItem[]>(defaultRewards);
-  const [showAddRewardModal, setShowAddRewardModal] = useState(false);
-  const [newRewardName, setNewRewardName] = useState('');
-  const [newRewardPoints, setNewRewardPoints] = useState('100');
-  const [newRewardEmoji, setNewRewardEmoji] = useState('🎁');
-  const [newRewardDescription, setNewRewardDescription] = useState('');
 
   const getStaff = (id: string) => staff.find(s => s.id === id);
   const currentUserPoints = mockRewardPoints.find(p => p.staffId === currentUserId);
@@ -206,34 +168,6 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
     setAwardAmount('50');
   };
 
-  const handleAddReward = () => {
-    if (!newRewardName.trim() || !newRewardPoints || !newRewardDescription.trim()) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-    
-    const newReward: RewardCatalogItem = {
-      id: Date.now(),
-      name: newRewardName.trim(),
-      points: parseInt(newRewardPoints),
-      emoji: newRewardEmoji,
-      description: newRewardDescription.trim(),
-    };
-    
-    setRewardsCatalog(prev => [...prev, newReward]);
-    toast.success('Reward added to catalog');
-    setShowAddRewardModal(false);
-    setNewRewardName('');
-    setNewRewardPoints('100');
-    setNewRewardEmoji('🎁');
-    setNewRewardDescription('');
-  };
-
-  const handleDeleteReward = (rewardId: number) => {
-    setRewardsCatalog(prev => prev.filter(r => r.id !== rewardId));
-    toast.success('Reward removed from catalog');
-  };
-
   const toggleBadge = (badgeId: string) => {
     setSelectedBadges(prev => prev.includes(badgeId) ? prev.filter(b => b !== badgeId) : [...prev, badgeId]);
   };
@@ -252,25 +186,19 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
         spacing={2}
       >
         <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'hsl(var(--primary) / 0.1)', display: 'flex' }}>
-              <Sparkles size={20} style={{ color: 'hsl(var(--primary))' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1.1rem', md: '1.25rem' } }}>
-              Recognition & Rewards
-            </Typography>
-          </Stack>
-          <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+          <Typography variant="h6" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Sparkles className="h-5 w-5 text-primary" />
+            Recognition & Rewards
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Celebrate achievements and reward your team
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
-          <Button variant="outline" className="gap-2" onClick={() => setShowAwardPoints(true)}>
-            <Gift size={16} />
+          <Button variant="outlined" startIcon={<Gift size={16} />} onClick={() => setShowAwardPoints(true)}>
             Award Points
           </Button>
-          <Button className="gap-2" onClick={() => setShowCompose(true)}>
-            <Plus size={16} />
+          <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCompose(true)}>
             Give Praise
           </Button>
         </Stack>
@@ -278,55 +206,55 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
 
       {/* Points Overview Cards */}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <Paper variant="outlined" sx={{ flex: 1, p: 2.5, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+        <Card sx={{ flex: 1, p: 2.5 }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Box sx={{ 
               p: 1.5, 
               borderRadius: 2, 
-              bgcolor: 'hsl(var(--chart-4) / 0.15)',
+              bgcolor: 'rgba(251, 191, 36, 0.12)',
             }}>
-              <Coins className="h-5 w-5" style={{ color: 'hsl(var(--chart-4))' }} />
+              <Coins className="h-5 w-5 text-amber-600" />
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>Your Points</Typography>
+              <Typography variant="caption" color="text.secondary">Your Points</Typography>
               <Typography variant="h5" fontWeight={700}>{currentUserPoints?.totalPoints || 0}</Typography>
             </Box>
           </Stack>
-        </Paper>
-        <Paper variant="outlined" sx={{ flex: 1, p: 2.5, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+        </Card>
+        <Card sx={{ flex: 1, p: 2.5 }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Box sx={{ 
               p: 1.5, 
               borderRadius: 2, 
-              bgcolor: 'hsl(var(--chart-2) / 0.15)',
+              bgcolor: 'rgba(34, 197, 94, 0.12)',
             }}>
-              <TrendingUp className="h-5 w-5" style={{ color: 'hsl(var(--chart-2))' }} />
+              <TrendingUp className="h-5 w-5 text-green-600" />
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>Earned This Month</Typography>
-              <Typography variant="h5" fontWeight={700} sx={{ color: 'hsl(var(--chart-2))' }}>
+              <Typography variant="caption" color="text.secondary">Earned This Month</Typography>
+              <Typography variant="h5" fontWeight={700} color="success.main">
                 +{currentUserPoints?.earnedThisMonth || 0}
               </Typography>
             </Box>
           </Stack>
-        </Paper>
-        <Paper variant="outlined" sx={{ flex: 1, p: 2.5, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+        </Card>
+        <Card sx={{ flex: 1, p: 2.5 }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Box sx={{ 
               p: 1.5, 
               borderRadius: 2, 
-              bgcolor: 'hsl(var(--chart-5) / 0.15)',
+              bgcolor: 'rgba(168, 85, 247, 0.12)',
             }}>
-              <Award className="h-5 w-5" style={{ color: 'hsl(var(--chart-5))' }} />
+              <Award className="h-5 w-5 text-purple-600" />
             </Box>
             <Box>
-              <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>Praise Given</Typography>
+              <Typography variant="caption" color="text.secondary">Praise Given</Typography>
               <Typography variant="h5" fontWeight={700}>
                 {posts.filter(p => p.fromStaffId === currentUserId).length}
               </Typography>
             </Box>
           </Stack>
-        </Paper>
+        </Card>
       </Stack>
 
       <Tabs defaultValue="feed" className="w-full">
@@ -348,7 +276,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
         <TabsContent value="feed" className="mt-4">
           {/* Compose Post Card */}
           {showCompose && (
-            <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2, border: '1px solid hsl(var(--primary))', borderColor: 'hsl(var(--primary))' }}>
+            <Card sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'primary.main' }}>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                 Celebrate Someone
               </Typography>
@@ -361,7 +289,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                         {staff.filter(s => s.id !== currentUserId && s.status === 'active').map(s => (
                           <SelectItem key={s.id} value={s.id}>
                             <div className="flex items-center gap-2">
-                              <Avatar sx={{ width: 24, height: 24, fontSize: 10, bgcolor: 'hsl(var(--muted))' }}>
+                              <Avatar sx={{ width: 24, height: 24, fontSize: 10 }}>
                                 {s.firstName[0]}{s.lastName[0]}
                               </Avatar>
                               {s.firstName} {s.lastName}
@@ -393,7 +321,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                 />
 
                 <Box>
-                  <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))', display: 'block', mb: 1 }}>
+                  <Typography variant="caption" color="text.secondary" gutterBottom sx={{ display: 'block' }}>
                     Add badges (optional)
                   </Typography>
                   <div className="flex flex-wrap gap-2">
@@ -412,7 +340,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
 
                 <Stack direction="row" alignItems="center" spacing={2}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))', display: 'block', mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" gutterBottom sx={{ display: 'block' }}>
                       <Coins className="h-3 w-3 inline mr-1" />
                       Reward points to include
                     </Typography>
@@ -429,28 +357,28 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                     </Select>
                   </Box>
                   <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                    <Button variant="outline" onClick={() => setShowCompose(false)}>Cancel</Button>
+                    <Button variant="outlined" onClick={() => setShowCompose(false)}>Cancel</Button>
                     <Button 
+                      variant="contained" 
                       onClick={handleSubmit} 
                       disabled={!recipient || !message.trim() || sending}
-                      className="gap-2"
+                      startIcon={<Send size={16} />}
                     >
-                      <Send size={16} />
                       Post Praise
                     </Button>
                   </Stack>
                 </Stack>
               </Stack>
-            </Paper>
+            </Card>
           )}
 
           {/* Praise Posts */}
           <Stack spacing={3}>
             {posts.length === 0 ? (
-              <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderStyle: 'dashed', borderColor: 'hsl(var(--border))' }}>
-                <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" style={{ opacity: 0.5 }} />
-                <Typography sx={{ color: 'hsl(var(--muted-foreground))' }}>No praise yet. Be the first to celebrate someone!</Typography>
-              </Paper>
+              <Card sx={{ p: 4, textAlign: 'center', border: '1px dashed', borderColor: 'divider' }}>
+                <Heart className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <Typography color="text.secondary">No praise yet. Be the first to celebrate someone!</Typography>
+              </Card>
             ) : (
               posts.map(post => {
                 const from = getStaff(post.fromStaffId);
@@ -458,9 +386,9 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                 const hasLiked = post.likes.includes(currentUserId);
 
                 return (
-                  <Paper key={post.id} variant="outlined" sx={{ p: 3, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+                  <Card key={post.id} sx={{ p: 3 }}>
                     <Stack direction="row" spacing={2}>
-                      <Avatar sx={{ width: 44, height: 44, bgcolor: 'hsl(var(--muted))' }}>
+                      <Avatar sx={{ width: 44, height: 44 }}>
                         {to?.firstName?.[0]}{to?.lastName?.[0]}
                       </Avatar>
                       <Box sx={{ flex: 1 }}>
@@ -471,12 +399,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                           <Chip 
                             label={`${praiseCategoryEmojis[post.category]} ${praiseCategoryLabels[post.category]}`}
                             size="small"
-                            sx={{ 
-                              height: 22, 
-                              fontSize: 11,
-                              bgcolor: 'hsl(var(--muted))',
-                              color: 'hsl(var(--muted-foreground))',
-                            }}
+                            sx={{ height: 22, fontSize: 11 }}
                           />
                           <Chip
                             icon={<Coins className="h-3 w-3" />}
@@ -485,9 +408,8 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                             sx={{ 
                               height: 22, 
                               fontSize: 11,
-                              bgcolor: 'hsl(var(--chart-4) / 0.15)',
-                              color: 'hsl(var(--chart-4))',
-                              '& .MuiChip-icon': { color: 'hsl(var(--chart-4))' },
+                              bgcolor: 'rgba(251, 191, 36, 0.12)',
+                              color: 'rgb(161, 98, 7)',
                             }}
                           />
                         </Stack>
@@ -505,31 +427,30 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                           </div>
                         )}
                         <Stack direction="row" alignItems="center" spacing={3}>
-                          <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                          <Typography variant="caption" color="text.secondary">
                             From {from?.firstName} {from?.lastName}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                          <Typography variant="caption" color="text.secondary">
                             {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
                           </Typography>
                         </Stack>
                         <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
                           <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={cn("gap-1", hasLiked && 'text-rose-500')}
+                            variant="text" 
+                            size="small" 
+                            className={cn(hasLiked && 'text-rose-500')}
                             onClick={() => handleLike(post.id)}
+                            startIcon={<ThumbsUp className={cn('h-4 w-4', hasLiked && 'fill-current')} />}
                           >
-                            <ThumbsUp className={cn('h-4 w-4', hasLiked && 'fill-current')} />
                             {post.likes.length}
                           </Button>
-                          <Button variant="ghost" size="sm" className="gap-1">
-                            <MessageCircle className="h-4 w-4" />
+                          <Button variant="text" size="small" startIcon={<MessageCircle className="h-4 w-4" />}>
                             {post.comments.length}
                           </Button>
                         </Stack>
                       </Box>
                     </Stack>
-                  </Paper>
+                  </Card>
                 );
               })
             )}
@@ -537,145 +458,92 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
         </TabsContent>
 
         <TabsContent value="leaderboard" className="mt-4">
-          <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
-            <Box sx={{ p: 2, borderBottom: '1px solid hsl(var(--border))' }}>
-              <Typography variant="subtitle1" fontWeight={600}>
-                Top Earners This Month
-              </Typography>
-            </Box>
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-                  <TableHead className="w-16 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Rank</TableHead>
-                  <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Team Member</TableHead>
-                  <TableHead className="w-32 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Points</TableHead>
-                  <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">This Month</TableHead>
-                  <TableHead className="w-20"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topEarners.map((earner, index) => {
-                  const person = getStaff(earner.staffId);
-                  const isTopThree = index < 3;
-                  return (
-                    <TableRow 
-                      key={earner.staffId}
-                      className="group hover:bg-muted/50 transition-colors"
-                      style={{
-                        borderLeft: index === 0 ? '3px solid hsl(var(--chart-4))' : undefined,
-                      }}
-                    >
-                      <TableCell className="py-3">
-                        <Box sx={{ 
-                          width: 28, 
-                          height: 28, 
-                          borderRadius: '50%', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          bgcolor: index === 0 ? 'hsl(var(--chart-4) / 0.2)' : index === 1 ? 'hsl(var(--muted))' : index === 2 ? 'hsl(var(--chart-4) / 0.15)' : 'hsl(var(--muted) / 0.5)',
-                          color: index === 0 ? 'hsl(var(--chart-4))' : 'hsl(var(--muted-foreground))',
-                          fontWeight: 700,
-                          fontSize: 12,
-                        }}>
-                          {index + 1}
-                        </Box>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar sx={{ width: 36, height: 36, bgcolor: 'hsl(var(--muted))' }}>
-                            {person?.firstName?.[0]}{person?.lastName?.[0]}
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{person?.firstName} {person?.lastName}</p>
-                            <p className="text-xs text-muted-foreground">{person?.position}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <Typography variant="subtitle2" fontWeight={700}>
-                          {earner.totalPoints} pts
-                        </Typography>
-                      </TableCell>
-                      <TableCell className="py-3">
-                        <Chip
-                          icon={<TrendingUp size={12} />}
-                          label={`+${earner.earnedThisMonth}`}
-                          size="small"
-                          sx={{ 
-                            height: 24, 
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            bgcolor: 'hsl(var(--chart-2) / 0.15)',
-                            color: 'hsl(var(--chart-2))',
-                            border: '1px solid hsl(var(--chart-2) / 0.3)',
-                            '& .MuiChip-icon': { color: 'hsl(var(--chart-2))' },
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="py-3">
-                        {isTopThree && (
-                          <Star className={cn(
-                            'h-5 w-5',
-                            index === 0 && 'text-amber-500 fill-amber-500',
-                            index === 1 && 'text-gray-400 fill-gray-400',
-                            index === 2 && 'text-amber-700 fill-amber-700',
-                          )} />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Paper>
+          <Card sx={{ p: 3 }}>
+            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              Top Earners This Month
+            </Typography>
+            <Stack spacing={2}>
+              {topEarners.map((earner, index) => {
+                const person = getStaff(earner.staffId);
+                return (
+                  <Stack key={earner.staffId} direction="row" alignItems="center" spacing={2}>
+                    <Box sx={{ 
+                      width: 32, 
+                      height: 32, 
+                      borderRadius: '50%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      bgcolor: index === 0 ? 'rgba(251, 191, 36, 0.2)' : index === 1 ? 'rgba(156, 163, 175, 0.2)' : index === 2 ? 'rgba(180, 83, 9, 0.2)' : 'rgba(148, 163, 184, 0.1)',
+                      color: index === 0 ? 'rgb(161, 98, 7)' : index === 1 ? 'rgb(107, 114, 128)' : index === 2 ? 'rgb(146, 64, 14)' : 'rgb(100, 116, 139)',
+                      fontWeight: 700,
+                      fontSize: 14,
+                    }}>
+                      {index + 1}
+                    </Box>
+                    <Avatar sx={{ width: 36, height: 36 }}>
+                      {person?.firstName?.[0]}{person?.lastName?.[0]}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" fontWeight={500}>
+                        {person?.firstName} {person?.lastName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {person?.position}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="subtitle2" fontWeight={700} color="warning.main">
+                        {earner.earnedThisMonth} pts
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        this month
+                      </Typography>
+                    </Box>
+                    {index < 3 && (
+                      <Star className={cn(
+                        'h-5 w-5',
+                        index === 0 && 'text-amber-500 fill-amber-500',
+                        index === 1 && 'text-gray-400 fill-gray-400',
+                        index === 2 && 'text-amber-700 fill-amber-700',
+                      )} />
+                    )}
+                  </Stack>
+                );
+              })}
+            </Stack>
+          </Card>
         </TabsContent>
 
         <TabsContent value="rewards" className="mt-4">
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
-              Redeem your points for these rewards. Contact HR to claim your reward.
-            </Typography>
-            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowAddRewardModal(true)}>
-              <Plus size={14} />
-              Add Reward
-            </Button>
-          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Redeem your points for these rewards. Contact HR to claim your reward.
+          </Typography>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rewardsCatalog.map(reward => (
-              <Paper key={reward.id} variant="outlined" sx={{ p: 3, borderRadius: 2, borderColor: 'hsl(var(--border))', position: 'relative' }}>
-                <IconButton 
-                  size="small" 
-                  onClick={() => handleDeleteReward(reward.id)}
-                  sx={{ 
-                    position: 'absolute', 
-                    top: 8, 
-                    right: 8, 
-                    opacity: 0.5,
-                    '&:hover': { opacity: 1, color: 'error.main' }
-                  }}
-                >
-                  <X size={14} />
-                </IconButton>
+            {[
+              { id: 1, name: 'Coffee Voucher', points: 50, emoji: '☕', description: 'Free coffee at the local café' },
+              { id: 2, name: 'Extra Break', points: 100, emoji: '⏰', description: 'Extra 15-min break' },
+              { id: 3, name: 'Lunch on Us', points: 200, emoji: '🍽️', description: 'Free lunch at any restaurant' },
+              { id: 4, name: 'Half Day Off', points: 500, emoji: '🏖️', description: 'Leave 4 hours early' },
+              { id: 5, name: 'Gift Card', points: 300, emoji: '🎁', description: '$25 gift card of your choice' },
+              { id: 6, name: 'Team Shoutout', points: 25, emoji: '📣', description: 'Featured in team newsletter' },
+            ].map(reward => (
+              <Card key={reward.id} sx={{ p: 3 }}>
                 <Stack direction="row" alignItems="flex-start" spacing={2}>
                   <Typography variant="h4">{reward.emoji}</Typography>
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="subtitle2" fontWeight={600}>{reward.name}</Typography>
-                    <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>{reward.description}</Typography>
+                    <Typography variant="caption" color="text.secondary">{reward.description}</Typography>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2 }}>
                       <Chip 
                         icon={<Coins className="h-3 w-3" />}
                         label={`${reward.points} pts`}
                         size="small"
-                        sx={{ 
-                          bgcolor: 'hsl(var(--chart-4) / 0.15)', 
-                          color: 'hsl(var(--chart-4))',
-                          '& .MuiChip-icon': { color: 'hsl(var(--chart-4))' },
-                        }}
+                        sx={{ bgcolor: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)' }}
                       />
                       <Button 
-                        variant="outline" 
-                        size="sm"
+                        variant="outlined" 
+                        size="small"
                         disabled={(currentUserPoints?.totalPoints || 0) < reward.points}
                       >
                         Redeem
@@ -683,7 +551,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                     </Stack>
                   </Box>
                 </Stack>
-              </Paper>
+              </Card>
             ))}
           </div>
         </TabsContent>
@@ -703,21 +571,20 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
           }}
           onClick={() => setShowAwardPoints(false)}
         >
-          <Paper 
-            variant="outlined"
-            sx={{ p: 4, maxWidth: 400, width: '90%', borderRadius: 2 }}
+          <Card 
+            sx={{ p: 4, maxWidth: 400, width: '90%' }}
             onClick={e => e.stopPropagation()}
           >
-            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Gift className="h-5 w-5" />
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              <Gift className="h-5 w-5 inline mr-2" />
               Award Points
             </Typography>
-            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', mb: 3 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Recognize exceptional work with bonus points
             </Typography>
             <Stack spacing={3}>
               <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                <Typography variant="caption" fontWeight={500} gutterBottom sx={{ display: 'block' }}>
                   Recipient
                 </Typography>
                 <Select value={awardRecipient} onValueChange={setAwardRecipient}>
@@ -734,7 +601,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                 </Select>
               </Box>
               <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                <Typography variant="caption" fontWeight={500} gutterBottom sx={{ display: 'block' }}>
                   Points to Award
                 </Typography>
                 <Select value={awardAmount} onValueChange={setAwardAmount}>
@@ -751,7 +618,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                 </Select>
               </Box>
               <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
+                <Typography variant="caption" fontWeight={500} gutterBottom sx={{ display: 'block' }}>
                   Reason
                 </Typography>
                 <Textarea
@@ -762,11 +629,12 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                 />
               </Box>
               <Stack direction="row" spacing={2}>
-                <Button variant="outline" className="flex-1" onClick={() => setShowAwardPoints(false)}>
+                <Button variant="outlined" fullWidth onClick={() => setShowAwardPoints(false)}>
                   Cancel
                 </Button>
                 <Button 
-                  className="flex-1"
+                  variant="contained" 
+                  fullWidth 
                   onClick={handleAwardPoints}
                   disabled={!awardRecipient || !awardReason.trim()}
                 >
@@ -774,114 +642,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                 </Button>
               </Stack>
             </Stack>
-          </Paper>
-        </Box>
-      )}
-
-      {/* Add Reward Modal */}
-      {showAddRewardModal && (
-        <Box
-          sx={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: 'rgba(0,0,0,0.5)',
-          }}
-          onClick={() => setShowAddRewardModal(false)}
-        >
-          <Paper 
-            variant="outlined"
-            sx={{ p: 4, maxWidth: 400, width: '90%', borderRadius: 2 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <Typography variant="h6" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Gift className="h-5 w-5" />
-              Add Reward to Catalog
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', mb: 3 }}>
-              Create a new reward that employees can redeem with their points
-            </Typography>
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
-                  Emoji
-                </Typography>
-                <Select value={newRewardEmoji} onValueChange={setNewRewardEmoji}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="🎁">🎁</SelectItem>
-                    <SelectItem value="☕">☕</SelectItem>
-                    <SelectItem value="🍽️">🍽️</SelectItem>
-                    <SelectItem value="🏖️">🏖️</SelectItem>
-                    <SelectItem value="📣">📣</SelectItem>
-                    <SelectItem value="⏰">⏰</SelectItem>
-                    <SelectItem value="🎉">🎉</SelectItem>
-                    <SelectItem value="💳">💳</SelectItem>
-                    <SelectItem value="🎧">🎧</SelectItem>
-                    <SelectItem value="🎮">🎮</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Box>
-              <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
-                  Reward Name
-                </Typography>
-                <Textarea
-                  value={newRewardName}
-                  onChange={e => setNewRewardName(e.target.value)}
-                  placeholder="e.g., Extra Break Time"
-                  rows={1}
-                />
-              </Box>
-              <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
-                  Points Required
-                </Typography>
-                <Select value={newRewardPoints} onValueChange={setNewRewardPoints}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="25">25 points</SelectItem>
-                    <SelectItem value="50">50 points</SelectItem>
-                    <SelectItem value="100">100 points</SelectItem>
-                    <SelectItem value="200">200 points</SelectItem>
-                    <SelectItem value="300">300 points</SelectItem>
-                    <SelectItem value="500">500 points</SelectItem>
-                    <SelectItem value="1000">1000 points</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Box>
-              <Box>
-                <Typography variant="caption" fontWeight={500} sx={{ display: 'block', mb: 1 }}>
-                  Description
-                </Typography>
-                <Textarea
-                  value={newRewardDescription}
-                  onChange={e => setNewRewardDescription(e.target.value)}
-                  placeholder="Brief description of the reward..."
-                  rows={2}
-                />
-              </Box>
-              <Stack direction="row" spacing={2}>
-                <Button variant="outline" className="flex-1" onClick={() => setShowAddRewardModal(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1"
-                  onClick={handleAddReward}
-                  disabled={!newRewardName.trim() || !newRewardDescription.trim()}
-                >
-                  Add Reward
-                </Button>
-              </Stack>
-            </Stack>
-          </Paper>
+          </Card>
         </Box>
       )}
     </div>

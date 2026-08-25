@@ -28,7 +28,11 @@ function useConfig() {
 
 const fmt = (d?: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
-export function PerformanceAdminPanel() {
+interface PerformanceAdminPanelProps {
+  embedded?: boolean;
+}
+
+export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPanelProps) {
   const config = useConfig();
   const [scaleDrawer, setScaleDrawer] = useState<{ open: boolean; scale: RatingScale | null }>({ open: false, scale: null });
   const [compDrawer, setCompDrawer] = useState<{ open: boolean; competency: Competency | null }>({ open: false, competency: null });
@@ -48,12 +52,14 @@ export function PerformanceAdminPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        {!embedded && (
+          <div>
           <h2 className="text-lg font-semibold tracking-tight">Performance configuration</h2>
           <p className="text-sm text-muted-foreground">
             Tenant-level setup for how performance is measured: rating scales, the competency library and the review-cycle calendar.
           </p>
         </div>
+        )}
         <Button variant="outline" size="sm" onClick={() => { performanceConfigStore.reset(); toast.success('Configuration reset to defaults'); }}>
           <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset to defaults
         </Button>

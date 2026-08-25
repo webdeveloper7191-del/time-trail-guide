@@ -60,6 +60,8 @@ import {
 } from './pip';
 
 interface PIPManagementPanelProps {
+  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
 }
@@ -75,7 +77,7 @@ const getStatusBadgeVariant = (status: PIPStatus) => {
   }
 };
 
-export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelProps) {
+export function PIPManagementPanel({ staff, currentUserId, embedded = false }: PIPManagementPanelProps) {
   const [pips, setPips] = useState<PerformanceImprovementPlan[]>(mockPIPs);
   const [selectedPIP, setSelectedPIP] = useState<PerformanceImprovementPlan | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -360,7 +362,7 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
                   </TableCell>
                   <TableCell className="py-3 w-36">
                     <Box>
-                      <Stack direction="row" justifyContent="space-between" mb={0.5}>
+                      <Stack direction="row" justifyContent={embedded ? "flex-end" : "space-between"} mb={0.5}>
                         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                           {pip.milestones.filter(m => m.status === 'completed').length}/{pip.milestones.length}
                         </Typography>
@@ -442,8 +444,8 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
     <>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
         {/* Header */}
-        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-          <Box>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
+          {!embedded && <Box>
             <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
               <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'warning.light', display: 'flex' }}>
                 <AlertTriangle size={18} style={{ color: 'var(--warning)' }} />
@@ -455,14 +457,14 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
             <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
               Manage formal improvement plans with milestones and documentation
             </Typography>
-          </Box>
+          </Box>}
           <Button variant="default" onClick={() => setShowCreateDrawer(true)} className="w-full sm:w-auto">
             <Plus size={16} className="mr-1" /> <span className="hidden sm:inline">Create PIP</span><span className="sm:hidden">New PIP</span>
           </Button>
         </Stack>
 
         {/* Stats */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+        {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
           <Card>
             <Box sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'warning.50' }}>
               <Stack direction="row" alignItems="center" spacing={1}>
@@ -515,7 +517,7 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
               </Stack>
             </Box>
           </Card>
-        </Box>
+        </Box>}
 
         {/* Search, Filters & Bulk Actions */}
         <Stack 
@@ -647,6 +649,6 @@ export function PIPManagementPanel({ staff, currentUserId }: PIPManagementPanelP
       )}
     </>
   );
-}
+};
 
 export default PIPManagementPanel;

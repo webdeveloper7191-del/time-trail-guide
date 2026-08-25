@@ -40,7 +40,9 @@ import { CareerPathSetupDrawer } from './CareerPathSetupDrawer';
 import { toast } from 'sonner';
 
 interface CareerPathingVisualizationProps {
-  staffId?: string;
+  /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
+staffId?: string;
   onAssessSkill?: (skillId: string) => void;
 }
 
@@ -60,7 +62,7 @@ const levelColors = [
   { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-700', accent: 'bg-rose-500' },
 ];
 
-export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill }: CareerPathingVisualizationProps) {
+export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill, embedded = false }: CareerPathingVisualizationProps) {
   const [selectedPath, setSelectedPath] = useState<CareerPath | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<CareerLevelDisplay | null>(null);
   const [showLevelSheet, setShowLevelSheet] = useState(false);
@@ -265,8 +267,8 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2}>
-        <Box>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2} sx={{ mb: embedded ? 0 : 0 }}>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <TrendingUp className="h-5 w-5" style={{ color: 'var(--primary)' }} />
@@ -278,7 +280,7 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
           <Typography variant="body2" color="text.secondary">
             Interactive career ladder showing your progression path and skill requirements
           </Typography>
-        </Box>
+        </Box>}
         <Button
           variant="outlined"
           size="small"
@@ -293,7 +295,7 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill 
       </Stack>
 
       {/* Current Status Card */}
-      {staff && careerProgress && currentPath && (
+      {!embedded && staff && careerProgress && currentPath && (
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
           <Box sx={{ p: 3 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems={{ md: 'center' }}>

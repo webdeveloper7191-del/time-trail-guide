@@ -50,6 +50,8 @@ interface GoalRecommendation {
 }
 
 interface GoalRecommendationsPanelProps {
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
+  embedded?: boolean;
   staff: StaffMember[];
   currentStaffId: string;
   existingGoals: Goal[];
@@ -417,7 +419,8 @@ function getTrendingGoals(): GoalRecommendation[] {
   ];
 }
 
-export function GoalRecommendationsPanel({ 
+export function GoalRecommendationsPanel({
+  embedded = false, 
   staff, 
   currentStaffId, 
   existingGoals,
@@ -449,27 +452,26 @@ export function GoalRecommendationsPanel({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {/* Header */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'warning.light', display: 'flex' }}>
-              <Lightbulb className="h-5 w-5" style={{ color: 'var(--warning)' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600}>
-              Goal Recommendations
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
+      {!embedded && (
+        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "flex-start" }} spacing={2}>
+          <Box>
+            <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
+              <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: "warning.light", display: "flex" }}>
+                <Lightbulb className="h-5 w-5" style={{ color: "var(--warning)" }} />
+              </Box>
+              <Typography variant="h6" fontWeight={600}>
+                Goal Recommendations
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              AI-suggested goals based on your role, department, and previous performance cycles
             </Typography>
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            AI-suggested goals based on your role, department, and previous performance cycles
-          </Typography>
-        </Box>
-      </Stack>
-
-      {/* Current Context */}
-      {currentStaff && (
-        <Card sx={{ bgcolor: 'grey.50' }}>
+          </Box>
+        </Stack>
+      )}
+      {!embedded && currentStaff && (
+        <Card sx={{ bgcolor: "grey.50" }}>
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={2}>
               <Avatar src={currentStaff.avatar} sx={{ width: 48, height: 48 }}>
@@ -495,14 +497,6 @@ export function GoalRecommendationsPanel({
                     />
                   )}
                 </Stack>
-              </Box>
-              <Box sx={{ textAlign: 'right' }}>
-                <Typography variant="caption" color="text.secondary">
-                  Recommendations
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="primary.main">
-                  {recommendations.length}
-                </Typography>
               </Box>
             </Stack>
           </Box>

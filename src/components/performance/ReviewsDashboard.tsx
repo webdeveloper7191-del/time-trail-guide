@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Box, 
   Stack, 
@@ -6,7 +6,6 @@ import {
   Chip,
   Button as MuiButton,
   Avatar,
-  Checkbox,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { 
@@ -18,28 +17,14 @@ import { StaffMember } from '@/types/staff';
 import { format, parseISO } from 'date-fns';
 import { 
   ClipboardCheck, 
+  Calendar, 
   Star,
   ChevronRight,
   Plus,
   Clock,
   CheckCircle2,
-  AlertCircle,
-  Search,
-  X,
-  MoreVertical,
-  Eye,
-  Edit,
-  Trash2,
-  Send,
+  AlertCircle
 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { createReviewBulkActions } from './shared/BulkActionsBar';
-import { InlineBulkActions } from './shared/InlineBulkActions';
-import { CollapsibleStatsGrid, ScrollableTable, RowActionsMenu } from './shared';
-import { toast } from 'sonner';
-
-import { TextField, InputAdornment, FormControl, Select as MuiSelect, MenuItem } from '@mui/material';
 
 interface ReviewsDashboardProps {
   reviews: PerformanceReview[];
@@ -47,12 +32,6 @@ interface ReviewsDashboardProps {
   currentUserId: string;
   onCreateReview: () => void;
   onViewReview: (review: PerformanceReview) => void;
-  onEditReview?: (review: PerformanceReview) => void;
-  onDeleteReview?: (reviewId: string) => void;
-  onSendReminder?: (reviewId: string) => void;
-  onBulkSendReminders?: (reviewIds: string[]) => void;
-  onBulkReassign?: (reviewIds: string[]) => void;
-  onBulkCancel?: (reviewIds: string[]) => void;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -76,104 +55,22 @@ export function ReviewsDashboard({
   staff, 
   currentUserId,
   onCreateReview, 
-  onViewReview,
-  onEditReview,
-  onDeleteReview,
-  onSendReminder,
-  onBulkSendReminders,
-  onBulkReassign,
-  onBulkCancel,
+  onViewReview 
 }: ReviewsDashboardProps) {
-  const [selectedReviewIds, setSelectedReviewIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [cycleFilter, setCycleFilter] = useState<string>('all');
-
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
-  // Filter reviews based on search and filters
-  const filteredReviews = reviews.filter(r => {
-    const staffMember = getStaffMember(r.staffId);
-    const matchesSearch = !searchQuery || 
-      `${staffMember?.firstName} ${staffMember?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-    const matchesCycle = cycleFilter === 'all' || r.reviewCycle === cycleFilter;
-    return matchesSearch && matchesStatus && matchesCycle;
-  });
-
-  const pendingSelfReviews = filteredReviews.filter(r => 
+  const pendingSelfReviews = reviews.filter(r => 
     r.status === 'pending_self' && r.staffId === currentUserId
   );
-  const pendingManagerReviews = filteredReviews.filter(r => 
+  const pendingManagerReviews = reviews.filter(r => 
     r.status === 'pending_manager' && r.reviewerId === currentUserId
   );
-  const upcomingReviews = filteredReviews.filter(r => 
+  const upcomingReviews = reviews.filter(r => 
     r.status === 'draft' || r.status === 'pending_self'
   );
-  const completedReviews = filteredReviews.filter(r => r.status === 'completed');
-  const selectableReviews = filteredReviews.filter(r => r.status !== 'completed' && r.status !== 'cancelled');
+  const completedReviews = reviews.filter(r => r.status === 'completed');
 
   const actionRequired = [...pendingSelfReviews, ...pendingManagerReviews];
-  
-  const hasActiveFilters = searchQuery || statusFilter !== 'all' || cycleFilter !== 'all';
-  
-  const clearFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setCycleFilter('all');
-  };
-
-  // Bulk selection handlers
-  const handleToggleSelect = (reviewId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedReviewIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(reviewId)) {
-        newSet.delete(reviewId);
-      } else {
-        newSet.add(reviewId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSelectAll = () => {
-    setSelectedReviewIds(new Set(selectableReviews.map(r => r.id)));
-  };
-
-  const handleClearSelection = () => {
-    setSelectedReviewIds(new Set());
-  };
-
-  const handleBulkSendReminders = () => {
-    if (onBulkSendReminders) {
-      onBulkSendReminders(Array.from(selectedReviewIds));
-    }
-    toast.success(`Reminders sent for ${selectedReviewIds.size} reviews`);
-    handleClearSelection();
-  };
-
-  const handleBulkReassign = () => {
-    if (onBulkReassign) {
-      onBulkReassign(Array.from(selectedReviewIds));
-    }
-    toast.info('Reassignment would open a drawer to select new reviewers');
-    handleClearSelection();
-  };
-
-  const handleBulkCancel = () => {
-    if (onBulkCancel) {
-      onBulkCancel(Array.from(selectedReviewIds));
-    }
-    toast.success(`${selectedReviewIds.size} reviews cancelled`);
-    handleClearSelection();
-  };
-
-  const bulkActions = createReviewBulkActions(
-    handleBulkSendReminders,
-    handleBulkReassign,
-    handleBulkCancel
-  );
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 3, md: 4 } }}>
@@ -203,10 +100,10 @@ export function ReviewsDashboard({
         </Box>
         <MuiButton 
           variant="contained" 
-          size="small"
           startIcon={<Plus size={16} />} 
           onClick={onCreateReview}
-          sx={{ width: { xs: '100%', sm: 'auto' } }}
+          fullWidth
+          sx={{ width: { sm: 'auto' } }}
         >
           Start Review
         </MuiButton>
@@ -274,191 +171,121 @@ export function ReviewsDashboard({
         </Card>
       )}
 
-      {/* Stats Cards - Using CollapsibleStatsGrid for mobile */}
-      <CollapsibleStatsGrid
-        title="Review Statistics"
-        stats={[
-          { 
-            label: 'Pending', 
-            value: upcomingReviews.length, 
-            icon: <Clock size={18} />, 
-            gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
-          },
-          { 
-            label: 'Completed', 
-            value: completedReviews.length, 
-            icon: <CheckCircle2 size={18} />, 
-            gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
-          },
-          { 
-            label: 'Avg Rating', 
-            value: completedReviews.length > 0 
-              ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
-              : '-', 
-            icon: <Star size={18} />, 
-            gradient: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' 
-          },
-        ]}
-        columns={{ xs: 2, sm: 3, md: 3 }}
-      />
-
-      {/* Filters & Search Row */}
-      <Stack 
-        direction={{ xs: 'column', md: 'row' }} 
-        spacing={{ xs: 1.5, md: 2 }} 
-        alignItems={{ xs: 'stretch', md: 'center' }}
-        justifyContent="space-between"
-      >
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          spacing={{ xs: 1.5, sm: 2 }} 
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          sx={{ flex: 1 }}
-        >
-          <TextField
-            placeholder="Search reviews..."
-            size="small"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-            <FormControl size="small" sx={{ minWidth: 130 }}>
-              <MuiSelect
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="all">All Statuses</MenuItem>
-                {Object.entries(reviewStatusLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
-                ))}
-              </MuiSelect>
-            </FormControl>
-
-            <FormControl size="small" sx={{ minWidth: 130 }}>
-              <MuiSelect
-                value={cycleFilter}
-                onChange={(e) => setCycleFilter(e.target.value)}
-              >
-                <MenuItem value="all">All Cycles</MenuItem>
-                {Object.entries(reviewCycleLabels).map(([value, label]) => (
-                  <MenuItem key={value} value={value}>{label}</MenuItem>
-                ))}
-              </MuiSelect>
-            </FormControl>
-
-            {hasActiveFilters && (
-              <MuiButton 
-                variant="text"
-                size="small" 
-                startIcon={<X size={16} />}
-                onClick={clearFilters}
-                sx={{ color: 'text.secondary' }}
-              >
-                Clear
-              </MuiButton>
-            )}
-          </Stack>
-        </Stack>
-
-        {/* Inline Bulk Actions */}
-        <InlineBulkActions
-          selectedCount={selectedReviewIds.size}
-          totalCount={selectableReviews.length}
-          onClearSelection={handleClearSelection}
-          onSelectAll={handleSelectAll}
-          actions={bulkActions}
-          entityName="reviews"
-        />
-      </Stack>
+      {/* Stats Cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(3, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+        <Card>
+          <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
+            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
+              <Box sx={{ 
+                p: { xs: 1, md: 1.5 }, 
+                borderRadius: '50%', 
+                bgcolor: 'warning.light', 
+                display: { xs: 'none', sm: 'flex' } 
+              }}>
+                <Clock size={24} style={{ color: 'var(--warning)' }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                  {upcomingReviews.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
+                  Pending
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Card>
+        
+        <Card>
+          <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
+            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
+              <Box sx={{ 
+                p: { xs: 1, md: 1.5 }, 
+                borderRadius: '50%', 
+                bgcolor: 'success.light', 
+                display: { xs: 'none', sm: 'flex' } 
+              }}>
+                <CheckCircle2 size={24} style={{ color: 'var(--success)' }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                  {completedReviews.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
+                  Completed
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Card>
+        
+        <Card>
+          <Box sx={{ p: { xs: 1.5, md: 2.5 } }}>
+            <Stack direction="row" alignItems="center" spacing={{ xs: 1, md: 2 }}>
+              <Box sx={{ 
+                p: { xs: 1, md: 1.5 }, 
+                borderRadius: '50%', 
+                bgcolor: 'primary.light', 
+                display: { xs: 'none', sm: 'flex' } 
+              }}>
+                <Star size={24} style={{ color: 'var(--primary)' }} />
+              </Box>
+              <Box>
+                <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                  {completedReviews.length > 0 
+                    ? (completedReviews.reduce((sum, r) => sum + (r.overallManagerRating || 0), 0) / completedReviews.length).toFixed(1)
+                    : '-'
+                  }
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
+                  Avg Rating
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Card>
+      </Box>
 
       {/* All Reviews List */}
       <Box>
-        <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          justifyContent="space-between" 
-          alignItems={{ xs: 'flex-start', sm: 'center' }} 
-          spacing={1}
-          mb={2}
-        >
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Typography variant="overline" color="text.secondary" fontWeight={600} sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>
-              All Reviews
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }}>
-              {filteredReviews.length} reviews
-            </Typography>
-          </Stack>
-          {selectableReviews.length > 0 && (
-            <MuiButton
-              size="small"
-              variant="text"
-              onClick={selectedReviewIds.size === selectableReviews.length ? handleClearSelection : handleSelectAll}
-              sx={{ fontSize: '0.75rem', display: { xs: 'none', sm: 'inline-flex' } }}
-            >
-              {selectedReviewIds.size === selectableReviews.length ? 'Deselect All' : 'Select All'}
-            </MuiButton>
-          )}
-        </Stack>
+        <Typography variant="overline" color="text.secondary" fontWeight={600} mb={2} display="block">
+          All Reviews
+        </Typography>
         
-        {filteredReviews.length === 0 ? (
+        {reviews.length === 0 ? (
           <Card sx={{ border: '2px dashed', borderColor: 'divider', bgcolor: 'transparent' }}>
             <Box sx={{ py: 4, textAlign: 'center' }}>
               <ClipboardCheck size={40} style={{ color: 'var(--muted-foreground)', margin: '0 auto 12px' }} />
-              <Typography color="text.secondary">
-                {hasActiveFilters ? 'No reviews match your filters' : 'No reviews yet'}
-              </Typography>
-              {!hasActiveFilters && (
-                <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onCreateReview}>
-                  Start first review cycle
-                </MuiButton>
-              )}
+              <Typography color="text.secondary">No reviews yet</Typography>
+              <MuiButton variant="outlined" sx={{ mt: 2 }} onClick={onCreateReview}>
+                Start first review cycle
+              </MuiButton>
             </Box>
           </Card>
         ) : (
           <Stack spacing={1.5}>
-            {filteredReviews.map((review) => {
+            {reviews.map((review) => {
               const staffMember = getStaffMember(review.staffId);
               const reviewer = getStaffMember(review.reviewerId);
-              const isSelected = selectedReviewIds.has(review.id);
-              const isSelectable = review.status !== 'completed' && review.status !== 'cancelled';
               
               return (
                 <Card 
                   key={review.id}
                   sx={{ 
                     cursor: 'pointer',
-                    border: isSelected ? 2 : 1,
-                    borderColor: isSelected ? 'primary.main' : 'divider',
                     '&:hover': { boxShadow: 3 }
                   }}
                   onClick={() => onViewReview(review)}
                 >
-                  <Box sx={{ p: { xs: 1.5, md: 2 } }}>
-                    <Stack direction="row" alignItems="center" spacing={{ xs: 1.5, md: 2 }}>
-                      {isSelectable && (
-                        <Checkbox
-                          checked={isSelected}
-                          onClick={(e) => handleToggleSelect(review.id, e)}
-                          size="small"
-                          sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                        />
-                      )}
-                      <Avatar src={staffMember?.avatar} sx={{ width: { xs: 36, md: 48 }, height: { xs: 36, md: 48 } }}>
+                  <Box sx={{ p: 2 }}>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <Avatar src={staffMember?.avatar} sx={{ width: 48, height: 48 }}>
                         {staffMember?.firstName?.[0]}{staffMember?.lastName?.[0]}
                       </Avatar>
                       
                       <Box flex={1} minWidth={0}>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={{ xs: 0.5, sm: 1 }} mb={0.5}>
-                          <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', md: '0.875rem' } }} noWrap>
+                        <Stack direction="row" alignItems="center" spacing={1} mb={0.5}>
+                          <Typography variant="subtitle2" fontWeight={600}>
                             {staffMember?.firstName} {staffMember?.lastName}
                           </Typography>
                           <Chip
@@ -468,83 +295,29 @@ export function ReviewsDashboard({
                             sx={{ 
                               bgcolor: statusColors[review.status]?.bg,
                               color: statusColors[review.status]?.text,
-                              fontSize: { xs: '0.6rem', md: '0.75rem' },
-                              height: { xs: 20, md: 24 },
                             }}
                           />
                         </Stack>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: '0.875rem' } }} noWrap>
-                          {reviewCycleLabels[review.reviewCycle]} • 
+                        <Typography variant="body2" color="text.secondary">
+                          {reviewCycleLabels[review.reviewCycle]} Review • 
                           {format(parseISO(review.periodStart), 'MMM d')} - {format(parseISO(review.periodEnd), 'MMM d, yyyy')}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontSize: { xs: '0.65rem', md: '0.75rem' } }}>
+                        <Typography variant="caption" color="text.secondary">
                           Reviewer: {reviewer?.firstName} {reviewer?.lastName}
                         </Typography>
                       </Box>
 
                       {review.status === 'completed' && review.overallManagerRating && (
-                        <Box textAlign="center" sx={{ display: { xs: 'none', md: 'block' } }}>
+                        <Box textAlign="center">
                           <Stack direction="row" alignItems="center" spacing={0.5} color="warning.main">
-                            <Star size={18} fill="currentColor" />
-                            <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1rem' }}>{review.overallManagerRating}</Typography>
+                            <Star size={20} fill="currentColor" />
+                            <Typography variant="h6" fontWeight={700}>{review.overallManagerRating}</Typography>
                           </Stack>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>Rating</Typography>
+                          <Typography variant="caption" color="text.secondary">Final Rating</Typography>
                         </Box>
                       )}
 
-                      {/* Actions Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => {
-                            e.stopPropagation();
-                            onViewReview(review);
-                          }}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          {onEditReview && review.status !== 'completed' && (
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              onEditReview(review);
-                            }}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Review
-                            </DropdownMenuItem>
-                          )}
-                          {onSendReminder && review.status !== 'completed' && (
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              onSendReminder(review.id);
-                            }}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Send Reminder
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          {onDeleteReview && (
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteReview(review.id);
-                              }}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Review
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <ChevronRight size={20} style={{ color: 'var(--muted-foreground)' }} />
                     </Stack>
                   </Box>
                 </Card>

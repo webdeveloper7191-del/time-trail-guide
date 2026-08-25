@@ -1,102 +1,55 @@
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Stack, Typography, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Box, Stack, Typography, Tab } from '@mui/material';
+import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
-import { PerformanceNavigation, GlobalSearch } from '@/components/performance/shared';
+import { GoalsTracker } from '@/components/performance/GoalsTracker';
+import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
+import { FeedbackPanel } from '@/components/performance/FeedbackPanel';
+import { ConversationsList } from '@/components/performance/ConversationsList';
+import { GoalDetailSheet } from '@/components/performance/GoalDetailSheet';
+import { ReviewExecutionSheet } from '@/components/performance/ReviewExecutionSheet';
+import { ConversationDetailSheet } from '@/components/performance/ConversationDetailSheet';
+import { PerformanceAnalyticsDashboard } from '@/components/performance/PerformanceAnalyticsDashboard';
+import { TeamOverviewDashboard } from '@/components/performance/TeamOverviewDashboard';
 import { PerformanceNotificationBell } from '@/components/performance/PerformanceNotificationBell';
-import { PerformanceSettingsDrawer, PerformanceSettings } from '@/components/performance/PerformanceSettingsDrawer';
+import { PlanManagementPanel } from '@/components/performance/PlanManagementPanel';
+import { AssignPlanDrawer } from '@/components/performance/AssignPlanDrawer';
+import { BulkAssignPlanDrawer } from '@/components/performance/BulkAssignPlanDrawer';
+import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
+import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
+import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
+import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
+import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
+import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
+import { AssignGoalDrawer } from '@/components/performance/AssignGoalDrawer';
+import { EditGoalDrawer } from '@/components/performance/EditGoalDrawer';
+import { LMSAdminModule } from '@/components/performance/LMSAdminModule';
+import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
+import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
+// New advanced performance features
+import { Feedback360Panel } from '@/components/performance/Feedback360Panel';
+import { NineBoxTalentGrid } from '@/components/performance/NineBoxTalentGrid';
+import { SkillsCareerPanel } from '@/components/performance/SkillsCareerPanel';
+import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
+import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
+import { CalibrationPanel } from '@/components/performance/CalibrationPanel';
+import { OKRCascadePanel } from '@/components/performance/OKRCascadePanel';
+// New Employment Hero-style features
+import { UnifiedRecognitionPanel } from '@/components/performance/UnifiedRecognitionPanel';
+import { HappinessScoreWidget } from '@/components/performance/HappinessScoreWidget';
+import { PerformanceExecutiveDashboard } from '@/components/performance/PerformanceExecutiveDashboard';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { StaffMember } from '@/types/staff';
-import { Settings, Database } from 'lucide-react';
-import { Button } from '@/components/mui/Button';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Lazy load tab panels for code splitting
-const PlanManagementPanel = lazy(() => import('@/components/performance/PlanManagementPanel').then(m => ({ default: m.PlanManagementPanel })));
-const GoalsTracker = lazy(() => import('@/components/performance/GoalsTracker').then(m => ({ default: m.GoalsTracker })));
-const OKRCascadePanel = lazy(() => import('@/components/performance/OKRCascadePanel').then(m => ({ default: m.OKRCascadePanel })));
-const LMSAdminModule = lazy(() => import('@/components/performance/LMSAdminModule').then(m => ({ default: m.LMSAdminModule })));
-const ReviewsDashboard = lazy(() => import('@/components/performance/ReviewsDashboard').then(m => ({ default: m.ReviewsDashboard })));
-const FeedbackPanel = lazy(() => import('@/components/performance/FeedbackPanel').then(m => ({ default: m.FeedbackPanel })));
-const Feedback360Panel = lazy(() => import('@/components/performance/Feedback360Panel').then(m => ({ default: m.Feedback360Panel })));
-const CalibrationPanel = lazy(() => import('@/components/performance/CalibrationPanel').then(m => ({ default: m.CalibrationPanel })));
-const UnifiedRecognitionPanel = lazy(() => import('@/components/performance/UnifiedRecognitionPanel').then(m => ({ default: m.UnifiedRecognitionPanel })));
-const HappinessScoreWidget = lazy(() => import('@/components/performance/HappinessScoreWidget').then(m => ({ default: m.HappinessScoreWidget })));
-const PulseSurveyPanel = lazy(() => import('@/components/performance/PulseSurveyPanel').then(m => ({ default: m.PulseSurveyPanel })));
-const WellbeingDashboard = lazy(() => import('@/components/performance/WellbeingDashboard').then(m => ({ default: m.WellbeingDashboard })));
-const NineBoxTalentGrid = lazy(() => import('@/components/performance/NineBoxTalentGrid').then(m => ({ default: m.NineBoxTalentGrid })));
-const SkillsCareerPanel = lazy(() => import('@/components/performance/SkillsCareerPanel').then(m => ({ default: m.SkillsCareerPanel })));
-const TeamOverviewDashboard = lazy(() => import('@/components/performance/TeamOverviewDashboard').then(m => ({ default: m.TeamOverviewDashboard })));
-const PerformanceTaskManagementPanel = lazy(() => import('@/components/performance/PerformanceTaskManagementPanel').then(m => ({ default: m.PerformanceTaskManagementPanel })));
-const ConversationsList = lazy(() => import('@/components/performance/ConversationsList').then(m => ({ default: m.ConversationsList })));
-const PerformanceExecutiveDashboard = lazy(() => import('@/components/performance/PerformanceExecutiveDashboard').then(m => ({ default: m.PerformanceExecutiveDashboard })));
-const PerformanceAnalyticsDashboard = lazy(() => import('@/components/performance/PerformanceAnalyticsDashboard').then(m => ({ default: m.PerformanceAnalyticsDashboard })));
-const CompensationPanel = lazy(() => import('@/components/performance/CompensationPanel').then(m => ({ default: m.CompensationPanel })));
-const PIPManagementPanel = lazy(() => import('@/components/performance/PIPManagementPanel').then(m => ({ default: m.PIPManagementPanel })));
-const SuccessionPlanningPanel = lazy(() => import('@/components/performance/SuccessionPlanningPanel').then(m => ({ default: m.SuccessionPlanningPanel })));
-const PeerNominationsPanel = lazy(() => import('@/components/performance/engagement/PeerNominationsPanel').then(m => ({ default: m.PeerNominationsPanel })));
-const MentorshipMatchingPanel = lazy(() => import('@/components/performance/engagement/MentorshipMatchingPanel').then(m => ({ default: m.MentorshipMatchingPanel })));
-const DevelopmentBudgetTracker = lazy(() => import('@/components/performance/engagement/DevelopmentBudgetTracker').then(m => ({ default: m.DevelopmentBudgetTracker })));
-const CalendarIntegrationPanel = lazy(() => import('@/components/performance/engagement/CalendarIntegrationPanel').then(m => ({ default: m.CalendarIntegrationPanel })));
-const GoalRecommendationsPanel = lazy(() => import('@/components/performance/goals/GoalRecommendationsPanel').then(m => ({ default: m.GoalRecommendationsPanel })));
-const CareerPathingVisualization = lazy(() => import('@/components/performance/talent/CareerPathingVisualization').then(m => ({ default: m.CareerPathingVisualization })));
-const SentimentAnalysisPanel = lazy(() => import('@/components/performance/insights/SentimentAnalysisPanel').then(m => ({ default: m.SentimentAnalysisPanel })));
-const PerformanceAdminPanel = lazy(() => import('@/components/performance/admin/PerformanceAdminPanel').then(m => ({ default: m.PerformanceAdminPanel })));
-const BenchmarkingDashboard = lazy(() => import('@/components/performance/insights/BenchmarkingDashboard').then(m => ({ default: m.BenchmarkingDashboard })));
-
-// Eagerly load sheets/drawers as they're used across tabs
-import { GoalDetailSheet } from '@/components/performance/GoalDetailSheet';
-import { ReviewExecutionSheet } from '@/components/performance/ReviewExecutionSheet';
-import { ConversationDetailSheet } from '@/components/performance/ConversationDetailSheet';
-import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
-import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
-import { AssignPlanDrawer } from '@/components/performance/AssignPlanDrawer';
-import { BulkAssignPlanDrawer } from '@/components/performance/BulkAssignPlanDrawer';
-import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
-import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
-import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
-import { AssignGoalDrawer } from '@/components/performance/AssignGoalDrawer';
-import { EditGoalDrawer } from '@/components/performance/EditGoalDrawer';
-import { ScheduleConversationDrawer } from '@/components/performance/ScheduleConversationDrawer';
-import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
-import { EditReviewDrawer } from '@/components/performance/reviews/EditReviewDrawer';
-import { EditPlanDrawer } from '@/components/performance/plans/EditPlanDrawer';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
-// Valid tab values for URL routing
-const VALID_TABS = [
-  'plans', 'goals', 'goal-recommendations', 'okr', 'lms', 'pip',
-  'reviews', 'feedback', '360feedback', 'calibration',
-  'recognition', 'happiness', 'pulse', 'wellbeing', 'nominations', 'mentorship', 'budget',
-  'talent', 'skills', 'career-pathing', 'succession', 'team',
-  'tasks', 'conversations', 'calendar',
-  'summary', 'analytics', 'sentiment', 'benchmarking', 'compensation', 'admin-config'
-];
-
-// Loading fallback component
-function TabLoadingFallback() {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
-      <CircularProgress size={32} />
-    </Box>
-  );
-}
-
 export default function PerformanceManagement() {
-  const { tab } = useParams<{ tab?: string }>();
-  const navigate = useNavigate();
-  
-  // Derive activeTab from URL, default to 'plans'
-  const activeTab = useMemo(() => {
-    if (tab && VALID_TABS.includes(tab)) return tab;
-    return 'plans';
-  }, [tab]);
-
+  const [activeTab, setActiveTab] = useState('plans');
   const [feedbackView, setFeedbackView] = useState<'received' | 'given' | 'all'>('received');
   
   // Detail sheet states
@@ -117,28 +70,13 @@ export default function PerformanceManagement() {
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
-  const [showEditPlanDrawer, setShowEditPlanDrawer] = useState(false);
   const [showCreateGoalDrawer, setShowCreateGoalDrawer] = useState(false);
   const [showAssignGoalDrawer, setShowAssignGoalDrawer] = useState(false);
   const [showEditGoalDrawer, setShowEditGoalDrawer] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [showScheduleConversationModal, setShowScheduleConversationModal] = useState(false);
   const [showStartReviewDrawer, setShowStartReviewDrawer] = useState(false);
-  const [showEditReviewDrawer, setShowEditReviewDrawer] = useState(false);
-  const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
-  const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
-const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettings>({
-    recognition: {
-      visibleInEmployeePortal: true,
-      hideIndependentPraise: false,
-      employeesCanAwardPoints: true,
-      maxPointsPerPraise: 50,
-      requireApprovalForRewards: false,
-    },
-    surveys: { anonymousByDefault: true },
-    goals: { allowSelfCreation: true },
-  });
-
+  
   const {
     reviews, goals, feedback, conversations, loading,
     fetchReviews, fetchGoals, fetchFeedback, fetchConversations,
@@ -154,11 +92,6 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
     fetchFeedback();
     fetchConversations();
   }, []);
-
-  // URL-based tab change handler
-  const handleTabChange = (newTab: string) => {
-    navigate(`/performance/${newTab}`, { replace: true });
-  };
 
   // Goal handlers
   const handleViewGoal = (goal: Goal) => {
@@ -205,15 +138,6 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
   ) => {
     await completeManagerReview(id, ratings, summary, strengths, areasForImprovement, developmentPlan);
     toast.success('Review completed successfully');
-  };
-
-  const handleEditReview = (review: PerformanceReview) => {
-    setEditingReview(review);
-    setShowEditReviewDrawer(true);
-  };
-
-  const handleDeleteReview = (reviewId: string) => {
-    toast.success('Review deleted');
   };
 
   // Conversation handlers
@@ -332,9 +256,8 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
     selectedConversations: string[];
   }) => {
     console.log('Assigning plan:', data);
-    toast.success(`Performance plan assigned to ${data.staffIds.length} employee${data.staffIds.length > 1 ? 's' : ''}!`);
+    toast.success('Performance plan assigned successfully!');
     setShowAssignDrawer(false);
-    setShowQuickAssignDrawer(false);
     setSelectedTemplate(null);
   };
 
@@ -367,437 +290,252 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
     toast.success('Plan extended successfully');
   };
 
-  // Render the active tab content with Suspense
-  const renderTabContent = () => {
-    return (
-      <Suspense fallback={<TabLoadingFallback />}>
-        {activeTab === 'plans' && (
-          <PlanManagementPanel
-            staff={mockStaff}
-            goals={goals}
-            reviews={reviews}
-            conversations={conversations}
-            onAssignPlan={handleAssignPlan}
-            onBulkAssignPlan={handleBulkAssignPlan}
-            onViewPlan={handleViewPlan}
-            onEditPlan={(plan) => {
-              setSelectedPlan(plan);
-              setShowEditPlanDrawer(true);
-            }}
-            onViewTemplate={handleViewTemplate}
-            onCreateTemplate={handleCreateTemplate}
-            onEditTemplate={handleEditTemplate}
-            onDuplicateTemplate={handleDuplicateTemplate}
-            onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
-            onDeleteTemplate={handleDeleteTemplate}
-            onDeletePlan={(planId) => {
-              toast.success('Plan deleted successfully');
-            }}
-          />
-        )}
-
-        {activeTab === 'okr' && (
-          <OKRCascadePanel currentUserId={CURRENT_USER_ID} />
-        )}
-
-        {activeTab === 'lms' && (
-          <LMSAdminModule
-            currentUserId={CURRENT_USER_ID}
-            staff={mockStaff}
-          />
-        )}
-
-        {activeTab === 'tasks' && (
-          <PerformanceTaskManagementPanel
-            currentUserId={CURRENT_USER_ID}
-            goals={goals}
-            reviews={reviews}
-            conversations={conversations}
-            onNavigateToGoal={handleNotificationGoal}
-            onNavigateToReview={handleNotificationReview}
-            onNavigateToConversation={handleNotificationConversation}
-          />
-        )}
-
-        {activeTab === 'goals' && (
-          <GoalsTracker
-            goals={goals}
-            onCreateGoal={() => setShowCreateGoalDrawer(true)}
-            onAssignGoal={() => setShowAssignGoalDrawer(true)}
-            onViewGoal={handleViewGoal}
-            onEditGoal={handleEditGoal}
-            onUpdateProgress={updateGoalProgress}
-          />
-        )}
-
-        {activeTab === 'reviews' && (
-          <ReviewsDashboard
-            reviews={reviews}
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-            onCreateReview={() => setShowStartReviewDrawer(true)}
-            onViewReview={handleViewReview}
-            onEditReview={handleEditReview}
-            onDeleteReview={handleDeleteReview}
-          />
-        )}
-
-        {activeTab === 'feedback' && (
-          <FeedbackPanel
-            feedback={feedback}
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-            onSendFeedback={handleSendFeedback}
-            view={feedbackView}
-            onViewChange={setFeedbackView}
-          />
-        )}
-
-        {activeTab === '360feedback' && (
-          <Feedback360Panel currentUserId={CURRENT_USER_ID} />
-        )}
-
-        {activeTab === 'recognition' && (
-          <UnifiedRecognitionPanel
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'happiness' && (
-          <HappinessScoreWidget
-            currentUserId={CURRENT_USER_ID}
-            isManager={true}
-          />
-        )}
-
-        {activeTab === 'conversations' && (
-          <ConversationsList
-            conversations={conversations}
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-            onScheduleConversation={() => setShowScheduleConversationModal(true)}
-            onViewConversation={handleViewConversation}
-          />
-        )}
-
-        {activeTab === 'talent' && (
-          <NineBoxTalentGrid />
-        )}
-
-        {activeTab === 'skills' && (
-          <SkillsCareerPanel staffId="staff-1" />
-        )}
-
-        {activeTab === 'pulse' && (
-          <PulseSurveyPanel currentUserId={CURRENT_USER_ID} />
-        )}
-
-        {activeTab === 'wellbeing' && (
-          <WellbeingDashboard currentUserId={CURRENT_USER_ID} />
-        )}
-
-        {activeTab === 'calibration' && (
-          <CalibrationPanel currentUserId={CURRENT_USER_ID} />
-        )}
-
-        {activeTab === 'team' && (
-          <TeamOverviewDashboard
-            staff={mockStaff}
-            goals={goals}
-            reviews={reviews}
-            feedback={feedback}
-            conversations={conversations}
-            currentUserId={CURRENT_USER_ID}
-            onViewGoal={handleViewGoal}
-            onViewReview={handleViewReview}
-            onViewConversation={handleViewConversation}
-          />
-        )}
-
-        {activeTab === 'summary' && (
-          <PerformanceExecutiveDashboard
-            goals={goals}
-            reviews={reviews}
-            conversations={conversations}
-            feedback={feedback}
-          />
-        )}
-
-        {activeTab === 'analytics' && (
-          <PerformanceAnalyticsDashboard
-            goals={goals}
-            reviews={reviews}
-            feedback={feedback}
-            conversations={conversations}
-          />
-        )}
-
-        {activeTab === 'compensation' && (
-          <CompensationPanel
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'pip' && (
-          <PIPManagementPanel
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'succession' && (
-          <SuccessionPlanningPanel
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'nominations' && (
-          <PeerNominationsPanel
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'mentorship' && (
-          <MentorshipMatchingPanel
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'budget' && (
-          <DevelopmentBudgetTracker
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'calendar' && (
-          <CalendarIntegrationPanel />
-        )}
-
-        {activeTab === 'goal-recommendations' && (
-          <GoalRecommendationsPanel
-            staff={mockStaff}
-            currentStaffId={CURRENT_USER_ID}
-            existingGoals={goals}
-            onAdoptGoal={(rec) => {
-              createGoal({
-                staffId: CURRENT_USER_ID,
-                title: rec.title,
-                description: rec.description,
-                category: rec.category,
-                priority: rec.priority,
-                status: 'not_started',
-                progress: 0,
-                startDate: new Date().toISOString().split('T')[0],
-                targetDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                milestones: rec.suggestedMilestones.map((ms, i) => ({
-                  id: `ms-${Date.now()}-${i}`,
-                  title: ms,
-                  targetDate: new Date(Date.now() + (30 * (i + 1)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                  completed: false,
-                })),
-                createdBy: CURRENT_USER_ID,
-              });
-            }}
-          />
-        )}
-
-        {activeTab === 'career-pathing' && (
-          <CareerPathingVisualization staffId={CURRENT_USER_ID} />
-        )}
-
-        {activeTab === 'sentiment' && (
-          <SentimentAnalysisPanel
-            feedback={feedback}
-            staff={mockStaff}
-            currentUserId={CURRENT_USER_ID}
-          />
-        )}
-
-        {activeTab === 'benchmarking' && (
-          <BenchmarkingDashboard
-            goals={goals}
-            reviews={reviews}
-            feedback={feedback}
-          />
-        )}
-
-        {activeTab === 'admin-config' && (
-          <PerformanceAdminPanel />
-        )}
-      </Suspense>
-    );
-  };
+  const tabConfig = [
+    { value: 'plans', label: 'Plans', icon: FileText },
+    { value: 'okr', label: 'OKRs', icon: Crosshair },
+    { value: 'lms', label: 'Learning', icon: GraduationCap },
+    { value: 'tasks', label: 'Tasks', icon: ListTodo },
+    { value: 'goals', label: 'Goals', icon: Target },
+    { value: 'reviews', label: 'Reviews', icon: ClipboardCheck },
+    { value: 'feedback', label: 'Feedback', icon: MessageSquareHeart },
+    { value: '360feedback', label: '360°', icon: Users2 },
+    { value: 'recognition', label: 'Recognition', icon: Sparkles },
+    { value: 'happiness', label: 'Happiness', icon: Smile },
+    { value: 'conversations', label: '1:1s', icon: MessageSquare },
+    { value: 'talent', label: '9-Box', icon: Grid3X3 },
+    { value: 'skills', label: 'Skills', icon: Compass },
+    { value: 'pulse', label: 'Pulse', icon: Activity },
+    { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
+    { value: 'calibration', label: 'Calibration', icon: Scale },
+    { value: 'team', label: 'Team', icon: Users },
+    { value: 'summary', label: 'Summary', icon: TrendingUp },
+    { value: 'analytics', label: 'Analytics', icon: BarChart3 },
+  ];
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AdminSidebar />
-      <Box 
-        component="main" 
-        sx={{ 
-          flex: 1, 
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'auto',
-        }}
-      >
-        {/* Clean Header - Matching Reference Style */}
-        <Box 
-          sx={{ 
-            px: { xs: 2, sm: 3, md: 4 },
-            py: { xs: 2, sm: 2.5 },
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
-        >
+      <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, overflow: 'auto' }}>
+        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+          {/* Header */}
           <Stack 
-            direction="row"
+            direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between" 
-            alignItems="center"
+            alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
+            spacing={{ xs: 2, sm: 0 }}
+            sx={{ mb: { xs: 3, md: 4 } }}
           >
             <Box>
               <Typography 
-                sx={{ 
-                  fontSize: '1.375rem',
-                  fontWeight: 600,
-                  color: 'text.primary',
-                  lineHeight: 1.3,
-                }}
+                variant="h4" 
+                fontWeight={600} 
+                color="text.primary" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' } }}
               >
                 Performance Management
               </Typography>
               <Typography 
-                sx={{ 
-                  mt: 0.25,
-                  fontSize: '0.8125rem',
-                  color: 'text.secondary',
-                }}
+                variant="body1" 
+                color="text.secondary"
+                sx={{ display: { xs: 'none', sm: 'block' } }}
               >
-                Manage goals, reviews, and team development
+                Track development plans, reviews, goals, and continuous feedback
               </Typography>
             </Box>
-            
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Box
-                component="button"
-                onClick={() => navigate('/docs/database')}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 36,
-                  height: 36,
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.paper',
-                  color: 'text.secondary',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  '&:hover': {
-                    borderColor: 'text.disabled',
-                    bgcolor: 'action.hover',
-                  },
-                }}
-              >
-                <Database size={16} />
-              </Box>
-              <Box
-                component="button"
-                onClick={() => setShowSettingsDrawer(true)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 36,
-                  height: 36,
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.paper',
-                  color: 'text.secondary',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  '&:hover': {
-                    borderColor: 'text.disabled',
-                    bgcolor: 'action.hover',
-                  },
-                }}
-              >
-                <Settings size={16} />
-              </Box>
-              <PerformanceNotificationBell
+            <PerformanceNotificationBell
+              goals={goals}
+              reviews={reviews}
+              conversations={conversations}
+              plans={mockAssignedPlans}
+              currentUserId={CURRENT_USER_ID}
+              onViewGoal={handleNotificationGoal}
+              onViewReview={handleNotificationReview}
+              onViewConversation={handleNotificationConversation}
+              onViewPlan={(planId) => {
+                const plan = mockAssignedPlans.find(p => p.id === planId);
+                if (plan) handleViewPlan(plan);
+              }}
+            />
+          </Stack>
+
+          {/* Tab Navigation */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, value) => setActiveTab(value)}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              {tabConfig.map(tab => (
+                <Tab
+                  key={tab.value}
+                  value={tab.value}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <tab.icon size={16} />
+                      <span>{tab.label}</span>
+                    </Stack>
+                  }
+                />
+              ))}
+            </Tabs>
+          </Box>
+
+          {/* Tab Content */}
+          <Box>
+            {activeTab === 'plans' && (
+              <PlanManagementPanel
+                staff={mockStaff}
                 goals={goals}
                 reviews={reviews}
                 conversations={conversations}
-                plans={mockAssignedPlans}
-                currentUserId={CURRENT_USER_ID}
-                onViewGoal={handleNotificationGoal}
-                onViewReview={handleNotificationReview}
-                onViewConversation={handleNotificationConversation}
-                onViewPlan={(planId) => {
-                  const plan = mockAssignedPlans.find(p => p.id === planId);
-                  if (plan) handleViewPlan(plan);
-                }}
+                onAssignPlan={handleAssignPlan}
+                onBulkAssignPlan={handleBulkAssignPlan}
+                onViewPlan={handleViewPlan}
+                onViewTemplate={handleViewTemplate}
+                onCreateTemplate={handleCreateTemplate}
+                onEditTemplate={handleEditTemplate}
+                onDuplicateTemplate={handleDuplicateTemplate}
+                onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
+                onDeleteTemplate={handleDeleteTemplate}
               />
-            </Stack>
-          </Stack>
-        </Box>
+            )}
 
-        {/* Main Content Area */}
-        <Box sx={{ flex: 1, px: { xs: 2, sm: 3, md: 4 }, py: 3 }}>
-          {/* Tab Navigation - Matching Reference Style */}
-          <PerformanceNavigation 
-            activeTab={activeTab} 
-            onTabChange={handleTabChange} 
-          />
+            {activeTab === 'okr' && (
+              <OKRCascadePanel currentUserId={CURRENT_USER_ID} />
+            )}
 
-          {/* Search/Filter Toolbar */}
-          <Box sx={{ mb: 3 }}>
-            <Stack 
-              direction={{ xs: 'column', sm: 'row' }} 
-              justifyContent="space-between"
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-              spacing={2}
-            >
-              <Stack direction="row" spacing={1.5} sx={{ flex: 1 }}>
-                <GlobalSearch
-                  goals={goals}
-                  reviews={reviews}
-                  conversations={conversations}
-                  staff={mockStaff}
-                  onSelectGoal={handleViewGoal}
-                  onSelectReview={handleViewReview}
-                  onSelectConversation={handleViewConversation}
-                  onSelectStaff={(staff: StaffMember) => {
-                    handleTabChange('team');
-                    toast.info(`Viewing ${staff.firstName} ${staff.lastName}'s profile`);
-                  }}
-                  onNavigateToTab={handleTabChange}
-                />
-              </Stack>
-            </Stack>
-          </Box>
+            {activeTab === 'lms' && (
+              <LMSAdminModule
+                currentUserId={CURRENT_USER_ID}
+                staff={mockStaff}
+              />
+            )}
 
-          {/* Content Area - Clean White Card */}
-          <Box
-            sx={{
-              bgcolor: 'background.paper',
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-            }}
-          >
-            <Box sx={{ p: { xs: 2, sm: 3 } }}>
-              {renderTabContent()}
-            </Box>
+            {activeTab === 'tasks' && (
+              <PerformanceTaskManagementPanel
+                currentUserId={CURRENT_USER_ID}
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                onNavigateToGoal={handleNotificationGoal}
+                onNavigateToReview={handleNotificationReview}
+                onNavigateToConversation={handleNotificationConversation}
+              />
+            )}
+
+            {activeTab === 'goals' && (
+              <GoalsTracker
+                goals={goals}
+                onCreateGoal={() => setShowCreateGoalDrawer(true)}
+                onAssignGoal={() => setShowAssignGoalDrawer(true)}
+                onViewGoal={handleViewGoal}
+                onEditGoal={handleEditGoal}
+                onUpdateProgress={updateGoalProgress}
+              />
+            )}
+
+            {activeTab === 'reviews' && (
+              <ReviewsDashboard
+                reviews={reviews}
+                staff={mockStaff}
+                currentUserId={CURRENT_USER_ID}
+                onCreateReview={() => setShowStartReviewDrawer(true)}
+                onViewReview={handleViewReview}
+              />
+            )}
+
+            {activeTab === 'feedback' && (
+              <FeedbackPanel
+                feedback={feedback}
+                staff={mockStaff}
+                currentUserId={CURRENT_USER_ID}
+                onSendFeedback={handleSendFeedback}
+                view={feedbackView}
+                onViewChange={setFeedbackView}
+              />
+            )}
+
+            {activeTab === '360feedback' && (
+              <Feedback360Panel currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'recognition' && (
+              <UnifiedRecognitionPanel
+                staff={mockStaff}
+                currentUserId={CURRENT_USER_ID}
+              />
+            )}
+
+            {activeTab === 'happiness' && (
+              <HappinessScoreWidget
+                currentUserId={CURRENT_USER_ID}
+                isManager={true}
+              />
+            )}
+
+            {activeTab === 'conversations' && (
+              <ConversationsList
+                conversations={conversations}
+                staff={mockStaff}
+                currentUserId={CURRENT_USER_ID}
+                onScheduleConversation={() => setShowScheduleConversationModal(true)}
+                onViewConversation={handleViewConversation}
+              />
+            )}
+
+            {activeTab === 'talent' && (
+              <NineBoxTalentGrid />
+            )}
+
+            {activeTab === 'skills' && (
+              <SkillsCareerPanel staffId="staff-1" />
+            )}
+
+            {activeTab === 'pulse' && (
+              <PulseSurveyPanel currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'wellbeing' && (
+              <WellbeingDashboard currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'calibration' && (
+              <CalibrationPanel currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'team' && (
+              <TeamOverviewDashboard
+                staff={mockStaff}
+                goals={goals}
+                reviews={reviews}
+                feedback={feedback}
+                conversations={conversations}
+                currentUserId={CURRENT_USER_ID}
+                onViewGoal={handleViewGoal}
+                onViewReview={handleViewReview}
+                onViewConversation={handleViewConversation}
+              />
+            )}
+
+            {activeTab === 'summary' && (
+              <PerformanceExecutiveDashboard
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                feedback={feedback}
+              />
+            )}
+
+            {activeTab === 'analytics' && (
+              <PerformanceAnalyticsDashboard
+                goals={goals}
+                reviews={reviews}
+                feedback={feedback}
+                conversations={conversations}
+              />
+            )}
           </Box>
         </Box>
       </Box>
@@ -932,22 +670,6 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         onAssign={handleAssignPlanSubmit}
       />
 
-      {/* Edit Plan Drawer */}
-      <EditPlanDrawer
-        open={showEditPlanDrawer}
-        plan={selectedPlan}
-        staff={mockStaff}
-        onClose={() => {
-          setShowEditPlanDrawer(false);
-          setSelectedPlan(null);
-        }}
-        onSave={async (planId, updates) => {
-          toast.success('Plan updated successfully');
-          setShowEditPlanDrawer(false);
-          setSelectedPlan(null);
-        }}
-      />
-
       {/* Create Goal Drawer */}
       <CreateGoalDrawer
         open={showCreateGoalDrawer}
@@ -1004,30 +726,6 @@ const [performanceSettings, setPerformanceSettings] = useState<PerformanceSettin
         onSubmit={async (data) => {
           await createReview(data);
         }}
-      />
-
-      {/* Edit Review Drawer */}
-      <EditReviewDrawer
-        open={showEditReviewDrawer}
-        onClose={() => {
-          setShowEditReviewDrawer(false);
-          setEditingReview(null);
-        }}
-        review={editingReview}
-        staff={mockStaff}
-        onSave={(reviewId, updates) => {
-          // In a real app, this would update the review
-          toast.success('Review updated successfully');
-          setShowEditReviewDrawer(false);
-          setEditingReview(null);
-        }}
-      />
-
-      <PerformanceSettingsDrawer
-        open={showSettingsDrawer}
-        onOpenChange={setShowSettingsDrawer}
-        settings={performanceSettings}
-        onSave={setPerformanceSettings}
       />
     </Box>
   );

@@ -7,33 +7,30 @@ import {
   Avatar,
   IconButton,
   LinearProgress,
-  Tooltip,
-  Paper,
-  TextField,
-  InputAdornment,
+  Divider,
 } from '@mui/material';
-import { Button } from '@/components/ui/button';
-import { RowActionsMenu } from './shared/RowActionsMenu';
+import { Card } from '@/components/mui/Card';
+import { Button } from '@/components/mui/Button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Checkbox } from '@/components/ui/checkbox';
-import { InlineBulkActions } from './shared/InlineBulkActions';
+import { Progress } from '@/components/ui/progress';
 import { 
   Users, 
   Plus, 
+  Send, 
   CheckCircle2, 
   Clock, 
+  AlertCircle,
   Eye,
-  MoreHorizontal,
+  UserCheck,
+  UserX,
+  TrendingUp,
   MessageSquare,
-  Search,
-  Send,
-  Trash2,
-  Archive,
 } from 'lucide-react';
 import { 
   Feedback360Request, 
   Feedback360Response, 
+  Feedback360Competency,
   feedbackSourceLabels,
   feedback360StatusLabels,
   FeedbackSourceType,
@@ -44,42 +41,33 @@ import {
   mock360Competencies 
 } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
-import { format, isPast, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Request360FeedbackDrawer } from './Request360FeedbackDrawer';
 import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { StatusBadge } from './shared/StatusBadge';
 
 interface Feedback360PanelProps {
   currentUserId: string;
 }
 
 const getStatusChipStyle = (status: string) => {
-  const styles: Record<string, { bg: string; color: string; border: string }> = {
-    completed: { bg: 'hsl(var(--chart-2) / 0.15)', color: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2) / 0.3)' },
-    in_progress: { bg: 'hsl(var(--chart-1) / 0.15)', color: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1) / 0.3)' },
-    pending: { bg: 'hsl(var(--chart-4) / 0.15)', color: 'hsl(var(--chart-4))', border: 'hsl(var(--chart-4) / 0.3)' },
-    expired: { bg: 'hsl(var(--destructive) / 0.15)', color: 'hsl(var(--destructive))', border: 'hsl(var(--destructive) / 0.3)' },
-    draft: { bg: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', border: 'hsl(var(--border))' },
+  const styles: Record<string, { bg: string; color: string }> = {
+    completed: { bg: 'rgba(34, 197, 94, 0.12)', color: 'rgb(22, 163, 74)' },
+    in_progress: { bg: 'rgba(59, 130, 246, 0.12)', color: 'rgb(37, 99, 235)' },
+    pending: { bg: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)' },
+    expired: { bg: 'rgba(239, 68, 68, 0.12)', color: 'rgb(220, 38, 38)' },
+    draft: { bg: 'rgba(148, 163, 184, 0.12)', color: 'rgb(100, 116, 139)' },
   };
   return styles[status] || styles.draft;
 };
 
 const getSourceChipStyle = (source: string) => {
-  const styles: Record<string, { bg: string; color: string; border: string }> = {
-    self: { bg: 'hsl(var(--chart-5) / 0.15)', color: 'hsl(var(--chart-5))', border: 'hsl(var(--chart-5) / 0.3)' },
-    manager: { bg: 'hsl(var(--chart-1) / 0.15)', color: 'hsl(var(--chart-1))', border: 'hsl(var(--chart-1) / 0.3)' },
-    peer: { bg: 'hsl(var(--chart-2) / 0.15)', color: 'hsl(var(--chart-2))', border: 'hsl(var(--chart-2) / 0.3)' },
-    direct_report: { bg: 'hsl(var(--chart-3) / 0.15)', color: 'hsl(var(--chart-3))', border: 'hsl(var(--chart-3) / 0.3)' },
-    cross_functional: { bg: 'hsl(var(--chart-4) / 0.15)', color: 'hsl(var(--chart-4))', border: 'hsl(var(--chart-4) / 0.3)' },
-    external: { bg: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', border: 'hsl(var(--border))' },
+  const styles: Record<string, { bg: string; color: string }> = {
+    self: { bg: 'rgba(139, 92, 246, 0.12)', color: 'rgb(124, 58, 237)' },
+    manager: { bg: 'rgba(59, 130, 246, 0.12)', color: 'rgb(37, 99, 235)' },
+    peer: { bg: 'rgba(34, 197, 94, 0.12)', color: 'rgb(22, 163, 74)' },
+    direct_report: { bg: 'rgba(236, 72, 153, 0.12)', color: 'rgb(219, 39, 119)' },
+    cross_functional: { bg: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)' },
+    external: { bg: 'rgba(148, 163, 184, 0.12)', color: 'rgb(100, 116, 139)' },
   };
   return styles[source] || styles.peer;
 };
@@ -89,27 +77,6 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showRequest360Drawer, setShowRequest360Drawer] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
-
-  // Bulk action handlers
-  const handleSelectAll = () => setSelectedRequestIds(new Set(mock360Requests.map(r => r.id)));
-  const handleClearSelection = () => setSelectedRequestIds(new Set());
-  const toggleSelection = (id: string) => {
-    setSelectedRequestIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const bulkActions = [
-    { id: 'remind', label: 'Send Reminder', icon: <Send size={14} />, onClick: () => { toast.success(`Reminder sent for ${selectedRequestIds.size} request(s)`); handleClearSelection(); } },
-    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedRequestIds.size} request(s) archived`); handleClearSelection(); } },
-    { id: 'cancel', label: 'Cancel', icon: <Trash2 size={14} />, onClick: () => { toast.success(`${selectedRequestIds.size} request(s) cancelled`); handleClearSelection(); }, variant: 'destructive' as const },
-  ];
 
   const getStaffName = (id: string) => {
     const staff = mockStaff.find(s => s.id === id);
@@ -150,172 +117,107 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
     toast.success(`360° feedback request created for ${getStaffName(data.subjectStaffId)}`);
   };
 
-  const renderRequestRow = (request: Feedback360Request) => {
+  const renderRequestCard = (request: Feedback360Request) => {
     const stats = getCompletionStats(request.id);
     const statusStyle = getStatusChipStyle(request.status);
     const subjectName = getStaffName(request.subjectStaffId);
-    const subject = mockStaff.find(s => s.id === request.subjectStaffId);
-    const isHovered = hoveredRow === request.id;
-    const dueDate = parseISO(request.dueDate);
-    const isOverdue = isPast(dueDate) && request.status !== 'completed';
 
     return (
-      <TableRow 
-        key={request.id}
-        className="group cursor-pointer hover:bg-muted/50 transition-colors"
-        onMouseEnter={() => setHoveredRow(request.id)}
-        onMouseLeave={() => setHoveredRow(null)}
-        onClick={() => handleViewRequest(request)}
-        style={{
-          borderLeft: isOverdue ? '3px solid hsl(var(--destructive))' : undefined,
+      <Card 
+        key={request.id} 
+        sx={{ 
+          p: 3, 
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': { 
+            boxShadow: 3,
+            transform: 'translateY(-2px)',
+          } 
         }}
+        onClick={() => handleViewRequest(request)}
       >
-        <TableCell className="py-3">
-          <div className="flex items-center gap-3">
-            <Avatar 
-              src={subject?.avatar} 
-              sx={{ width: 36, height: 36, fontSize: '0.85rem', bgcolor: 'hsl(var(--muted))' }}
-            >
-              {subjectName.charAt(0)}
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium">{request.title}</p>
-              <p className="text-xs text-muted-foreground">{subjectName}</p>
-            </div>
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          <div className="w-full max-w-[120px]">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-muted-foreground">{stats.completed}/{stats.total}</span>
-              <span className="font-medium">{stats.percentage}%</span>
-            </div>
+        <Stack spacing={2}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+                {request.title}
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
+                <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
+                  {subjectName.charAt(0)}
+                </Avatar>
+                <Typography variant="body2" color="text.secondary">
+                  {subjectName}
+                </Typography>
+              </Stack>
+            </Box>
+            <Chip 
+              label={feedback360StatusLabels[request.status]} 
+              size="small"
+              sx={{ 
+                backgroundColor: statusStyle.bg,
+                color: statusStyle.color,
+                fontWeight: 500,
+              }}
+            />
+          </Stack>
+
+          <Box>
+            <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                Responses: {stats.completed}/{stats.total}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {stats.percentage}%
+              </Typography>
+            </Stack>
             <LinearProgress 
               variant="determinate" 
               value={stats.percentage} 
               sx={{ 
                 height: 6, 
                 borderRadius: 1,
-                bgcolor: 'hsl(var(--muted))',
+                bgcolor: 'rgba(0,0,0,0.08)',
                 '& .MuiLinearProgress-bar': {
-                  bgcolor: stats.percentage === 100 ? 'hsl(var(--chart-2))' : 'hsl(var(--primary))',
+                  bgcolor: stats.percentage === 100 ? 'success.main' : 'primary.main',
                 }
               }}
             />
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          <Chip
-            label={feedback360StatusLabels[request.status]}
-            size="small"
-            sx={{
-              height: 24,
-              fontSize: '0.7rem',
-              fontWeight: 500,
-              bgcolor: statusStyle.bg,
-              color: statusStyle.color,
-              border: `1px solid ${statusStyle.border}`,
-            }}
-          />
-        </TableCell>
-        <TableCell className="py-3">
-          <div>
-            <p className={`text-sm ${isOverdue ? 'text-destructive font-medium' : ''}`}>
-              {format(dueDate, 'MMM d, yyyy')}
-            </p>
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          <div className="flex gap-1.5">
-            {request.anonymousResponses && (
-              <Chip 
-                label="Anonymous" 
-                size="small" 
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.65rem',
-                  bgcolor: 'hsl(var(--muted))',
-                  color: 'hsl(var(--muted-foreground))',
-                  border: '1px solid hsl(var(--border))',
-                }}
-              />
-            )}
-            {request.selfAssessmentCompleted && (
-              <Chip 
-                icon={<CheckCircle2 size={12} />}
-                label="Self" 
-                size="small"
-                sx={{ 
-                  height: 22, 
-                  fontSize: '0.65rem',
-                  bgcolor: 'hsl(var(--chart-2) / 0.15)',
-                  color: 'hsl(var(--chart-2))',
-                  border: '1px solid hsl(var(--chart-2) / 0.3)',
-                  '& .MuiChip-icon': { color: 'inherit' }
-                }}
-              />
-            )}
-          </div>
-        </TableCell>
-        <TableCell className="py-3">
-          <div 
-            className="flex gap-1 transition-opacity duration-150"
-            style={{ opacity: isHovered ? 1 : 0 }}
-          >
-            <RowActionsMenu
-              actions={[
-                {
-                  label: 'View Details',
-                  icon: <Eye className="h-4 w-4" />,
-                  onClick: (e) => { e.stopPropagation(); handleViewRequest(request); },
-                },
-                {
-                  label: 'Send Reminder',
-                  icon: <Send className="h-4 w-4" />,
-                  onClick: (e) => { e.stopPropagation(); toast.success('Reminder sent'); },
-                  disabled: request.status === 'completed',
-                },
-                {
-                  label: 'Archive',
-                  icon: <Archive className="h-4 w-4" />,
-                  onClick: (e) => { e.stopPropagation(); toast.success('Request archived'); },
-                  variant: 'warning',
-                  separator: true,
-                },
-                {
-                  label: 'Cancel',
-                  icon: <Trash2 className="h-4 w-4" />,
-                  onClick: (e) => { e.stopPropagation(); toast.success('Request cancelled'); },
-                  variant: 'destructive',
-                  disabled: request.status === 'completed',
-                },
-              ]}
-            />
-          </div>
-        </TableCell>
-      </TableRow>
+          </Box>
+
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={1}>
+              {request.anonymousResponses && (
+                <Chip 
+                  label="Anonymous" 
+                  size="small" 
+                  variant="outlined"
+                  sx={{ fontSize: 11, height: 24 }}
+                />
+              )}
+              {request.selfAssessmentCompleted && (
+                <Chip 
+                  icon={<CheckCircle2 size={12} />}
+                  label="Self Done" 
+                  size="small"
+                  sx={{ 
+                    fontSize: 11, 
+                    height: 24,
+                    bgcolor: 'rgba(34, 197, 94, 0.12)',
+                    color: 'rgb(22, 163, 74)',
+                    '& .MuiChip-icon': { color: 'inherit' }
+                  }}
+                />
+              )}
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Due: {format(new Date(request.dueDate), 'MMM d, yyyy')}
+            </Typography>
+          </Stack>
+        </Stack>
+      </Card>
     );
   };
-
-  const renderRequestsTable = (requests: Feedback360Request[]) => (
-    <Paper variant="outlined" sx={{ overflow: 'hidden', borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-            <TableHead className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Subject</TableHead>
-            <TableHead className="w-36 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Progress</TableHead>
-            <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Status</TableHead>
-            <TableHead className="w-28 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Due Date</TableHead>
-            <TableHead className="w-32 font-semibold text-xs uppercase tracking-wide text-muted-foreground">Flags</TableHead>
-            <TableHead className="w-28"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests.map(renderRequestRow)}
-        </TableBody>
-      </Table>
-    </Paper>
-  );
 
   const renderDetailSheet = () => {
     if (!selectedRequest) return null;
@@ -335,7 +237,7 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
     return (
       <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader className="flex flex-row items-center justify-between">
+          <SheetHeader>
             <SheetTitle>{selectedRequest.title}</SheetTitle>
           </SheetHeader>
 
@@ -370,10 +272,10 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                       : getStaffName(response.responderId);
 
                     return (
-                      <Paper key={response.id} variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+                      <Card key={response.id} sx={{ p: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                           <Stack direction="row" spacing={2} alignItems="center">
-                            <Avatar sx={{ width: 36, height: 36, fontSize: 14, bgcolor: 'hsl(var(--muted))' }}>
+                            <Avatar sx={{ width: 36, height: 36, fontSize: 14 }}>
                               {response.isAnonymous ? '?' : responderName.charAt(0)}
                             </Avatar>
                             <Box>
@@ -389,21 +291,20 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                                   height: 22,
                                   bgcolor: sourceStyle.bg,
                                   color: sourceStyle.color,
-                                  border: `1px solid ${sourceStyle.border}`,
                                 }}
                               />
                             </Box>
                           </Stack>
                           {response.status === 'completed' ? (
-                            <CheckCircle2 size={20} className="text-chart-2" />
+                            <CheckCircle2 size={20} className="text-green-600" />
                           ) : (
-                            <Clock size={20} className="text-chart-4" />
+                            <Clock size={20} className="text-amber-600" />
                           )}
                         </Stack>
                         
                         {response.status === 'completed' && response.strengths && (
-                          <Box sx={{ mt: 2, p: 2, bgcolor: 'hsl(var(--chart-2) / 0.08)', borderRadius: 1 }}>
-                            <Typography variant="caption" fontWeight={600} sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(34, 197, 94, 0.06)', borderRadius: 1 }}>
+                            <Typography variant="caption" fontWeight={600} color="text.secondary">
                               Strengths
                             </Typography>
                             <Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -411,28 +312,28 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                             </Typography>
                           </Box>
                         )}
-                      </Paper>
+                      </Card>
                     );
                   })}
                 </Stack>
               </TabsContent>
 
               <TabsContent value="summary" className="mt-4">
-                <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+                <Card sx={{ p: 3 }}>
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                     Overall Feedback Summary
                   </Typography>
                   <Stack spacing={2} sx={{ mt: 2 }}>
                     {responses.filter(r => r.status === 'completed' && r.strengths).map(r => (
                       <Box key={r.id}>
-                        <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                        <Typography variant="caption" color="text.secondary">
                           {feedbackSourceLabels[r.sourceType]}
                         </Typography>
                         <Typography variant="body2">{r.strengths}</Typography>
                       </Box>
                     ))}
                   </Stack>
-                </Paper>
+                </Card>
               </TabsContent>
 
               <TabsContent value="competencies" className="mt-4">
@@ -440,25 +341,25 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                   {mock360Competencies.map(comp => {
                     const avg = calculateAverageByCompetency(comp.id);
                     return (
-                      <Paper key={comp.id} variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: 'hsl(var(--border))' }}>
+                      <Card key={comp.id} sx={{ p: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                           <Box>
                             <Typography variant="subtitle2" fontWeight={600}>
                               {comp.name}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                            <Typography variant="caption" color="text.secondary">
                               {comp.category}
                             </Typography>
                           </Box>
                           {avg !== null ? (
                             <Stack direction="row" alignItems="center" spacing={1}>
-                              <Typography variant="h6" fontWeight={700} sx={{ color: 'hsl(var(--primary))' }}>
+                              <Typography variant="h6" fontWeight={700} color="primary.main">
                                 {avg.toFixed(1)}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: 'hsl(var(--muted-foreground))' }}>/5</Typography>
+                              <Typography variant="caption" color="text.secondary">/5</Typography>
                             </Stack>
                           ) : (
-                            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+                            <Typography variant="body2" color="text.secondary">
                               No ratings yet
                             </Typography>
                           )}
@@ -467,18 +368,10 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                           <LinearProgress 
                             variant="determinate" 
                             value={(avg / 5) * 100}
-                            sx={{ 
-                              mt: 1, 
-                              height: 4, 
-                              borderRadius: 1,
-                              bgcolor: 'hsl(var(--muted))',
-                              '& .MuiLinearProgress-bar': {
-                                bgcolor: 'hsl(var(--primary))',
-                              }
-                            }}
+                            sx={{ mt: 1, height: 4, borderRadius: 1 }}
                           />
                         )}
-                      </Paper>
+                      </Card>
                     );
                   })}
                 </Stack>
@@ -491,30 +384,18 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
-      <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }} 
-        spacing={2}
-      >
+    <Box>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Box>
-          <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: { xs: 0.75, md: 1 }, borderRadius: 1.5, bgcolor: 'hsl(var(--primary) / 0.1)', display: 'flex' }}>
-              <Users size={18} style={{ color: 'hsl(var(--primary))' }} />
-            </Box>
-            <Typography variant="h6" fontWeight={600} sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
-              360° Feedback
-            </Typography>
-          </Stack>
-          <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', display: { xs: 'none', sm: 'block' } }}>
+          <Typography variant="h6" fontWeight={600} color="text.primary">
+            360° Feedback
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Multi-source feedback collection for comprehensive evaluations
           </Typography>
         </Box>
-        <Button onClick={() => setShowRequest360Drawer(true)} className="gap-2 w-full sm:w-auto">
-          <Plus size={16} />
-          <span className="hidden sm:inline">Request 360° Feedback</span>
-          <span className="sm:hidden">Request</span>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowRequest360Drawer(true)}>
+          Request 360° Feedback
         </Button>
       </Stack>
 
@@ -526,90 +407,47 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
         currentUserId={currentUserId}
       />
 
-      {/* Search & Bulk Actions */}
-      <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
-        spacing={{ xs: 1.5, sm: 2 }} 
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-        sx={{ flexWrap: 'wrap' }}
-      >
-        <TextField
-          placeholder="Search..."
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search size={16} className="text-muted-foreground" />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
-        <InlineBulkActions
-          selectedCount={selectedRequestIds.size}
-          totalCount={mock360Requests.length}
-          onClearSelection={handleClearSelection}
-          onSelectAll={handleSelectAll}
-          actions={bulkActions}
-          entityName="requests"
-        />
-      </Stack>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="overflow-x-auto">
-          <TabsList className="whitespace-nowrap">
-            <TabsTrigger value="active" className="text-xs sm:text-sm">
-              Active ({activeRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs sm:text-sm">
-              Completed ({completedRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="text-xs sm:text-sm">
-              <span className="hidden sm:inline">My </span>Pending
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList>
+          <TabsTrigger value="active">
+            Active ({activeRequests.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Completed ({completedRequests.length})
+          </TabsTrigger>
+          <TabsTrigger value="pending">
+            My Pending Requests
+          </TabsTrigger>
+        </TabsList>
 
         <TabsContent value="active" className="mt-4">
-          {activeRequests.length > 0 ? (
-            renderRequestsTable(activeRequests)
-          ) : (
-            <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed', borderColor: 'hsl(var(--border))' }}>
-              <Users size={40} style={{ color: 'hsl(var(--muted-foreground))', margin: '0 auto 12px', opacity: 0.5 }} />
-              <Typography variant="body1" fontWeight={500}>No active feedback requests</Typography>
-              <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))', mt: 0.5 }}>
-                Start a 360° feedback cycle for comprehensive evaluations
-              </Typography>
-              <Button variant="outline" className="mt-4" onClick={() => setShowRequest360Drawer(true)}>
-                Request 360° Feedback
-              </Button>
-            </Paper>
-          )}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {activeRequests.map(renderRequestCard)}
+          </div>
         </TabsContent>
 
         <TabsContent value="completed" className="mt-4">
-          {completedRequests.length > 0 ? (
-            renderRequestsTable(completedRequests)
-          ) : (
-            <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed', borderColor: 'hsl(var(--border))' }}>
-              <Typography sx={{ color: 'hsl(var(--muted-foreground))' }}>No completed feedback requests yet</Typography>
-            </Paper>
-          )}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {completedRequests.length > 0 ? (
+              completedRequests.map(renderRequestCard)
+            ) : (
+              <Card sx={{ p: 4, gridColumn: '1/-1', textAlign: 'center' }}>
+                <Typography color="text.secondary">No completed feedback requests yet</Typography>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="pending" className="mt-4">
-          <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed', borderColor: 'hsl(var(--border))' }}>
-            <MessageSquare size={40} style={{ color: 'hsl(var(--muted-foreground))', margin: '0 auto 12px', opacity: 0.5 }} />
+          <Card sx={{ p: 4, textAlign: 'center' }}>
+            <MessageSquare size={40} className="mx-auto mb-2 text-muted-foreground" />
             <Typography variant="subtitle1" fontWeight={600}>
               No pending feedback requests
             </Typography>
-            <Typography variant="body2" sx={{ color: 'hsl(var(--muted-foreground))' }}>
+            <Typography variant="body2" color="text.secondary">
               You'll see requests here when someone asks for your feedback
             </Typography>
-          </Paper>
+          </Card>
         </TabsContent>
       </Tabs>
 

@@ -4,24 +4,14 @@ import {
   Stack, 
   Typography, 
   Chip,
+  LinearProgress,
   Avatar,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { SemanticProgressBar } from '@/components/performance/shared/SemanticProgressBar';
-import { StatusBadge } from '@/components/performance/shared/StatusBadge';
-import { RowActionsMenu, RowAction } from '@/components/performance/shared/RowActionsMenu';
+import { Progress } from '@/components/ui/progress';
 import { 
   BarChart3, 
   Plus, 
@@ -32,18 +22,13 @@ import {
   ThumbsDown,
   Meh,
   Send,
+  Calendar,
   Users,
   MessageSquare,
   Eye,
   CheckCircle2,
   Clock,
   Star,
-  MoreHorizontal,
-  Play,
-  Pencil,
-  Archive,
-  Trash2,
-  Copy,
 } from 'lucide-react';
 import { 
   PulseSurvey, 
@@ -72,52 +57,41 @@ import {
 import { format } from 'date-fns';
 import { CreateSurveyDrawer } from './CreateSurveyDrawer';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 interface PulseSurveyPanelProps {
   currentUserId: string;
 }
 
-const getStatusVariant = (status: string): 'active' | 'draft' | 'paused' | 'completed' => {
-  switch (status) {
-    case 'active': return 'active';
-    case 'draft': return 'draft';
-    case 'paused': return 'paused';
-    case 'completed': return 'completed';
-    default: return 'draft';
-  }
-};
-
-const getStatusLabel = (status: string): string => {
-  const labels: Record<string, string> = {
-    active: 'Active',
-    draft: 'Draft',
-    paused: 'Paused',
-    completed: 'Completed',
+const getSurveyStatusStyle = (status: string) => {
+  const styles: Record<string, { bg: string; color: string }> = {
+    active: { bg: 'rgba(34, 197, 94, 0.12)', color: 'rgb(22, 163, 74)' },
+    draft: { bg: 'rgba(148, 163, 184, 0.12)', color: 'rgb(100, 116, 139)' },
+    paused: { bg: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)' },
+    completed: { bg: 'rgba(59, 130, 246, 0.12)', color: 'rgb(37, 99, 235)' },
   };
-  return labels[status] || status;
+  return styles[status] || styles.draft;
 };
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
     case 'up': return <TrendingUp size={16} className="text-green-600" />;
     case 'down': return <TrendingDown size={16} className="text-red-600" />;
-    default: return <Minus size={16} className="text-muted-foreground" />;
+    default: return <Minus size={16} className="text-gray-500" />;
   }
 };
 
 const getENPSColor = (score: number) => {
-  if (score >= 50) return 'hsl(var(--chart-2))';
-  if (score >= 20) return 'hsl(var(--chart-1))';
-  if (score >= 0) return 'hsl(var(--chart-4))';
-  return 'hsl(var(--destructive))';
+  if (score >= 50) return 'rgb(22, 163, 74)';
+  if (score >= 20) return 'rgb(59, 130, 246)';
+  if (score >= 0) return 'rgb(251, 191, 36)';
+  return 'rgb(239, 68, 68)';
 };
 
 const getRatingColor = (rating: number) => {
-  if (rating >= 4) return 'hsl(var(--chart-2))';
-  if (rating >= 3) return 'hsl(var(--chart-1))';
-  if (rating >= 2) return 'hsl(var(--chart-4))';
-  return 'hsl(var(--destructive))';
+  if (rating >= 4) return 'rgb(22, 163, 74)';
+  if (rating >= 3) return 'rgb(59, 130, 246)';
+  if (rating >= 2) return 'rgb(251, 191, 36)';
+  return 'rgb(239, 68, 68)';
 };
 
 export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
@@ -166,16 +140,6 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
     detractors: r.detractors,
   }));
 
-  const handleViewSurvey = (survey: PulseSurvey) => {
-    setSelectedSurvey(survey);
-    const responses = getSurveyResponses(survey.id);
-    if (survey.status === 'completed' || responses.length > 0) {
-      setShowResultsSheet(true);
-    } else {
-      setShowDetailSheet(true);
-    }
-  };
-
   const renderENPSCard = () => (
     <Card sx={{ p: 3 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
@@ -203,30 +167,30 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
 
       {/* Promoters/Passives/Detractors Breakdown */}
       <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-        <Box sx={{ flex: 1, p: 2, bgcolor: 'hsl(var(--chart-2) / 0.1)', borderRadius: 1 }}>
+        <Box sx={{ flex: 1, p: 2, bgcolor: 'rgba(34, 197, 94, 0.08)', borderRadius: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <ThumbsUp size={16} className="text-green-600" />
             <Typography variant="caption" fontWeight={600} color="text.secondary">Promoters</Typography>
           </Stack>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'hsl(var(--chart-2))' }}>
+          <Typography variant="h6" fontWeight={700} sx={{ color: 'rgb(22, 163, 74)' }}>
             {latestENPS.promoters}
           </Typography>
         </Box>
-        <Box sx={{ flex: 1, p: 2, bgcolor: 'hsl(var(--muted))', borderRadius: 1 }}>
+        <Box sx={{ flex: 1, p: 2, bgcolor: 'rgba(148, 163, 184, 0.08)', borderRadius: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Meh size={16} className="text-muted-foreground" />
+            <Meh size={16} className="text-gray-500" />
             <Typography variant="caption" fontWeight={600} color="text.secondary">Passives</Typography>
           </Stack>
-          <Typography variant="h6" fontWeight={700} color="text.secondary">
+          <Typography variant="h6" fontWeight={700} sx={{ color: 'rgb(100, 116, 139)' }}>
             {latestENPS.passives}
           </Typography>
         </Box>
-        <Box sx={{ flex: 1, p: 2, bgcolor: 'hsl(var(--destructive) / 0.1)', borderRadius: 1 }}>
+        <Box sx={{ flex: 1, p: 2, bgcolor: 'rgba(239, 68, 68, 0.08)', borderRadius: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <ThumbsDown size={16} className="text-red-600" />
             <Typography variant="caption" fontWeight={600} color="text.secondary">Detractors</Typography>
           </Stack>
-          <Typography variant="h6" fontWeight={700} sx={{ color: 'hsl(var(--destructive))' }}>
+          <Typography variant="h6" fontWeight={700} sx={{ color: 'rgb(220, 38, 38)' }}>
             {latestENPS.detractors}
           </Typography>
         </Box>
@@ -236,15 +200,15 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
       <Box sx={{ height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={enpsChartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="period" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-            <YAxis domain={[-100, 100]} tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
+            <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+            <YAxis domain={[-100, 100]} tick={{ fontSize: 12 }} />
             <Tooltip />
             <Area 
               type="monotone" 
               dataKey="score" 
-              stroke="hsl(var(--primary))" 
-              fill="hsl(var(--primary) / 0.2)" 
+              stroke="rgb(59, 130, 246)" 
+              fill="rgba(59, 130, 246, 0.2)" 
               strokeWidth={2}
             />
           </AreaChart>
@@ -253,193 +217,94 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
     </Card>
   );
 
-  const renderSurveyTable = (surveyList: PulseSurvey[], emptyMessage: string, emptyIcon: React.ReactNode) => {
-    if (surveyList.length === 0) {
-      return (
-        <Card sx={{ p: 4, textAlign: 'center' }}>
-          {emptyIcon}
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 1 }}>
-            {emptyMessage}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {surveyList === activeSurveys 
-              ? 'Create a pulse survey to start gathering feedback'
-              : 'Completed surveys will appear here with their results'
-            }
-          </Typography>
-        </Card>
-      );
-    }
-
+  const renderSurveyCard = (survey: PulseSurvey) => {
+    const statusStyle = getSurveyStatusStyle(survey.status);
+    const results = getSurveyResults(survey.id);
+    const responses = getSurveyResponses(survey.id);
+    
     return (
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableHead className="text-xs uppercase tracking-wider font-semibold">Survey</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-24">Status</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-24 text-center">Questions</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-32">Responses</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-28">Frequency</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider font-semibold w-32 text-right"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {surveyList.map(survey => {
-              const results = getSurveyResults(survey.id);
-              const responses = getSurveyResponses(survey.id);
-              const responseRate = results?.responseRate || (responses.length > 0 ? Math.round((responses.length / 10) * 100) : 0);
-              const isActive = survey.status === 'active';
-              
-              return (
-                <TableRow 
-                  key={survey.id}
-                  className="group hover:bg-muted/50 cursor-pointer"
-                  onClick={() => handleViewSurvey(survey)}
-                  style={{
-                    borderLeft: isActive ? '3px solid hsl(var(--chart-2))' : undefined,
-                  }}
-                >
-                  <TableCell className="py-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{survey.title}</p>
-                        {survey.anonymousResponses && (
-                          <Badge variant="outline" className="text-[10px] py-0">Anonymous</Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                        Target: {survey.targetAudience === 'all' ? 'All Staff' : survey.targetAudience}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <StatusBadge 
-                      status={getStatusVariant(survey.status)}
-                      label={getStatusLabel(survey.status)}
-                    />
-                  </TableCell>
-                  <TableCell className="py-3 text-center">
-                    <Badge variant="secondary" className="font-normal">
-                      {survey.questions.length}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <div className="w-24">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">{responses.length}</span>
-                        <span className="text-xs text-muted-foreground">{responseRate}%</span>
-                      </div>
-                      <SemanticProgressBar value={responseRate} size="xs" />
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {survey.frequency}
-                    </Badge>
-                  </TableCell>
-                <TableCell className="py-3">
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <RowActionsMenu
-                        actions={getSurveyActions(survey)}
-                        size="sm"
-                        align="end"
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  };
-
-  const getSurveyActions = (survey: PulseSurvey): RowAction[] => {
-    const actions: RowAction[] = [
-      {
-        label: 'View Details',
-        icon: <Eye className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          handleViewSurvey(survey);
-        },
-      },
-    ];
-
-    if (survey.status === 'draft') {
-      actions.push({
-        label: 'Edit',
-        icon: <Pencil className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          toast.info('Edit survey functionality coming soon');
-        },
-      });
-      actions.push({
-        label: 'Send Now',
-        icon: <Send className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          handleSendSurvey(survey);
-        },
-      });
-    }
-
-    if (survey.status === 'active') {
-      actions.push({
-        label: 'View Results',
-        icon: <BarChart3 className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
+      <Card 
+        key={survey.id} 
+        sx={{ 
+          p: 3,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': { boxShadow: 3, transform: 'translateY(-2px)' },
+        }}
+        onClick={() => {
           setSelectedSurvey(survey);
-          setShowResultsSheet(true);
-        },
-      });
-      actions.push({
-        label: 'Close Survey',
-        icon: <CheckCircle2 className="h-4 w-4" />,
-        onClick: (e) => {
-          e.stopPropagation();
-          setSurveys(prev => prev.map(s => 
-            s.id === survey.id ? { ...s, status: 'completed' as const } : s
-          ));
-          toast.success('Survey closed');
-        },
-      });
-    }
+          if (survey.status === 'completed' || responses.length > 0) {
+            setShowResultsSheet(true);
+          } else {
+            setShowDetailSheet(true);
+          }
+        }}
+      >
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={600}>
+              {survey.title}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {survey.questions.length} questions • {survey.frequency}
+            </Typography>
+          </Box>
+          <Chip 
+            label={survey.status}
+            size="small"
+            sx={{ 
+              textTransform: 'capitalize',
+              bgcolor: statusStyle.bg,
+              color: statusStyle.color,
+            }}
+          />
+        </Stack>
 
-    actions.push({
-      label: 'Duplicate',
-      icon: <Copy className="h-4 w-4" />,
-      onClick: (e) => {
-        e.stopPropagation();
-        const newSurvey = {
-          ...survey,
-          id: `survey-${Date.now()}`,
-          title: `${survey.title} (Copy)`,
-          status: 'draft' as const,
-          createdAt: new Date().toISOString(),
-        };
-        setSurveys(prev => [...prev, newSurvey]);
-        toast.success('Survey duplicated');
-      },
-      separator: true,
-    });
+        {/* Response stats for active/completed surveys */}
+        {responses.length > 0 && (
+          <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Users size={14} className="text-muted-foreground" />
+              <Typography variant="caption" color="text.secondary">
+                {responses.length} responses
+              </Typography>
+            </Stack>
+            {results && (
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <BarChart3 size={14} className="text-muted-foreground" />
+                <Typography variant="caption" color="text.secondary">
+                  {results.responseRate}% response rate
+                </Typography>
+              </Stack>
+            )}
+          </Stack>
+        )}
 
-    actions.push({
-      label: 'Archive',
-      icon: <Archive className="h-4 w-4" />,
-      onClick: (e) => {
-        e.stopPropagation();
-        setSurveys(prev => prev.filter(s => s.id !== survey.id));
-        toast.success('Survey archived');
-      },
-      variant: 'warning',
-    });
-
-    return actions;
+        <Stack direction="row" spacing={2}>
+          {survey.anonymousResponses && (
+            <Chip label="Anonymous" size="small" variant="outlined" sx={{ fontSize: 11 }} />
+          )}
+          <Chip 
+            label={survey.targetAudience === 'all' ? 'All Staff' : survey.targetAudience}
+            size="small" 
+            variant="outlined" 
+            sx={{ fontSize: 11, textTransform: 'capitalize' }} 
+          />
+          {responses.length > 0 && (
+            <Chip 
+              icon={<Eye size={12} />}
+              label="View Results" 
+              size="small" 
+              sx={{ 
+                fontSize: 11, 
+                bgcolor: 'rgba(59, 130, 246, 0.12)',
+                color: 'rgb(37, 99, 235)',
+              }} 
+            />
+          )}
+        </Stack>
+      </Card>
+    );
   };
 
   const renderSurveyDetailSheet = () => {
@@ -454,13 +319,20 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
 
           <Box sx={{ mt: 3 }}>
             <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-              <StatusBadge 
-                status={getStatusVariant(selectedSurvey.status)}
-                label={getStatusLabel(selectedSurvey.status)}
+              <Chip 
+                label={selectedSurvey.status}
+                size="small"
+                sx={{ 
+                  textTransform: 'capitalize',
+                  ...getSurveyStatusStyle(selectedSurvey.status),
+                }}
               />
-              <Badge variant="outline" className="capitalize">
-                {selectedSurvey.frequency}
-              </Badge>
+              <Chip 
+                label={selectedSurvey.frequency}
+                size="small"
+                variant="outlined"
+                sx={{ textTransform: 'capitalize' }}
+              />
             </Stack>
 
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -476,16 +348,28 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                     <Box>
                       <Typography variant="body2">{q.text}</Typography>
                       <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {q.type}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] capitalize">
-                          {q.category}
-                        </Badge>
+                        <Chip 
+                          label={q.type}
+                          size="small"
+                          sx={{ fontSize: 10, height: 20, textTransform: 'capitalize' }}
+                        />
+                        <Chip 
+                          label={q.category}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: 10, height: 20, textTransform: 'capitalize' }}
+                        />
                         {q.required && (
-                          <Badge className="text-[10px] bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">
-                            Required
-                          </Badge>
+                          <Chip 
+                            label="Required"
+                            size="small"
+                            sx={{ 
+                              fontSize: 10, 
+                              height: 20,
+                              bgcolor: 'rgba(239, 68, 68, 0.12)',
+                              color: 'rgb(220, 38, 38)',
+                            }}
+                          />
                         )}
                       </Stack>
                     </Box>
@@ -536,7 +420,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                 <Typography variant="caption" color="text.secondary">Responses</Typography>
               </Card>
               <Card sx={{ flex: 1, p: 2, textAlign: 'center' }}>
-                <Typography variant="h4" fontWeight={700} sx={{ color: 'hsl(var(--chart-2))' }}>
+                <Typography variant="h4" fontWeight={700} color="success.main">
                   {results?.responseRate || Math.round((responses.length / 10) * 100)}%
                 </Typography>
                 <Typography variant="caption" color="text.secondary">Response Rate</Typography>
@@ -571,9 +455,11 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                       <Typography variant="body2" fontWeight={500}>
                         {qr.questionText}
                       </Typography>
-                      <Badge variant="secondary" className="text-[10px] mt-1 capitalize">
-                        {qr.questionType}
-                      </Badge>
+                      <Chip 
+                        label={qr.questionType}
+                        size="small"
+                        sx={{ fontSize: 10, height: 18, mt: 0.5, textTransform: 'capitalize' }}
+                      />
                     </Box>
                     {qr.averageRating && (
                       <Box sx={{ textAlign: 'right' }}>
@@ -593,11 +479,11 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                     <Box sx={{ height: 120, mt: 2 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={qr.ratingDistribution} layout="vertical">
-                          <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                          <XAxis type="number" tick={{ fontSize: 11 }} />
                           <YAxis 
                             dataKey="rating" 
                             type="category" 
-                            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+                            tick={{ fontSize: 11 }} 
                             width={30}
                             tickFormatter={(v) => `${v}★`}
                           />
@@ -609,10 +495,10 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                               <Cell 
                                 key={`cell-${i}`} 
                                 fill={
-                                  entry.rating >= 4 ? 'hsl(var(--chart-2))' :
-                                  entry.rating >= 3 ? 'hsl(var(--chart-1))' :
-                                  entry.rating >= 2 ? 'hsl(var(--chart-4))' :
-                                  'hsl(var(--destructive))'
+                                  entry.rating >= 4 ? 'rgb(34, 197, 94)' :
+                                  entry.rating >= 3 ? 'rgb(59, 130, 246)' :
+                                  entry.rating >= 2 ? 'rgb(251, 191, 36)' :
+                                  'rgb(239, 68, 68)'
                                 }
                               />
                             ))}
@@ -634,9 +520,10 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                             key={i} 
                             sx={{ 
                               p: 1.5, 
-                              bgcolor: 'hsl(var(--muted))', 
+                              bgcolor: 'action.hover', 
                               borderRadius: 1,
-                              borderLeft: '3px solid hsl(var(--primary))',
+                              borderLeft: '3px solid',
+                              borderLeftColor: 'primary.main',
                             }}
                           >
                             <Typography variant="body2" color="text.secondary">
@@ -675,100 +562,67 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
-      <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }} 
-        spacing={2}
-      >
+    <Box>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
         <Box>
-          <Typography variant="h6" fontWeight={600} color="text.primary" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>
+          <Typography variant="h6" fontWeight={600} color="text.primary">
             Pulse Surveys & eNPS
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+          <Typography variant="body2" color="text.secondary">
             Quick engagement checks and employee satisfaction tracking
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)} className="w-full sm:w-auto">
-          <span className="hidden sm:inline">Create Survey</span>
-          <span className="sm:hidden">New Survey</span>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
+          Create Survey
         </Button>
       </Stack>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 md:gap-4">
-        <Card sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'hsl(var(--chart-2) / 0.08)' }}>
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-lg bg-green-100 dark:bg-green-900/40">
-              <Play className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600" />
-            </div>
-            <div>
-              <p className="text-lg md:text-2xl font-bold">{activeSurveys.length}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Active</p>
-            </div>
-          </div>
-        </Card>
-        <Card sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'hsl(var(--muted) / 0.5)' }}>
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-lg bg-muted">
-              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-lg md:text-2xl font-bold">{completedSurveys.length}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Completed</p>
-            </div>
-          </div>
-        </Card>
-        <Card sx={{ p: { xs: 1.5, md: 2 }, bgcolor: 'hsl(var(--primary) / 0.08)', display: { xs: 'none', sm: 'block' } }}>
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="p-1.5 md:p-2 rounded-lg bg-primary/20">
-              <Users className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-lg md:text-2xl font-bold">{mockPulseResponses.length}</p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Responses</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
       <Tabs defaultValue="enps" className="w-full">
-        <div className="overflow-x-auto">
-          <TabsList className="mb-4 whitespace-nowrap">
-            <TabsTrigger value="enps" className="text-xs sm:text-sm">eNPS</TabsTrigger>
-            <TabsTrigger value="surveys" className="text-xs sm:text-sm">Active ({activeSurveys.length})</TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs sm:text-sm">Completed ({completedSurveys.length})</TabsTrigger>
-            <TabsTrigger value="all" className="text-xs sm:text-sm">All</TabsTrigger>
-          </TabsList>
-        </div>
+        <TabsList className="mb-4">
+          <TabsTrigger value="enps">eNPS Dashboard</TabsTrigger>
+          <TabsTrigger value="surveys">Active Surveys ({activeSurveys.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completedSurveys.length})</TabsTrigger>
+          <TabsTrigger value="all">All Surveys</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="enps">
           {renderENPSCard()}
         </TabsContent>
 
         <TabsContent value="surveys">
-          {renderSurveyTable(
-            activeSurveys,
-            'No active surveys',
-            <MessageSquare size={40} className="mx-auto mb-2 text-muted-foreground" />
-          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            {activeSurveys.map(renderSurveyCard)}
+            {activeSurveys.length === 0 && (
+              <Card sx={{ p: 4, textAlign: 'center', gridColumn: '1/-1' }}>
+                <MessageSquare size={40} className="mx-auto mb-2 text-muted-foreground" />
+                <Typography variant="subtitle1" fontWeight={600}>No active surveys</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Create a pulse survey to start gathering feedback
+                </Typography>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="completed">
-          {renderSurveyTable(
-            completedSurveys,
-            'No completed surveys',
-            <CheckCircle2 size={40} className="mx-auto mb-2 text-muted-foreground" />
-          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            {completedSurveys.map(renderSurveyCard)}
+            {completedSurveys.length === 0 && (
+              <Card sx={{ p: 4, textAlign: 'center', gridColumn: '1/-1' }}>
+                <CheckCircle2 size={40} className="mx-auto mb-2 text-muted-foreground" />
+                <Typography variant="subtitle1" fontWeight={600}>No completed surveys</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Completed surveys will appear here with their results
+                </Typography>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="all">
-          {renderSurveyTable(
-            surveys,
-            'No surveys yet',
-            <MessageSquare size={40} className="mx-auto mb-2 text-muted-foreground" />
-          )}
+          <div className="grid gap-4 md:grid-cols-2">
+            {surveys.map(renderSurveyCard)}
+          </div>
         </TabsContent>
       </Tabs>
 

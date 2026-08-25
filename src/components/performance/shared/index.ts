@@ -24,3 +24,7 @@ export type { RowAction } from './RowActionsMenu';
 
 // Form Section Components (for drawer/panel layouts)
 export { FormSection, FormField, FormRow, FormActionsRow } from '@/components/ui/off-canvas/FormSection';
+
+// Shared module scaffold (header + guidance + KPI strip)
+export { ModuleWorkspace } from './ModuleWorkspace';
+export type { ModuleWorkspaceProps, WorkspaceKpi, WorkspaceStep, WorkspaceAction } from './ModuleWorkspace';
