@@ -207,7 +207,12 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
             </Table>
           </Card>
         </TabsContent>
+
+        <TabsContent value="rewards" className="mt-4">
+          <RewardsAdminPanel />
+        </TabsContent>
       </Tabs>
+
 
       <RatingScaleDrawer open={scaleDrawer.open} scale={scaleDrawer.scale} onClose={() => setScaleDrawer({ open: false, scale: null })} />
       <CompetencyDrawer open={compDrawer.open} competency={compDrawer.competency} onClose={() => setCompDrawer({ open: false, competency: null })} />
