@@ -420,7 +420,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
                           separator: true,
                           onClick: (e) => { 
                             e.stopPropagation(); 
-                            setPips(prev => prev.map(p => p.id === pip.id ? { ...p, status: 'cancelled' as const } : p));
+                            performanceOperationsStore.cancelPips([pip.id]);
                             toast.success('PIP cancelled');
                           },
                         },
