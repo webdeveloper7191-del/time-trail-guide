@@ -241,6 +241,19 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           {thread.length > 0 && (
             <Badge variant="secondary" className="text-xs">{thread.length}</Badge>
           )}
+          {thread.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto gap-2 text-xs"
+              onClick={() => {
+                taskBoardStore.markThreadUnread(task.id);
+                toast.success('Thread marked unread');
+              }}
+            >
+              <MailOpen className="h-3.5 w-3.5" /> Mark unread
+            </Button>
+          )}
         </div>
 
         {thread.length === 0 ? (
@@ -272,7 +285,17 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                       </Button>
                     </div>
                   </div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{c.text}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                    <MentionText text={c.text} names={mentionNames} />
+                  </p>
+                  {c.mentions?.length ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                      <AtSign className="h-3 w-3 text-muted-foreground" />
+                      {c.mentions.map(m => (
+                        <Badge key={m} variant="outline" className="text-[11px]">{m}</Badge>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -280,17 +303,18 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
         )}
 
         <div className="space-y-2">
-          <Textarea
+          <MentionTextarea
             rows={3}
-            placeholder={thread.length ? 'Reply to this thread…' : 'Start a comment thread on this card…'}
+            placeholder={thread.length ? 'Reply to this thread… use @ to notify someone' : 'Start a comment thread… use @ to notify someone'}
             value={commentDraft}
-            onChange={e => setCommentDraft(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePostComment();
-            }}
+            onChange={setCommentDraft}
+            onSubmit={handlePostComment}
+            aria-label="Comment"
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Cmd/Ctrl + Enter to post</span>
+            <span className="text-xs text-muted-foreground">
+              Cmd/Ctrl + Enter to post • type @ to mention
+            </span>
             <Button size="sm" className="gap-2" disabled={!commentDraft.trim()} onClick={handlePostComment}>
               <Send className="h-3.5 w-3.5" />
               {thread.length ? 'Post comment' : 'Start thread'}
@@ -298,6 +322,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
           </div>
         </div>
       </div>
+
 
       {onOpenInModule && (
 
