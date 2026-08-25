@@ -359,28 +359,9 @@ export default function PerformanceManagement() {
             />
           </Stack>
 
-          {/* Tab Navigation */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-            <Tabs
-              value={activeTab}
-              onChange={(_, value) => setActiveTab(value)}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              {tabConfig.map(tab => (
-                <Tab
-                  key={tab.value}
-                  value={tab.value}
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <tab.icon size={16} />
-                      <span>{tab.label}</span>
-                    </Stack>
-                  }
-                />
-              ))}
-            </Tabs>
-          </Box>
+          {/* Grouped Tab Navigation */}
+          <PerformanceNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
 
           {/* Tab Content */}
           <Box>
