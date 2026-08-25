@@ -31,6 +31,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeePortalSidebar } from '@/components/employee/EmployeePortalSidebar';
+import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
+import { getEmployeeWorkspaceMeta, getDashboardKpis } from '@/components/employee/employeeWorkspaceConfig';
+
 import {
   format, parseISO, startOfWeek, endOfWeek, isWithinInterval,
   startOfMonth, endOfMonth, addDays, addWeeks, addMonths, subWeeks, subMonths,
