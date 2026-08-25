@@ -42,7 +42,12 @@ export interface BoardComment {
   authorName: string;
   text: string;
   createdAt: string;
+  /** Display names @mentioned in the body — used for notification chips. */
+  mentions?: string[];
 }
+
+/** Comment-thread filter applied on top of the board's task list. */
+export type BoardCommentFilter = 'all' | 'with_comments' | 'unread' | 'mentions_me';
 
 interface BoardState {
   groupBy: BoardGroupBy;
@@ -51,7 +56,14 @@ interface BoardState {
   overrides: Record<string, TaskOverride>;
   /** Comment threads keyed by task id. */
   comments: Record<string, BoardComment[]>;
+  /** ISO timestamp of when the current user last read each thread. */
+  threadReads: Record<string, string>;
+  commentFilter: BoardCommentFilter;
 }
+
+/** Name used for locally authored comments and for "mentions me" matching. */
+export const CURRENT_USER_NAME = 'You';
+
 
 
 export const TONE_CLASSES: Record<BoardColumn['tone'], string> = {
@@ -112,6 +124,8 @@ function load(): BoardState {
     customColumns: DEFAULT_CUSTOM_COLUMNS,
     overrides: {},
     comments: {},
+    threadReads: {},
+    commentFilter: 'all',
   };
   if (typeof window === 'undefined') return fallback;
   try {
@@ -124,7 +138,10 @@ function load(): BoardState {
       customColumns: parsed.customColumns?.length ? parsed.customColumns : fallback.customColumns,
       overrides: parsed.overrides ?? {},
       comments: parsed.comments ?? {},
+      threadReads: parsed.threadReads ?? {},
+      commentFilter: parsed.commentFilter ?? 'all',
     };
+
 
   } catch {
     return fallback;
@@ -195,7 +212,7 @@ export const taskBoardStore = {
   },
 
   /** Start or continue a card's comment thread. */
-  addComment(taskId: string, text: string, authorName = 'You') {
+  addComment(taskId: string, text: string, authorName = CURRENT_USER_NAME, mentions: string[] = []) {
     const body = text.trim();
     if (!body) return;
     const comment: BoardComment = {
@@ -204,11 +221,16 @@ export const taskBoardStore = {
       authorName,
       text: body,
       createdAt: new Date().toISOString(),
+      mentions: mentions.length ? mentions : undefined,
     };
     state.comments = {
       ...state.comments,
       [taskId]: [...(state.comments[taskId] ?? []), comment],
     };
+    // Posting implies you've read everything up to now.
+    if (authorName === CURRENT_USER_NAME) {
+      state.threadReads = { ...state.threadReads, [taskId]: comment.createdAt };
+    }
     emit();
   },
 
@@ -219,7 +241,75 @@ export const taskBoardStore = {
     };
     emit();
   },
+
+  /** Mark a card's thread as read up to now. */
+  markThreadRead(taskId: string) {
+    state.threadReads = { ...state.threadReads, [taskId]: new Date().toISOString() };
+    emit();
+  },
+
+  /** Flag the thread as unread again (clears the read marker). */
+  markThreadUnread(taskId: string) {
+    const next = { ...state.threadReads };
+    delete next[taskId];
+    state.threadReads = next;
+    emit();
+  },
+
+  markAllThreadsRead() {
+    const now = new Date().toISOString();
+    const next = { ...state.threadReads };
+    Object.keys(state.comments).forEach(id => { next[id] = now; });
+    state.threadReads = next;
+    emit();
+  },
+
+  setCommentFilter(filter: BoardCommentFilter) {
+    state.commentFilter = filter;
+    emit();
+  },
 };
+
+/** Comments on a thread the current user hasn't seen yet (their own never count). */
+export function unreadCountFor(
+  taskId: string,
+  comments: Record<string, BoardComment[]>,
+  threadReads: Record<string, string>,
+): number {
+  const thread = comments[taskId] ?? [];
+  if (!thread.length) return 0;
+  const readAt = threadReads[taskId];
+  return thread.filter(c =>
+    c.authorName !== CURRENT_USER_NAME && (!readAt || new Date(c.createdAt) > new Date(readAt)),
+  ).length;
+}
+
+export function mentionsCurrentUser(taskId: string, comments: Record<string, BoardComment[]>): boolean {
+  return (comments[taskId] ?? []).some(c => (c.mentions ?? []).includes(CURRENT_USER_NAME));
+}
+
+export const COMMENT_FILTER_LABELS: Record<BoardCommentFilter, string> = {
+  all: 'All cards',
+  with_comments: 'Has comments',
+  unread: 'Unread comments',
+  mentions_me: 'Mentions me',
+};
+
+/** Apply the board's comment filter to a task list. */
+export function filterByComments(
+  tasks: UnifiedTask[],
+  filter: BoardCommentFilter,
+  comments: Record<string, BoardComment[]>,
+  threadReads: Record<string, string>,
+): UnifiedTask[] {
+  switch (filter) {
+    case 'with_comments': return tasks.filter(t => (comments[t.id]?.length ?? 0) > 0);
+    case 'unread': return tasks.filter(t => unreadCountFor(t.id, comments, threadReads) > 0);
+    case 'mentions_me': return tasks.filter(t => mentionsCurrentUser(t.id, comments));
+    default: return tasks;
+  }
+}
+
 
 
 export function useTaskBoard() {

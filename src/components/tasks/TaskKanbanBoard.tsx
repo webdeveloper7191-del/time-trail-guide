@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Settings2, RotateCcw, Lock } from 'lucide-react';
+import { Settings2, RotateCcw, Lock, MessageSquare, CheckCheck } from 'lucide-react';
 import { UnifiedTask } from '@/types/unifiedTasks';
 import { UnifiedTaskCard } from '@/components/tasks/UnifiedTaskCard';
 import { BoardColumnsDialog } from '@/components/tasks/BoardColumnsDialog';
 import {
-  BoardGroupBy, BoardSwimlaneBy, GROUP_BY_LABELS, SWIMLANE_LABELS, TONE_CLASSES,
-  columnKeyFor, columnsFor, isGroupingEditable, swimlaneKeyFor, swimlanesFor,
-  taskBoardStore, useTaskBoard,
+  BoardGroupBy, BoardSwimlaneBy, BoardCommentFilter, GROUP_BY_LABELS, SWIMLANE_LABELS,
+  COMMENT_FILTER_LABELS, TONE_CLASSES,
+  columnKeyFor, columnsFor, filterByComments, isGroupingEditable, swimlaneKeyFor, swimlanesFor,
+  taskBoardStore, unreadCountFor, useTaskBoard,
 } from '@/lib/taskBoardStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,6 +24,8 @@ interface TaskKanbanBoardProps {
 
 const GROUPINGS: BoardGroupBy[] = ['status', 'priority', 'module', 'due', 'custom'];
 const SWIMLANES: BoardSwimlaneBy[] = ['none', 'status', 'priority', 'module', 'due'];
+const COMMENT_FILTERS: BoardCommentFilter[] = ['all', 'with_comments', 'unread', 'mentions_me'];
+
 
 export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskClick }) => {
   const board = useTaskBoard();
@@ -46,6 +49,16 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
     return swimlanesFor(swimlaneBy);
   }, [swimlaneBy]);
 
+  const visibleTasks = useMemo(
+    () => filterByComments(tasks, board.commentFilter, board.comments, board.threadReads),
+    [tasks, board.commentFilter, board.comments, board.threadReads],
+  );
+
+  const totalUnread = useMemo(
+    () => tasks.reduce((n, t) => n + (unreadCountFor(t.id, board.comments, board.threadReads) > 0 ? 1 : 0), 0),
+    [tasks, board.comments, board.threadReads],
+  );
+
   /** lane id -> column id -> tasks */
   const grouped = useMemo(() => {
     const map: Record<string, Record<string, UnifiedTask[]>> = {};
@@ -53,13 +66,14 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
       map[lane.id] = {};
       columns.forEach(c => { map[lane.id][c.id] = []; });
     });
-    tasks.forEach(task => {
+    visibleTasks.forEach(task => {
       const laneId = swimlaneBy === 'none' ? '__all__' : swimlaneKeyFor(task, swimlaneBy);
       const key = columnKeyFor(task, board.groupBy, board.overrides, columns);
       ((map[laneId] ??= {})[key] ??= []).push(task);
     });
     return map;
-  }, [tasks, columns, lanes, swimlaneBy, board.groupBy, board.overrides]);
+  }, [visibleTasks, columns, lanes, swimlaneBy, board.groupBy, board.overrides]);
+
 
   const editable = isGroupingEditable(board.groupBy);
 
@@ -115,13 +129,42 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
           </SelectContent>
         </Select>
 
+        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+          <MessageSquare className="h-4 w-4" /> Comments
+        </span>
+        <Select
+          value={board.commentFilter}
+          onValueChange={v => taskBoardStore.setCommentFilter(v as BoardCommentFilter)}
+        >
+          <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {COMMENT_FILTERS.map(f => (
+              <SelectItem key={f} value={f}>{COMMENT_FILTER_LABELS[f]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {totalUnread > 0 && (
+          <Badge variant="destructive" className="h-6">{totalUnread} unread</Badge>
+        )}
+
         {!editable && (
           <Badge variant="outline" className="gap-1 text-muted-foreground">
             <Lock className="h-3 w-3" /> Read-only grouping
           </Badge>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          {totalUnread > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => { taskBoardStore.markAllThreadsRead(); toast.success('All threads marked read'); }}
+            >
+              <CheckCheck className="h-4 w-4" /> Mark all read
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -131,6 +174,7 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
             <RotateCcw className="h-4 w-4" /> Reset board
           </Button>
         </div>
+
       </div>
 
       {/* Columns (optionally split into swimlanes) */}
