@@ -49,6 +49,16 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
     return swimlanesFor(swimlaneBy);
   }, [swimlaneBy]);
 
+  const visibleTasks = useMemo(
+    () => filterByComments(tasks, board.commentFilter, board.comments, board.threadReads),
+    [tasks, board.commentFilter, board.comments, board.threadReads],
+  );
+
+  const totalUnread = useMemo(
+    () => tasks.reduce((n, t) => n + (unreadCountFor(t.id, board.comments, board.threadReads) > 0 ? 1 : 0), 0),
+    [tasks, board.comments, board.threadReads],
+  );
+
   /** lane id -> column id -> tasks */
   const grouped = useMemo(() => {
     const map: Record<string, Record<string, UnifiedTask[]>> = {};
@@ -56,13 +66,14 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
       map[lane.id] = {};
       columns.forEach(c => { map[lane.id][c.id] = []; });
     });
-    tasks.forEach(task => {
+    visibleTasks.forEach(task => {
       const laneId = swimlaneBy === 'none' ? '__all__' : swimlaneKeyFor(task, swimlaneBy);
       const key = columnKeyFor(task, board.groupBy, board.overrides, columns);
       ((map[laneId] ??= {})[key] ??= []).push(task);
     });
     return map;
-  }, [tasks, columns, lanes, swimlaneBy, board.groupBy, board.overrides]);
+  }, [visibleTasks, columns, lanes, swimlaneBy, board.groupBy, board.overrides]);
+
 
   const editable = isGroupingEditable(board.groupBy);
 
