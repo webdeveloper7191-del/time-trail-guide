@@ -129,13 +129,42 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
           </SelectContent>
         </Select>
 
+        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+          <MessageSquare className="h-4 w-4" /> Comments
+        </span>
+        <Select
+          value={board.commentFilter}
+          onValueChange={v => taskBoardStore.setCommentFilter(v as BoardCommentFilter)}
+        >
+          <SelectTrigger className="w-[180px] h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {COMMENT_FILTERS.map(f => (
+              <SelectItem key={f} value={f}>{COMMENT_FILTER_LABELS[f]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {totalUnread > 0 && (
+          <Badge variant="destructive" className="h-6">{totalUnread} unread</Badge>
+        )}
+
         {!editable && (
           <Badge variant="outline" className="gap-1 text-muted-foreground">
             <Lock className="h-3 w-3" /> Read-only grouping
           </Badge>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          {totalUnread > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => { taskBoardStore.markAllThreadsRead(); toast.success('All threads marked read'); }}
+            >
+              <CheckCheck className="h-4 w-4" /> Mark all read
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -145,6 +174,7 @@ export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskC
             <RotateCcw className="h-4 w-4" /> Reset board
           </Button>
         </div>
+
       </div>
 
       {/* Columns (optionally split into swimlanes) */}
