@@ -334,7 +334,9 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {!embedded && (<>
       {/* Header */}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
