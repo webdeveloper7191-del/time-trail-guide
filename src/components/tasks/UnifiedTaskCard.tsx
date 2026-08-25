@@ -143,6 +143,64 @@ export const UnifiedTaskCard: React.FC<UnifiedTaskCardProps> = ({ task, onClick,
                   {commentCount}
                 </span>
               )}
+
+              {unread > 0 && (
+                <Badge variant="destructive" className="h-4 px-1.5 text-[10px]">
+                  {unread} new
+                </Badge>
+              )}
+            </div>
+
+            {/* Quick reply */}
+            <div className="mt-2" onClick={e => e.stopPropagation()}>
+              {replyOpen ? (
+                <div className="space-y-1.5">
+                  <MentionTextarea
+                    singleLine
+                    autoFocus
+                    value={reply}
+                    onChange={setReply}
+                    onSubmit={postReply}
+                    placeholder="Reply… use @ to mention"
+                    aria-label="Quick reply"
+                  />
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" className="h-7 gap-1 text-xs" disabled={!reply.trim()} onClick={postReply}>
+                      <Send className="h-3 w-3" /> Reply
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => { setReply(''); setReplyOpen(false); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
+                    onClick={() => setReplyOpen(true)}
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                    {commentCount > 0 ? 'Quick reply' : 'Start thread'}
+                  </Button>
+                  {unread > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
+                      onClick={() => { taskBoardStore.markThreadRead(task.id); toast.success('Thread marked read'); }}
+                    >
+                      <Check className="h-3 w-3" /> Mark read
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
 
           </div>
@@ -162,6 +220,7 @@ export const UnifiedTaskCard: React.FC<UnifiedTaskCardProps> = ({ task, onClick,
             )}
           </div>
         </div>
+
       </CardContent>
     </Card>
   );
