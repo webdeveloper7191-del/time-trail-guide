@@ -65,14 +65,15 @@ export function UpdateGoalProgressDrawer({ goal, open, onClose }: UpdateGoalProg
       ]}
     >
       <div className="space-y-6">
-        <FormSection title="Goal" description={goal.description}>
+        <FormSection title="Goal">
+          <p className="text-sm text-muted-foreground">{goal.description}</p>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="outline">{goal.category}</Badge>
             <span>Due {format(parseISO(goal.targetDate), 'd MMM yyyy')}</span>
           </div>
         </FormSection>
 
-        <FormSection title="Completion" description="Set how far along you are with this goal.">
+        <FormSection title="Completion" tooltip="Set how far along you are with this goal.">
           <FormField label={`Progress — ${progress}%`}>
             <div className="space-y-3 pt-1">
               <Slider
@@ -89,7 +90,7 @@ export function UpdateGoalProgressDrawer({ goal, open, onClose }: UpdateGoalProg
         {goal.milestones.length > 0 && (
           <FormSection
             title="Milestones"
-            description="Tick the steps you have finished. Progress updates automatically."
+            tooltip="Tick the steps you have finished. Progress updates automatically."
           >
             <div className="space-y-2">
               {goal.milestones.map(m => (
@@ -114,7 +115,7 @@ export function UpdateGoalProgressDrawer({ goal, open, onClose }: UpdateGoalProg
           </FormSection>
         )}
 
-        <FormSection title="Update note" description="Optional context for your manager.">
+        <FormSection title="Update note" tooltip="Optional context for your manager.">
           <Textarea
             value={note}
             onChange={e => setNote(e.target.value)}
