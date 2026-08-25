@@ -224,9 +224,22 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
           </Card>
         </TabsContent>
 
+        <TabsContent value="lists" className="mt-4">
+          <TaxonomyAdminPanel />
+        </TabsContent>
+
+        <TabsContent value="ninebox" className="mt-4">
+          <NineBoxAdminPanel />
+        </TabsContent>
+
         <TabsContent value="rewards" className="mt-4">
           <RewardsAdminPanel />
         </TabsContent>
+
+        <TabsContent value="rules" className="mt-4">
+          <PerformanceRulesPanel />
+        </TabsContent>
+
       </Tabs>
 
 
