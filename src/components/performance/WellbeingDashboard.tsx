@@ -375,6 +375,27 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
             </div>
 
             {/* Risk Factors */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                Recent Check-ins
+              </Typography>
+              <Stack spacing={1}>
+                {wellbeingCheckIns.filter(item => item.staffId === selectedIndicator.staffId).slice(0, 5).map(item => (
+                  <Card key={item.id} sx={{ p: 1.5 }}>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2">{format(new Date(item.date), 'MMM d, yyyy')}</Typography>
+                      <Typography variant="caption" color="text.secondary">Energy {item.energyLevel}/10 · Stress {item.stressLevel}/10</Typography>
+                    </Stack>
+                    {item.notes && <Typography variant="caption" color="text.secondary">{item.notes}</Typography>}
+                  </Card>
+                ))}
+                {!wellbeingCheckIns.some(item => item.staffId === selectedIndicator.staffId) && (
+                  <Typography variant="body2" color="text.secondary">No check-ins submitted yet.</Typography>
+                )}
+              </Stack>
+            </Box>
+
+            {/* Risk Factors */}
             {selectedIndicator.riskFactors.length > 0 && (
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>

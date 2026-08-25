@@ -25,6 +25,7 @@ import { PlanDetailSheet } from '@/components/performance/PlanDetailSheet';
 import { PlanTemplatePreviewSheet } from '@/components/performance/PlanTemplatePreviewSheet';
 import { CreateTemplateDrawer } from '@/components/performance/CreateTemplateDrawer';
 import { QuickAssignPlanDrawer } from '@/components/performance/QuickAssignPlanDrawer';
+import { EditPlanDrawer } from '@/components/performance/plans/EditPlanDrawer';
 import { PerformanceTaskManagementPanel } from '@/components/performance/PerformanceTaskManagementPanel';
 import { CreateGoalDrawer } from '@/components/performance/CreateGoalDrawer';
 import { AssignGoalDrawer } from '@/components/performance/AssignGoalDrawer';
@@ -88,6 +89,7 @@ export default function PerformanceManagement() {
   const [selectedPlan, setSelectedPlan] = useState<AssignedPlan | null>(null);
   const [showPlanDetail, setShowPlanDetail] = useState(false);
   const [showQuickAssignDrawer, setShowQuickAssignDrawer] = useState(false);
+  const [showEditPlanDrawer, setShowEditPlanDrawer] = useState(false);
   const [showCreateGoalDrawer, setShowCreateGoalDrawer] = useState(false);
   const [showAssignGoalDrawer, setShowAssignGoalDrawer] = useState(false);
   const [showEditGoalDrawer, setShowEditGoalDrawer] = useState(false);
@@ -108,6 +110,7 @@ export default function PerformanceManagement() {
     customTemplates,
     createPlan,
     updatePlanStatus,
+    updatePlan,
     deletePlan,
     extendPlan,
     createTemplate,
@@ -372,6 +375,18 @@ export default function PerformanceManagement() {
   const handleExtendPlan = async (planId: string, newEndDate: string) => {
     await extendPlan(planId, newEndDate);
     setSelectedPlan(prev => prev?.id === planId ? { ...prev, endDate: newEndDate } : prev);
+  };
+
+  const handleEditPlan = (plan: AssignedPlan) => {
+    setSelectedPlan(plan);
+    setShowPlanDetail(false);
+    setShowEditPlanDrawer(true);
+  };
+
+  const handleSavePlan = async (planId: string, updates: Partial<AssignedPlan>) => {
+    const updated = await updatePlan(planId, updates);
+    if (!updated) throw new Error('Plan update failed');
+    setSelectedPlan(updated);
   };
 
   const tabConfig = [
@@ -766,6 +781,15 @@ export default function PerformanceManagement() {
         onUpdateStatus={handleUpdatePlanStatus}
         onDeletePlan={handleDeletePlan}
         onExtendPlan={handleExtendPlan}
+        onEditPlan={handleEditPlan}
+      />
+
+      <EditPlanDrawer
+        open={showEditPlanDrawer}
+        plan={selectedPlan}
+        staff={mockStaff}
+        onClose={() => setShowEditPlanDrawer(false)}
+        onSave={handleSavePlan}
       />
 
       {/* Bulk Assign Plan Drawer */}
