@@ -65,10 +65,17 @@ import { CourseAuthoringState } from '@/types/lmsAdvanced';
 interface LMSAdminPanelProps {
   staff: StaffMember[];
   onAssignCourse: (courseId: string, staffIds: string[], dueDate?: Date) => void;
+  /** When embedded, the parent module renders the header, KPI strip and tab bar. */
+  embedded?: boolean;
+  tab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChange }: LMSAdminPanelProps) {
+  const [internalTab, setInternalTab] = useState('overview');
+  const activeTab = tab ?? internalTab;
+  const setActiveTab = (value: string) => (onTabChange ? onTabChange(value) : setInternalTab(value));
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showAssignSheet, setShowAssignSheet] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
