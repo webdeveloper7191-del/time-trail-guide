@@ -548,7 +548,8 @@ export default function PerformanceManagement() {
                 conversations={conversations}
               />
             )}
-          </Box>
+          </ModuleWorkspace>
+
         </Box>
       </Box>
 
