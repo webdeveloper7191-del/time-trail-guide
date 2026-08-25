@@ -54,6 +54,8 @@ import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
 // Mock current employee (in real app, this would come from auth)
 const currentEmployee = {
   id: 'ts-001',
+  /** Matching id in the workforce/performance records for this portal user. */
+  staffId: 'staff-1',
   name: 'Sarah Chen',
   email: 'sarah.chen@company.com',
   department: 'Operations',
