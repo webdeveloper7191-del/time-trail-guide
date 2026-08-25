@@ -1,6 +1,5 @@
 import React, { useState, useSyncExternalStore } from 'react';
 import { rewardsStore, pointsBalance } from '@/lib/rewardsStore';
-import { toast } from 'sonner';
 
 import { 
   Box, 
