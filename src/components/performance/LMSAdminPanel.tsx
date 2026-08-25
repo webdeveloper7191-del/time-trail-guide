@@ -420,6 +420,8 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
           </CardContent>
         </Card>
       </div>
+      </>)}
+
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className={cn('overflow-x-auto', embedded && 'hidden')}>
