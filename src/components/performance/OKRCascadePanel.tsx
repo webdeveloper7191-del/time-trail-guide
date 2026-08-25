@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Box, 
   Stack, 
@@ -94,6 +94,12 @@ export function OKRCascadePanel({ currentUserId, embedded = false }: OKRCascadeP
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState('all');
   const [editingKR, setEditingKR] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedObjective) return;
+    const current = objectives.find(item => item.id === selectedObjective.id);
+    if (current) setSelectedObjective(current);
+  }, [objectives, selectedObjective?.id]);
 
   const getStaffName = (id: string) => {
     const staff = mockStaff.find(s => s.id === id);

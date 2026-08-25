@@ -19,6 +19,7 @@ export const performancePlanStore = {
     const plan: AssignedPlan = { ...data, id: `plan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, progress: 0, createdAt: stamp, updatedAt: stamp };
     commit({ ...state, assignedPlans: [...state.assignedPlans, plan] }); return plan;
   },
+  updatePlan(id: string, updates: Partial<AssignedPlan>) { const existing = state.assignedPlans.find(item => item.id === id); if (!existing) return null; const updated = { ...existing, ...updates, id: existing.id, updatedAt: now() }; commit({ ...state, assignedPlans: state.assignedPlans.map(item => item.id === id ? updated : item) }); return updated; },
   updatePlanStatus(id: string, status: PlanStatus) { if (!state.assignedPlans.some(item => item.id === id)) return false; commit({ ...state, assignedPlans: state.assignedPlans.map(item => item.id === id ? { ...item, status, updatedAt: now() } : item) }); return true; },
   deletePlan(id: string) { if (!state.assignedPlans.some(item => item.id === id)) return false; commit({ ...state, assignedPlans: state.assignedPlans.filter(item => item.id !== id) }); return true; },
   extendPlan(id: string, endDate: string) { if (!state.assignedPlans.some(item => item.id === id)) return false; commit({ ...state, assignedPlans: state.assignedPlans.map(item => item.id === id ? { ...item, endDate, updatedAt: now() } : item) }); return true; },

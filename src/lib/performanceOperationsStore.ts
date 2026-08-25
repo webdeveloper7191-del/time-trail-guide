@@ -8,6 +8,8 @@ import type {
   TalentAssessment,
   WellbeingCheckIn,
   WellbeingIndicator,
+  CalibrationSession,
+  CalibrationRating,
 } from '@/types/advancedPerformance';
 import type { PerformanceImprovementPlan, PIPCheckIn, PIPOutcome, PIPStatus } from '@/types/compensation';
 import type { Objective } from '@/types/okr';
@@ -19,6 +21,8 @@ import {
   mockTalentAssessments,
   mockWellbeingCheckIns,
   mockWellbeingIndicators,
+  mockCalibrationSessions,
+  mockCalibrationRatings,
 } from '@/data/mockAdvancedPerformanceData';
 import { mockPIPs } from '@/data/mockCompensationData';
 import { mockObjectives } from '@/data/mockOKRData';
@@ -42,6 +46,8 @@ interface PerformanceOperationsState {
   pips: PerformanceImprovementPlan[];
   objectives: Objective[];
   talentAssessments: TalentAssessment[];
+  calibrationSessions: CalibrationSession[];
+  calibrationRatings: CalibrationRating[];
 }
 
 const STORAGE_KEY = 'rostered.performance.operations.v1';
@@ -59,6 +65,8 @@ const defaults = (): PerformanceOperationsState => ({
   pips: mockPIPs,
   objectives: mockObjectives,
   talentAssessments: mockTalentAssessments,
+  calibrationSessions: mockCalibrationSessions,
+  calibrationRatings: mockCalibrationRatings,
 });
 
 function load(): PerformanceOperationsState {
@@ -166,6 +174,23 @@ export const performanceOperationsStore = {
   saveTalentAssessment(assessment: TalentAssessment) {
     const exists = state.talentAssessments.some(item => item.id === assessment.id);
     commit({ ...state, talentAssessments: exists ? state.talentAssessments.map(item => item.id === assessment.id ? assessment : item) : [assessment, ...state.talentAssessments] });
+  },
+  saveCalibrationSession(session: CalibrationSession) {
+    const exists = state.calibrationSessions.some(item => item.id === session.id);
+    commit({ ...state, calibrationSessions: exists ? state.calibrationSessions.map(item => item.id === session.id ? session : item) : [session, ...state.calibrationSessions] });
+    return session;
+  },
+  updateCalibrationSession(id: string, updates: Partial<CalibrationSession>) {
+    const existing = state.calibrationSessions.find(item => item.id === id);
+    if (!existing) return null;
+    const updated = { ...existing, ...updates, updatedAt: now() };
+    commit({ ...state, calibrationSessions: state.calibrationSessions.map(item => item.id === id ? updated : item) });
+    return updated;
+  },
+  saveCalibrationRating(rating: CalibrationRating) {
+    const exists = state.calibrationRatings.some(item => item.id === rating.id);
+    commit({ ...state, calibrationRatings: exists ? state.calibrationRatings.map(item => item.id === rating.id ? rating : item) : [rating, ...state.calibrationRatings] });
+    return rating;
   },
 };
 

@@ -28,6 +28,7 @@ import {
   BookOpen,
   Trash2,
   CalendarPlus,
+  Pencil,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast, isToday, addDays } from 'date-fns';
 import { 
@@ -64,6 +65,8 @@ interface PlanDetailSheetProps {
   onUpdateStatus: (planId: string, status: PlanStatus) => Promise<void>;
   onDeletePlan?: (planId: string) => Promise<void>;
   onExtendPlan?: (planId: string, newEndDate: string) => Promise<void>;
+  onEditPlan?: (plan: AssignedPlan) => void;
+  onCancelPlan?: (planId: string, reason: string) => Promise<void>;
 }
 
 export function PlanDetailSheet({
@@ -80,6 +83,8 @@ export function PlanDetailSheet({
   onUpdateStatus,
   onDeletePlan,
   onExtendPlan,
+  onEditPlan,
+  onCancelPlan,
 }: PlanDetailSheetProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [updating, setUpdating] = useState(false);
@@ -218,6 +223,12 @@ export function PlanDetailSheet({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {onEditPlan && (
+                  <DropdownMenuItem onClick={() => onEditPlan(plan)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Plan
+                  </DropdownMenuItem>
+                )}
                 {plan.status !== 'active' && plan.status !== 'completed' && (
                   <DropdownMenuItem onClick={() => handleStatusChange('active')}>
                     <Play className="h-4 w-4 mr-2" />
@@ -706,11 +717,10 @@ export function PlanDetailSheet({
         plan={plan}
         loading={updating}
         onConfirm={async (reason) => {
-          if (plan) {
+            if (plan) {
             setUpdating(true);
-            await onUpdateStatus(plan.id, 'cancelled');
-            // In a real app, we'd also save the cancellation reason
-            console.log('Cancellation reason:', reason);
+              if (onCancelPlan) await onCancelPlan(plan.id, reason);
+              else await onUpdateStatus(plan.id, 'cancelled');
             setUpdating(false);
             setShowCancelDialog(false);
           }

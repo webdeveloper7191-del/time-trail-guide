@@ -464,11 +464,12 @@ export function EditPlanDrawer({
       
       // Load template items as editable copies
       const template = allTemplates.find(t => t.id === plan.templateId);
-      if (template) {
-        setCustomGoals(template.goals.map(g => ({ ...g, milestones: [...g.milestones] })));
-        setCustomReviews(template.reviews.map(r => ({ ...r })));
-        setCustomConversations(template.conversations.map(c => ({ ...c, agendaItems: c.agendaItems ? [...c.agendaItems] : [] })));
-      }
+      const goals = plan.customGoals ?? template?.goals ?? [];
+      const reviews = plan.customReviews ?? template?.reviews ?? [];
+      const conversations = plan.customConversations ?? template?.conversations ?? [];
+      setCustomGoals(goals.map(g => ({ ...g, milestones: [...g.milestones] })));
+      setCustomReviews(reviews.map(r => ({ ...r })));
+      setCustomConversations(conversations.map(c => ({ ...c, agendaItems: c.agendaItems ? [...c.agendaItems] : [] })));
       
       setActiveTab('general');
       setExpandedGoals(new Set());
@@ -599,10 +600,10 @@ export function EditPlanDrawer({
         startDate: format(formData.startDate, 'yyyy-MM-dd'),
         endDate: format(formData.endDate, 'yyyy-MM-dd'),
         status: formData.status,
-        // Note: In a real implementation, you'd save customGoals, customReviews, customConversations
-        // to the backend as part of the plan's custom configuration
+        customGoals,
+        customReviews,
+        customConversations,
       });
-      toast.success('Plan updated successfully');
       onClose();
     } catch (error) {
       toast.error('Failed to update plan');

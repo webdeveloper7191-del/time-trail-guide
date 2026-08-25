@@ -7,6 +7,7 @@ interface UsePlanManagementReturn {
   assignedPlans: AssignedPlan[];
   createPlan: (data: Omit<AssignedPlan, 'id' | 'createdAt' | 'updatedAt' | 'progress'>) => Promise<AssignedPlan | null>;
   updatePlanStatus: (planId: string, status: PlanStatus) => Promise<boolean>;
+  updatePlan: (planId: string, updates: Partial<AssignedPlan>) => Promise<AssignedPlan | null>;
   deletePlan: (planId: string) => Promise<boolean>;
   extendPlan: (planId: string, newEndDate: string) => Promise<boolean>;
   
@@ -51,6 +52,18 @@ export function usePlanManagement(): UsePlanManagementReturn {
     } catch (error) {
       toast.error('Failed to update plan status');
       return false;
+    }
+  };
+
+  const updatePlan = async (planId: string, updates: Partial<AssignedPlan>): Promise<AssignedPlan | null> => {
+    try {
+      const updated = performancePlanStore.updatePlan(planId, updates);
+      if (!updated) throw new Error('Plan not found');
+      toast.success('Performance plan updated');
+      return updated;
+    } catch {
+      toast.error('Failed to update performance plan');
+      return null;
     }
   };
 
@@ -151,6 +164,7 @@ export function usePlanManagement(): UsePlanManagementReturn {
     assignedPlans,
     createPlan,
     updatePlanStatus,
+    updatePlan,
     deletePlan,
     extendPlan,
     customTemplates,
