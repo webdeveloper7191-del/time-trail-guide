@@ -186,7 +186,7 @@ export function EditAwardConfigurationSheet({
                   </SelectTrigger>
                   <SelectContent>
                     {australianAwards.map((award) => (
-                      <SelectItem key={award.id} value={award.id}>
+                      <SelectItem key={award.id} value={award.id} textValue={award.shortName}>
                         <div className="flex flex-col">
                           <span>{award.shortName}</span>
                           <span className="text-xs text-muted-foreground">{award.code}</span>

@@ -33,7 +33,7 @@ export function CentreSelector({
         </SelectTrigger>
         <SelectContent>
           {centres.map(centre => (
-            <SelectItem key={centre.id} value={centre.id}>
+            <SelectItem key={centre.id} value={centre.id} textValue={centre.name}>
               <div className="flex flex-col">
                 <span>{centre.name}</span>
                 <span className="text-[10px] text-muted-foreground">
