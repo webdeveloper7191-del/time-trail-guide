@@ -61,6 +61,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     [],
   );
 
+  const mentionNames = useMentionableNames();
   const [commentDraft, setCommentDraft] = useState('');
   const [form, setForm] = useState({
     title: '', description: '', status: 'open', priority: 'medium',
@@ -82,6 +83,11 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   useEffect(() => { setCommentDraft(''); }, [task?.id]);
 
+  // Opening a card counts as reading its thread.
+  useEffect(() => {
+    if (open && task?.id) taskBoardStore.markThreadRead(task.id);
+  }, [open, task?.id]);
+
   if (!task) return null;
 
   const thread = board.comments[task.id] ?? [];
@@ -89,10 +95,16 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
 
   const handlePostComment = () => {
     if (!commentDraft.trim()) return;
-    taskBoardStore.addComment(task.id, commentDraft);
+    const mentions = extractMentions(commentDraft, mentionNames);
+    taskBoardStore.addComment(task.id, commentDraft, undefined, mentions);
     setCommentDraft('');
-    toast.success(thread.length ? 'Comment added' : 'Comment thread started');
+    toast.success(
+      mentions.length
+        ? `Comment added — ${mentions.length} ${mentions.length === 1 ? 'person' : 'people'} notified`
+        : thread.length ? 'Comment added' : 'Comment thread started',
+    );
   };
+
 
 
   const dirty =
