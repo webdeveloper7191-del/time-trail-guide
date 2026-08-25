@@ -65,10 +65,17 @@ import { CourseAuthoringState } from '@/types/lmsAdvanced';
 interface LMSAdminPanelProps {
   staff: StaffMember[];
   onAssignCourse: (courseId: string, staffIds: string[], dueDate?: Date) => void;
+  /** When embedded, the parent module renders the header, KPI strip and tab bar. */
+  embedded?: boolean;
+  tab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChange }: LMSAdminPanelProps) {
+  const [internalTab, setInternalTab] = useState('overview');
+  const activeTab = tab ?? internalTab;
+  const setActiveTab = (value: string) => (onTabChange ? onTabChange(value) : setInternalTab(value));
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showAssignSheet, setShowAssignSheet] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -327,7 +334,9 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {!embedded && (<>
       {/* Header */}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2">
@@ -413,9 +422,11 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
           </CardContent>
         </Card>
       </div>
+      </>)}
+
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto">
+        <div className={cn('overflow-x-auto', embedded && 'hidden')}>
           <TabsList className="whitespace-nowrap">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
@@ -427,6 +438,7 @@ export function LMSAdminPanel({ staff, onAssignCourse }: LMSAdminPanelProps) {
             </TabsTrigger>
           </TabsList>
         </div>
+
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-6 space-y-6">
