@@ -366,9 +366,19 @@ export default function PerformanceManagement() {
 
 
           {/* Tab Content */}
-          <Box>
+          <ModuleWorkspace
+            key={activeTab}
+            storageKey={activeTab}
+            icon={workspaceMeta.icon}
+            title={workspaceMeta.title}
+            description={workspaceMeta.description}
+            kpis={workspaceMeta.kpis}
+            steps={workspaceMeta.steps}
+            guideTitle={workspaceMeta.guideTitle}
+          >
             {activeTab === 'plans' && (
               <PlanManagementPanel
+                embedded
                 staff={mockStaff}
                 goals={goals}
                 reviews={reviews}
@@ -385,12 +395,29 @@ export default function PerformanceManagement() {
               />
             )}
 
+            {activeTab === 'goal-recommendations' && (
+              <GoalRecommendationsPanel
+                embedded
+                staff={mockStaff}
+                currentStaffId={CURRENT_USER_ID}
+                existingGoals={goals}
+                onAdoptGoal={(rec) => {
+                  setActiveTab('goals');
+                }}
+              />
+            )}
+
+            {activeTab === 'pip' && (
+              <PIPManagementPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />
+            )}
+
             {activeTab === 'okr' && (
-              <OKRCascadePanel currentUserId={CURRENT_USER_ID} />
+              <OKRCascadePanel embedded currentUserId={CURRENT_USER_ID} />
             )}
 
             {activeTab === 'lms' && (
               <LMSAdminModule
+                embedded
                 currentUserId={CURRENT_USER_ID}
                 staff={mockStaff}
               />
@@ -410,6 +437,7 @@ export default function PerformanceManagement() {
 
             {activeTab === 'goals' && (
               <GoalsTracker
+                embedded
                 goals={goals}
                 onCreateGoal={() => setShowCreateGoalDrawer(true)}
                 onAssignGoal={() => setShowAssignGoalDrawer(true)}
@@ -418,6 +446,7 @@ export default function PerformanceManagement() {
                 onUpdateProgress={updateGoalProgress}
               />
             )}
+
 
             {activeTab === 'reviews' && (
               <ReviewsDashboard
