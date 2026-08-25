@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Gift } from 'lucide-react';
+import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Gift, Tags, Grid3X3, SlidersHorizontal } from 'lucide-react';
 import {
   performanceConfigStore,
   RatingScale,
@@ -13,10 +13,15 @@ import {
   reviewCycleStageLabels,
   totalWeight,
 } from '@/lib/performanceConfigStore';
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 import { RatingScaleDrawer } from './RatingScaleDrawer';
 import { CompetencyDrawer } from './CompetencyDrawer';
 import { ReviewCycleDrawer } from './ReviewCycleDrawer';
 import { RewardsAdminPanel } from './RewardsAdminPanel';
+import { TaxonomyAdminPanel } from './TaxonomyAdminPanel';
+import { NineBoxAdminPanel } from './NineBoxAdminPanel';
+import { PerformanceRulesPanel } from './PerformanceRulesPanel';
+
 
 import { toast } from 'sonner';
 
