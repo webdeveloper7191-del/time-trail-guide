@@ -168,7 +168,7 @@ export function PlanManagementPanel({
                 className="px-3 md:px-4 py-2 md:py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium text-sm"
               >
                 <Users className="h-4 w-4 mr-1.5 md:mr-2" />
-                <span className="hidden sm:inline">Assigned </span>Plans
+                <span className="hidden sm:inline">Assigned&nbsp;</span>Plans
                 <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{mockAssignedPlans.length}</Badge>
               </TabsTrigger>
               <TabsTrigger 
@@ -365,7 +365,7 @@ export function PlanManagementPanel({
                                     {hasLearning && (
                                       <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
                                         <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
-                                        <span>{plan.learningPathIds?.length || 0} learning paths</span>
+                                        <span>{plan.learningPathIds?.length || 0} {(plan.learningPathIds?.length || 0) === 1 ? 'learning path' : 'learning paths'}</span>
                                       </div>
                                     )}
                                   </>

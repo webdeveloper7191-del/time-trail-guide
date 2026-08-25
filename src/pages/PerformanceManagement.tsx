@@ -345,30 +345,30 @@ export default function PerformanceManagement() {
         <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
           {/* Header */}
           <Stack 
-            direction={{ xs: 'column', sm: 'row' }}
+            direction="row"
             justifyContent="space-between" 
-            alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
-            spacing={{ xs: 2, sm: 0 }}
-            sx={{ mb: { xs: 3, md: 4 } }}
+            alignItems="center"
+            spacing={2}
+            sx={{ mb: { xs: 2, md: 3 } }}
           >
             <Box>
               <Typography 
-                variant="h4" 
+                variant="h5" 
                 fontWeight={600} 
                 color="text.primary" 
-                gutterBottom
-                sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' } }}
+                sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, letterSpacing: '-0.025em' }}
               >
                 Performance Management
               </Typography>
               <Typography 
-                variant="body1" 
+                variant="body2" 
                 color="text.secondary"
-                sx={{ display: { xs: 'none', sm: 'block' } }}
+                sx={{ display: { xs: 'none', sm: 'block' }, mt: 0.25 }}
               >
                 Track development plans, reviews, goals, and continuous feedback
               </Typography>
             </Box>
+
             <PerformanceNotificationBell
               goals={goals}
               reviews={reviews}
