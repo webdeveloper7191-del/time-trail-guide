@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Calendar, 
@@ -12,12 +13,16 @@ import {
   Loader2,
   Ban,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  Send,
+  Check
 } from 'lucide-react';
 import { UnifiedTask, moduleColors, typeLabels } from '@/types/unifiedTasks';
-import { useTaskBoard } from '@/lib/taskBoardStore';
+import { taskBoardStore, useTaskBoard, unreadCountFor } from '@/lib/taskBoardStore';
+import { MentionTextarea, useMentionableNames, extractMentions } from '@/components/tasks/MentionTextarea';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 
 interface UnifiedTaskCardProps {
@@ -43,11 +48,25 @@ const priorityColors: Record<string, string> = {
 
 export const UnifiedTaskCard: React.FC<UnifiedTaskCardProps> = ({ task, onClick, compact = false }) => {
   const board = useTaskBoard();
+  const mentionNames = useMentionableNames();
   const commentCount = board.comments[task.id]?.length ?? 0;
+  const unread = unreadCountFor(task.id, board.comments, board.threadReads);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [reply, setReply] = useState('');
+
+  const postReply = () => {
+    if (!reply.trim()) return;
+    const mentions = extractMentions(reply, mentionNames);
+    taskBoardStore.addComment(task.id, reply, undefined, mentions);
+    setReply('');
+    setReplyOpen(false);
+    toast.success(mentions.length ? `Reply posted — ${mentions.length} notified` : 'Reply posted');
+  };
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
 
 
   return (
