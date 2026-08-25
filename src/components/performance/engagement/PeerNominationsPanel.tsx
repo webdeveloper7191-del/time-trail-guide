@@ -631,3 +631,5 @@ function NominationDetailDrawer({ open, onClose, nomination, staff, onApprove, o
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
