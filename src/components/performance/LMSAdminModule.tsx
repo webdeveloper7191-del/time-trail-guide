@@ -1,36 +1,33 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useMemo, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { 
-  BookOpen, 
-  GraduationCap, 
-  Users, 
+import {
+  BookOpen,
+  GraduationCap,
+  Users,
   Plus,
   BarChart3,
   Clock,
   CheckCircle2,
   AlertCircle,
   Settings,
-  PenTool,
-  FileText,
-  Package,
   Route,
+  MessageSquare,
+  ClipboardList,
+  UserCheck,
+  ArrowRight,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { 
-  Enrollment,
-  difficultyLabels,
-  difficultyColors,
-} from '@/types/lms';
+import { Enrollment } from '@/types/lms';
 import { StaffMember } from '@/types/staff';
-import { mockCourses, mockEnrollments } from '@/data/mockLmsData';
+import { mockCourses, mockEnrollments, mockLearningPaths } from '@/data/mockLmsData';
 import { LMSAdminPanel } from './LMSAdminPanel';
 import { CourseAuthoringTool } from './CourseAuthoringTool';
 import { LearningPathsPanel } from './LearningPathsPanel';
+import { LmsSettingsPanel } from './lms/LmsSettingsPanel';
 import { CourseAuthoringState } from '@/types/lmsAdvanced';
 import { toast } from 'sonner';
 import { isPast, parseISO } from 'date-fns';
@@ -40,24 +37,49 @@ interface LMSAdminModuleProps {
   currentUserId: string;
 }
 
+const TABS = [
+  { value: 'overview', label: 'Overview', icon: BarChart3, help: 'How learning is tracking across the business' },
+  { value: 'courses', label: 'Courses', icon: BookOpen, help: 'Your course library — build, edit and assign' },
+  { value: 'paths', label: 'Learning Paths', icon: Route, help: 'Group courses into a step-by-step program' },
+  { value: 'people', label: 'People', icon: UserCheck, help: 'Progress for every staff member' },
+  { value: 'assignments', label: 'Assignments', icon: ClipboardList, help: 'Who has been given what, and when it is due' },
+  { value: 'reviews', label: 'Feedback', icon: MessageSquare, help: 'Ratings and comments staff left on courses' },
+  { value: 'settings', label: 'Settings', icon: Settings, help: 'Due dates, reminders, pass marks and compliance rules' },
+] as const;
+
+// Module tab value -> LMSAdminPanel internal tab value
+const PANEL_TAB: Record<string, string> = {
+  overview: 'overview',
+  courses: 'courses',
+  people: 'staff',
+  assignments: 'assignments',
+  reviews: 'reviews',
+};
+
 export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [showAuthoringTool, setShowAuthoringTool] = useState(false);
+  const [showGettingStarted, setShowGettingStarted] = useState(true);
   const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
 
-  // Analytics
-  const totalEnrollments = enrollments.length;
-  const completedEnrollments = enrollments.filter(e => e.status === 'completed').length;
-  const inProgressEnrollments = enrollments.filter(e => e.status === 'in_progress').length;
-  const overdueEnrollments = enrollments.filter(e => 
-    e.dueDate && isPast(parseISO(e.dueDate)) && e.status !== 'completed'
-  ).length;
-  const completionRate = totalEnrollments > 0 
-    ? Math.round((completedEnrollments / totalEnrollments) * 100) 
-    : 0;
+  const stats = useMemo(() => {
+    const total = enrollments.length;
+    const completed = enrollments.filter((e) => e.status === 'completed').length;
+    const inProgress = enrollments.filter((e) => e.status === 'in_progress').length;
+    const overdue = enrollments.filter(
+      (e) => e.dueDate && isPast(parseISO(e.dueDate)) && e.status !== 'completed',
+    ).length;
+    return {
+      total,
+      completed,
+      inProgress,
+      overdue,
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+    };
+  }, [enrollments]);
 
   const handleAssignCourse = (courseId: string, staffIds: string[], dueDate?: Date) => {
-    const newEnrollments = staffIds.map(staffId => ({
+    const newEnrollments = staffIds.map((staffId) => ({
       id: `enroll-${Date.now()}-${staffId}`,
       staffId,
       courseId,
@@ -70,250 +92,174 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }));
-    
-    setEnrollments(prev => [...prev, ...newEnrollments]);
+
+    setEnrollments((prev) => [...prev, ...newEnrollments]);
     toast.success(`Course assigned to ${staffIds.length} staff member(s)`);
   };
 
-  const handleSaveCourse = (course: CourseAuthoringState) => {
-    console.log('Saving course:', course);
-    toast.success('Course saved as draft');
+  const handleSaveCourse = (_course: CourseAuthoringState) => {
+    toast.success('Course saved as a draft');
   };
 
-  const handlePublishCourse = (course: CourseAuthoringState) => {
-    console.log('Publishing course:', course);
-    toast.success('Course published successfully!');
+  const handlePublishCourse = (_course: CourseAuthoringState) => {
+    toast.success('Course published — you can now assign it to staff');
     setShowAuthoringTool(false);
+    setActiveTab('courses');
+  };
+
+  const activeMeta = TABS.find((t) => t.value === activeTab);
+
+  const kpis = [
+    { label: 'Courses', value: mockCourses.length, icon: BookOpen, tone: 'primary' as const, hint: 'in your library' },
+    { label: 'Learning paths', value: mockLearningPaths.length, icon: Route, tone: 'primary' as const, hint: 'programs built' },
+    { label: 'Assigned', value: stats.total, icon: Users, tone: 'muted' as const, hint: 'courses given to staff' },
+    { label: 'Completed', value: `${stats.completionRate}%`, icon: CheckCircle2, tone: 'success' as const, hint: `${stats.completed} finished` },
+    { label: 'In progress', value: stats.inProgress, icon: Clock, tone: 'warning' as const, hint: 'started, not finished' },
+    { label: 'Overdue', value: stats.overdue, icon: AlertCircle, tone: 'danger' as const, hint: 'past the due date' },
+  ];
+
+  const toneClasses: Record<string, string> = {
+    primary: 'bg-primary/10 text-primary',
+    muted: 'bg-muted text-muted-foreground',
+    success: 'bg-[hsl(var(--success-bg))] text-[hsl(var(--success))]',
+    warning: 'bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))]',
+    danger: 'bg-destructive/10 text-destructive',
   };
 
   return (
-    <div className="space-y-8">
-      {/* Stats Cards - Clean Minimalist Design */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Courses</p>
-                <p className="text-3xl font-semibold tracking-tight">{mockCourses.length}</p>
-              </div>
-              <div className="p-3 rounded-full bg-primary/10">
-                <BookOpen className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Enrolled</p>
-                <p className="text-3xl font-semibold tracking-tight">{totalEnrollments}</p>
-              </div>
-              <div className="p-3 rounded-full bg-blue-500/10">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Completion</p>
-                <p className="text-3xl font-semibold tracking-tight">{completionRate}%</p>
-              </div>
-              <div className="p-3 rounded-full bg-green-500/10">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-3xl font-semibold tracking-tight">{inProgressEnrollments}</p>
-              </div>
-              <div className="p-3 rounded-full bg-amber-500/10">
-                <Clock className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                <p className="text-3xl font-semibold tracking-tight">{overdueEnrollments}</p>
-              </div>
-              <div className="p-3 rounded-full bg-red-500/10">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      {/* Module header */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            Learning &amp; Development
+          </h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Build courses, group them into learning paths, assign them to your team and keep mandatory training up to date.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setActiveTab('paths')}>
+            <Route className="mr-2 h-4 w-4" /> New learning path
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setActiveTab('assignments')}>
+            <ClipboardList className="mr-2 h-4 w-4" /> Assign learning
+          </Button>
+          <Button size="sm" onClick={() => setShowAuthoringTool(true)}>
+            <Plus className="mr-2 h-4 w-4" /> New course
+          </Button>
+        </div>
       </div>
 
-      {/* Tab Navigation - Clean Design */}
+      {/* Getting started guidance */}
+      {showGettingStarted && (
+        <Card className="border-primary/20 bg-primary/5 shadow-none">
+          <CardContent className="relative p-5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 h-7 w-7 text-muted-foreground"
+              onClick={() => setShowGettingStarted(false)}
+              aria-label="Hide getting started"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <p className="text-sm font-medium tracking-tight">New here? Learning works in three steps</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              {[
+                { step: '1', title: 'Build a course', body: 'Add lessons, videos and a short quiz — or upload one from a provider.', action: () => setShowAuthoringTool(true), cta: 'Create a course' },
+                { step: '2', title: 'Group into a path', body: 'Put courses in order, e.g. everything a new starter needs in week one.', action: () => setActiveTab('paths'), cta: 'Build a path' },
+                { step: '3', title: 'Assign and track', body: 'Give it to staff with a due date. Reminders are sent automatically.', action: () => setActiveTab('assignments'), cta: 'Assign learning' },
+              ].map((s) => (
+                <div key={s.step} className="rounded-lg border bg-card p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+                      {s.step}
+                    </span>
+                    <p className="text-sm font-medium">{s.title}</p>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{s.body}</p>
+                  <Button variant="link" size="sm" className="mt-1 h-auto px-0 text-xs" onClick={s.action}>
+                    {s.cta} <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {kpis.map((kpi) => (
+          <Card key={kpi.label} className="shadow-sm">
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+              <div className="min-w-0 space-y-0.5">
+                <p className="truncate text-xs font-medium text-muted-foreground">{kpi.label}</p>
+                <p className="text-2xl font-semibold tracking-tight">{kpi.value}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{kpi.hint}</p>
+              </div>
+              <span className={cn('rounded-full p-2.5', toneClasses[kpi.tone])}>
+                <kpi.icon className="h-4 w-4" />
+              </span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Single, flat tab bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="border-b border-border/60">
-          <TabsList className="h-11 bg-transparent p-0 gap-1">
-            <TabsTrigger 
-              value="overview" 
-              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" /> Overview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="paths" 
-              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
-            >
-              <Route className="h-4 w-4 mr-2" /> Learning Paths
-            </TabsTrigger>
-            <TabsTrigger 
-              value="authoring" 
-              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
-            >
-              <PenTool className="h-4 w-4 mr-2" /> Create Course
-            </TabsTrigger>
-            <TabsTrigger 
-              value="manage" 
-              className="px-4 py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium"
-            >
-              <Settings className="h-4 w-4 mr-2" /> Manage
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="h-11 gap-1 bg-transparent p-0">
+              {TABS.map((t) => (
+                <TabsTrigger
+                  key={t.value}
+                  value={t.value}
+                  className="rounded-none px-3 py-2.5 text-sm font-medium text-muted-foreground data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                >
+                  <t.icon className="mr-2 h-4 w-4" />
+                  {t.label}
+                  {t.value === 'assignments' && stats.overdue > 0 && (
+                    <Badge variant="secondary" className="ml-2 bg-destructive/10 text-destructive">
+                      {stats.overdue}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </div>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="mt-6">
-          <LMSAdminPanel 
-            staff={staff}
-            onAssignCourse={handleAssignCourse}
-          />
-        </TabsContent>
+        {activeMeta && (
+          <p className="mt-3 text-xs text-muted-foreground">{activeMeta.help}</p>
+        )}
 
-        {/* Learning Paths Tab */}
-        <TabsContent value="paths" className="mt-6">
+        {Object.keys(PANEL_TAB).map((value) => (
+          <TabsContent key={value} value={value} className="mt-4">
+            <LMSAdminPanel
+              staff={staff}
+              onAssignCourse={handleAssignCourse}
+              embedded
+              tab={PANEL_TAB[value]}
+              onTabChange={(panelTab) => {
+                const moduleTab = Object.keys(PANEL_TAB).find((k) => PANEL_TAB[k] === panelTab);
+                if (moduleTab) setActiveTab(moduleTab);
+              }}
+            />
+          </TabsContent>
+        ))}
+
+        <TabsContent value="paths" className="mt-4">
           <LearningPathsPanel />
         </TabsContent>
 
-        {/* Authoring Tab */}
-        <TabsContent value="authoring" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PenTool className="h-5 w-5 text-primary" />
-                Course Authoring
-              </CardTitle>
-              <CardDescription>
-                Create custom courses with drag-and-drop modules, quizzes, and SCORM support
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card 
-                  className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer" 
-                  onClick={() => setShowAuthoringTool(true)}
-                >
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <Plus className="h-10 w-10 text-muted-foreground mb-3" />
-                    <p className="font-medium">Blank Course</p>
-                    <p className="text-sm text-muted-foreground">Start from scratch</p>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowAuthoringTool(true)}>
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <Package className="h-10 w-10 text-orange-500 mb-3" />
-                    <p className="font-medium">Import SCORM</p>
-                    <p className="text-sm text-muted-foreground">Upload SCORM 1.2/2004</p>
-                  </CardContent>
-                </Card>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowAuthoringTool(true)}>
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <FileText className="h-10 w-10 text-blue-500 mb-3" />
-                    <p className="font-medium">Use Template</p>
-                    <p className="text-sm text-muted-foreground">Pre-built structure</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Separator className="my-6" />
-
-              <div>
-                <h4 className="font-medium mb-4">Recent Drafts</h4>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                  <p>No draft courses yet</p>
-                  <p className="text-sm">Courses you create will appear here</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Manage Tab */}
-        <TabsContent value="manage" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Course Catalog</CardTitle>
-              <CardDescription>Manage your published courses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockCourses.map((course) => {
-                  const courseEnrollments = enrollments.filter(e => e.courseId === course.id);
-                  const completed = courseEnrollments.filter(e => e.status === 'completed').length;
-                  const rate = courseEnrollments.length > 0 
-                    ? Math.round((completed / courseEnrollments.length) * 100) 
-                    : 0;
-                  
-                  return (
-                    <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <GraduationCap className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{course.title}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">{course.category}</Badge>
-                            <Badge className={cn("text-xs", difficultyColors[course.difficulty])}>
-                              {difficultyLabels[course.difficulty]}
-                            </Badge>
-                            {course.complianceRequired && (
-                              <Badge className="text-xs bg-red-50 text-red-700 border border-red-200 hover:bg-red-50">Required</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="font-medium">{courseEnrollments.length}</p>
-                          <p className="text-xs text-muted-foreground">Enrolled</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2">
-                            <Progress value={rate} className="w-16 h-2" />
-                            <span className="text-sm">{rate}%</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">Completion</p>
-                        </div>
-                        <Button variant="outline" size="sm">Edit</Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="settings" className="mt-4">
+          <LmsSettingsPanel />
         </TabsContent>
       </Tabs>
 
-      {/* Course Authoring Tool */}
       <CourseAuthoringTool
         open={showAuthoringTool}
         onClose={() => setShowAuthoringTool(false)}
