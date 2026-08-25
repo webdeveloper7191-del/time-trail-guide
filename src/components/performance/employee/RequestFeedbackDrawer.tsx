@@ -26,9 +26,19 @@ export function RequestFeedbackDrawer({ currentUserId, open, onClose }: RequestF
     () =>
       mockStaff
         .filter(s => s.id !== currentUserId)
+        .map(s => ({
+          id: s.id,
+          name: `${s.firstName} ${s.lastName}`.trim(),
+          role: s.position ?? '',
+        }))
         .filter(s => s.name.toLowerCase().includes(search.toLowerCase())),
     [currentUserId, search],
   );
+
+  const nameOf = (id: string) => {
+    const s = mockStaff.find(m => m.id === id);
+    return s ? `${s.firstName} ${s.lastName}`.trim() : 'Colleague';
+  };
 
   const reset = () => {
     setSearch('');
@@ -50,11 +60,10 @@ export function RequestFeedbackDrawer({ currentUserId, open, onClose }: RequestF
       return;
     }
     selected.forEach(id => {
-      const person = mockStaff.find(s => s.id === id);
       performanceSelfService.requestFeedback({
         fromStaffId: currentUserId,
         toStaffId: id,
-        toStaffName: person?.name ?? 'Colleague',
+        toStaffName: nameOf(id),
         topic: topic.trim(),
         message: message.trim(),
       });
@@ -96,7 +105,7 @@ export function RequestFeedbackDrawer({ currentUserId, open, onClose }: RequestF
             <div className="flex flex-wrap gap-1.5">
               {selected.map(id => (
                 <Badge key={id} variant="secondary" className="text-xs">
-                  {mockStaff.find(s => s.id === id)?.name}
+                  {nameOf(id)}
                 </Badge>
               ))}
             </div>
@@ -112,7 +121,7 @@ export function RequestFeedbackDrawer({ currentUserId, open, onClose }: RequestF
                   <Checkbox checked={selected.includes(person.id)} onCheckedChange={() => toggle(person.id)} />
                   <span className="flex-1">
                     <span className="block text-sm font-medium">{person.name}</span>
-                    <span className="block text-xs text-muted-foreground">{person.position}</span>
+                    <span className="block text-xs text-muted-foreground">{person.role}</span>
                   </span>
                 </label>
               ))}
