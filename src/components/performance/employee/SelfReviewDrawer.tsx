@@ -124,7 +124,7 @@ export function SelfReviewDrawer({ review, open, onClose }: SelfReviewDrawerProp
                   ))}
                   {ratings[criteria.id] && (
                     <span className="text-xs text-muted-foreground">
-                      {ratingLabels[ratings[criteria.id] - 1]}
+                      {points.find(point => point.value === ratings[criteria.id])?.label}
                     </span>
                   )}
                 </div>

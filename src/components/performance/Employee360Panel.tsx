@@ -465,7 +465,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
               <Paper variant="outlined" sx={{ p: 2, bgcolor: '#dbeafe', borderColor: '#93c5fd' }}>
                 <Typography variant="body1" fontWeight={600}>{selectedRequest.title}</Typography>
                 <Typography variant="body2" sx={{ color: '#2563eb' }}>
-                  {mock360Responses.filter(r => r.requestId === selectedRequest.id && r.status === 'completed').length} responses collected
+                  {operations.feedback360Responses.filter(r => r.requestId === selectedRequest.id && r.status === 'completed').length} responses collected
                 </Typography>
               </Paper>
 

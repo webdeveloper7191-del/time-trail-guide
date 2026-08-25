@@ -41,7 +41,7 @@ export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps)
   const [selectedSurvey, setSelectedSurvey] = useState<PulseSurvey | null>(null);
   const [showSurveySheet, setShowSurveySheet] = useState(false);
   const [responses, setResponses] = useState<Record<string, string | number>>({});
-  const completedSurveys = pulseResponses.filter(response => response.respondentId === currentUserId).map(response => response.surveyId);
+  const completedSurveys = pulseResponses.filter(response => response.responderId === currentUserId).map(response => response.surveyId);
 
   const activeSurveys = pulseSurveys.filter(s => s.status === 'active');
   const pendingSurveys = activeSurveys.filter(s => !completedSurveys.includes(s.id));
@@ -65,7 +65,7 @@ export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps)
       return;
     }
 
-    performanceOperationsStore.addPulseResponse({ surveyId: selectedSurvey.id, respondentId: currentUserId, answers: selectedSurvey.questions.map(question => ({ questionId: question.id, value: responses[question.id] })) });
+    performanceOperationsStore.addPulseResponse({ surveyId: selectedSurvey.id, responderId: currentUserId, responses: selectedSurvey.questions.map(question => ({ questionId: question.id, value: responses[question.id] })) });
     toast.success('Survey submitted successfully! Thank you for your feedback.');
     setShowSurveySheet(false);
     setSelectedSurvey(null);
