@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Gift } from 'lucide-react';
 import {
   performanceConfigStore,
   RatingScale,
@@ -16,6 +16,8 @@ import {
 import { RatingScaleDrawer } from './RatingScaleDrawer';
 import { CompetencyDrawer } from './CompetencyDrawer';
 import { ReviewCycleDrawer } from './ReviewCycleDrawer';
+import { RewardsAdminPanel } from './RewardsAdminPanel';
+
 import { toast } from 'sonner';
 
 function useConfig() {
@@ -70,6 +72,8 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
           <TabsTrigger value="scales" className="gap-1.5"><Star className="h-3.5 w-3.5" /> Rating scales</TabsTrigger>
           <TabsTrigger value="competencies" className="gap-1.5"><ListChecks className="h-3.5 w-3.5" /> Competency library</TabsTrigger>
           <TabsTrigger value="cycles" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Review cycles</TabsTrigger>
+          <TabsTrigger value="rewards" className="gap-1.5"><Gift className="h-3.5 w-3.5" /> Rewards &amp; recognition</TabsTrigger>
+
         </TabsList>
 
         {/* Rating scales */}
@@ -203,7 +207,12 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
             </Table>
           </Card>
         </TabsContent>
+
+        <TabsContent value="rewards" className="mt-4">
+          <RewardsAdminPanel />
+        </TabsContent>
       </Tabs>
+
 
       <RatingScaleDrawer open={scaleDrawer.open} scale={scaleDrawer.scale} onClose={() => setScaleDrawer({ open: false, scale: null })} />
       <CompetencyDrawer open={compDrawer.open} competency={compDrawer.competency} onClose={() => setCompDrawer({ open: false, competency: null })} />

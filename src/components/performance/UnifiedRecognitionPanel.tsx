@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
+import { rewardsStore, pointsBalance } from '@/lib/rewardsStore';
+
 import { 
   Box, 
   Stack, 
@@ -115,6 +117,25 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
 
   const getStaff = (id: string) => staff.find(s => s.id === id);
   const currentUserPoints = mockRewardPoints.find(p => p.staffId === currentUserId);
+
+  const rewardsState = useSyncExternalStore(
+    cb => rewardsStore.subscribe(cb),
+    () => rewardsStore.get(),
+    () => rewardsStore.get(),
+  );
+  const activeRewards = rewardsState.catalogue.filter(r => r.isActive);
+  const ledgerBalance = pointsBalance(rewardsState, currentUserId);
+  const redeemableBalance = ledgerBalance || currentUserPoints?.totalPoints || 0;
+
+  const handleRedeem = (rewardId: string) => {
+    try {
+      rewardsStore.requestRedemption(currentUserId, rewardId);
+      toast.success('Redemption requested — you will be notified once it is approved.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
 
   const handleSubmit = async () => {
     if (!recipient || !message.trim()) return;
@@ -517,17 +538,15 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
 
         <TabsContent value="rewards" className="mt-4">
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Redeem your points for these rewards. Contact HR to claim your reward.
+            Redeem your points for these rewards. You have {redeemableBalance} points available.
           </Typography>
+          {activeRewards.length === 0 && (
+            <Typography variant="body2" color="text.secondary">
+              No rewards have been set up yet. An admin can add them under Performance Setup → Rewards &amp; recognition.
+            </Typography>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { id: 1, name: 'Coffee Voucher', points: 50, emoji: '☕', description: 'Free coffee at the local café' },
-              { id: 2, name: 'Extra Break', points: 100, emoji: '⏰', description: 'Extra 15-min break' },
-              { id: 3, name: 'Lunch on Us', points: 200, emoji: '🍽️', description: 'Free lunch at any restaurant' },
-              { id: 4, name: 'Half Day Off', points: 500, emoji: '🏖️', description: 'Leave 4 hours early' },
-              { id: 5, name: 'Gift Card', points: 300, emoji: '🎁', description: '$25 gift card of your choice' },
-              { id: 6, name: 'Team Shoutout', points: 25, emoji: '📣', description: 'Featured in team newsletter' },
-            ].map(reward => (
+            {activeRewards.map(reward => (
               <Card key={reward.id} sx={{ p: 3 }}>
                 <Stack direction="row" alignItems="flex-start" spacing={2}>
                   <Typography variant="h4">{reward.emoji}</Typography>
@@ -537,14 +556,15 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 2 }}>
                       <Chip 
                         icon={<Coins className="h-3 w-3" />}
-                        label={`${reward.points} pts`}
+                        label={`${reward.pointsCost} pts`}
                         size="small"
                         sx={{ bgcolor: 'rgba(251, 191, 36, 0.12)', color: 'rgb(161, 98, 7)' }}
                       />
                       <Button 
                         variant="outlined" 
                         size="small"
-                        disabled={(currentUserPoints?.totalPoints || 0) < reward.points}
+                        disabled={redeemableBalance < reward.pointsCost || reward.stock === 0}
+                        onClick={() => handleRedeem(reward.id)}
                       >
                         Redeem
                       </Button>
@@ -555,6 +575,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
             ))}
           </div>
         </TabsContent>
+
       </Tabs>
 
       {/* Award Points Modal */}
