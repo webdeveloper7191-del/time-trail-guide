@@ -49,9 +49,11 @@ import { toast } from 'sonner';
 interface MentorshipMatchingProps {
   staff: StaffMember[];
   currentUserId: string;
+  /** Hides the panel's own title/description and summary stat cards (parent shell shows them) */
+  embedded?: boolean;
 }
 
-export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatchingProps) {
+export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false }: MentorshipMatchingProps) {
   const [mentors, setMentors] = useState<MentorProfile[]>(initialMentors);
   const [mentees, setMentees] = useState<MenteeProfile[]>(initialMentees);
   const [matches, setMatches] = useState<MentorshipMatch[]>(initialMatches);
@@ -497,6 +499,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Header */}
+      {!embedded && (
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
         <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
@@ -512,8 +515,10 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
           </Typography>
         </Box>
       </Stack>
+      )}
 
       {/* Stats */}
+      {!embedded && (
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
           <Box sx={{ p: 2 }}>
@@ -560,6 +565,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId }: MentorshipMatc
           </Box>
         </Card>
       </Box>
+      )}
 
       {/* View Tabs */}
       <Stack direction="row" spacing={1} flexWrap="wrap">
