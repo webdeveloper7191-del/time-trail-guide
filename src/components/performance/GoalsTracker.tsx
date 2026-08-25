@@ -45,6 +45,7 @@ interface GoalsTrackerProps {
   onUpdateProgress: (goalId: string, progress: number) => void;
   compact?: boolean;
   showFilters?: boolean;
+  embedded?: boolean;
 }
 
 const priorityColors: Record<string, { bg: string; text: string }> = {
@@ -79,6 +80,7 @@ export function GoalsTracker({
   onUpdateProgress,
   compact = false,
   showFilters = true,
+  embedded = false,
 }: GoalsTrackerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<GoalStatus | 'all'>('all');
@@ -194,11 +196,11 @@ export function GoalsTracker({
       {/* Header */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between" 
+        justifyContent={embedded ? 'flex-end' : 'space-between'}
         alignItems={{ xs: 'stretch', sm: 'flex-start' }}
         spacing={{ xs: 2, sm: 0 }}
       >
-        <Box>
+        {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <Target className="h-5 w-5" style={{ color: 'var(--primary)' }} />
@@ -214,7 +216,7 @@ export function GoalsTracker({
           >
             Track progress on personal and professional development goals
           </Typography>
-        </Box>
+        </Box>}
         <Stack 
           direction={{ xs: 'column', sm: 'row' }} 
           spacing={1}
@@ -244,7 +246,7 @@ export function GoalsTracker({
       </Stack>
 
       {/* Stats Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
+      {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: { xs: 1.5, md: 2 } }}>
         {[
           { label: 'Total Goals', value: stats.total, icon: Target, color: 'primary' },
           { label: 'In Progress', value: stats.active, icon: Clock, color: 'info' },
@@ -284,7 +286,7 @@ export function GoalsTracker({
             </Box>
           </Card>
         ))}
-      </Box>
+      </Box>}
 
       {/* Filters */}
       {showFilters && (

@@ -47,6 +47,7 @@ import { toast } from 'sonner';
 
 interface OKRCascadePanelProps {
   currentUserId: string;
+  embedded?: boolean;
 }
 
 const getLevelIcon = (level: OKRLevel) => {
@@ -84,7 +85,7 @@ const getProgressColor = (progress: number) => {
   return 'error.main';
 };
 
-export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
+export function OKRCascadePanel({ currentUserId, embedded = false }: OKRCascadePanelProps) {
   const [objectives, setObjectives] = useState<Objective[]>(initialMockObjectives);
   const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(new Set(['obj-company-1']));
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
@@ -581,22 +582,22 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Box>
+      <Stack direction="row" justifyContent={embedded ? 'flex-end' : 'space-between'} alignItems="center" sx={{ mb: 3 }}>
+        {!embedded && <Box>
           <Typography variant="h6" fontWeight={600} color="text.primary">
             OKR Alignment
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Company, team, and individual objectives with cascading alignment
           </Typography>
-        </Box>
+        </Box>}
         <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
           Create Objective
         </Button>
       </Stack>
 
       {/* Summary Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
+      {!embedded && <div className="grid gap-4 md:grid-cols-4 mb-6">
         <Card sx={{ p: 3 }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
             <Target size={18} className="text-primary" />
@@ -625,7 +626,7 @@ export function OKRCascadePanel({ currentUserId }: OKRCascadePanelProps) {
           </Stack>
           <Typography variant="h4" fontWeight={700} color="primary.main">{avgProgress}%</Typography>
         </Card>
-      </div>
+      </div>}
 
       <Tabs defaultValue="hierarchy" className="w-full">
         <TabsList className="mb-4">

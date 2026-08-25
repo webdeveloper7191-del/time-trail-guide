@@ -3,6 +3,10 @@ import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
+import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
+import { getWorkspaceMeta, type WorkspaceMeta } from '@/components/performance/workspaceConfig';
+import { GoalRecommendationsPanel } from '@/components/performance/goals/GoalRecommendationsPanel';
+import { PIPManagementPanel } from '@/components/performance/PIPManagementPanel';
 
 import { GoalsTracker } from '@/components/performance/GoalsTracker';
 import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
@@ -52,6 +56,7 @@ const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
 export default function PerformanceManagement() {
   const [activeTab, setActiveTab] = useState('plans');
+
   const [feedbackView, setFeedbackView] = useState<'received' | 'given' | 'all'>('received');
   
   // Detail sheet states
@@ -87,6 +92,25 @@ export default function PerformanceManagement() {
     createReview, createConversation,
     addConversationNote, completeConversation
   } = usePerformanceData();
+
+  const workspaceMeta: WorkspaceMeta = useMemo(
+    () =>
+      getWorkspaceMeta(activeTab, {
+        goals,
+        reviews,
+        feedback,
+        conversations,
+        staff: mockStaff,
+        goTo: setActiveTab,
+      }) ?? {
+        icon: Target,
+        title: 'Performance',
+        description: 'Manage performance activity for your team.',
+      },
+    [activeTab, goals, reviews, feedback, conversations],
+  );
+
+
 
   useEffect(() => {
     fetchReviews();
@@ -366,9 +390,24 @@ export default function PerformanceManagement() {
 
 
           {/* Tab Content */}
-          <Box>
+          {activeTab === 'lms' && (
+            <LMSAdminModule currentUserId={CURRENT_USER_ID} staff={mockStaff} />
+          )}
+
+          {activeTab !== 'lms' && (
+          <ModuleWorkspace
+            key={activeTab}
+            storageKey={activeTab}
+            icon={workspaceMeta.icon}
+            title={workspaceMeta.title}
+            description={workspaceMeta.description}
+            kpis={workspaceMeta.kpis}
+            steps={workspaceMeta.steps}
+            guideTitle={workspaceMeta.guideTitle}
+          >
             {activeTab === 'plans' && (
               <PlanManagementPanel
+                embedded
                 staff={mockStaff}
                 goals={goals}
                 reviews={reviews}
@@ -385,15 +424,24 @@ export default function PerformanceManagement() {
               />
             )}
 
-            {activeTab === 'okr' && (
-              <OKRCascadePanel currentUserId={CURRENT_USER_ID} />
+            {activeTab === 'goal-recommendations' && (
+              <GoalRecommendationsPanel
+                embedded
+                staff={mockStaff}
+                currentStaffId={CURRENT_USER_ID}
+                existingGoals={goals}
+                onAdoptGoal={(rec) => {
+                  setActiveTab('goals');
+                }}
+              />
             )}
 
-            {activeTab === 'lms' && (
-              <LMSAdminModule
-                currentUserId={CURRENT_USER_ID}
-                staff={mockStaff}
-              />
+            {activeTab === 'pip' && (
+              <PIPManagementPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />
+            )}
+
+            {activeTab === 'okr' && (
+              <OKRCascadePanel embedded currentUserId={CURRENT_USER_ID} />
             )}
 
             {activeTab === 'tasks' && (
@@ -410,6 +458,7 @@ export default function PerformanceManagement() {
 
             {activeTab === 'goals' && (
               <GoalsTracker
+                embedded
                 goals={goals}
                 onCreateGoal={() => setShowCreateGoalDrawer(true)}
                 onAssignGoal={() => setShowAssignGoalDrawer(true)}
@@ -418,6 +467,7 @@ export default function PerformanceManagement() {
                 onUpdateProgress={updateGoalProgress}
               />
             )}
+
 
             {activeTab === 'reviews' && (
               <ReviewsDashboard
@@ -519,7 +569,9 @@ export default function PerformanceManagement() {
                 conversations={conversations}
               />
             )}
-          </Box>
+          </ModuleWorkspace>
+          )}
+
         </Box>
       </Box>
 

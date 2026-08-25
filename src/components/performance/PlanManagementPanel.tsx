@@ -63,6 +63,7 @@ interface PlanManagementPanelProps {
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
   onQuickAssignPlan: () => void;
   onDeleteTemplate?: (templateId: string) => void;
+  embedded?: boolean;
 }
 
 export function PlanManagementPanel({
@@ -79,6 +80,7 @@ export function PlanManagementPanel({
   onDuplicateTemplate,
   onQuickAssignPlan,
   onDeleteTemplate,
+  embedded = false,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,6 +139,7 @@ export function PlanManagementPanel({
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Header */}
+      {!embedded && (
       <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-lg md:text-xl font-semibold tracking-tight flex items-center gap-2.5">
@@ -150,6 +153,8 @@ export function PlanManagementPanel({
           </p>
         </div>
       </div>
+      )}
+
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'assigned' | 'templates')}>
