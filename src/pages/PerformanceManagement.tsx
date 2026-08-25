@@ -389,6 +389,12 @@ export default function PerformanceManagement() {
     setSelectedPlan(updated);
   };
 
+  const handleCancelPlan = async (planId: string, reason: string) => {
+    const updated = await updatePlan(planId, { status: 'cancelled', cancellationReason: reason });
+    if (!updated) throw new Error('Plan cancellation failed');
+    setSelectedPlan(updated);
+  };
+
   const tabConfig = [
     { value: 'plans', label: 'Plans', icon: FileText },
     { value: 'okr', label: 'OKRs', icon: Crosshair },
@@ -782,6 +788,7 @@ export default function PerformanceManagement() {
         onDeletePlan={handleDeletePlan}
         onExtendPlan={handleExtendPlan}
         onEditPlan={handleEditPlan}
+        onCancelPlan={handleCancelPlan}
       />
 
       <EditPlanDrawer

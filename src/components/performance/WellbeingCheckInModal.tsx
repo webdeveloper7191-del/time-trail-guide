@@ -18,6 +18,7 @@ interface WellbeingCheckInModalProps {
   onClose: () => void;
   onSubmit: (checkIn: Partial<WellbeingCheckIn>) => void;
   staffId: string;
+  currentUserId?: string;
 }
 
 const moodOptions = [

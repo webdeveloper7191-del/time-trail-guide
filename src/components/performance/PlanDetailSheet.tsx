@@ -66,6 +66,7 @@ interface PlanDetailSheetProps {
   onDeletePlan?: (planId: string) => Promise<void>;
   onExtendPlan?: (planId: string, newEndDate: string) => Promise<void>;
   onEditPlan?: (plan: AssignedPlan) => void;
+  onCancelPlan?: (planId: string, reason: string) => Promise<void>;
 }
 
 export function PlanDetailSheet({
@@ -83,6 +84,7 @@ export function PlanDetailSheet({
   onDeletePlan,
   onExtendPlan,
   onEditPlan,
+  onCancelPlan,
 }: PlanDetailSheetProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [updating, setUpdating] = useState(false);
@@ -717,7 +719,8 @@ export function PlanDetailSheet({
         onConfirm={async (reason) => {
             if (plan) {
             setUpdating(true);
-              await onUpdateStatus(plan.id, 'cancelled');
+              if (onCancelPlan) await onCancelPlan(plan.id, reason);
+              else await onUpdateStatus(plan.id, 'cancelled');
             setUpdating(false);
             setShowCancelDialog(false);
           }

@@ -17,6 +17,7 @@ import {
   ClipboardList,
   PenLine,
   ThumbsUp,
+  HeartPulse,
 } from 'lucide-react';
 import { format, parseISO, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,8 @@ import { UpdateGoalProgressDrawer } from './employee/UpdateGoalProgressDrawer';
 import { SelfReviewDrawer } from './employee/SelfReviewDrawer';
 import { ConversationPrepDrawer } from './employee/ConversationPrepDrawer';
 import { RequestFeedbackDrawer } from './employee/RequestFeedbackDrawer';
+import { WellbeingCheckInModal } from './WellbeingCheckInModal';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 
 interface EmployeePerformancePanelProps {
   currentUserId: string;
@@ -78,6 +81,9 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
   const [reviewDrawer, setReviewDrawer] = useState<PerformanceReview | null>(null);
   const [conversationDrawer, setConversationDrawer] = useState<Conversation | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [wellbeingOpen, setWellbeingOpen] = useState(false);
+  const { wellbeingCheckIns } = usePerformanceOperations();
+  const latestCheckIn = wellbeingCheckIns.find(item => item.staffId === currentUserId);
 
   // My data, with employee self-service edits merged over the source records.
   const myGoals = useMemo(
@@ -247,10 +253,16 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
             </TabsTrigger>
           </TabsList>
 
-          <Button size="sm" variant="outline" onClick={() => setFeedbackOpen(true)}>
-            <MessageSquarePlus className="mr-1.5 h-4 w-4" />
-            Request feedback
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setWellbeingOpen(true)}>
+              <HeartPulse className="mr-1.5 h-4 w-4" />
+              {latestCheckIn ? 'New wellbeing check-in' : 'Wellbeing check-in'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setFeedbackOpen(true)}>
+              <MessageSquarePlus className="mr-1.5 h-4 w-4" />
+              Request feedback
+            </Button>
+          </div>
         </div>
 
         {/* ---------------------------------------------------------------- Goals */}
@@ -705,6 +717,23 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
         currentUserId={currentUserId}
         open={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
+      />
+      <WellbeingCheckInModal
+        currentUserId={currentUserId}
+        staffId={currentUserId}
+        open={wellbeingOpen}
+        onClose={() => setWellbeingOpen(false)}
+        onSubmit={(checkIn) => {
+          if (!checkIn.staffId || !checkIn.date || checkIn.energyLevel === undefined || checkIn.stressLevel === undefined || checkIn.workLifeBalance === undefined) return;
+          performanceOperationsStore.addWellbeingCheckIn({
+            staffId: checkIn.staffId,
+            date: checkIn.date,
+            energyLevel: checkIn.energyLevel,
+            stressLevel: checkIn.stressLevel,
+            workLifeBalance: checkIn.workLifeBalance,
+            notes: checkIn.notes,
+          });
+        }}
       />
     </div>
   );
