@@ -7,6 +7,7 @@ import {
   Avatar,
   LinearProgress,
   Divider,
+  Slider,
 } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
@@ -361,6 +362,28 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
                           Notes
                         </Typography>
                         <Typography variant="body2">{rating.discussionNotes}</Typography>
+                      </Box>
+                    )}
+
+                    {selectedSession.status !== 'completed' && (
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary">Calibrated rating</Typography>
+                        <Slider
+                          min={1}
+                          max={5}
+                          step={0.1}
+                          value={rating.calibratedRating ?? rating.originalRating}
+                          valueLabelDisplay="auto"
+                          onChangeCommitted={(_, value) => {
+                            performanceOperationsStore.saveCalibrationRating({
+                              ...rating,
+                              calibratedRating: value as number,
+                              adjustedBy: currentUserId,
+                              adjustedAt: new Date().toISOString(),
+                            });
+                            toast.success('Calibrated rating saved');
+                          }}
+                        />
                       </Box>
                     )}
                   </Card>
