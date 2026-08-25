@@ -451,6 +451,8 @@ export function GoalRecommendationsPanel({
     toast.success(`Goal "${rec.title}" added to your goals!`);
   };
 
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
       {!embedded && (
         <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "flex-start" }} spacing={2}>
           <Box>
