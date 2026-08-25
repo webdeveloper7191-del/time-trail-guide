@@ -422,7 +422,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="overflow-x-auto">
+        <div className={cn('overflow-x-auto', embedded && 'hidden')}>
           <TabsList className="whitespace-nowrap">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
             <TabsTrigger value="courses" className="text-xs sm:text-sm">Courses</TabsTrigger>
@@ -434,6 +434,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
             </TabsTrigger>
           </TabsList>
         </div>
+
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="mt-6 space-y-6">
