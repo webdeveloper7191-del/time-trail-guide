@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Gift } from 'lucide-react';
+import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Gift, Tags, Grid3X3, SlidersHorizontal } from 'lucide-react';
 import {
   performanceConfigStore,
   RatingScale,
@@ -13,10 +13,15 @@ import {
   reviewCycleStageLabels,
   totalWeight,
 } from '@/lib/performanceConfigStore';
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 import { RatingScaleDrawer } from './RatingScaleDrawer';
 import { CompetencyDrawer } from './CompetencyDrawer';
 import { ReviewCycleDrawer } from './ReviewCycleDrawer';
 import { RewardsAdminPanel } from './RewardsAdminPanel';
+import { TaxonomyAdminPanel } from './TaxonomyAdminPanel';
+import { NineBoxAdminPanel } from './NineBoxAdminPanel';
+import { PerformanceRulesPanel } from './PerformanceRulesPanel';
+
 
 import { toast } from 'sonner';
 
@@ -58,23 +63,34 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
           <div>
           <h2 className="text-lg font-semibold tracking-tight">Performance configuration</h2>
           <p className="text-sm text-muted-foreground">
-            Tenant-level setup for how performance is measured: rating scales, the competency library and the review-cycle calendar.
+            Tenant-level setup for everything the module uses: rating scales, competencies, review cycles, dropdown lists, the talent grid, rewards and module rules.
           </p>
         </div>
         )}
-        <Button variant="outline" size="sm" onClick={() => { performanceConfigStore.reset(); toast.success('Configuration reset to defaults'); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            performanceConfigStore.reset();
+            performanceTaxonomyStore.reset();
+            toast.success('Configuration reset to defaults');
+          }}
+        >
           <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset to defaults
         </Button>
       </div>
 
       <Tabs defaultValue="scales">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="scales" className="gap-1.5"><Star className="h-3.5 w-3.5" /> Rating scales</TabsTrigger>
           <TabsTrigger value="competencies" className="gap-1.5"><ListChecks className="h-3.5 w-3.5" /> Competency library</TabsTrigger>
           <TabsTrigger value="cycles" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Review cycles</TabsTrigger>
+          <TabsTrigger value="lists" className="gap-1.5"><Tags className="h-3.5 w-3.5" /> Dropdown lists</TabsTrigger>
+          <TabsTrigger value="ninebox" className="gap-1.5"><Grid3X3 className="h-3.5 w-3.5" /> Talent grid</TabsTrigger>
           <TabsTrigger value="rewards" className="gap-1.5"><Gift className="h-3.5 w-3.5" /> Rewards &amp; recognition</TabsTrigger>
-
+          <TabsTrigger value="rules" className="gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5" /> Module rules</TabsTrigger>
         </TabsList>
+
 
         {/* Rating scales */}
         <TabsContent value="scales" className="mt-4 space-y-3">
@@ -208,9 +224,22 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
           </Card>
         </TabsContent>
 
+        <TabsContent value="lists" className="mt-4">
+          <TaxonomyAdminPanel />
+        </TabsContent>
+
+        <TabsContent value="ninebox" className="mt-4">
+          <NineBoxAdminPanel />
+        </TabsContent>
+
         <TabsContent value="rewards" className="mt-4">
           <RewardsAdminPanel />
         </TabsContent>
+
+        <TabsContent value="rules" className="mt-4">
+          <PerformanceRulesPanel />
+        </TabsContent>
+
       </Tabs>
 
 

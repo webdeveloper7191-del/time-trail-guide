@@ -24,10 +24,21 @@ import {
 } from 'lucide-react';
 import { 
   TalentAssessment, 
-  nineBoxPositions,
   PerformanceLevel,
   PotentialLevel,
 } from '@/types/advancedPerformance';
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
+
+/** Talent grid boxes are tenant-configurable (Performance setup > Talent grid). */
+const getNineBoxPositions = () =>
+  performanceTaxonomyStore.get().nineBox.map(c => ({
+    performance: c.performance,
+    potential: c.potential,
+    label: c.label,
+    description: c.description,
+    color: c.tone,
+    recommendations: c.recommendations,
+  }));
 import { mockTalentAssessments as initialMockAssessments } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { TalentAssessmentDrawer } from './TalentAssessmentDrawer';
@@ -39,7 +50,7 @@ interface NineBoxTalentGridProps {
 }
 
 const getBoxColor = (performance: PerformanceLevel, potential: PotentialLevel) => {
-  const position = nineBoxPositions.find(
+  const position = getNineBoxPositions().find(
     p => p.performance === performance && p.potential === potential
   );
   
@@ -97,7 +108,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
   }, [assessments]);
 
   const getBoxPosition = (performance: PerformanceLevel, potential: PotentialLevel) => {
-    return nineBoxPositions.find(
+    return getNineBoxPositions().find(
       p => p.performance === performance && p.potential === potential
     );
   };
@@ -421,7 +432,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
             Legend
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1}>
-            {nineBoxPositions.slice(0, 5).map(pos => {
+            {getNineBoxPositions().slice(0, 5).map(pos => {
               const colors = getBoxColor(pos.performance, pos.potential);
               return (
                 <Chip
