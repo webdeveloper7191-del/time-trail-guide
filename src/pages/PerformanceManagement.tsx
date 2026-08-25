@@ -56,6 +56,7 @@ const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
 export default function PerformanceManagement() {
   const [activeTab, setActiveTab] = useState('plans');
+
   const [feedbackView, setFeedbackView] = useState<'received' | 'given' | 'all'>('received');
   
   // Detail sheet states
