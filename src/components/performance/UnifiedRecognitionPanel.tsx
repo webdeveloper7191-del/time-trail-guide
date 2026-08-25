@@ -118,6 +118,25 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
   const getStaff = (id: string) => staff.find(s => s.id === id);
   const currentUserPoints = mockRewardPoints.find(p => p.staffId === currentUserId);
 
+  const rewardsState = useSyncExternalStore(
+    cb => rewardsStore.subscribe(cb),
+    () => rewardsStore.get(),
+    () => rewardsStore.get(),
+  );
+  const activeRewards = rewardsState.catalogue.filter(r => r.isActive);
+  const ledgerBalance = pointsBalance(rewardsState, currentUserId);
+  const redeemableBalance = ledgerBalance || currentUserPoints?.totalPoints || 0;
+
+  const handleRedeem = (rewardId: string) => {
+    try {
+      rewardsStore.requestRedemption(currentUserId, rewardId);
+      toast.success('Redemption requested — you will be notified once it is approved.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+
   const handleSubmit = async () => {
     if (!recipient || !message.trim()) return;
     setSending(true);
