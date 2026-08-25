@@ -42,7 +42,12 @@ export interface BoardComment {
   authorName: string;
   text: string;
   createdAt: string;
+  /** Display names @mentioned in the body — used for notification chips. */
+  mentions?: string[];
 }
+
+/** Comment-thread filter applied on top of the board's task list. */
+export type BoardCommentFilter = 'all' | 'with_comments' | 'unread' | 'mentions_me';
 
 interface BoardState {
   groupBy: BoardGroupBy;
@@ -51,7 +56,14 @@ interface BoardState {
   overrides: Record<string, TaskOverride>;
   /** Comment threads keyed by task id. */
   comments: Record<string, BoardComment[]>;
+  /** ISO timestamp of when the current user last read each thread. */
+  threadReads: Record<string, string>;
+  commentFilter: BoardCommentFilter;
 }
+
+/** Name used for locally authored comments and for "mentions me" matching. */
+export const CURRENT_USER_NAME = 'You';
+
 
 
 export const TONE_CLASSES: Record<BoardColumn['tone'], string> = {
