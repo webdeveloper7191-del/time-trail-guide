@@ -45,7 +45,7 @@ import {
   PlanType,
   PlanStatus,
 } from '@/types/performancePlan';
-import { performancePlanTemplates, mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
+import { performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { StaffMember } from '@/types/staff';
 import { Goal, PerformanceReview, Conversation } from '@/types/performance';
 import { calculatePlanProgress, LMSData } from '@/lib/planProgressCalculator';
@@ -65,6 +65,8 @@ interface PlanManagementPanelProps {
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
   onQuickAssignPlan: () => void;
   onDeleteTemplate?: (templateId: string) => void;
+  assignedPlans: AssignedPlan[];
+  customTemplates: PerformancePlanTemplate[];
   embedded?: boolean;
 }
 
@@ -82,6 +84,8 @@ export function PlanManagementPanel({
   onDuplicateTemplate,
   onQuickAssignPlan,
   onDeleteTemplate,
+  assignedPlans,
+  customTemplates,
   embedded = false,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
@@ -92,7 +96,7 @@ export function PlanManagementPanel({
 
   // Filter assigned plans
   const filteredPlans = useMemo(() => {
-    return mockAssignedPlans.filter((plan) => {
+    return assignedPlans.filter((plan) => {
       const staffMember = staff.find(s => s.id === plan.staffId);
       const staffName = staffMember ? `${staffMember.firstName} ${staffMember.lastName}` : '';
       const matchesSearch = 
@@ -102,11 +106,11 @@ export function PlanManagementPanel({
       const matchesStatus = statusFilter === 'all' || plan.status === statusFilter;
       return matchesSearch && matchesType && matchesStatus;
     });
-  }, [searchTerm, typeFilter, statusFilter, staff]);
+  }, [assignedPlans, searchTerm, typeFilter, statusFilter, staff]);
 
   // Filter templates
   const filteredTemplates = useMemo(() => {
-    return performancePlanTemplates.filter((template) => {
+    return [...performancePlanTemplates, ...customTemplates].filter((template) => {
       const matchesSearch = 
         template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -114,7 +118,7 @@ export function PlanManagementPanel({
       const matchesType = typeFilter === 'all' || template.type === typeFilter;
       return matchesSearch && matchesIndustry && matchesType;
     });
-  }, [searchTerm, industryFilter, typeFilter]);
+  }, [customTemplates, searchTerm, industryFilter, typeFilter]);
 
   // Group templates by industry
   const templatesByIndustry = useMemo(() => {
@@ -169,7 +173,7 @@ export function PlanManagementPanel({
               >
                 <Users className="h-4 w-4 mr-1.5 md:mr-2" />
                 <span className="hidden sm:inline">Assigned&nbsp;</span>Plans
-                <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{mockAssignedPlans.length}</Badge>
+                <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{assignedPlans.length}</Badge>
               </TabsTrigger>
               <TabsTrigger 
                 value="templates" 
@@ -177,7 +181,7 @@ export function PlanManagementPanel({
               >
                 <Sparkles className="h-4 w-4 mr-1.5 md:mr-2" />
                 Templates
-                <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{performancePlanTemplates.length}</Badge>
+                <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{performancePlanTemplates.length + customTemplates.length}</Badge>
               </TabsTrigger>
             </TabsList>
           </div>

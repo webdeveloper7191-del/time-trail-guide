@@ -39,6 +39,16 @@ import { SkillsCareerPanel } from '@/components/performance/SkillsCareerPanel';
 import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
 import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
 import { CalibrationPanel } from '@/components/performance/CalibrationPanel';
+import { PeerNominationsPanel } from '@/components/performance/engagement/PeerNominationsPanel';
+import { MentorshipMatchingPanel } from '@/components/performance/engagement/MentorshipMatchingPanel';
+import { DevelopmentBudgetTracker } from '@/components/performance/engagement/DevelopmentBudgetTracker';
+import { CareerPathingVisualization } from '@/components/performance/talent/CareerPathingVisualization';
+import { SuccessionPlanningPanel } from '@/components/performance/SuccessionPlanningPanel';
+import { CalendarIntegrationPanel } from '@/components/performance/engagement/CalendarIntegrationPanel';
+import { SentimentAnalysisPanel } from '@/components/performance/insights/SentimentAnalysisPanel';
+import { BenchmarkingDashboard } from '@/components/performance/insights/BenchmarkingDashboard';
+import { CompensationPanel } from '@/components/performance/CompensationPanel';
+import { PerformanceAdminPanel } from '@/components/performance/admin/PerformanceAdminPanel';
 import { OKRCascadePanel } from '@/components/performance/OKRCascadePanel';
 // New Employment Hero-style features
 import { UnifiedRecognitionPanel } from '@/components/performance/UnifiedRecognitionPanel';
@@ -46,11 +56,12 @@ import { HappinessScoreWidget } from '@/components/performance/HappinessScoreWid
 import { PerformanceExecutiveDashboard } from '@/components/performance/PerformanceExecutiveDashboard';
 import { usePerformanceData } from '@/hooks/usePerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
-import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
+import { performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
 import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePlanManagement } from '@/hooks/usePlanManagement';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
@@ -92,6 +103,17 @@ export default function PerformanceManagement() {
     createReview, createConversation,
     addConversationNote, completeConversation
   } = usePerformanceData();
+  const {
+    assignedPlans,
+    customTemplates,
+    createPlan,
+    updatePlanStatus,
+    deletePlan,
+    extendPlan,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+  } = usePlanManagement();
 
   const workspaceMeta: WorkspaceMeta = useMemo(
     () =>
@@ -260,16 +282,18 @@ export default function PerformanceManagement() {
   };
 
   const handleSaveTemplate = async (template: Omit<PerformancePlanTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
-    console.log('Saving template:', template);
     const isEditing = editingTemplate !== null;
+    if (editingTemplate && !editingTemplate.isSystem && customTemplates.some(item => item.id === editingTemplate.id)) {
+      await updateTemplate(editingTemplate.id, template);
+    } else {
+      await createTemplate({ ...template, isSystem: false });
+    }
     setShowCreateTemplateDrawer(false);
     setEditingTemplate(null);
-    toast.success(isEditing ? 'Template updated successfully!' : 'Template created successfully!');
   };
 
   const handleDeleteTemplate = (templateId: string) => {
-    console.log('Deleting template:', templateId);
-    toast.success('Template deleted successfully');
+    void deleteTemplate(templateId);
   };
 
   const handleAssignPlanSubmit = async (data: {
@@ -281,8 +305,27 @@ export default function PerformanceManagement() {
     selectedReviews: string[];
     selectedConversations: string[];
   }) => {
-    console.log('Assigning plan:', data);
-    toast.success('Performance plan assigned successfully!');
+    const template = [...performancePlanTemplates, ...customTemplates].find(item => item.id === data.templateId);
+    if (!template) {
+      toast.error('Plan template could not be found');
+      return;
+    }
+    await Promise.all(data.staffIds.map(staffId => createPlan({
+      templateId: template.id,
+      templateName: template.name,
+      staffId,
+      assignedBy: CURRENT_USER_ID,
+      type: template.type,
+      status: 'active',
+      startDate: data.startDate.toISOString(),
+      endDate: new Date(data.startDate.getTime() + template.durationDays * 86400000).toISOString(),
+      notes: data.notes,
+      goalIds: data.selectedGoals,
+      reviewIds: data.selectedReviews,
+      conversationIds: data.selectedConversations,
+      learningPathIds: template.learningPathIds ?? [],
+      courseIds: template.courseIds ?? [],
+    })));
     setShowAssignDrawer(false);
     setSelectedTemplate(null);
   };
@@ -293,27 +336,42 @@ export default function PerformanceManagement() {
     selectedReviews: string[],
     selectedConversations: string[]
   ) => {
-    console.log('Bulk assigning plans:', assignments);
-    toast.success(`Plans assigned to ${assignments.length} team members!`);
+    const template = selectedTemplate;
+    if (!template) return;
+    await Promise.all(assignments.map(assignment => createPlan({
+      templateId: template.id,
+      templateName: template.name,
+      staffId: assignment.staffId,
+      assignedBy: CURRENT_USER_ID,
+      type: template.type,
+      status: 'active',
+      startDate: assignment.startDate.toISOString(),
+      endDate: new Date(assignment.startDate.getTime() + template.durationDays * 86400000).toISOString(),
+      notes: assignment.notes,
+      goalIds: selectedGoals,
+      reviewIds: selectedReviews,
+      conversationIds: selectedConversations,
+      learningPathIds: template.learningPathIds ?? [],
+      courseIds: template.courseIds ?? [],
+    })));
     setShowBulkAssignDrawer(false);
     setSelectedTemplate(null);
   };
 
   const handleUpdatePlanStatus = async (planId: string, status: PlanStatus) => {
-    console.log('Updating plan status:', planId, status);
-    toast.success(`Plan status updated to ${status}`);
+    await updatePlanStatus(planId, status);
+    setSelectedPlan(prev => prev?.id === planId ? { ...prev, status } : prev);
   };
 
   const handleDeletePlan = async (planId: string) => {
-    console.log('Deleting plan:', planId);
-    toast.success('Plan deleted successfully');
+    await deletePlan(planId);
     setShowPlanDetail(false);
     setSelectedPlan(null);
   };
 
   const handleExtendPlan = async (planId: string, newEndDate: string) => {
-    console.log('Extending plan:', planId, 'to', newEndDate);
-    toast.success('Plan extended successfully');
+    await extendPlan(planId, newEndDate);
+    setSelectedPlan(prev => prev?.id === planId ? { ...prev, endDate: newEndDate } : prev);
   };
 
   const tabConfig = [
@@ -373,13 +431,13 @@ export default function PerformanceManagement() {
               goals={goals}
               reviews={reviews}
               conversations={conversations}
-              plans={mockAssignedPlans}
+              plans={assignedPlans}
               currentUserId={CURRENT_USER_ID}
               onViewGoal={handleNotificationGoal}
               onViewReview={handleNotificationReview}
               onViewConversation={handleNotificationConversation}
               onViewPlan={(planId) => {
-                const plan = mockAssignedPlans.find(p => p.id === planId);
+                const plan = assignedPlans.find(p => p.id === planId);
                 if (plan) handleViewPlan(plan);
               }}
             />
@@ -421,6 +479,8 @@ export default function PerformanceManagement() {
                 onDuplicateTemplate={handleDuplicateTemplate}
                 onQuickAssignPlan={() => setShowQuickAssignDrawer(true)}
                 onDeleteTemplate={handleDeleteTemplate}
+                assignedPlans={assignedPlans}
+                customTemplates={customTemplates}
               />
             )}
 
@@ -431,7 +491,32 @@ export default function PerformanceManagement() {
                 currentStaffId={CURRENT_USER_ID}
                 existingGoals={goals}
                 onAdoptGoal={(rec) => {
-                  setActiveTab('goals');
+                  const durationMatch = rec.suggestedDuration.match(/(\d+)\s*(month|week|day)/i);
+                  const amount = Number(durationMatch?.[1] ?? 3);
+                  const unit = durationMatch?.[2]?.toLowerCase() ?? 'month';
+                  const durationDays = unit.startsWith('week') ? amount * 7 : unit.startsWith('day') ? amount : amount * 30;
+                  const startDate = new Date();
+                  const targetDate = new Date(startDate.getTime() + durationDays * 86400000);
+                  void createGoal({
+                    staffId: CURRENT_USER_ID,
+                    title: rec.title,
+                    description: rec.description,
+                    category: rec.category,
+                    priority: rec.priority,
+                    status: 'not_started',
+                    progress: 0,
+                    startDate: startDate.toISOString(),
+                    targetDate: targetDate.toISOString(),
+                    milestones: rec.suggestedMilestones.map((title, index) => ({
+                      id: `milestone-${Date.now()}-${index}`,
+                      title,
+                      targetDate: new Date(startDate.getTime() + Math.round(durationDays * ((index + 1) / rec.suggestedMilestones.length)) * 86400000).toISOString(),
+                      completed: false,
+                    })),
+                    createdBy: CURRENT_USER_ID,
+                  }).then(goal => {
+                    if (goal) setActiveTab('goals');
+                  });
                 }}
               />
             )}
@@ -537,6 +622,17 @@ export default function PerformanceManagement() {
             {activeTab === 'calibration' && (
               <CalibrationPanel currentUserId={CURRENT_USER_ID} />
             )}
+
+            {activeTab === 'nominations' && <PeerNominationsPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
+            {activeTab === 'mentorship' && <MentorshipMatchingPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
+            {activeTab === 'budget' && <DevelopmentBudgetTracker embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
+            {activeTab === 'career-pathing' && <CareerPathingVisualization embedded staffId={CURRENT_USER_ID} />}
+            {activeTab === 'succession' && <SuccessionPlanningPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
+            {activeTab === 'calendar' && <CalendarIntegrationPanel embedded />}
+            {activeTab === 'sentiment' && <SentimentAnalysisPanel embedded feedback={feedback} staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
+            {activeTab === 'benchmarking' && <BenchmarkingDashboard embedded goals={goals} reviews={reviews} feedback={feedback} />}
+            {activeTab === 'compensation' && <CompensationPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
+            {activeTab === 'admin-config' && <PerformanceAdminPanel embedded />}
 
             {activeTab === 'team' && (
               <TeamOverviewDashboard

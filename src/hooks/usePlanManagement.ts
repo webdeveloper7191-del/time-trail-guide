@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { AssignedPlan, PerformancePlanTemplate, PlanStatus } from '@/types/performancePlan';
 import { mockAssignedPlans, performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { toast } from 'sonner';
@@ -21,8 +21,30 @@ interface UsePlanManagementReturn {
 }
 
 export function usePlanManagement(): UsePlanManagementReturn {
-  const [assignedPlans, setAssignedPlans] = useState<AssignedPlan[]>(mockAssignedPlans);
-  const [customTemplates, setCustomTemplates] = useState<PerformancePlanTemplate[]>([]);
+  const [assignedPlans, setAssignedPlans] = useState<AssignedPlan[]>(() => {
+    try {
+      const saved = localStorage.getItem('rostered.performance.assignedPlans');
+      return saved ? JSON.parse(saved) as AssignedPlan[] : mockAssignedPlans;
+    } catch {
+      return mockAssignedPlans;
+    }
+  });
+  const [customTemplates, setCustomTemplates] = useState<PerformancePlanTemplate[]>(() => {
+    try {
+      const saved = localStorage.getItem('rostered.performance.customTemplates');
+      return saved ? JSON.parse(saved) as PerformancePlanTemplate[] : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rostered.performance.assignedPlans', JSON.stringify(assignedPlans));
+  }, [assignedPlans]);
+
+  useEffect(() => {
+    localStorage.setItem('rostered.performance.customTemplates', JSON.stringify(customTemplates));
+  }, [customTemplates]);
 
   // Plan management
   const createPlan = useCallback(async (data: Omit<AssignedPlan, 'id' | 'createdAt' | 'updatedAt' | 'progress'>): Promise<AssignedPlan | null> => {
