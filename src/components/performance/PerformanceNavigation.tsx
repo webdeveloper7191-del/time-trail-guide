@@ -5,7 +5,7 @@ import {
   BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, 
   Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, 
   Sparkles, Smile, TrendingUp, ChevronDown, Check, Heart, Wallet,
-  UserPlus, Calendar, Lightbulb, Brain, GitCompareArrows, Route,
+  UserPlus, Calendar, Lightbulb, Brain, GitCompareArrows, Route, SlidersHorizontal,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -80,6 +80,12 @@ const tabGroups: TabGroup[] = [
       { value: 'sentiment', label: 'Sentiment Analysis', icon: Brain },
       { value: 'benchmarking', label: 'Benchmarking', icon: GitCompareArrows },
       { value: 'compensation', label: 'Compensation', icon: TrendingUp },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { value: 'admin-config', label: 'Performance Setup', icon: SlidersHorizontal },
     ],
   },
 ];
