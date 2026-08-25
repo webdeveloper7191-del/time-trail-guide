@@ -53,7 +53,6 @@ import {
   mockCareerPaths, 
   mockCareerProgress,
   mock360Responses,
-  mock360Competencies,
 } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { SkillAssessmentDrawer } from './SkillAssessmentDrawer';
