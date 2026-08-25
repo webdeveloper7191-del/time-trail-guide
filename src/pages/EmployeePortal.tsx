@@ -201,16 +201,6 @@ export function EmployeePortal() {
           </div>
         </div>
 
-        {/* Page header banner */}
-        <div className="bg-primary/5 border-b border-border px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{currentPage.title}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">{currentPage.subtitle}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Page content */}
         <main className="flex-1 px-8 py-6 overflow-x-hidden">
           {/* Onboarding Banner */}
@@ -221,61 +211,18 @@ export function EmployeePortal() {
             />
           )}
 
-          {/* Stats Cards (only on dashboard) */}
-          {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Total Hours</p>
-                      <p className="text-2xl font-bold text-blue-600">{stats.totalHours}h</p>
-                    </div>
-                    <Clock className="h-8 w-8 text-blue-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Overtime</p>
-                      <p className="text-2xl font-bold text-amber-600">{stats.totalOvertime}h</p>
-                    </div>
-                    <Hourglass className="h-8 w-8 text-amber-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Approved</p>
-                      <p className="text-2xl font-bold text-emerald-600">{stats.approvedCount}</p>
-                    </div>
-                    <CheckCircle2 className="h-8 w-8 text-emerald-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Est. Pay</p>
-                      <p className="text-2xl font-bold text-purple-600">${stats.estimatedPay}</p>
-                    </div>
-                    <DollarSign className="h-8 w-8 text-purple-600/50" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {renderContent()}
+          <ModuleWorkspace
+            storageKey={`employeePortal.${activeTab}`}
+            icon={workspaceMeta.icon}
+            title={workspaceMeta.title}
+            description={workspaceMeta.description}
+            steps={workspaceMeta.steps}
+            kpis={activeTab === 'dashboard' ? getDashboardKpis(stats) : []}
+          >
+            {renderContent()}
+          </ModuleWorkspace>
         </main>
+
       </div>
     </div>
   );
