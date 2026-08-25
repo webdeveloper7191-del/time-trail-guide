@@ -248,7 +248,7 @@ export default function PerformanceManagement() {
 
   const handleAssignPlanSubmit = async (data: {
     templateId: string;
-    staffId: string;
+    staffIds: string[];
     startDate: Date;
     notes?: string;
     selectedGoals: string[];
