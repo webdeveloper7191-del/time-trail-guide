@@ -63,23 +63,34 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
           <div>
           <h2 className="text-lg font-semibold tracking-tight">Performance configuration</h2>
           <p className="text-sm text-muted-foreground">
-            Tenant-level setup for how performance is measured: rating scales, the competency library and the review-cycle calendar.
+            Tenant-level setup for everything the module uses: rating scales, competencies, review cycles, dropdown lists, the talent grid, rewards and module rules.
           </p>
         </div>
         )}
-        <Button variant="outline" size="sm" onClick={() => { performanceConfigStore.reset(); toast.success('Configuration reset to defaults'); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            performanceConfigStore.reset();
+            performanceTaxonomyStore.reset();
+            toast.success('Configuration reset to defaults');
+          }}
+        >
           <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset to defaults
         </Button>
       </div>
 
       <Tabs defaultValue="scales">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="scales" className="gap-1.5"><Star className="h-3.5 w-3.5" /> Rating scales</TabsTrigger>
           <TabsTrigger value="competencies" className="gap-1.5"><ListChecks className="h-3.5 w-3.5" /> Competency library</TabsTrigger>
           <TabsTrigger value="cycles" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Review cycles</TabsTrigger>
+          <TabsTrigger value="lists" className="gap-1.5"><Tags className="h-3.5 w-3.5" /> Dropdown lists</TabsTrigger>
+          <TabsTrigger value="ninebox" className="gap-1.5"><Grid3X3 className="h-3.5 w-3.5" /> Talent grid</TabsTrigger>
           <TabsTrigger value="rewards" className="gap-1.5"><Gift className="h-3.5 w-3.5" /> Rewards &amp; recognition</TabsTrigger>
-
+          <TabsTrigger value="rules" className="gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5" /> Module rules</TabsTrigger>
         </TabsList>
+
 
         {/* Rating scales */}
         <TabsContent value="scales" className="mt-4 space-y-3">
