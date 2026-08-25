@@ -47,7 +47,7 @@ import {
 import { toast } from 'sonner';
 
 interface MentorshipMatchingProps {
-  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
   embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
@@ -201,8 +201,8 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
                     </AvatarGroup>
                     {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
-              <Users size={20} style={{ color: \'var(--primary)\' }} />
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
+              <Users size={20} style={{ color: 'var(--primary)' }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
               Mentorship Program
@@ -521,7 +521,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
       </Stack>
 
       {/* Stats */}
-      {!embedded && {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>

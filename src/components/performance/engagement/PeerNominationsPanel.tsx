@@ -40,7 +40,7 @@ import {
 import { toast } from 'sonner';
 
 interface PeerNominationsProps {
-  /** Hides the panel\'s own title/description and summary stat cards because the parent module shell already shows them */
+  /** Hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
   embedded?: boolean;
   staff: StaffMember[];
   currentUserId: string;
@@ -118,8 +118,8 @@ export function PeerNominationsPanel({ staff, currentUserId, embedded = false }:
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent={embedded ? "flex-end" : "space-between"} alignItems={{ xs: 'stretch', sm: 'flex-start' }} spacing={2}>
         {!embedded && <Box>
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
-            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: \'primary.light\', display: \'flex\' }}>
-              <Users size={20} style={{ color: \'var(--primary)\' }} />
+            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
+              <Users size={20} style={{ color: 'var(--primary)' }} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
               Peer Nominations
@@ -164,7 +164,7 @@ export function PeerNominationsPanel({ staff, currentUserId, embedded = false }:
       )}
 
       {/* Stats */}
-      {!embedded && {!embedded && {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+      {!embedded && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2 }}>
         <Card>
           <Box sx={{ p: 2 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -260,7 +260,7 @@ export function PeerNominationsPanel({ staff, currentUserId, embedded = false }:
               <Typography variant="h6" color="text.secondary" mb={1}>No nominations found</Typography>
               <Typography variant="body2" color="text.secondary">
                 {viewMode === 'my_nominations' 
-                  ? 'You haven\'t nominated any peers yet. Start by clicking "Nominate Peer".'
+                  ? 'You haven't nominated any peers yet. Start by clicking "Nominate Peer".'
                   : 'No nominations match your current filters.'}
               </Typography>
             </Box>
