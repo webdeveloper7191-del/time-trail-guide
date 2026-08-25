@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Box, 
   Stack, 
@@ -30,7 +30,6 @@ import {
   CalibrationRating,
   RatingDistribution,
 } from '@/types/advancedPerformance';
-import { mockCalibrationSessions, mockCalibrationRatings } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import { 
   BarChart, 
@@ -45,6 +44,8 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { CreateCalibrationSessionDrawer } from './CreateCalibrationSessionDrawer';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 
 interface CalibrationPanelProps {
   currentUserId: string;
@@ -69,33 +70,39 @@ const mockRatingDistribution: RatingDistribution[] = [
 ];
 
 export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
-  const [sessions, setSessions] = useState<CalibrationSession[]>(mockCalibrationSessions);
+  const { calibrationSessions: sessions, calibrationRatings } = usePerformanceOperations();
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [showCreateDrawer, setShowCreateDrawer] = useState(false);
+
+  useEffect(() => {
+    if (!selectedSession) return;
+    const current = sessions.find(item => item.id === selectedSession.id);
+    if (current) setSelectedSession(current);
+  }, [sessions, selectedSession?.id]);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled');
   const completedSessions = sessions.filter(s => s.status === 'completed');
 
-  const handleScheduleSession = () => {
-    const scheduledDate = new Date();
-    scheduledDate.setDate(scheduledDate.getDate() + 7);
-    scheduledDate.setHours(10, 0, 0, 0);
-    const now = new Date().toISOString();
+  const handleScheduleSession = (draft: Partial<CalibrationSession>) => {
+    if (!draft.title || !draft.scheduledDate || !draft.facilitatorId) return;
+    const timestamp = new Date().toISOString();
     const session: CalibrationSession = {
-      id: `calibration-${Date.now()}`,
-      title: 'Performance Rating Calibration',
-      reviewCycle: 'Current review cycle',
-      facilitatorId: currentUserId,
-      participantIds: [currentUserId],
-      status: 'scheduled',
-      scheduledDate: scheduledDate.toISOString(),
-      createdAt: now,
-      updatedAt: now,
+      id: draft.id ?? `calibration-${Date.now()}`,
+      title: draft.title,
+      reviewCycle: draft.reviewCycle ?? 'Current review cycle',
+      facilitatorId: draft.facilitatorId,
+      participantIds: draft.participantIds ?? [],
+      status: draft.status ?? 'scheduled',
+      scheduledDate: draft.scheduledDate,
+      notes: draft.notes,
+      createdAt: timestamp,
+      updatedAt: timestamp,
     };
-    setSessions(prev => [session, ...prev]);
-    toast.success(`Calibration session scheduled for ${format(scheduledDate, 'MMM d, yyyy h:mm a')}`);
+    performanceOperationsStore.saveCalibrationSession(session);
+    toast.success(`Calibration session scheduled for ${format(new Date(session.scheduledDate), 'MMM d, yyyy h:mm a')}`);
   };
 
   const handleViewSession = (session: CalibrationSession) => {
@@ -104,7 +111,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   };
 
   const getSessionRatings = (sessionId: string) => {
-    return mockCalibrationRatings.filter(r => r.sessionId === sessionId);
+    return calibrationRatings.filter(r => r.sessionId === sessionId);
   };
 
   const renderDistributionChart = () => {
@@ -388,7 +395,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
             Ensure fair and consistent performance ratings across teams
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={handleScheduleSession}>
+        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowCreateDrawer(true)}>
           Schedule Session
         </Button>
       </Stack>
@@ -428,6 +435,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
       </Tabs>
 
       {renderDetailSheet()}
+      <CreateCalibrationSessionDrawer open={showCreateDrawer} onClose={() => setShowCreateDrawer(false)} onSave={handleScheduleSession} />
     </Box>
   );
 }

@@ -9,6 +9,22 @@ import {
 import { mockReviews, mockGoals, mockFeedback, mockConversations } from '@/data/mockPerformanceData';
 import { mockApiCall, ApiResponse } from './mockApi';
 
+const GOALS_STORAGE_KEY = 'rostered.performance.goals.v1';
+const loadGoals = (): Goal[] => {
+  if (typeof window === 'undefined') return [...mockGoals];
+  try {
+    const saved = window.localStorage.getItem(GOALS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : [...mockGoals];
+  } catch {
+    return [...mockGoals];
+  }
+};
+let persistedGoals = loadGoals();
+const saveGoals = (goals: Goal[]) => {
+  persistedGoals = goals;
+  try { window.localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals)); } catch { /* retain memory state */ }
+};
+
 export const performanceApi = {
   // Reviews
   async fetchReviews(staffId?: string): Promise<ApiResponse<PerformanceReview[]>> {
@@ -89,7 +105,7 @@ export const performanceApi = {
 
   // Goals
   async fetchGoals(staffId?: string): Promise<ApiResponse<Goal[]>> {
-    let goals = [...mockGoals];
+    let goals = [...persistedGoals];
     if (staffId) {
       goals = goals.filter(g => g.staffId === staffId);
     }
@@ -97,7 +113,7 @@ export const performanceApi = {
   },
 
   async getGoalById(id: string): Promise<ApiResponse<Goal | null>> {
-    const goal = mockGoals.find(g => g.id === id);
+    const goal = persistedGoals.find(g => g.id === id);
     return mockApiCall(goal ?? null);
   },
 
@@ -108,18 +124,20 @@ export const performanceApi = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    saveGoals([...persistedGoals, newGoal]);
     return mockApiCall(newGoal, { delay: 500 });
   },
 
   async updateGoal(id: string, updates: Partial<Goal>): Promise<ApiResponse<Goal>> {
-    const goal = mockGoals.find(g => g.id === id);
+    const goal = persistedGoals.find(g => g.id === id);
     if (!goal) throw new Error('Goal not found');
     const updated = { ...goal, ...updates, updatedAt: new Date().toISOString() };
+    saveGoals(persistedGoals.map(item => item.id === id ? updated : item));
     return mockApiCall(updated, { delay: 400 });
   },
 
   async updateGoalProgress(id: string, progress: number): Promise<ApiResponse<Goal>> {
-    const goal = mockGoals.find(g => g.id === id);
+    const goal = persistedGoals.find(g => g.id === id);
     if (!goal) throw new Error('Goal not found');
     
     const status = progress >= 100 ? 'completed' : progress > 0 ? 'in_progress' : goal.status;
@@ -132,10 +150,12 @@ export const performanceApi = {
       completedAt,
       updatedAt: new Date().toISOString() 
     };
+    saveGoals(persistedGoals.map(item => item.id === id ? updated : item));
     return mockApiCall(updated, { delay: 300 });
   },
 
   async deleteGoal(id: string): Promise<ApiResponse<{ id: string }>> {
+    saveGoals(persistedGoals.filter(goal => goal.id !== id));
     return mockApiCall({ id }, { delay: 400 });
   },
 

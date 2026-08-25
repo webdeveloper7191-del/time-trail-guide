@@ -18,8 +18,9 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockObjectives } from '@/data/mockOKRData';
 import type { Objective, KeyResult, OKRStatus } from '@/types/okr';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -66,11 +67,11 @@ const getLevelColor = (level: string) => {
 
 export function EmployeeOKRPanel({ currentUserId }: EmployeeOKRPanelProps) {
   const [expandedObjectives, setExpandedObjectives] = useState<string[]>([]);
-  const [objectives, setObjectives] = useState(mockObjectives);
+  const { objectives } = usePerformanceOperations();
   const [editingKR, setEditingKR] = useState<string | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
-  const myObjectives = objectives.filter(o => o.level === 'individual');
+  const myObjectives = objectives.filter(o => o.level === 'individual' && o.ownerId === currentUserId);
   const teamObjectives = objectives.filter(o => o.level === 'team');
   const companyObjectives = objectives.filter(o => o.level === 'company');
 
@@ -90,29 +91,9 @@ export function EmployeeOKRPanel({ currentUserId }: EmployeeOKRPanelProps) {
   };
 
   const updateKeyResult = (objectiveId: string, krId: string, newValue: number) => {
-    setObjectives(prev => prev.map(obj => {
-      if (obj.id !== objectiveId) return obj;
-      
-      const updatedKRs = obj.keyResults.map(kr => {
-        if (kr.id !== krId) return kr;
-        const progress = Math.round((newValue / kr.targetValue) * 100);
-        return { ...kr, currentValue: newValue, progress: Math.min(progress, 100) };
-      });
-      
-      const avgProgress = Math.round(
-        updatedKRs.reduce((sum, kr) => sum + kr.progress, 0) / updatedKRs.length
-      );
-      
-      const newStatus: OKRStatus = avgProgress >= 100 ? 'completed' : avgProgress >= 70 ? 'on_track' : 'at_risk';
-      
-      return { 
-        ...obj, 
-        keyResults: updatedKRs, 
-        progress: avgProgress,
-        status: newStatus,
-      };
-    }));
+    performanceOperationsStore.updateKeyResult(objectiveId, krId, newValue);
     setEditingKR(null);
+    toast.success('Key result progress saved');
   };
 
   const renderObjectiveRow = (objective: Objective) => {
