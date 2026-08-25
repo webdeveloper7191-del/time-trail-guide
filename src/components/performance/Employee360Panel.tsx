@@ -19,11 +19,6 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { 
-  mock360Requests, 
-  mock360Responses, 
-  mock360Competencies 
-} from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
 import type { Feedback360Request } from '@/types/advancedPerformance';
 import { toast } from 'sonner';
@@ -38,6 +33,8 @@ import {
 import { Box, Typography, Paper, Avatar, Stack, IconButton, Tooltip, Chip } from '@mui/material';
 import { SemanticProgressBar } from './shared/SemanticProgressBar';
 import { StatusBadge } from './shared/StatusBadge';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 interface Employee360PanelProps {
   currentUserId: string;
@@ -53,6 +50,10 @@ const getStatusType = (status: string) => {
 };
 
 export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
+  const operations = usePerformanceOperations();
+  const performanceConfig = usePerformanceConfig();
+  const competencies = performanceConfig.competencies.filter(item => item.isActive);
+  const scalePoints = performanceConfig.ratingScales.find(item => item.isDefault && item.isActive)?.points.map(item => item.value) ?? [1, 2, 3, 4, 5];
   const [selectedRequest, setSelectedRequest] = useState<Feedback360Request | null>(null);
   const [showFeedbackSheet, setShowFeedbackSheet] = useState(false);
   const [showResultsSheet, setShowResultsSheet] = useState(false);
@@ -63,18 +64,18 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
 
   // Requests where I need to give feedback (as a responder)
-  const feedbackRequests = mock360Requests.filter(req => {
-    const myResponse = mock360Responses.find(r => 
+  const feedbackRequests = operations.feedback360Requests.filter(req => {
+    const myResponse = operations.feedback360Responses.find(r => 
       r.requestId === req.id && r.responderId === currentUserId
     );
     return myResponse && myResponse.status === 'pending';
   });
 
   // Requests about me (self-assessment and results)
-  const myReviews = mock360Requests.filter(req => req.subjectStaffId === currentUserId);
+  const myReviews = operations.feedback360Requests.filter(req => req.subjectStaffId === currentUserId);
 
   // Completed feedback I've given
-  const completedFeedback = mock360Responses.filter(r => 
+  const completedFeedback = operations.feedback360Responses.filter(r => 
     r.responderId === currentUserId && r.status === 'completed'
   );
 
@@ -93,12 +94,17 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
   };
 
   const handleSubmitFeedback = () => {
-    const missingRatings = mock360Competencies.filter(c => !ratings[c.id]);
+    const missingRatings = competencies.filter(c => !ratings[c.id]);
     if (missingRatings.length > 0) {
       toast.error('Please rate all competencies');
       return;
     }
 
+    const response = operations.feedback360Responses.find(item => item.requestId === selectedRequest?.id && item.responderId === currentUserId);
+    if (!response || !performanceOperationsStore.submit360Response(response.id, { ratings: competencies.map(item => ({ competencyId: item.id, rating: ratings[item.id], comment: comments[item.id] })), strengths, areasForImprovement: improvements })) {
+      toast.error('Unable to submit feedback');
+      return;
+    }
     toast.success('Feedback submitted successfully! Thank you for your input.');
     setShowFeedbackSheet(false);
     setSelectedRequest(null);
@@ -119,7 +125,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
     
     return (
       <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {scalePoints.map((star) => (
           <button
             key={star}
             onClick={() => setRatings(prev => ({ ...prev, [competencyId]: star }))}
@@ -141,11 +147,11 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
 
   // Calculate aggregated results for my reviews
   const getAggregatedResults = (requestId: string) => {
-    const responses = mock360Responses.filter(r => 
+    const responses = operations.feedback360Responses.filter(r => 
       r.requestId === requestId && r.status === 'completed'
     );
     
-    const competencyAverages = mock360Competencies.map(comp => {
+    const competencyAverages = competencies.map(comp => {
       const ratingsArr = responses
         .flatMap(r => r.ratings)
         .filter(r => r.competencyId === comp.id)
@@ -163,7 +169,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
 
   const renderRequestRow = (request: Feedback360Request, type: 'give' | 'receive') => {
     const subject = mockStaff.find(s => s.id === request.subjectStaffId);
-    const responses = mock360Responses.filter(r => r.requestId === request.id);
+    const responses = operations.feedback360Responses.filter(r => r.requestId === request.id);
     const completedResponses = responses.filter(r => r.status === 'completed').length;
     const progressPercent = Math.round((completedResponses / responses.length) * 100);
     const isHovered = hoveredRow === request.id;
@@ -384,7 +390,7 @@ export function Employee360Panel({ currentUserId }: Employee360PanelProps) {
               <div>
                 <h3 className="font-semibold mb-4">Rate Competencies</h3>
                 <div className="space-y-4">
-                  {mock360Competencies.map((comp) => (
+                  {competencies.map((comp) => (
                     <Paper key={comp.id} variant="outlined" sx={{ p: 2 }}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">

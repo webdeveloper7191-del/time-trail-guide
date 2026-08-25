@@ -18,9 +18,9 @@ import {
   ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockPulseSurveys, mockPulseResponses } from '@/data/mockAdvancedPerformanceData';
 import type { PulseSurvey, PulseQuestion } from '@/types/advancedPerformance';
 import { toast } from 'sonner';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 
 interface EmployeeSurveyPanelProps {
   currentUserId: string;
@@ -37,14 +37,15 @@ const pastelColors = {
 };
 
 export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps) {
+  const { pulseSurveys, pulseResponses } = usePerformanceOperations();
   const [selectedSurvey, setSelectedSurvey] = useState<PulseSurvey | null>(null);
   const [showSurveySheet, setShowSurveySheet] = useState(false);
   const [responses, setResponses] = useState<Record<string, string | number>>({});
-  const [completedSurveys, setCompletedSurveys] = useState<string[]>(['pulse-3']);
+  const completedSurveys = pulseResponses.filter(response => response.respondentId === currentUserId).map(response => response.surveyId);
 
-  const activeSurveys = mockPulseSurveys.filter(s => s.status === 'active');
+  const activeSurveys = pulseSurveys.filter(s => s.status === 'active');
   const pendingSurveys = activeSurveys.filter(s => !completedSurveys.includes(s.id));
-  const myCompletedSurveys = mockPulseSurveys.filter(s => completedSurveys.includes(s.id));
+  const myCompletedSurveys = pulseSurveys.filter(s => completedSurveys.includes(s.id));
 
   const handleOpenSurvey = (survey: PulseSurvey) => {
     setSelectedSurvey(survey);
@@ -64,7 +65,7 @@ export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps)
       return;
     }
 
-    setCompletedSurveys(prev => [...prev, selectedSurvey.id]);
+    performanceOperationsStore.addPulseResponse({ surveyId: selectedSurvey.id, respondentId: currentUserId, answers: selectedSurvey.questions.map(question => ({ questionId: question.id, value: responses[question.id] })) });
     toast.success('Survey submitted successfully! Thank you for your feedback.');
     setShowSurveySheet(false);
     setSelectedSurvey(null);
