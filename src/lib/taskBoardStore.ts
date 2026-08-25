@@ -124,6 +124,8 @@ function load(): BoardState {
     customColumns: DEFAULT_CUSTOM_COLUMNS,
     overrides: {},
     comments: {},
+    threadReads: {},
+    commentFilter: 'all',
   };
   if (typeof window === 'undefined') return fallback;
   try {
@@ -136,7 +138,10 @@ function load(): BoardState {
       customColumns: parsed.customColumns?.length ? parsed.customColumns : fallback.customColumns,
       overrides: parsed.overrides ?? {},
       comments: parsed.comments ?? {},
+      threadReads: parsed.threadReads ?? {},
+      commentFilter: parsed.commentFilter ?? 'all',
     };
+
 
   } catch {
     return fallback;
