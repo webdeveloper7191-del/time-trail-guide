@@ -2,3 +2,8 @@ export { PerformanceAdminPanel } from './PerformanceAdminPanel';
 export { RatingScaleDrawer } from './RatingScaleDrawer';
 export { CompetencyDrawer } from './CompetencyDrawer';
 export { ReviewCycleDrawer } from './ReviewCycleDrawer';
+export { RewardsAdminPanel } from './RewardsAdminPanel';
+export { TaxonomyAdminPanel } from './TaxonomyAdminPanel';
+export { TaxonomyListEditor } from './TaxonomyListEditor';
+export { NineBoxAdminPanel } from './NineBoxAdminPanel';
+export { PerformanceRulesPanel } from './PerformanceRulesPanel';
