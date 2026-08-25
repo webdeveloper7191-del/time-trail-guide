@@ -93,6 +93,25 @@ export default function PerformanceManagement() {
     addConversationNote, completeConversation
   } = usePerformanceData();
 
+  const workspaceMeta = useMemo(
+    () =>
+      getWorkspaceMeta(activeTab, {
+        goals,
+        reviews,
+        feedback,
+        conversations,
+        staff: mockStaff,
+        goTo: setActiveTab,
+      }) ?? {
+        icon: Target,
+        title: 'Performance',
+        description: 'Manage performance activity for your team.',
+      },
+    [activeTab, goals, reviews, feedback, conversations],
+  );
+
+
+
   useEffect(() => {
     fetchReviews();
     fetchGoals();
