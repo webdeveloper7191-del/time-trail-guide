@@ -3,6 +3,10 @@ import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
+import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
+import { getWorkspaceMeta } from '@/components/performance/workspaceConfig';
+import { GoalRecommendationsPanel } from '@/components/performance/goals/GoalRecommendationsPanel';
+import { PIPManagementPanel } from '@/components/performance/PIPManagementPanel';
 
 import { GoalsTracker } from '@/components/performance/GoalsTracker';
 import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
@@ -366,6 +370,11 @@ export default function PerformanceManagement() {
 
 
           {/* Tab Content */}
+          {activeTab === 'lms' && (
+            <LMSAdminModule currentUserId={CURRENT_USER_ID} staff={mockStaff} />
+          )}
+
+          {activeTab !== 'lms' && (
           <ModuleWorkspace
             key={activeTab}
             storageKey={activeTab}
@@ -413,14 +422,6 @@ export default function PerformanceManagement() {
 
             {activeTab === 'okr' && (
               <OKRCascadePanel embedded currentUserId={CURRENT_USER_ID} />
-            )}
-
-            {activeTab === 'lms' && (
-              <LMSAdminModule
-                embedded
-                currentUserId={CURRENT_USER_ID}
-                staff={mockStaff}
-              />
             )}
 
             {activeTab === 'tasks' && (
@@ -549,6 +550,7 @@ export default function PerformanceManagement() {
               />
             )}
           </ModuleWorkspace>
+          )}
 
         </Box>
       </Box>
