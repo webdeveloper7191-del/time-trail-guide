@@ -84,6 +84,10 @@ export interface AssignedPlan {
   learningPathIds: string[]; // Linked learning paths from LMS
   courseIds: string[]; // Linked individual courses from LMS
   progress: number;
+  customGoals?: PlanGoalTemplate[];
+  customReviews?: PlanReviewTemplate[];
+  customConversations?: PlanConversationTemplate[];
+  cancellationReason?: string;
   createdAt: string;
   updatedAt: string;
 }
