@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Star, ListChecks, CalendarDays, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Gift } from 'lucide-react';
 import {
   performanceConfigStore,
   RatingScale,
