@@ -16,6 +16,8 @@ import {
 import { RatingScaleDrawer } from './RatingScaleDrawer';
 import { CompetencyDrawer } from './CompetencyDrawer';
 import { ReviewCycleDrawer } from './ReviewCycleDrawer';
+import { RewardsAdminPanel } from './RewardsAdminPanel';
+
 import { toast } from 'sonner';
 
 function useConfig() {
