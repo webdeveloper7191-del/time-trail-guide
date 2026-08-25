@@ -485,7 +485,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false , em
                     {pips.filter(p => p.status === 'completed_success').length}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.6rem', md: '0.75rem' } }}>Successful</Typography>
-                </Box>}
+                </Box>
               </Stack>
             </Box>
           </Card>
@@ -517,7 +517,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false , em
               </Stack>
             </Box>
           </Card>
-        </Box>
+        </Box>}
 
         {/* Search, Filters & Bulk Actions */}
         <Stack 
@@ -646,4 +646,9 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false , em
             onSubmit={handleEditPIP}
           />
         </>
+      )}
+    </>
+  );
+};
+
 export default PIPManagementPanel;
