@@ -23,7 +23,6 @@ import {
   PerformanceReview,
   ReviewRating,
   ReviewCriteria,
-  defaultReviewCriteria,
   reviewStatusLabels,
   reviewCycleLabels,
 } from '@/types/performance';
@@ -43,6 +42,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 interface ReviewExecutionSheetProps {
   open: boolean;
@@ -61,8 +61,6 @@ interface ReviewExecutionSheetProps {
   ) => Promise<void>;
 }
 
-const ratingLabels = ['Poor', 'Below Expectations', 'Meets Expectations', 'Exceeds Expectations', 'Outstanding'];
-
 export function ReviewExecutionSheet({
   open,
   review,
@@ -72,6 +70,7 @@ export function ReviewExecutionSheet({
   onSubmitSelfReview,
   onCompleteManagerReview,
 }: ReviewExecutionSheetProps) {
+  const performanceConfig = usePerformanceConfig();
   const [activeStep, setActiveStep] = useState(0);
   const [ratings, setRatings] = useState<Record<string, { rating: number; comments: string }>>({});
   const [summary, setSummary] = useState('');
@@ -96,7 +95,13 @@ export function ReviewExecutionSheet({
   const isManagerReview = review.reviewerId === currentUserId && review.status === 'pending_manager';
   const isViewOnly = !isSelfReview && !isManagerReview;
 
-  const criteria = defaultReviewCriteria;
+  const configuredCycle = performanceConfig.reviewCycles.find(cycle => cycle.cycle === review.reviewCycle && cycle.stage !== 'closed');
+  const scale = performanceConfig.ratingScales.find(item => item.id === configuredCycle?.ratingScaleId && item.isActive)
+    ?? performanceConfig.ratingScales.find(item => item.isDefault && item.isActive && item.appliesTo !== 'goals')
+    ?? performanceConfig.ratingScales.find(item => item.isActive);
+  const configuredCompetencies = performanceConfig.competencies.filter(item => item.isActive && (!configuredCycle || configuredCycle.competencyIds.includes(item.id)));
+  const criteria = review.customCriteria?.length ? review.customCriteria : configuredCompetencies;
+  const maxRating = Math.max(...(scale?.points.map(point => point.value) ?? [5]));
   const steps = isSelfReview
     ? ['Rate Yourself', 'Summary', 'Submit']
     : isManagerReview
@@ -181,12 +186,13 @@ export function ReviewExecutionSheet({
               <Rating
                 value={ratings[criterion.id]?.rating || 0}
                 onChange={(_, value) => handleRatingChange(criterion.id, value)}
+                max={maxRating}
                 size="large"
                 disabled={isViewOnly}
               />
               <Typography variant="caption" display="block" color="text.secondary">
                 {ratings[criterion.id]?.rating
-                  ? ratingLabels[ratings[criterion.id].rating - 1]
+                  ? scale?.points.find(point => point.value === ratings[criterion.id].rating)?.label ?? `Rating ${ratings[criterion.id].rating}`
                   : 'Not rated'}
               </Typography>
             </Box>

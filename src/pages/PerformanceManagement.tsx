@@ -608,7 +608,7 @@ export default function PerformanceManagement() {
             )}
 
             {activeTab === 'skills' && (
-              <SkillsCareerPanel staffId="staff-1" />
+              <SkillsCareerPanel staffId={CURRENT_USER_ID} />
             )}
 
             {activeTab === 'pulse' && (

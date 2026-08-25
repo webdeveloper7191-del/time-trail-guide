@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Slider } from '@/components/ui/slider';
-import { PerformanceReview, ReviewCycle, reviewCycleLabels, ReviewCriteria, defaultReviewCriteria } from '@/types/performance';
+import { PerformanceReview, ReviewCycle, reviewCycleLabels } from '@/types/performance';
 import { StaffMember } from '@/types/staff';
 import { format, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter } from 'date-fns';
 import { CalendarIcon, ClipboardCheck, Plus, Trash2, GripVertical } from 'lucide-react';
@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
 import { toast } from 'sonner';
+import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 const reviewSchema = z.object({
   staffId: z.string().min(1, 'Team member is required'),
@@ -43,13 +44,15 @@ interface StartReviewDrawerProps {
 }
 
 export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewerId }: StartReviewDrawerProps) {
+  const performanceConfig = usePerformanceConfig();
+  const configuredCriteria = useMemo(() => performanceConfig.competencies.filter(c => c.isActive).map(c => ({ id: c.id, name: c.name, description: c.description, weight: c.weight })), [performanceConfig.competencies]);
   const [staffId, setStaffId] = useState('');
   const [reviewCycle, setReviewCycle] = useState<ReviewCycle>('quarterly');
   const [periodStart, setPeriodStart] = useState<Date>();
   const [periodEnd, setPeriodEnd] = useState<Date>();
   const [useCustomCriteria, setUseCustomCriteria] = useState(false);
   const [criteria, setCriteria] = useState<CustomCriteria[]>(
-    defaultReviewCriteria.map(c => ({ ...c }))
+    configuredCriteria
   );
   const [showAddCriteria, setShowAddCriteria] = useState(false);
   const [newCriteriaName, setNewCriteriaName] = useState('');
@@ -153,7 +156,7 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
     setPeriodStart(undefined);
     setPeriodEnd(undefined);
     setUseCustomCriteria(false);
-    setCriteria(defaultReviewCriteria.map(c => ({ ...c })));
+    setCriteria(configuredCriteria);
     setShowAddCriteria(false);
     setNewCriteriaName('');
     setNewCriteriaDesc('');
@@ -363,13 +366,13 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
           <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg">
             <p className="font-medium mb-2">Default criteria includes:</p>
             <ul className="space-y-1">
-              {defaultReviewCriteria.slice(0, 4).map(c => (
+              {configuredCriteria.slice(0, 4).map(c => (
                 <li key={c.id} className="flex justify-between">
                   <span>{c.name}</span>
                   <span className="text-xs">{c.weight}%</span>
                 </li>
               ))}
-              <li className="text-xs text-muted-foreground">+ 2 more criteria</li>
+              {configuredCriteria.length > 4 && <li className="text-xs text-muted-foreground">+ {configuredCriteria.length - 4} more criteria</li>}
             </ul>
           </div>
         )}

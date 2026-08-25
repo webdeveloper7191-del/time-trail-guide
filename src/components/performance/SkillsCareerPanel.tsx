@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Box, 
   Stack, 
@@ -120,6 +120,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const [editingSkill, setEditingSkill] = useState<StaffSkill | null>(null);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [isStaffSelectorOpen, setIsStaffSelectorOpen] = useState(false);
+  useEffect(() => setSelectedStaffId(staffId), [staffId]);
   
   // Manager Insights state
   const [showEditRatingSheet, setShowEditRatingSheet] = useState(false);
@@ -137,7 +138,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   
   // Skill gaps state (mutable)
   const [skillGapsList, setSkillGapsList] = useState<SkillGap[]>(
-    mockCareerProgress.find(p => p.staffId === staffId)?.skillGaps || []
+    mockCareerProgress.find(p => p.staffId === selectedStaffId)?.skillGaps || []
   );
   
   // Career paths state (mutable)
