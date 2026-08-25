@@ -4,14 +4,15 @@ import { Button } from '@/components/ui/button';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Settings2, RotateCcw, Lock } from 'lucide-react';
+import { Settings2, RotateCcw, Lock, MessageSquare, CheckCheck } from 'lucide-react';
 import { UnifiedTask } from '@/types/unifiedTasks';
 import { UnifiedTaskCard } from '@/components/tasks/UnifiedTaskCard';
 import { BoardColumnsDialog } from '@/components/tasks/BoardColumnsDialog';
 import {
-  BoardGroupBy, BoardSwimlaneBy, GROUP_BY_LABELS, SWIMLANE_LABELS, TONE_CLASSES,
-  columnKeyFor, columnsFor, isGroupingEditable, swimlaneKeyFor, swimlanesFor,
-  taskBoardStore, useTaskBoard,
+  BoardGroupBy, BoardSwimlaneBy, BoardCommentFilter, GROUP_BY_LABELS, SWIMLANE_LABELS,
+  COMMENT_FILTER_LABELS, TONE_CLASSES,
+  columnKeyFor, columnsFor, filterByComments, isGroupingEditable, swimlaneKeyFor, swimlanesFor,
+  taskBoardStore, unreadCountFor, useTaskBoard,
 } from '@/lib/taskBoardStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -23,6 +24,8 @@ interface TaskKanbanBoardProps {
 
 const GROUPINGS: BoardGroupBy[] = ['status', 'priority', 'module', 'due', 'custom'];
 const SWIMLANES: BoardSwimlaneBy[] = ['none', 'status', 'priority', 'module', 'due'];
+const COMMENT_FILTERS: BoardCommentFilter[] = ['all', 'with_comments', 'unread', 'mentions_me'];
+
 
 export const TaskKanbanBoard: React.FC<TaskKanbanBoardProps> = ({ tasks, onTaskClick }) => {
   const board = useTaskBoard();
