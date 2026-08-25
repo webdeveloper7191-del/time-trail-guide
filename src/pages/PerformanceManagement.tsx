@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
+import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
+
 import { GoalsTracker } from '@/components/performance/GoalsTracker';
 import { ReviewsDashboard } from '@/components/performance/ReviewsDashboard';
 import { FeedbackPanel } from '@/components/performance/FeedbackPanel';
