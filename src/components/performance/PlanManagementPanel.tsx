@@ -63,6 +63,7 @@ interface PlanManagementPanelProps {
   onDuplicateTemplate: (template: PerformancePlanTemplate) => void;
   onQuickAssignPlan: () => void;
   onDeleteTemplate?: (templateId: string) => void;
+  embedded?: boolean;
 }
 
 export function PlanManagementPanel({
@@ -79,6 +80,7 @@ export function PlanManagementPanel({
   onDuplicateTemplate,
   onQuickAssignPlan,
   onDeleteTemplate,
+  embedded = false,
 }: PlanManagementPanelProps) {
   const [activeTab, setActiveTab] = useState<'assigned' | 'templates'>('assigned');
   const [searchTerm, setSearchTerm] = useState('');
