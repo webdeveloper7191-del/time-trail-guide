@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -166,7 +168,7 @@ export function PlanManagementPanel({
                 className="px-3 md:px-4 py-2 md:py-2.5 data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:shadow-none rounded-none text-muted-foreground data-[state=active]:text-foreground font-medium text-sm"
               >
                 <Users className="h-4 w-4 mr-1.5 md:mr-2" />
-                <span className="hidden sm:inline">Assigned </span>Plans
+                <span className="hidden sm:inline">Assigned&nbsp;</span>Plans
                 <Badge variant="secondary" className="ml-1.5 md:ml-2 text-xs">{mockAssignedPlans.length}</Badge>
               </TabsTrigger>
               <TabsTrigger 
@@ -314,21 +316,28 @@ export function PlanManagementPanel({
                             </div>
                           </div>
                           
-                          <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              <span className="hidden sm:inline">{format(parseISO(plan.startDate), 'MMM d')} - </span>
-                              {format(parseISO(plan.endDate), 'MMM d, yyyy')}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              {getDaysRemaining(plan.endDate)}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <Target className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              {plan.goalIds.length} goals
-                            </div>
-                          </div>
+                          {(() => {
+                            const daysLabel = getDaysRemaining(plan.endDate);
+                            const isOverdue = String(daysLabel).toLowerCase().includes('overdue');
+                            return (
+                              <div className="mt-3 md:mt-4 flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1.5">
+                                  <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                  <span className="hidden sm:inline">{format(parseISO(plan.startDate), 'MMM d')} - </span>
+                                  {format(parseISO(plan.endDate), 'MMM d, yyyy')}
+                                </div>
+                                <div className={cn('flex items-center gap-1.5', isOverdue && 'text-destructive font-medium')}>
+                                  <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                  {daysLabel}
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Target className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                                  {plan.goalIds.length} {plan.goalIds.length === 1 ? 'goal' : 'goals'}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
                           
                           <div className="mt-3 md:mt-4 flex items-center gap-3 md:gap-4">
                             <div className="flex-1">
@@ -356,7 +365,7 @@ export function PlanManagementPanel({
                                     {hasLearning && (
                                       <div className="flex items-center gap-1.5 mt-1.5 md:mt-2 text-xs text-muted-foreground">
                                         <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary" />
-                                        <span>{plan.learningPathIds?.length || 0} learning paths</span>
+                                        <span>{plan.learningPathIds?.length || 0} {(plan.learningPathIds?.length || 0) === 1 ? 'learning path' : 'learning paths'}</span>
                                       </div>
                                     )}
                                   </>
