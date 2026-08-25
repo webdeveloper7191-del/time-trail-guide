@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Box, 
   Stack, 
@@ -20,15 +20,33 @@ interface CreateCalibrationSessionDrawerProps {
   open: boolean;
   onClose: () => void;
   onSave: (session: Partial<CalibrationSession>) => void;
+  session?: CalibrationSession | null;
 }
 
-export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: CreateCalibrationSessionDrawerProps) {
+const toLocalDateTime = (value?: string) => {
+  if (!value) return '';
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
+export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session }: CreateCalibrationSessionDrawerProps) {
   const [title, setTitle] = useState('');
   const [reviewCycle, setReviewCycle] = useState('Q1 2024 Review');
   const [scheduledDate, setScheduledDate] = useState('');
   const [facilitatorId, setFacilitatorId] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(session?.title ?? '');
+    setReviewCycle(session?.reviewCycle ?? 'Q1 2024 Review');
+    setScheduledDate(toLocalDateTime(session?.scheduledDate));
+    setFacilitatorId(session?.facilitatorId ?? '');
+    setParticipantIds(session?.participantIds ?? []);
+    setNotes(session?.notes ?? '');
+  }, [open, session]);
 
   const addParticipant = (id: string) => {
     if (!participantIds.includes(id)) {
@@ -41,17 +59,17 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
   };
 
   const handleSave = () => {
-    const session: Partial<CalibrationSession> = {
-      id: `session-new-${Date.now()}`,
+    const draft: Partial<CalibrationSession> = {
+      id: session?.id ?? `session-new-${Date.now()}`,
       title,
       reviewCycle,
       scheduledDate: new Date(scheduledDate).toISOString(),
       facilitatorId,
       participantIds,
-      status: 'scheduled',
+      status: session?.status ?? 'scheduled',
       notes,
     };
-    onSave(session);
+    onSave(draft);
     resetForm();
     onClose();
   };
@@ -75,7 +93,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Scale size={20} />
-            Schedule Calibration Session
+             {session ? 'Edit Calibration Session' : 'Schedule Calibration Session'}
           </SheetTitle>
         </SheetHeader>
 
@@ -219,7 +237,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave }: Create
             onClick={handleSave}
             disabled={!isValid}
           >
-            Schedule Session
+             {session ? 'Save Changes' : 'Schedule Session'}
           </Button>
         </SheetFooter>
       </SheetContent>
