@@ -509,7 +509,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
           <Stack direction="row" alignItems="center" spacing={1.5} mb={0.5}>
             <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.light', display: 'flex' }}>
               <Heart size={20} style={{ color: 'var(--primary)' }} />
-            </Box>}
+            </Box>
             <Typography variant="h6" fontWeight={600}>
               Mentorship Matching
             </Typography>
@@ -517,7 +517,7 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
           <Typography variant="body2" color="text.secondary">
             Connect mentors and mentees based on skills, interests, and goals
           </Typography>
-        </Box>
+        </Box>}
       </Stack>
 
       {/* Stats */}
