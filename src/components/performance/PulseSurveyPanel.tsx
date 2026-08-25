@@ -36,12 +36,11 @@ import {
   PulseResponse,
 } from '@/types/advancedPerformance';
 import { 
-  mockPulseSurveys as initialSurveys, 
   mockENPSResults,
-  mockPulseResponses,
   mockSurveyResults,
   SurveyResultSummary,
 } from '@/data/mockAdvancedPerformanceData';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 import { 
   AreaChart, 
   Area, 
@@ -95,7 +94,7 @@ const getRatingColor = (rating: number) => {
 };
 
 export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
-  const [surveys, setSurveys] = useState(initialSurveys);
+  const { pulseSurveys: surveys, pulseResponses } = usePerformanceOperations();
   const [selectedSurvey, setSelectedSurvey] = useState<PulseSurvey | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showResultsSheet, setShowResultsSheet] = useState(false);
@@ -112,14 +111,12 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
       startDate: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setSurveys(prev => [...prev, survey]);
+    performanceOperationsStore.savePulseSurvey(survey);
     toast.success('Survey created successfully');
   };
 
   const handleSendSurvey = (survey: PulseSurvey) => {
-    setSurveys(prev => prev.map(s => 
-      s.id === survey.id ? { ...s, status: 'active' as const } : s
-    ));
+    performanceOperationsStore.savePulseSurvey({ ...survey, status: 'active', updatedAt: new Date().toISOString() });
     toast.success(`Survey "${survey.title}" sent to recipients`);
     setShowDetailSheet(false);
   };
@@ -129,7 +126,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   };
 
   const getSurveyResponses = (surveyId: string): PulseResponse[] => {
-    return mockPulseResponses.filter(r => r.surveyId === surveyId);
+    return pulseResponses.filter(r => r.surveyId === surveyId);
   };
 
   const enpsChartData = mockENPSResults.slice().reverse().map(r => ({

@@ -10,10 +10,10 @@ import { cn } from '@/lib/utils';
 import {
   PerformanceReview,
   ReviewRating,
-  defaultReviewCriteria,
   reviewCycleLabels,
 } from '@/types/performance';
 import { performanceSelfService } from '@/lib/performanceSelfServiceStore';
+import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 interface SelfReviewDrawerProps {
   review: PerformanceReview | null;
@@ -21,9 +21,11 @@ interface SelfReviewDrawerProps {
   onClose: () => void;
 }
 
-const ratingLabels = ['Needs improvement', 'Developing', 'Meets expectations', 'Exceeds', 'Outstanding'];
-
 export function SelfReviewDrawer({ review, open, onClose }: SelfReviewDrawerProps) {
+  const performanceConfig = usePerformanceConfig();
+  const scale = performanceConfig.ratingScales.find(item => item.isDefault && item.isActive && item.appliesTo !== 'goals') ?? performanceConfig.ratingScales.find(item => item.isActive);
+  const criteria = review?.customCriteria?.length ? review.customCriteria : performanceConfig.competencies.filter(item => item.isActive);
+  const points = scale?.points ?? [1, 2, 3, 4, 5].map(value => ({ value, label: `Rating ${value}`, description: '' }));
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState('');
@@ -46,7 +48,7 @@ export function SelfReviewDrawer({ review, open, onClose }: SelfReviewDrawerProp
 
   if (!review) return null;
 
-  const unrated = defaultReviewCriteria.filter(c => !ratings[c.id]);
+  const unrated = criteria.filter(c => !ratings[c.id]);
   const canSubmit = unrated.length === 0 && summary.trim().length > 0;
 
   const handleSubmit = () => {
@@ -58,7 +60,7 @@ export function SelfReviewDrawer({ review, open, onClose }: SelfReviewDrawerProp
       );
       return;
     }
-    const payload: ReviewRating[] = defaultReviewCriteria.map(criteria => {
+    const payload: ReviewRating[] = criteria.map(criteria => {
       const existing = review.ratings.find(r => r.criteriaId === criteria.id);
       return {
         ...existing,
@@ -92,10 +94,10 @@ export function SelfReviewDrawer({ review, open, onClose }: SelfReviewDrawerProp
       <div className="space-y-6">
         <FormSection
           title="Rate yourself"
-          tooltip="1 = needs improvement, 5 = outstanding. Every criterion must be rated before you can submit."
+          tooltip={`${points[0]?.label} to ${points[points.length - 1]?.label}. Every criterion must be rated before you can submit.`}
         >
           <div className="space-y-5">
-            {defaultReviewCriteria.map(criteria => (
+            {criteria.map(criteria => (
               <div key={criteria.id} className="rounded-md border border-border p-3 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -108,21 +110,21 @@ export function SelfReviewDrawer({ review, open, onClose }: SelfReviewDrawerProp
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {[1, 2, 3, 4, 5].map(value => (
+                  {points.map(point => (
                     <Button
-                      key={value}
+                      key={point.value}
                       type="button"
                       size="sm"
-                      variant={ratings[criteria.id] === value ? 'default' : 'outline'}
-                      className={cn('h-8 w-9 p-0', ratings[criteria.id] === value && 'font-semibold')}
-                      onClick={() => setRatings(prev => ({ ...prev, [criteria.id]: value }))}
+                      variant={ratings[criteria.id] === point.value ? 'default' : 'outline'}
+                      className={cn('h-8 w-9 p-0', ratings[criteria.id] === point.value && 'font-semibold')}
+                      onClick={() => setRatings(prev => ({ ...prev, [criteria.id]: point.value }))}
                     >
-                      {value}
+                      {point.value}
                     </Button>
                   ))}
                   {ratings[criteria.id] && (
                     <span className="text-xs text-muted-foreground">
-                      {ratingLabels[ratings[criteria.id] - 1]}
+                      {points.find(point => point.value === ratings[criteria.id])?.label}
                     </span>
                   )}
                 </div>

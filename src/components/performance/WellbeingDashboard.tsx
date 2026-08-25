@@ -36,8 +36,8 @@ import {
   wellbeingRiskLabels,
   WellbeingRiskLevel,
 } from '@/types/advancedPerformance';
-import { mockWellbeingIndicators, mockWellbeingCheckIns } from '@/data/mockAdvancedPerformanceData';
 import { mockStaff } from '@/data/mockStaffData';
+import { usePerformanceOperations } from '@/lib/performanceOperationsStore';
 import { 
   RadarChart, 
   PolarGrid, 
@@ -78,19 +78,20 @@ const getRiskIcon = (level: WellbeingRiskLevel) => {
 };
 
 export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
+  const { wellbeingIndicators, wellbeingCheckIns } = usePerformanceOperations();
   const [selectedIndicator, setSelectedIndicator] = useState<WellbeingIndicator | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
   // Summary stats
-  const riskCounts = mockWellbeingIndicators.reduce((acc, ind) => {
+  const riskCounts = wellbeingIndicators.reduce((acc, ind) => {
     acc[ind.riskLevel] = (acc[ind.riskLevel] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const avgWorkload = mockWellbeingIndicators.reduce((sum, ind) => sum + ind.workloadScore, 0) / mockWellbeingIndicators.length;
-  const avgEngagement = mockWellbeingIndicators.reduce((sum, ind) => sum + ind.engagementScore, 0) / mockWellbeingIndicators.length;
+  const avgWorkload = wellbeingIndicators.reduce((sum, ind) => sum + ind.workloadScore, 0) / Math.max(1, wellbeingIndicators.length);
+  const avgEngagement = wellbeingIndicators.reduce((sum, ind) => sum + ind.engagementScore, 0) / Math.max(1, wellbeingIndicators.length);
 
   const handleViewIndicator = (indicator: WellbeingIndicator) => {
     setSelectedIndicator(indicator);
@@ -413,7 +414,7 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
   };
 
   // Sort by risk level (critical first)
-  const sortedIndicators = [...mockWellbeingIndicators].sort((a, b) => {
+  const sortedIndicators = [...wellbeingIndicators].sort((a, b) => {
     const order: Record<WellbeingRiskLevel, number> = { critical: 0, high: 1, moderate: 2, low: 3 };
     return order[a.riskLevel] - order[b.riskLevel];
   });

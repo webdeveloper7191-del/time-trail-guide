@@ -48,9 +48,9 @@ import {
   PIPCheckIn,
   PIPOutcome,
 } from '@/types/compensation';
-import { mockPIPs } from '@/data/mockCompensationData';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 import {
   CreatePIPDrawer,
   AddCheckInDrawer,
@@ -78,7 +78,7 @@ const getStatusBadgeVariant = (status: PIPStatus) => {
 };
 
 export function PIPManagementPanel({ staff, currentUserId, embedded = false }: PIPManagementPanelProps) {
-  const [pips, setPips] = useState<PerformanceImprovementPlan[]>(mockPIPs);
+  const { pips } = usePerformanceOperations();
   const [selectedPIP, setSelectedPIP] = useState<PerformanceImprovementPlan | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -143,9 +143,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
 
   // Bulk action handlers
   const handleBulkCancel = () => {
-    setPips(prev => prev.map(p => 
-      selectedIds.has(p.id) ? { ...p, status: 'cancelled' as const } : p
-    ));
+    performanceOperationsStore.cancelPips([...selectedIds]);
     toast.success(`${selectedIds.size} PIP(s) cancelled`);
     handleClearSelection();
   };
@@ -192,7 +190,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setPips([...pips, newPIP]);
+    performanceOperationsStore.savePip(newPIP);
   };
 
   const handleAddCheckIn = (checkIn: Omit<PIPCheckIn, 'id'>) => {
@@ -202,8 +200,8 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
       ...checkIn,
     };
     const updatedPIP = { ...selectedPIP, checkIns: [...selectedPIP.checkIns, newCheckIn], updatedAt: new Date().toISOString() };
+    performanceOperationsStore.addPipCheckIn(selectedPIP.id, checkIn);
     const updated = pips.map(p => p.id === selectedPIP.id ? updatedPIP : p);
-    setPips(updated);
     setSelectedPIP(updatedPIP);
   };
 
@@ -225,8 +223,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
       extensionCount: outcome === 'extended' ? selectedPIP.extensionCount + 1 : selectedPIP.extensionCount,
       updatedAt: new Date().toISOString(),
     };
-    const updated = pips.map(p => p.id === selectedPIP.id ? updatedPIP : p);
-    setPips(updated);
+    performanceOperationsStore.recordPipOutcome(selectedPIP.id, outcome, notes, effectiveDate);
     setShowDetailSheet(false);
     setSelectedPIP(null);
   };
@@ -234,8 +231,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
   const handleEditPIP = (updatedData: Partial<PerformanceImprovementPlan>) => {
     if (!selectedPIP) return;
     const updatedPIP = { ...selectedPIP, ...updatedData };
-    const updated = pips.map(p => p.id === selectedPIP.id ? updatedPIP : p);
-    setPips(updated);
+    performanceOperationsStore.savePip(updatedPIP);
     setSelectedPIP(updatedPIP);
   };
 
@@ -424,7 +420,7 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
                           separator: true,
                           onClick: (e) => { 
                             e.stopPropagation(); 
-                            setPips(prev => prev.map(p => p.id === pip.id ? { ...p, status: 'cancelled' as const } : p));
+                            performanceOperationsStore.cancelPips([pip.id]);
                             toast.success('PIP cancelled');
                           },
                         },

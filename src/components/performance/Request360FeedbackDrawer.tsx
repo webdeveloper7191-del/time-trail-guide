@@ -13,14 +13,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { StaffMember } from '@/types/staff';
-import { Feedback360Competency, FeedbackSourceType, feedbackSourceLabels } from '@/types/advancedPerformance';
-import { mock360Competencies } from '@/data/mockAdvancedPerformanceData';
+import { FeedbackSourceType, feedbackSourceLabels } from '@/types/advancedPerformance';
 import { format, addDays } from 'date-fns';
 import { CalendarIcon, Users, Plus, X, UserCheck, Search, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { toast } from 'sonner';
+import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 const request360Schema = z.object({
   subjectStaffId: z.string().min(1, 'Subject employee is required'),
@@ -66,6 +66,8 @@ export function Request360FeedbackDrawer({
   staff, 
   currentUserId 
 }: Request360FeedbackDrawerProps) {
+  const performanceConfig = usePerformanceConfig();
+  const competencies = useMemo(() => performanceConfig.competencies.filter(item => item.isActive), [performanceConfig.competencies]);
   const [subjectStaffId, setSubjectStaffId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -73,7 +75,7 @@ export function Request360FeedbackDrawer({
   const [anonymousResponses, setAnonymousResponses] = useState(true);
   const [includeSelfAssessment, setIncludeSelfAssessment] = useState(true);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>(
-    mock360Competencies.slice(0, 4).map(c => c.id)
+    competencies.slice(0, 4).map(c => c.id)
   );
   const [responders, setResponders] = useState<Responder[]>([]);
   const [responderSearch, setResponderSearch] = useState('');
@@ -163,7 +165,7 @@ export function Request360FeedbackDrawer({
     setDueDate(addDays(new Date(), 14));
     setAnonymousResponses(true);
     setIncludeSelfAssessment(true);
-    setSelectedCompetencies(mock360Competencies.slice(0, 4).map(c => c.id));
+    setSelectedCompetencies(competencies.slice(0, 4).map(c => c.id));
     setResponders([]);
     setResponderSearch('');
     setErrors({});
@@ -292,7 +294,7 @@ export function Request360FeedbackDrawer({
         <div className="space-y-3">
           <Label>Competencies to Assess ({selectedCompetencies.length} selected)</Label>
           <div className="flex flex-wrap gap-2">
-            {mock360Competencies.map(comp => (
+            {competencies.map(comp => (
               <Badge
                 key={comp.id}
                 variant={selectedCompetencies.includes(comp.id) ? 'default' : 'outline'}

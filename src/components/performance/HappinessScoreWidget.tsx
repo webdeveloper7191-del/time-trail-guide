@@ -36,6 +36,7 @@ import {
 } from 'recharts';
 import { format, subMonths } from 'date-fns';
 import { toast } from 'sonner';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 
 interface HappinessScoreWidgetProps {
   currentUserId: string;
@@ -75,13 +76,15 @@ const mockDistribution = [
 ];
 
 export function HappinessScoreWidget({ currentUserId, isManager = false }: HappinessScoreWidgetProps) {
+  const { happinessEntries } = usePerformanceOperations();
   const [showSubmitSheet, setShowSubmitSheet] = useState(false);
   const [score, setScore] = useState<number>(7);
   const [comment, setComment] = useState('');
   const [hasSubmittedThisMonth, setHasSubmittedThisMonth] = useState(false);
 
-  const currentScore = mockHappinessHistory[mockHappinessHistory.length - 1]?.score || 0;
-  const previousScore = mockHappinessHistory[mockHappinessHistory.length - 2]?.score || currentScore;
+  const persistedHistory = happinessEntries.length ? happinessEntries.slice().reverse().map(entry => ({ period: format(new Date(entry.date), 'MMM yyyy'), score: entry.score, responseCount: 1 })) : mockHappinessHistory;
+  const currentScore = persistedHistory[persistedHistory.length - 1]?.score || 0;
+  const previousScore = persistedHistory[persistedHistory.length - 2]?.score || currentScore;
   const trend = currentScore > previousScore ? 'up' : currentScore < previousScore ? 'down' : 'stable';
   const change = currentScore - previousScore;
 
@@ -106,7 +109,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
 
   const handleSubmitScore = () => {
     if (score < 1 || score > 10) return;
-    
+    performanceOperationsStore.submitHappiness({ staffId: currentUserId, score, comment: comment || undefined });
     toast.success('Thanks for sharing how you feel! Your response is anonymous.');
     setShowSubmitSheet(false);
     setHasSubmittedThisMonth(true);
@@ -183,7 +186,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
                 </Typography>
               </Stack>
               <Typography variant="subtitle2" fontWeight={600}>
-                {mockHappinessHistory[mockHappinessHistory.length - 1]?.responseCount || 0} / 10 (80%)
+                {persistedHistory[persistedHistory.length - 1]?.responseCount || 0} responses
               </Typography>
             </Stack>
           </Box>
@@ -233,7 +236,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
         </Stack>
         <Box sx={{ height: 250 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mockHappinessHistory}>
+            <AreaChart data={persistedHistory}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" />
               <XAxis 
                 dataKey="period" 
