@@ -665,7 +665,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
             </Stack>
           </Box>
         </Card>
-      </Box>
+      </Box>}
 
       {/* Search & Bulk Actions */}
       <Stack 
