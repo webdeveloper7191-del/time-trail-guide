@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { 
   Box, 
   Stack, 
@@ -76,6 +77,7 @@ const mockDistribution = [
 ];
 
 export function HappinessScoreWidget({ currentUserId, isManager = false }: HappinessScoreWidgetProps) {
+  const rules = usePerformanceRules();
   const { happinessEntries } = usePerformanceOperations();
   const [showSubmitSheet, setShowSubmitSheet] = useState(false);
   const [score, setScore] = useState<number>(7);
