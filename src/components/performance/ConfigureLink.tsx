@@ -45,3 +45,33 @@ export function ConfigureLink({ section, anchor, label = 'Configure', className 
     </Button>
   );
 }
+
+/** Which Performance Setup section each workspace tab should open. */
+export const tabConfigTargets: Record<string, PerformanceConfigTarget & { label: string }> = {
+  plans: { section: 'rules', anchor: 'rules-plans', label: 'Configure plans' },
+  goals: { section: 'rules', anchor: 'rules-goals', label: 'Configure goals' },
+  'goal-recommendations': { section: 'lists', label: 'Configure categories' },
+  okr: { section: 'lists', label: 'Configure OKR levels' },
+  lms: { section: 'rules', anchor: 'rules-learning', label: 'Configure learning' },
+  pip: { section: 'rules', anchor: 'rules-pip', label: 'Configure PIPs' },
+  reviews: { section: 'scales', label: 'Configure rating scales' },
+  feedback: { section: 'competencies', label: 'Configure competencies' },
+  '360feedback': { section: 'rules', anchor: 'rules-feedback360', label: 'Configure 360°' },
+  calibration: { section: 'rules', anchor: 'rules-reviews', label: 'Configure calibration' },
+  recognition: { section: 'rewards', label: 'Configure rewards' },
+  happiness: { section: 'rules', anchor: 'rules-happiness', label: 'Configure check-ins' },
+  pulse: { section: 'rules', anchor: 'rules-surveys', label: 'Configure surveys' },
+  wellbeing: { section: 'rules', anchor: 'rules-wellbeing', label: 'Configure thresholds' },
+  nominations: { section: 'rewards', label: 'Configure nominations' },
+  mentorship: { section: 'rules', anchor: 'rules-mentorship', label: 'Configure matching' },
+  budget: { section: 'rules', anchor: 'rules-budget', label: 'Configure budget' },
+  talent: { section: 'ninebox', label: 'Configure talent grid' },
+  skills: { section: 'lists', label: 'Configure skills' },
+  'career-pathing': { section: 'rules', anchor: 'rules-career', label: 'Configure career paths' },
+  succession: { section: 'rules', anchor: 'rules-talent', label: 'Configure succession' },
+  conversations: { section: 'lists', label: 'Configure 1:1 types' },
+  analytics: { section: 'rules', anchor: 'rules-analytics', label: 'Configure analytics' },
+  sentiment: { section: 'rules', anchor: 'rules-sentiment', label: 'Configure lexicon' },
+  benchmarking: { section: 'rules', anchor: 'rules-benchmarking', label: 'Configure benchmarks' },
+  compensation: { section: 'rules', anchor: 'rules-compensation', label: 'Configure bands' },
+};

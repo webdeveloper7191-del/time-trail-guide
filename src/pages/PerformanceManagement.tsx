@@ -64,7 +64,7 @@ import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/perfo
 import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
-import { PERFORMANCE_CONFIG_EVENT, type PerformanceConfigTarget } from '@/components/performance/ConfigureLink';
+import { ConfigureLink, PERFORMANCE_CONFIG_EVENT, tabConfigTargets, type PerformanceConfigTarget } from '@/components/performance/ConfigureLink';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
@@ -462,6 +462,14 @@ export default function PerformanceManagement() {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
+              {tabConfigTargets[activeTab] && (
+                <ConfigureLink
+                  section={tabConfigTargets[activeTab].section}
+                  anchor={tabConfigTargets[activeTab].anchor}
+                  label={tabConfigTargets[activeTab].label}
+                  className="border border-border"
+                />
+              )}
               <PerformanceNotificationBell
                 goals={goals}
                 reviews={reviews}
