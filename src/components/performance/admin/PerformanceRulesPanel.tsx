@@ -16,9 +16,9 @@ function useRules(): PerformanceRules {
   );
 }
 
-function Section({ icon: Icon, title, description, children }: { icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
+function Section({ id, icon: Icon, title, description, children }: { id?: string; icon: React.ElementType; title: string; description: string; children: React.ReactNode }) {
   return (
-    <Card className="p-4 space-y-4">
+    <Card id={id} className="p-4 space-y-4 scroll-mt-32">
       <div className="flex items-start gap-3">
         <div className="rounded-md bg-muted p-2"><Icon className="h-4 w-4 text-muted-foreground" /></div>
         <div>
@@ -90,7 +90,7 @@ export function PerformanceRulesPanel() {
 
   return (
     <div className="space-y-4">
-      <Section icon={Target} title="Goals" description="Defaults and guardrails applied when goals are created or assigned.">
+      <Section id="rules-goals" icon={Target} title="Goals" description="Defaults and guardrails applied when goals are created or assigned.">
         <NumberField label="Default goal duration (days)" value={rules.goals.defaultDurationDays} onChange={v => set('goals', { defaultDurationDays: v })} />
         <NumberField label="Progress update cadence (days)" hint="Staff are nudged to update progress on this rhythm." value={rules.goals.progressUpdateCadenceDays} onChange={v => set('goals', { progressUpdateCadenceDays: v })} />
         <NumberField label="Minimum goals per person" value={rules.goals.minGoalsPerStaff} onChange={v => set('goals', { minGoalsPerStaff: v })} />
@@ -100,7 +100,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Milestones required" hint="Every goal must have at least one milestone." checked={rules.goals.requireMilestones} onChange={v => set('goals', { requireMilestones: v })} />
       </Section>
 
-      <Section icon={ClipboardCheck} title="Reviews & calibration" description="How review cycles run and what the calibration curve should look like.">
+      <Section id="rules-reviews" icon={ClipboardCheck} title="Reviews & calibration" description="How review cycles run and what the calibration curve should look like.">
         <ToggleField label="Self review required" checked={rules.reviews.selfReviewRequired} onChange={v => set('reviews', { selfReviewRequired: v })} />
         <ToggleField label="Peer review required" checked={rules.reviews.peerReviewRequired} onChange={v => set('reviews', { peerReviewRequired: v })} />
         <ToggleField label="Calibration sessions enabled" checked={rules.reviews.calibrationEnabled} onChange={v => set('reviews', { calibrationEnabled: v })} />
@@ -140,7 +140,7 @@ export function PerformanceRulesPanel() {
         </div>
       </Section>
 
-      <Section icon={Users} title="360° feedback" description="Responder limits, anonymity and release rules.">
+      <Section id="rules-feedback360" icon={Users} title="360° feedback" description="Responder limits, anonymity and release rules.">
         <NumberField label="Minimum responders" value={rules.feedback360.minResponders} onChange={v => set('feedback360', { minResponders: v })} />
         <NumberField label="Maximum responders" value={rules.feedback360.maxResponders} onChange={v => set('feedback360', { maxResponders: v })} />
         <NumberField label="Default due window (days)" value={rules.feedback360.defaultDueDays} onChange={v => set('feedback360', { defaultDueDays: v })} />
@@ -149,7 +149,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Manager approves the responder list" checked={rules.feedback360.managerApprovesResponders} onChange={v => set('feedback360', { managerApprovesResponders: v })} />
       </Section>
 
-      <Section icon={LifeBuoy} title="Performance improvement plans" description="Duration, check-in rhythm and approval path for PIPs.">
+      <Section id="rules-pip" icon={LifeBuoy} title="Performance improvement plans" description="Duration, check-in rhythm and approval path for PIPs.">
         <NumberField label="Default duration (days)" value={rules.pip.defaultDurationDays} onChange={v => set('pip', { defaultDurationDays: v })} />
         <NumberField label="Check-in cadence (days)" value={rules.pip.checkInCadenceDays} onChange={v => set('pip', { checkInCadenceDays: v })} />
         <NumberField label="Maximum extension (days)" value={rules.pip.maxExtensionDays} onChange={v => set('pip', { maxExtensionDays: v })} />
@@ -187,7 +187,7 @@ export function PerformanceRulesPanel() {
         </div>
       </Section>
 
-      <Section icon={Users} title="Talent & succession" description="Score thresholds that place someone in the talent grid, and bench targets.">
+      <Section id="rules-talent" icon={Users} title="Talent & succession" description="Score thresholds that place someone in the talent grid, and bench targets.">
         <NumberField label="High performance from (rating)" value={rules.talent.highPerformanceThreshold} onChange={v => set('talent', { highPerformanceThreshold: v })} />
         <NumberField label="Medium performance from (rating)" value={rules.talent.mediumPerformanceThreshold} onChange={v => set('talent', { mediumPerformanceThreshold: v })} />
         <NumberField label="High potential from (rating)" value={rules.talent.highPotentialThreshold} onChange={v => set('talent', { highPotentialThreshold: v })} />
@@ -195,14 +195,14 @@ export function PerformanceRulesPanel() {
         <NumberField label="Successors per critical role" value={rules.talent.successionCoverageTarget} onChange={v => set('talent', { successionCoverageTarget: v })} />
       </Section>
 
-      <Section icon={GraduationCap} title="Learning" description="Defaults applied to courses, certificates and mandatory training.">
+      <Section id="rules-learning" icon={GraduationCap} title="Learning" description="Defaults applied to courses, certificates and mandatory training.">
         <NumberField label="Default pass mark (%)" value={rules.learning.defaultPassMark} onChange={v => set('learning', { defaultPassMark: v })} />
         <NumberField label="Certificate validity (months)" value={rules.learning.certificateExpiryMonths} onChange={v => set('learning', { certificateExpiryMonths: v })} />
         <NumberField label="Mandatory completion window (days)" value={rules.learning.mandatoryCompletionDays} onChange={v => set('learning', { mandatoryCompletionDays: v })} />
         <ToggleField label="Staff can self-enrol" checked={rules.learning.allowSelfEnrolment} onChange={v => set('learning', { allowSelfEnrolment: v })} />
       </Section>
 
-      <Section icon={Smile} title="Happiness check-ins" description="Cadence and alerting for the happiness pulse widget.">
+      <Section id="rules-happiness" icon={Smile} title="Happiness check-ins" description="Cadence and alerting for the happiness pulse widget.">
         <ToggleField label="Happiness check-ins enabled" checked={rules.happiness.enabled} onChange={v => set('happiness', { enabled: v })} />
         <ToggleField label="Anonymous responses" checked={rules.happiness.anonymous} onChange={v => set('happiness', { anonymous: v })} />
         <NumberField label="Check-in cadence (days)" value={rules.happiness.cadenceDays} onChange={v => set('happiness', { cadenceDays: v })} />
@@ -210,7 +210,7 @@ export function PerformanceRulesPanel() {
         <NumberField label="Alert when score at or below" value={rules.happiness.lowScoreAlertThreshold} onChange={v => set('happiness', { lowScoreAlertThreshold: v })} />
       </Section>
 
-      <Section icon={Wallet} title="Development budget" description="Currency, allowances and approval thresholds for development spend.">
+      <Section id="rules-budget" icon={Wallet} title="Development budget" description="Currency, allowances and approval thresholds for development spend.">
         <TextField label="Currency code" value={rules.budget.currency} onChange={v => set('budget', { currency: v.toUpperCase() })} />
         <NumberField label="Annual allowance per person" value={rules.budget.defaultAnnualAllowancePerStaff} onChange={v => set('budget', { defaultAnnualAllowancePerStaff: v })} />
         <NumberField label="Approval required above" value={rules.budget.approvalRequiredAbove} onChange={v => set('budget', { approvalRequiredAbove: v })} />
@@ -218,7 +218,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Unspent budget can carry over" checked={rules.budget.carryOverAllowed} onChange={v => set('budget', { carryOverAllowed: v })} />
       </Section>
 
-      <Section icon={ClipboardList} title="Performance plans" description="Defaults applied to development and improvement plans.">
+      <Section id="rules-plans" icon={ClipboardList} title="Performance plans" description="Defaults applied to development and improvement plans.">
         <NumberField label="Default plan duration (days)" value={rules.plans.defaultDurationDays} onChange={v => set('plans', { defaultDurationDays: v })} />
         <div className="space-y-1.5">
           <Label className="text-xs">Reminder days before due</Label>
@@ -235,7 +235,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Compare to previous period" checked={rules.analytics.comparePreviousPeriod} onChange={v => set('analytics', { comparePreviousPeriod: v })} />
       </Section>
 
-      <Section icon={MessageSquare} title="Sentiment analysis" description="Keyword lexicon and thresholds used to score written feedback.">
+      <Section id="rules-sentiment" icon={MessageSquare} title="Sentiment analysis" description="Keyword lexicon and thresholds used to score written feedback.">
         <NumberField label="Positive from (score x100)" min={-100} value={rules.sentiment.positiveThreshold} onChange={v => set('sentiment', { positiveThreshold: v })} />
         <NumberField label="Negative below (score x100)" min={-100} value={rules.sentiment.negativeThreshold} onChange={v => set('sentiment', { negativeThreshold: v })} />
         <ToggleField label="Analyse feedback automatically" checked={rules.sentiment.enableAutoAnalysis} onChange={v => set('sentiment', { enableAutoAnalysis: v })} />
@@ -246,7 +246,7 @@ export function PerformanceRulesPanel() {
         <KeywordField label="Negators" value={rules.sentiment.negators} onChange={v => set('sentiment', { negators: v })} />
       </Section>
 
-      <Section icon={Bell} title="Notifications" description="Who gets nudged, when, and how escalation works.">
+      <Section id="rules-notifications" icon={Bell} title="Notifications" description="Who gets nudged, when, and how escalation works.">
         <div className="space-y-1.5">
           <Label className="text-xs">Weekly digest day</Label>
           <Select value={rules.notifications.digestDay} onValueChange={v => set('notifications', { digestDay: v as PerformanceRules['notifications']['digestDay'] })}>
