@@ -402,7 +402,7 @@ export default function PerformanceManagement() {
     plans: assignedPlans.filter(p => p.status === 'active').length,
     goals: goals.filter(g => g.status !== 'completed').length,
     reviews: reviews.filter(r => r.status !== 'completed').length,
-    conversations: conversations.filter(c => c.status !== 'completed').length,
+    conversations: conversations.filter(c => !c.completed).length,
   }), [assignedPlans, goals, reviews, conversations]);
 
 
