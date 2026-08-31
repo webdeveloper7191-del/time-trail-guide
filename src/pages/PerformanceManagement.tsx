@@ -64,11 +64,25 @@ import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/perfo
 import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
+import { PERFORMANCE_CONFIG_EVENT, type PerformanceConfigTarget } from '@/components/performance/ConfigureLink';
 
 const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
 
 export default function PerformanceManagement() {
   const [activeTab, setActiveTab] = useState('plans');
+  const [configTarget, setConfigTarget] = useState<PerformanceConfigTarget | null>(null);
+
+  // Configure links inside individual tabs jump to the matching Performance Setup section.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<PerformanceConfigTarget>).detail;
+      if (!detail) return;
+      setConfigTarget({ ...detail });
+      setActiveTab('admin-config');
+    };
+    window.addEventListener(PERFORMANCE_CONFIG_EVENT, handler);
+    return () => window.removeEventListener(PERFORMANCE_CONFIG_EVENT, handler);
+  }, []);
 
   const [feedbackView, setFeedbackView] = useState<'received' | 'given' | 'all'>('received');
   
@@ -660,7 +674,7 @@ export default function PerformanceManagement() {
             {activeTab === 'sentiment' && <SentimentAnalysisPanel embedded feedback={feedback} staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
             {activeTab === 'benchmarking' && <BenchmarkingDashboard embedded goals={goals} reviews={reviews} feedback={feedback} />}
             {activeTab === 'compensation' && <CompensationPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
-            {activeTab === 'admin-config' && <PerformanceAdminPanel embedded />}
+            {activeTab === 'admin-config' && <PerformanceAdminPanel embedded section={configTarget?.section} anchor={configTarget?.anchor} />}
 
             {activeTab === 'team' && (
               <TeamOverviewDashboard
