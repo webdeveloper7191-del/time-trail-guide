@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { 
   Box, 
   Stack, 
@@ -76,6 +77,7 @@ const mockDistribution = [
 ];
 
 export function HappinessScoreWidget({ currentUserId, isManager = false }: HappinessScoreWidgetProps) {
+  const rules = usePerformanceRules();
   const { happinessEntries } = usePerformanceOperations();
   const [showSubmitSheet, setShowSubmitSheet] = useState(false);
   const [score, setScore] = useState<number>(7);
@@ -337,7 +339,9 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
 
           <Box sx={{ mt: 4 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-              Your response is <strong>completely anonymous</strong>. We use these scores to understand team wellbeing and identify areas for improvement.
+              {rules.happiness.anonymous
+                ? 'Your response is completely anonymous. We use these scores to understand team wellbeing and identify areas for improvement.'
+                : 'Your response is shared with your manager to support your wellbeing.'}
             </Typography>
 
             {/* Score Slider */}
@@ -350,18 +354,18 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
                 >
                   {score}
                 </Typography>
-                <Typography variant="h4" color="text.secondary">/10</Typography>
+                <Typography variant="h4" color="text.secondary">/{rules.happiness.scaleMax}</Typography>
               </Stack>
               <Slider
                 value={score}
                 onChange={(_, value) => setScore(value as number)}
                 min={1}
-                max={10}
+                max={rules.happiness.scaleMax}
                 step={1}
                 marks={[
                   { value: 1, label: '😢' },
-                  { value: 5, label: '😐' },
-                  { value: 10, label: '😊' },
+                  { value: Math.round(rules.happiness.scaleMax / 2), label: '😐' },
+                  { value: rules.happiness.scaleMax, label: '😊' },
                 ]}
                 sx={{
                   '& .MuiSlider-thumb': {

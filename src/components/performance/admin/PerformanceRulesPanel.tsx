@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Target, ClipboardCheck, Users, LifeBuoy, HeartPulse, BarChart3, GraduationCap, Bell } from 'lucide-react';
+import { AlertTriangle, Target, ClipboardCheck, Users, LifeBuoy, HeartPulse, BarChart3, GraduationCap, Bell, Smile, Wallet, MessageSquare, ClipboardList } from 'lucide-react';
 import { performanceTaxonomyStore, PerformanceRules, distributionTotal } from '@/lib/performanceTaxonomyStore';
 
 function useRules(): PerformanceRules {
@@ -49,6 +49,30 @@ function ToggleField({ label, hint, checked, onChange }: { label: string; hint?:
         {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
       </div>
       <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+    </div>
+  );
+}
+
+function TextField({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <Input value={value} onChange={e => onChange(e.target.value)} />
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+function KeywordField({ label, value, onChange }: { label: string; value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="space-y-1.5 md:col-span-2">
+      <Label className="text-xs">{label}</Label>
+      <Input
+        value={value.join(', ')}
+        onChange={e => onChange(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+        placeholder="Comma separated words"
+      />
+      <p className="text-[11px] text-muted-foreground">{value.length} term{value.length === 1 ? '' : 's'} — comma separated.</p>
     </div>
   );
 }
@@ -176,6 +200,50 @@ export function PerformanceRulesPanel() {
         <NumberField label="Certificate validity (months)" value={rules.learning.certificateExpiryMonths} onChange={v => set('learning', { certificateExpiryMonths: v })} />
         <NumberField label="Mandatory completion window (days)" value={rules.learning.mandatoryCompletionDays} onChange={v => set('learning', { mandatoryCompletionDays: v })} />
         <ToggleField label="Staff can self-enrol" checked={rules.learning.allowSelfEnrolment} onChange={v => set('learning', { allowSelfEnrolment: v })} />
+      </Section>
+
+      <Section icon={Smile} title="Happiness check-ins" description="Cadence and alerting for the happiness pulse widget.">
+        <ToggleField label="Happiness check-ins enabled" checked={rules.happiness.enabled} onChange={v => set('happiness', { enabled: v })} />
+        <ToggleField label="Anonymous responses" checked={rules.happiness.anonymous} onChange={v => set('happiness', { anonymous: v })} />
+        <NumberField label="Check-in cadence (days)" value={rules.happiness.cadenceDays} onChange={v => set('happiness', { cadenceDays: v })} />
+        <NumberField label="Scale maximum" min={3} value={rules.happiness.scaleMax} onChange={v => set('happiness', { scaleMax: v })} />
+        <NumberField label="Alert when score at or below" value={rules.happiness.lowScoreAlertThreshold} onChange={v => set('happiness', { lowScoreAlertThreshold: v })} />
+      </Section>
+
+      <Section icon={Wallet} title="Development budget" description="Currency, allowances and approval thresholds for development spend.">
+        <TextField label="Currency code" value={rules.budget.currency} onChange={v => set('budget', { currency: v.toUpperCase() })} />
+        <NumberField label="Annual allowance per person" value={rules.budget.defaultAnnualAllowancePerStaff} onChange={v => set('budget', { defaultAnnualAllowancePerStaff: v })} />
+        <NumberField label="Approval required above" value={rules.budget.approvalRequiredAbove} onChange={v => set('budget', { approvalRequiredAbove: v })} />
+        <NumberField label="Carry-over cap (%)" value={rules.budget.carryOverCapPercent} onChange={v => set('budget', { carryOverCapPercent: v })} />
+        <ToggleField label="Unspent budget can carry over" checked={rules.budget.carryOverAllowed} onChange={v => set('budget', { carryOverAllowed: v })} />
+      </Section>
+
+      <Section icon={ClipboardList} title="Performance plans" description="Defaults applied to development and improvement plans.">
+        <NumberField label="Default plan duration (days)" value={rules.plans.defaultDurationDays} onChange={v => set('plans', { defaultDurationDays: v })} />
+        <div className="space-y-1.5">
+          <Label className="text-xs">Reminder days before due</Label>
+          <Input value={rules.plans.reminderDaysBefore.join(', ')} onChange={e => set('plans', { reminderDaysBefore: parseDays(e.target.value) })} placeholder="14, 7, 1" />
+          <p className="text-[11px] text-muted-foreground">Comma separated.</p>
+        </div>
+        <ToggleField label="Staff acknowledgement required" checked={rules.plans.requireAcknowledgement} onChange={v => set('plans', { requireAcknowledgement: v })} />
+        <ToggleField label="Close plan automatically on completion" checked={rules.plans.autoCloseOnCompletion} onChange={v => set('plans', { autoCloseOnCompletion: v })} />
+      </Section>
+
+      <Section icon={BarChart3} title="Analytics defaults" description="Default reporting window and small-group protection.">
+        <NumberField label="Default date range (days)" value={rules.analytics.defaultRangeDays} onChange={v => set('analytics', { defaultRangeDays: v })} />
+        <NumberField label="Minimum group size for breakdowns" value={rules.analytics.minGroupSizeForBreakdown} onChange={v => set('analytics', { minGroupSizeForBreakdown: v })} />
+        <ToggleField label="Compare to previous period" checked={rules.analytics.comparePreviousPeriod} onChange={v => set('analytics', { comparePreviousPeriod: v })} />
+      </Section>
+
+      <Section icon={MessageSquare} title="Sentiment analysis" description="Keyword lexicon and thresholds used to score written feedback.">
+        <NumberField label="Positive from (score x100)" min={-100} value={rules.sentiment.positiveThreshold} onChange={v => set('sentiment', { positiveThreshold: v })} />
+        <NumberField label="Negative below (score x100)" min={-100} value={rules.sentiment.negativeThreshold} onChange={v => set('sentiment', { negativeThreshold: v })} />
+        <ToggleField label="Analyse feedback automatically" checked={rules.sentiment.enableAutoAnalysis} onChange={v => set('sentiment', { enableAutoAnalysis: v })} />
+        <ToggleField label="Highlight matched keywords" checked={rules.sentiment.highlightKeywords} onChange={v => set('sentiment', { highlightKeywords: v })} />
+        <KeywordField label="Positive keywords" value={rules.sentiment.positiveKeywords} onChange={v => set('sentiment', { positiveKeywords: v })} />
+        <KeywordField label="Negative keywords" value={rules.sentiment.negativeKeywords} onChange={v => set('sentiment', { negativeKeywords: v })} />
+        <KeywordField label="Intensifiers" value={rules.sentiment.intensifiers} onChange={v => set('sentiment', { intensifiers: v })} />
+        <KeywordField label="Negators" value={rules.sentiment.negators} onChange={v => set('sentiment', { negators: v })} />
       </Section>
 
       <Section icon={Bell} title="Notifications" description="Who gets nudged, when, and how escalation works.">

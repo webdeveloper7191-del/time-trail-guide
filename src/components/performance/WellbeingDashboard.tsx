@@ -38,6 +38,7 @@ import {
 } from '@/types/advancedPerformance';
 import { mockStaff } from '@/data/mockStaffData';
 import { usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { 
   RadarChart, 
   PolarGrid, 
@@ -78,6 +79,7 @@ const getRiskIcon = (level: WellbeingRiskLevel) => {
 };
 
 export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
+  const rules = usePerformanceRules();
   const { wellbeingIndicators, wellbeingCheckIns } = usePerformanceOperations();
   const [selectedIndicator, setSelectedIndicator] = useState<WellbeingIndicator | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
@@ -188,7 +190,11 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
         <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
           <Box>
             <Typography variant="caption" color="text.secondary">Overtime</Typography>
-            <Typography variant="body2" fontWeight={600}>{indicator.overtimeHours}h</Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color={indicator.overtimeHours >= rules.wellbeing.overtimeHoursThreshold ? 'error.main' : 'text.primary'}
+            >{indicator.overtimeHours}h</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Avg Day</Typography>
@@ -196,7 +202,11 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Days Since Leave</Typography>
-            <Typography variant="body2" fontWeight={600}>{indicator.daysSinceLastLeave}</Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color={indicator.daysSinceLastLeave >= rules.wellbeing.daysSinceLeaveThreshold ? 'error.main' : 'text.primary'}
+            >{indicator.daysSinceLastLeave}</Typography>
           </Box>
         </Stack>
 

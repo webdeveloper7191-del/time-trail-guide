@@ -134,6 +134,41 @@ export interface PerformanceRules {
     mandatoryCompletionDays: number;
     allowSelfEnrolment: boolean;
   };
+  happiness: {
+    enabled: boolean;
+    cadenceDays: number;
+    scaleMax: number;
+    anonymous: boolean;
+    lowScoreAlertThreshold: number;
+  };
+  budget: {
+    currency: string;
+    defaultAnnualAllowancePerStaff: number;
+    approvalRequiredAbove: number;
+    carryOverAllowed: boolean;
+    carryOverCapPercent: number;
+  };
+  analytics: {
+    defaultRangeDays: number;
+    comparePreviousPeriod: boolean;
+    minGroupSizeForBreakdown: number;
+  };
+  sentiment: {
+    enableAutoAnalysis: boolean;
+    highlightKeywords: boolean;
+    positiveThreshold: number;
+    negativeThreshold: number;
+    positiveKeywords: string[];
+    negativeKeywords: string[];
+    intensifiers: string[];
+    negators: string[];
+  };
+  plans: {
+    defaultDurationDays: number;
+    reminderDaysBefore: number[];
+    requireAcknowledgement: boolean;
+    autoCloseOnCompletion: boolean;
+  };
   notifications: {
     digestEnabled: boolean;
     digestDay: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
@@ -149,7 +184,7 @@ export interface PerformanceTaxonomyState {
   rules: PerformanceRules;
 }
 
-const STORAGE_KEY = 'rostered.performance.taxonomy.v1';
+const STORAGE_KEY = 'rostered.performance.taxonomy.v2';
 
 const opt = (id: string, label: string, extra: Partial<TaxonomyOption> = {}): TaxonomyOption => ({
   id,
@@ -170,10 +205,10 @@ const defaultState = (): PerformanceTaxonomyState => ({
       opt('cat-team', 'Team contribution'),
     ],
     goalPriorities: [
-      opt('pri-low', 'Low', { value: 1, tone: 'muted' }),
-      opt('pri-medium', 'Medium', { value: 2, tone: 'secondary' }),
-      opt('pri-high', 'High', { value: 3, tone: 'amber' }),
-      opt('pri-critical', 'Critical', { value: 4, tone: 'destructive' }),
+      opt('low', 'Low', { value: 1, tone: 'muted' }),
+      opt('medium', 'Medium', { value: 2, tone: 'secondary' }),
+      opt('high', 'High', { value: 3, tone: 'amber' }),
+      opt('critical', 'Critical', { value: 4, tone: 'destructive' }),
     ],
     goalStatuses: [
       opt('gs-not-started', 'Not started', { value: 1, tone: 'muted' }),
@@ -183,10 +218,9 @@ const defaultState = (): PerformanceTaxonomyState => ({
       opt('gs-cancelled', 'Cancelled', { value: 5, tone: 'destructive' }),
     ],
     okrTypes: [
-      opt('okr-org', 'Organisation', { value: 1 }),
-      opt('okr-location', 'Location', { value: 2 }),
-      opt('okr-team', 'Team', { value: 3 }),
-      opt('okr-individual', 'Individual', { value: 4 }),
+      opt('company', 'Company', { value: 1 }),
+      opt('team', 'Team', { value: 2 }),
+      opt('individual', 'Individual', { value: 3 }),
     ],
     skillCategories: [
       opt('sk-technical', 'Technical'),
@@ -237,11 +271,11 @@ const defaultState = (): PerformanceTaxonomyState => ({
       opt('out-exit', 'Exit', { tone: 'destructive' }),
     ],
     conversationTypes: [
-      opt('cv-weekly', 'Weekly 1:1'),
-      opt('cv-monthly', 'Monthly check-in'),
-      opt('cv-career', 'Career conversation'),
-      opt('cv-feedback', 'Feedback conversation'),
-      opt('cv-wellbeing', 'Wellbeing check-in'),
+      opt('one_on_one', 'Weekly 1:1'),
+      opt('check_in', 'Check-in'),
+      opt('coaching', 'Coaching'),
+      opt('feedback', 'Feedback conversation'),
+      opt('career', 'Career conversation'),
     ],
     developmentBudgetCategories: [
       opt('db-training', 'Training & courses'),
@@ -343,6 +377,41 @@ const defaultState = (): PerformanceTaxonomyState => ({
       certificateExpiryMonths: 12,
       mandatoryCompletionDays: 30,
       allowSelfEnrolment: true,
+    },
+    happiness: {
+      enabled: true,
+      cadenceDays: 7,
+      scaleMax: 10,
+      anonymous: true,
+      lowScoreAlertThreshold: 4,
+    },
+    budget: {
+      currency: 'AUD',
+      defaultAnnualAllowancePerStaff: 1500,
+      approvalRequiredAbove: 500,
+      carryOverAllowed: false,
+      carryOverCapPercent: 25,
+    },
+    analytics: {
+      defaultRangeDays: 90,
+      comparePreviousPeriod: true,
+      minGroupSizeForBreakdown: 5,
+    },
+    sentiment: {
+      enableAutoAnalysis: true,
+      highlightKeywords: true,
+      positiveThreshold: 20,
+      negativeThreshold: -20,
+      positiveKeywords: ['great', 'excellent', 'outstanding', 'supportive', 'reliable', 'proactive', 'helpful', 'improved', 'strong', 'positive'],
+      negativeKeywords: ['poor', 'late', 'unreliable', 'missed', 'concern', 'issue', 'struggling', 'negative', 'disengaged', 'conflict'],
+      intensifiers: ['very', 'extremely', 'really', 'highly', 'consistently'],
+      negators: ['not', 'never', 'no', "isn't", "wasn't", 'rarely'],
+    },
+    plans: {
+      defaultDurationDays: 90,
+      reminderDaysBefore: [14, 7, 1],
+      requireAcknowledgement: true,
+      autoCloseOnCompletion: true,
     },
     notifications: {
       digestEnabled: true,

@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { toast } from 'sonner';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
 const request360Schema = z.object({
@@ -71,8 +72,9 @@ export function Request360FeedbackDrawer({
   const [subjectStaffId, setSubjectStaffId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), 14));
-  const [anonymousResponses, setAnonymousResponses] = useState(true);
+  const rules = usePerformanceRules();
+  const [dueDate, setDueDate] = useState<Date>(addDays(new Date(), rules.feedback360.defaultDueDays));
+  const [anonymousResponses, setAnonymousResponses] = useState(rules.feedback360.anonymousByDefault);
   const [includeSelfAssessment, setIncludeSelfAssessment] = useState(true);
   const [selectedCompetencies, setSelectedCompetencies] = useState<string[]>(
     competencies.slice(0, 4).map(c => c.id)
@@ -101,6 +103,10 @@ export function Request360FeedbackDrawer({
   }, [activeStaff, subjectStaffId, responders, responderSearch]);
 
   const handleAddResponder = (staffId: string) => {
+    if (responders.length >= rules.feedback360.maxResponders) {
+      toast.error(`Maximum ${rules.feedback360.maxResponders} responders allowed`);
+      return;
+    }
     setResponders([...responders, { staffId, sourceType: responderSourceType }]);
     setResponderSearch('');
   };
@@ -128,8 +134,8 @@ export function Request360FeedbackDrawer({
       return;
     }
 
-    if (responders.length === 0) {
-      toast.error('Please add at least one feedback responder');
+    if (responders.length < rules.feedback360.minResponders) {
+      toast.error(`Add at least ${rules.feedback360.minResponders} feedback responder${rules.feedback360.minResponders === 1 ? '' : 's'}`);
       return;
     }
 
@@ -162,7 +168,7 @@ export function Request360FeedbackDrawer({
     setSubjectStaffId('');
     setTitle('');
     setDescription('');
-    setDueDate(addDays(new Date(), 14));
+    setDueDate(addDays(new Date(), rules.feedback360.defaultDueDays));
     setAnonymousResponses(true);
     setIncludeSelfAssessment(true);
     setSelectedCompetencies(competencies.slice(0, 4).map(c => c.id));

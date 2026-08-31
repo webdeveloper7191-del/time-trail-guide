@@ -19,6 +19,8 @@ import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/Form
 import { mockFormTemplates } from '@/data/mockFormData';
 import { mockCourses, mockLearningPaths } from '@/data/mockLmsData';
 import { toast } from 'sonner';
+import { usePerformanceRules, useTaxonomyOptions } from '@/hooks/usePerformanceTaxonomy';
+import { addDays } from 'date-fns';
 
 const goalSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(100),
@@ -56,10 +58,26 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [customCategories, setCustomCategories] = useState<string[]>([]);
 
-  // Combine default and custom categories
-  const allCategories = useMemo(() => [...goalCategories, ...customCategories], [customCategories]);
-  const categoryOptions = useMemo(() => 
-    allCategories.map(cat => ({ value: cat, label: cat })), [allCategories]);
+  const rules = usePerformanceRules();
+  const configuredCategories = useTaxonomyOptions('goalCategories');
+  const configuredPriorities = useTaxonomyOptions('goalPriorities');
+
+  // Combine configured (or fallback) and custom categories
+  const categoryOptions = useMemo(() => {
+    const base = configuredCategories.length
+      ? configuredCategories
+      : goalCategories.map(cat => ({ value: cat, label: cat }));
+    return [...base, ...customCategories.map(cat => ({ value: cat, label: cat }))];
+  }, [configuredCategories, customCategories]);
+  const priorityOptions = useMemo(
+    () => (configuredPriorities.length ? configuredPriorities : Object.entries(goalPriorityLabels).map(([value, label]) => ({ value, label }))),
+    [configuredPriorities],
+  );
+
+  // Default the target date from the tenant's configured goal duration
+  React.useEffect(() => {
+    if (open && !targetDate) setTargetDate(addDays(new Date(), rules.goals.defaultDurationDays));
+  }, [open, rules.goals.defaultDurationDays]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter published forms/courses/paths
   const availableForms = useMemo(() => 
@@ -218,7 +236,7 @@ export function CreateGoalDrawer({ open, onOpenChange, onSubmit, staffId, create
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(goalPriorityLabels).map(([value, label]) => (
+                {priorityOptions.map(({ value, label }) => (
                   <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
               </SelectContent>

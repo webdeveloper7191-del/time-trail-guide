@@ -1,3 +1,4 @@
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Box, 
@@ -73,22 +74,38 @@ interface SentimentTrend {
 }
 
 // Simple rule-based sentiment analysis (no external dependencies)
-function analyzeSentiment(text: string): { sentiment: SentimentLabel; score: number; confidence: number; keywords: string[] } {
-  const positiveWords = [
+export interface SentimentLexicon {
+  positiveKeywords: string[];
+  negativeKeywords: string[];
+  intensifiers: string[];
+  negators: string[];
+  positiveThreshold: number;
+  negativeThreshold: number;
+}
+
+const fallbackLexicon: SentimentLexicon = {
+  positiveKeywords: [
     'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'outstanding', 'exceptional',
     'good', 'well', 'helpful', 'appreciate', 'thank', 'thanks', 'love', 'impressed',
     'professional', 'dedicated', 'reliable', 'supportive', 'creative', 'innovative',
-    'brilliant', 'superb', 'perfect', 'awesome', 'incredible', 'remarkable', 'success'
-  ];
-  
-  const negativeWords = [
+    'brilliant', 'superb', 'perfect', 'awesome', 'incredible', 'remarkable', 'success',
+  ],
+  negativeKeywords: [
     'poor', 'bad', 'terrible', 'awful', 'disappointing', 'frustrating', 'difficult',
     'problem', 'issue', 'concern', 'improve', 'better', 'lacks', 'missing', 'failed',
-    'late', 'slow', 'confused', 'unclear', 'mistake', 'error', 'wrong', 'weak'
-  ];
-  
-  const intensifiers = ['very', 'really', 'extremely', 'highly', 'absolutely', 'completely'];
-  const negators = ['not', "n't", 'never', 'no', 'without'];
+    'late', 'slow', 'confused', 'unclear', 'mistake', 'error', 'wrong', 'weak',
+  ],
+  intensifiers: ['very', 'really', 'extremely', 'highly', 'absolutely', 'completely'],
+  negators: ['not', "n't", 'never', 'no', 'without'],
+  positiveThreshold: 20,
+  negativeThreshold: -20,
+};
+
+function analyzeSentiment(text: string, lexicon: SentimentLexicon = fallbackLexicon): { sentiment: SentimentLabel; score: number; confidence: number; keywords: string[] } {
+  const positiveWords = lexicon.positiveKeywords;
+  const negativeWords = lexicon.negativeKeywords;
+  const intensifiers = lexicon.intensifiers;
+  const negators = lexicon.negators;
   
   const lowerText = text.toLowerCase();
   const words = lowerText.split(/\s+/);
@@ -133,8 +150,8 @@ function analyzeSentiment(text: string): { sentiment: SentimentLabel; score: num
     score = (positiveCount - negativeCount) / total;
     confidence = Math.min(0.95, 0.5 + (total * 0.1));
     
-    if (score > 0.2) sentiment = 'positive';
-    else if (score < -0.2) sentiment = 'negative';
+    if (score > lexicon.positiveThreshold / 100) sentiment = 'positive';
+    else if (score < lexicon.negativeThreshold / 100) sentiment = 'negative';
     else sentiment = 'neutral';
   }
   
@@ -159,6 +176,16 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   const [settings, setSettings] = useState<SentimentSettings | undefined>(undefined);
 
+  const rules = usePerformanceRules();
+  const lexicon: SentimentLexicon = useMemo(() => ({
+    positiveKeywords: rules.sentiment.positiveKeywords.length ? rules.sentiment.positiveKeywords : fallbackLexicon.positiveKeywords,
+    negativeKeywords: rules.sentiment.negativeKeywords.length ? rules.sentiment.negativeKeywords : fallbackLexicon.negativeKeywords,
+    intensifiers: rules.sentiment.intensifiers.length ? rules.sentiment.intensifiers : fallbackLexicon.intensifiers,
+    negators: rules.sentiment.negators.length ? rules.sentiment.negators : fallbackLexicon.negators,
+    positiveThreshold: rules.sentiment.positiveThreshold,
+    negativeThreshold: rules.sentiment.negativeThreshold,
+  }), [rules.sentiment]);
+
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
   // Analyze all feedback on mount
@@ -168,7 +195,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
     // Simulate processing time
     setTimeout(() => {
       const analyzed = feedback.map(f => {
-        const analysis = analyzeSentiment(f.message);
+        const analysis = analyzeSentiment(f.message, lexicon);
         return {
           feedbackId: f.id,
           ...analysis,
@@ -177,7 +204,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
       setResults(analyzed);
       setAnalyzing(false);
     }, 500);
-  }, [feedback]);
+  }, [feedback, lexicon]);
 
   // Filter by time range
   const filteredFeedback = useMemo(() => {

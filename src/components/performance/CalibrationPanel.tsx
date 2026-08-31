@@ -48,6 +48,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { CreateCalibrationSessionDrawer } from './CreateCalibrationSessionDrawer';
 import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 
 interface CalibrationPanelProps {
   currentUserId: string;
@@ -63,16 +64,29 @@ const getSessionStatusStyle = (status: string) => {
   return styles[status] || styles.scheduled;
 };
 
-const mockRatingDistribution: RatingDistribution[] = [
-  { rating: 1, count: 0, percentage: 0, expectedPercentage: 5, variance: -5 },
-  { rating: 2, count: 1, percentage: 10, expectedPercentage: 15, variance: -5 },
-  { rating: 3, count: 2, percentage: 50, expectedPercentage: 50, variance: 0 },
-  { rating: 4, count: 1, percentage: 30, expectedPercentage: 25, variance: 5 },
-  { rating: 5, count: 0, percentage: 10, expectedPercentage: 5, variance: 5 },
+/** Actual observed spread; expected values come from the tenant's configured curve. */
+const actualRatingSpread: { rating: number; count: number; percentage: number }[] = [
+  { rating: 1, count: 0, percentage: 0 },
+  { rating: 2, count: 1, percentage: 10 },
+  { rating: 3, count: 2, percentage: 50 },
+  { rating: 4, count: 1, percentage: 30 },
+  { rating: 5, count: 0, percentage: 10 },
 ];
+
+function buildDistribution(targets: { rating: number; percentage: number }[]): RatingDistribution[] {
+  return actualRatingSpread.map(a => {
+    const expectedPercentage = targets.find(t => t.rating === a.rating)?.percentage ?? 0;
+    return { ...a, expectedPercentage, variance: a.percentage - expectedPercentage };
+  });
+}
 
 export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   const { calibrationSessions: sessions, calibrationRatings } = usePerformanceOperations();
+  const rules = usePerformanceRules();
+  const ratingDistribution = React.useMemo(
+    () => buildDistribution(rules.reviews.distributionTargets),
+    [rules.reviews.distributionTargets],
+  );
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -136,7 +150,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   };
 
   const renderDistributionChart = () => {
-    const chartData = mockRatingDistribution.map(d => ({
+    const chartData = ratingDistribution.map(d => ({
       rating: `Rating ${d.rating}`,
       actual: d.percentage,
       expected: d.expectedPercentage,
