@@ -184,7 +184,7 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
   const activeTabInfo = getActiveTabInfo(activeTab);
 
   return (
-    <Box sx={{ mb: 3, position: 'relative' }}>
+    <Box sx={{ position: 'relative' }}>
       {/* Horizontal scrollable container for tablet/mobile */}
       <Box
         sx={{
@@ -201,8 +201,6 @@ export function PerformanceNavigation({ activeTab, onTabChange }: PerformanceNav
           sx={{ 
             minWidth: 'max-content',
             gap: 0.5,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
           }}
         >
         {tabGroups.map((group) => {

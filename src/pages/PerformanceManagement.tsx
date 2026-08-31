@@ -3,7 +3,6 @@ import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
-import { PerformanceModuleSidebar } from '@/components/performance/PerformanceModuleSidebar';
 import { findPerformanceGroup, findPerformanceTab } from '@/components/performance/performanceNavConfig';
 import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
 import { getWorkspaceMeta, type WorkspaceMeta } from '@/components/performance/workspaceConfig';
@@ -435,49 +434,46 @@ export default function PerformanceManagement() {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AdminSidebar />
 
-      {/* Module navigation column (Employee Portal pattern) */}
-      <PerformanceModuleSidebar
-        activeTab={activeTab}
-        onChange={setActiveTab}
-        counts={navCounts}
-      />
-
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top utility bar */}
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-4 md:px-6">
-          <div className="min-w-0">
-            <p className="hidden text-[11px] uppercase tracking-wide text-muted-foreground md:block">
-              Performance{activeGroup ? ` / ${activeGroup.label}` : ''}
-            </p>
-            <h1 className="truncate text-sm font-semibold tracking-tight md:text-[15px]">
-              {activeItem?.label ?? 'Performance Management'}
-            </h1>
+        {/* Top bar: context + actions */}
+        <header className="sticky top-0 z-20 shrink-0 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          <div className="mx-auto flex w-full max-w-[1400px] items-center gap-3 px-4 pt-3 md:px-6">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                Performance{activeGroup ? ` / ${activeGroup.label}` : ''}
+              </p>
+              <h1 className="truncate text-base font-semibold tracking-[-0.025em]">
+                {activeItem?.label ?? 'Performance Management'}
+              </h1>
+            </div>
+
+            <div className="ml-auto flex items-center gap-2">
+              <PerformanceNotificationBell
+                goals={goals}
+                reviews={reviews}
+                conversations={conversations}
+                plans={assignedPlans}
+                currentUserId={CURRENT_USER_ID}
+                onViewGoal={handleNotificationGoal}
+                onViewReview={handleNotificationReview}
+                onViewConversation={handleNotificationConversation}
+                onViewPlan={(planId) => {
+                  const plan = assignedPlans.find(p => p.id === planId);
+                  if (plan) handleViewPlan(plan);
+                }}
+              />
+            </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <PerformanceNotificationBell
-              goals={goals}
-              reviews={reviews}
-              conversations={conversations}
-              plans={assignedPlans}
-              currentUserId={CURRENT_USER_ID}
-              onViewGoal={handleNotificationGoal}
-              onViewReview={handleNotificationReview}
-              onViewConversation={handleNotificationConversation}
-              onViewPlan={(planId) => {
-                const plan = assignedPlans.find(p => p.id === planId);
-                if (plan) handleViewPlan(plan);
-              }}
-            />
+          {/* Top navigation */}
+          <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
+            <PerformanceNavigation activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
         </header>
 
         <main className="flex-1 overflow-x-hidden px-4 py-5 md:px-6 md:py-6">
           <div className="mx-auto max-w-[1400px] space-y-5">
-            {/* Compact grouped navigation for small screens */}
-            <div className="lg:hidden">
-              <PerformanceNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-            </div>
+
 
           {/* Tab Content */}
           {activeTab === 'lms' && (
