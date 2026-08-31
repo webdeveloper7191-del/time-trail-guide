@@ -397,6 +397,15 @@ export default function PerformanceManagement() {
     setSelectedPlan(updated);
   };
 
+  /** Lightweight "needs attention" counters shown next to sidebar sections. */
+  const navCounts = useMemo<Record<string, number>>(() => ({
+    plans: assignedPlans.filter(p => p.status === 'active').length,
+    goals: goals.filter(g => g.status !== 'completed').length,
+    reviews: reviews.filter(r => r.status !== 'completed').length,
+    conversations: conversations.filter(c => c.status !== 'completed').length,
+  }), [assignedPlans, goals, reviews, conversations]);
+
+
   const tabConfig = [
     { value: 'plans', label: 'Plans', icon: FileText },
     { value: 'okr', label: 'OKRs', icon: Crosshair },
