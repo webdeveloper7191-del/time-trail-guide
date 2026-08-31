@@ -381,9 +381,9 @@ const defaultState = (): PerformanceTaxonomyState => ({
     happiness: {
       enabled: true,
       cadenceDays: 7,
-      scaleMax: 5,
+      scaleMax: 10,
       anonymous: true,
-      lowScoreAlertThreshold: 2,
+      lowScoreAlertThreshold: 4,
     },
     budget: {
       currency: 'AUD',
