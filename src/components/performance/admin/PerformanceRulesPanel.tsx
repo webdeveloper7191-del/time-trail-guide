@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Target, ClipboardCheck, Users, LifeBuoy, HeartPulse, BarChart3, GraduationCap, Bell, Smile, Wallet, MessageSquare, ClipboardList } from 'lucide-react';
+import { DollarSign, Handshake, GitCompareArrows, Route, AlertTriangle, Target, ClipboardCheck, Users, LifeBuoy, HeartPulse, BarChart3, GraduationCap, Bell, Smile, Wallet, MessageSquare, ClipboardList } from 'lucide-react';
 import { performanceTaxonomyStore, PerformanceRules, distributionTotal } from '@/lib/performanceTaxonomyStore';
 
 function useRules(): PerformanceRules {
@@ -157,7 +158,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Extensions allowed" checked={rules.pip.allowExtension} onChange={v => set('pip', { allowExtension: v })} />
       </Section>
 
-      <Section icon={HeartPulse} title="Wellbeing & burnout" description="Thresholds that trigger a wellbeing risk flag.">
+      <Section id="rules-wellbeing" icon={HeartPulse} title="Wellbeing & burnout" description="Thresholds that trigger a wellbeing risk flag.">
         <NumberField label="Overtime hours per fortnight" value={rules.wellbeing.overtimeHoursThreshold} onChange={v => set('wellbeing', { overtimeHoursThreshold: v })} />
         <NumberField label="Consecutive days worked" value={rules.wellbeing.consecutiveDaysThreshold} onChange={v => set('wellbeing', { consecutiveDaysThreshold: v })} />
         <NumberField label="Days since last leave" value={rules.wellbeing.daysSinceLeaveThreshold} onChange={v => set('wellbeing', { daysSinceLeaveThreshold: v })} />
@@ -165,7 +166,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Notify manager on high risk" checked={rules.wellbeing.notifyManagerOnHighRisk} onChange={v => set('wellbeing', { notifyManagerOnHighRisk: v })} />
       </Section>
 
-      <Section icon={BarChart3} title="Surveys & eNPS" description="Cadence, anonymity protection and the eNPS question wording.">
+      <Section id="rules-surveys" icon={BarChart3} title="Surveys & eNPS" description="Cadence, anonymity protection and the eNPS question wording.">
         <div className="space-y-1.5">
           <Label className="text-xs">Default frequency</Label>
           <Select value={rules.surveys.defaultFrequency} onValueChange={v => set('surveys', { defaultFrequency: v as PerformanceRules['surveys']['defaultFrequency'] })}>
@@ -229,7 +230,7 @@ export function PerformanceRulesPanel() {
         <ToggleField label="Close plan automatically on completion" checked={rules.plans.autoCloseOnCompletion} onChange={v => set('plans', { autoCloseOnCompletion: v })} />
       </Section>
 
-      <Section icon={BarChart3} title="Analytics defaults" description="Default reporting window and small-group protection.">
+      <Section id="rules-analytics" icon={BarChart3} title="Analytics defaults" description="Default reporting window and small-group protection.">
         <NumberField label="Default date range (days)" value={rules.analytics.defaultRangeDays} onChange={v => set('analytics', { defaultRangeDays: v })} />
         <NumberField label="Minimum group size for breakdowns" value={rules.analytics.minGroupSizeForBreakdown} onChange={v => set('analytics', { minGroupSizeForBreakdown: v })} />
         <ToggleField label="Compare to previous period" checked={rules.analytics.comparePreviousPeriod} onChange={v => set('analytics', { comparePreviousPeriod: v })} />
@@ -246,7 +247,108 @@ export function PerformanceRulesPanel() {
         <KeywordField label="Negators" value={rules.sentiment.negators} onChange={v => set('sentiment', { negators: v })} />
       </Section>
 
-      <Section id="rules-notifications" icon={Bell} title="Notifications" description="Who gets nudged, when, and how escalation works.">
+      <Section id="rules-compensation" icon={DollarSign} title="Compensation & merit" description="Salary bands, compa-ratio guard rails and the merit increase matrix used by the Compensation tab.">
+        <TextField label="Currency" value={rules.compensation.currency} onChange={v => set('compensation', { currency: v })} />
+        <NumberField label="Merit budget (% of payroll)" value={rules.compensation.meritBudgetPercent} onChange={v => set('compensation', { meritBudgetPercent: v })} />
+        <NumberField label="Below range under compa-ratio" hint="e.g. 0.9" value={rules.compensation.compaRatioBelow} onChange={v => set('compensation', { compaRatioBelow: v })} />
+        <NumberField label="Above range over compa-ratio" hint="e.g. 1.1" value={rules.compensation.compaRatioAbove} onChange={v => set('compensation', { compaRatioAbove: v })} />
+        <div className="md:col-span-2 space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Salary bands</Label>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => set('compensation', { bands: [...rules.compensation.bands, { id: `band-${Date.now()}`, label: 'New band', min: 0, mid: 0, max: 0 }] })}>Add band</Button>
+          </div>
+          <div className="space-y-2">
+            {rules.compensation.bands.map((b, i) => (
+              <div key={b.id} className="grid grid-cols-2 gap-2 rounded-md border border-border p-2 md:grid-cols-5">
+                <Input value={b.label} onChange={e => set('compensation', { bands: rules.compensation.bands.map((x, xi) => xi === i ? { ...x, label: e.target.value } : x) })} />
+                <Input type="number" value={b.min} onChange={e => set('compensation', { bands: rules.compensation.bands.map((x, xi) => xi === i ? { ...x, min: Number(e.target.value) } : x) })} />
+                <Input type="number" value={b.mid} onChange={e => set('compensation', { bands: rules.compensation.bands.map((x, xi) => xi === i ? { ...x, mid: Number(e.target.value) } : x) })} />
+                <Input type="number" value={b.max} onChange={e => set('compensation', { bands: rules.compensation.bands.map((x, xi) => xi === i ? { ...x, max: Number(e.target.value) } : x) })} />
+                <Button variant="ghost" size="sm" className="h-9 text-xs text-destructive" onClick={() => set('compensation', { bands: rules.compensation.bands.filter((_, xi) => xi !== i) })}>Remove</Button>
+              </div>
+            ))}
+            <p className="text-[11px] text-muted-foreground">Columns: band name, minimum, midpoint, maximum.</p>
+          </div>
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <Label className="text-xs">Merit increase matrix (% by rating and compa-ratio)</Label>
+          {rules.compensation.meritByRating.map((row, i) => (
+            <div key={row.rating} className="grid grid-cols-4 items-center gap-2 rounded-md border border-border p-2">
+              <span className="text-xs font-medium">Rating {row.rating}</span>
+              {(['below', 'at', 'above'] as const).map(col => (
+                <div key={col} className="flex items-center gap-1.5">
+                  <span className="w-10 text-[11px] text-muted-foreground capitalize">{col}</span>
+                  <Input type="number" value={row[col]} onChange={e => set('compensation', { meritByRating: rules.compensation.meritByRating.map((r, ri) => ri === i ? { ...r, [col]: Number(e.target.value) } : r) })} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section id="rules-mentorship" icon={Handshake} title="Mentorship matching" description="Points awarded by the matching engine when pairing mentors with mentees.">
+        <NumberField label="Points per matched skill" value={rules.mentorship.skillMatchPoints} onChange={v => set('mentorship', { skillMatchPoints: v })} />
+        <NumberField label="Points per shared interest" value={rules.mentorship.interestMatchPoints} onChange={v => set('mentorship', { interestMatchPoints: v })} />
+        <NumberField label="Points for aligned career goals" value={rules.mentorship.careerGoalPoints} onChange={v => set('mentorship', { careerGoalPoints: v })} />
+        <NumberField label="Points for compatible meeting frequency" value={rules.mentorship.meetingFrequencyPoints} onChange={v => set('mentorship', { meetingFrequencyPoints: v })} />
+        <NumberField label="Points for high mentor availability" value={rules.mentorship.highAvailabilityPoints} onChange={v => set('mentorship', { highAvailabilityPoints: v })} />
+        <NumberField label="Points for medium mentor availability" value={rules.mentorship.mediumAvailabilityPoints} onChange={v => set('mentorship', { mediumAvailabilityPoints: v })} />
+        <NumberField label="Minimum score to suggest a match (%)" value={rules.mentorship.minMatchScore} onChange={v => set('mentorship', { minMatchScore: v })} />
+        <NumberField label="Default maximum mentees per mentor" value={rules.mentorship.maxMenteesPerMentor} onChange={v => set('mentorship', { maxMenteesPerMentor: v })} />
+      </Section>
+
+      <Section id="rules-benchmarking" icon={GitCompareArrows} title="Benchmarking" description="Peer group and metric categories used by the Benchmarking dashboard.">
+        <TextField label="Primary industry" value={rules.benchmarking.primaryIndustry} onChange={v => set('benchmarking', { primaryIndustry: v })} />
+        <TextField label="Region" value={rules.benchmarking.region} onChange={v => set('benchmarking', { region: v })} />
+        <div className="space-y-1.5">
+          <Label className="text-xs">Company size</Label>
+          <Select value={rules.benchmarking.companySize} onValueChange={v => set('benchmarking', { companySize: v as typeof rules.benchmarking.companySize })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="small">Small (1-50)</SelectItem>
+              <SelectItem value="medium">Medium (51-500)</SelectItem>
+              <SelectItem value="large">Large (501-5000)</SelectItem>
+              <SelectItem value="enterprise">Enterprise (5000+)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <TextField label="Fiscal year start (month number)" value={rules.benchmarking.fiscalYearStart} onChange={v => set('benchmarking', { fiscalYearStart: v })} />
+        <div className="md:col-span-2 space-y-1.5">
+          <Label className="text-xs">Metric categories shown</Label>
+          <div className="flex flex-wrap gap-2">
+            {['performance', 'engagement', 'development', 'retention'].map(cat => {
+              const on = rules.benchmarking.enabledCategories.includes(cat);
+              return (
+                <Button
+                  key={cat}
+                  variant={on ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs capitalize"
+                  onClick={() => set('benchmarking', {
+                    enabledCategories: on
+                      ? rules.benchmarking.enabledCategories.filter(c => c !== cat)
+                      : [...rules.benchmarking.enabledCategories, cat],
+                  })}
+                >
+                  {cat}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+        <KeywordField label="Benchmark sources" value={rules.benchmarking.benchmarkSources} onChange={v => set('benchmarking', { benchmarkSources: v })} />
+        <ToggleField label="Show confidence intervals" checked={rules.benchmarking.showConfidenceIntervals} onChange={v => set('benchmarking', { showConfidenceIntervals: v })} />
+        <ToggleField label="Quarterly benchmark reports" checked={rules.benchmarking.enableQuarterlyReports} onChange={v => set('benchmarking', { enableQuarterlyReports: v })} />
+      </Section>
+
+      <Section id="rules-career" icon={Route} title="Career pathing" description="Readiness rules applied when showing a person's progress to the next career level.">
+        <NumberField label="Readiness threshold (%)" hint="Above this someone is flagged ready for promotion." value={rules.careerPathing.readinessThresholdPercent} onChange={v => set('careerPathing', { readinessThresholdPercent: v })} />
+        <NumberField label="Minimum time in level (months)" value={rules.careerPathing.minTimeInLevelMonths} onChange={v => set('careerPathing', { minTimeInLevelMonths: v })} />
+        <ToggleField label="All core skills required" hint="Every core skill must reach the target level before promotion." checked={rules.careerPathing.requireAllCoreSkills} onChange={v => set('careerPathing', { requireAllCoreSkills: v })} />
+        <ToggleField label="Show salary ranges on career paths" checked={rules.careerPathing.showSalaryRanges} onChange={v => set('careerPathing', { showSalaryRanges: v })} />
+      </Section>
+
+            <Section id="rules-notifications" icon={Bell} title="Notifications" description="Who gets nudged, when, and how escalation works.">
         <div className="space-y-1.5">
           <Label className="text-xs">Weekly digest day</Label>
           <Select value={rules.notifications.digestDay} onValueChange={v => set('notifications', { digestDay: v as PerformanceRules['notifications']['digestDay'] })}>
