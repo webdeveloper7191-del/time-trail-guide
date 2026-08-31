@@ -1,3 +1,4 @@
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 import React, { useState, useMemo } from 'react';
 import {
   Box,
@@ -165,7 +166,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'AUD') => {
+  const formatCurrency = (amount: number, currency: string = performanceTaxonomyStore.get().rules.budget.currency) => {
     return new Intl.NumberFormat('en-AU', { style: 'currency', currency }).format(amount);
   };
 
@@ -529,7 +530,7 @@ function BudgetRequestDrawer({ open, onClose, currentUserId, myBudget, onSave }:
       description: description.trim(),
       category,
       amount: amountNum,
-      currency: 'AUD',
+      currency: performanceTaxonomyStore.get().rules.budget.currency,
       vendor: vendor.trim() || undefined,
       eventDate: eventDate || undefined,
       eventLocation: eventLocation.trim() || undefined,
@@ -696,7 +697,7 @@ function BudgetRequestDetailDrawer({ open, onClose, request, staff, currentUserI
   const staffMember = staff.find(s => s.id === request.staffId);
   const reviewer = request.reviewedBy ? staff.find(s => s.id === request.reviewedBy) : null;
 
-  const formatCurrency = (amount: number, currency: string = 'AUD') => {
+  const formatCurrency = (amount: number, currency: string = performanceTaxonomyStore.get().rules.budget.currency) => {
     return new Intl.NumberFormat('en-AU', { style: 'currency', currency }).format(amount);
   };
 

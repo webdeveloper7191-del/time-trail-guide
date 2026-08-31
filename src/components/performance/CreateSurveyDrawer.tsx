@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, MessageSquare, Lock, Eye } from 'lucide-react';
 import type { PulseSurvey, PulseQuestion, PulseSurveyFrequency } from '@/types/advancedPerformance';
 import { toast } from 'sonner';
+import { usePerformanceRules, useTaxonomyOptions } from '@/hooks/usePerformanceTaxonomy';
 
 interface CreateSurveyDrawerProps {
   open: boolean;
@@ -35,22 +36,24 @@ interface QuestionInput {
 }
 
 export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawerProps) {
+  const rules = usePerformanceRules();
+  const configuredCategories = useTaxonomyOptions('surveyCategories');
   const [title, setTitle] = useState('');
-  const [frequency, setFrequency] = useState<PulseSurveyFrequency>('weekly');
+  const [frequency, setFrequency] = useState<PulseSurveyFrequency>(rules.surveys.defaultFrequency);
   const [targetAudience, setTargetAudience] = useState<'all' | 'team' | 'department'>('all');
-  const [anonymous, setAnonymous] = useState(true);
+  const [anonymous, setAnonymous] = useState(rules.surveys.anonymousByDefault);
   const [questions, setQuestions] = useState<QuestionInput[]>([
     { id: '1', text: '', type: 'rating', category: 'engagement', required: true }
   ]);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
 
-  const defaultCategories = ['engagement', 'satisfaction', 'wellbeing', 'leadership', 'culture'];
-  const allCategories = useMemo(() => [...defaultCategories, ...customCategories], [customCategories]);
-  const categoryOptions = useMemo(() => 
-    allCategories.map(cat => ({ 
-      value: cat, 
-      label: cat.charAt(0).toUpperCase() + cat.slice(1) 
-    })), [allCategories]);
+  const fallbackCategories = ['engagement', 'satisfaction', 'wellbeing', 'leadership', 'culture'];
+  const categoryOptions = useMemo(() => {
+    const base = configuredCategories.length
+      ? configuredCategories
+      : fallbackCategories.map(cat => ({ value: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }));
+    return [...base, ...customCategories.map(cat => ({ value: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))];
+  }, [configuredCategories, customCategories]);
 
   const addQuestion = () => {
     setQuestions([
@@ -85,7 +88,12 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
       targetAudience,
       anonymousResponses: anonymous,
       status: 'draft',
-      questions: questions.map((q, idx) => ({
+      questions: [
+        ...questions,
+        ...(rules.surveys.enpsEnabled && !questions.some(q => q.type === 'enps')
+          ? [{ id: 'enps', text: rules.surveys.enpsQuestion, type: 'enps' as QuestionType, category: 'engagement', required: true }]
+          : []),
+      ].map((q, idx) => ({
         id: `q-${idx}`,
         text: q.text,
         type: q.type as PulseQuestion['type'],
@@ -101,9 +109,9 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
 
   const resetForm = () => {
     setTitle('');
-    setFrequency('weekly');
+    setFrequency(rules.surveys.defaultFrequency);
     setTargetAudience('all');
-    setAnonymous(true);
+    setAnonymous(rules.surveys.anonymousByDefault);
     setQuestions([{ id: '1', text: '', type: 'rating', category: 'engagement', required: true }]);
   };
 
