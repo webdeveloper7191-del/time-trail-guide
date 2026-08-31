@@ -38,6 +38,7 @@ import {
 } from '@/types/advancedPerformance';
 import { mockStaff } from '@/data/mockStaffData';
 import { usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { 
   RadarChart, 
   PolarGrid, 
@@ -78,6 +79,7 @@ const getRiskIcon = (level: WellbeingRiskLevel) => {
 };
 
 export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
+  const rules = usePerformanceRules();
   const { wellbeingIndicators, wellbeingCheckIns } = usePerformanceOperations();
   const [selectedIndicator, setSelectedIndicator] = useState<WellbeingIndicator | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
