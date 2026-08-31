@@ -3,6 +3,8 @@ import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
+import { PerformanceModuleSidebar } from '@/components/performance/PerformanceModuleSidebar';
+import { findPerformanceGroup, findPerformanceTab } from '@/components/performance/performanceNavConfig';
 import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
 import { getWorkspaceMeta, type WorkspaceMeta } from '@/components/performance/workspaceConfig';
 import { GoalRecommendationsPanel } from '@/components/performance/goals/GoalRecommendationsPanel';
