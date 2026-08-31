@@ -3,6 +3,8 @@ import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PerformanceNavigation } from '@/components/performance/PerformanceNavigation';
+import { PerformanceModuleSidebar } from '@/components/performance/PerformanceModuleSidebar';
+import { findPerformanceGroup, findPerformanceTab } from '@/components/performance/performanceNavConfig';
 import { ModuleWorkspace } from '@/components/performance/shared/ModuleWorkspace';
 import { getWorkspaceMeta, type WorkspaceMeta } from '@/components/performance/workspaceConfig';
 import { GoalRecommendationsPanel } from '@/components/performance/goals/GoalRecommendationsPanel';
@@ -395,6 +397,15 @@ export default function PerformanceManagement() {
     setSelectedPlan(updated);
   };
 
+  /** Lightweight "needs attention" counters shown next to sidebar sections. */
+  const navCounts = useMemo<Record<string, number>>(() => ({
+    plans: assignedPlans.filter(p => p.status === 'active').length,
+    goals: goals.filter(g => g.status !== 'completed').length,
+    reviews: reviews.filter(r => r.status !== 'completed').length,
+    conversations: conversations.filter(c => !c.completed).length,
+  }), [assignedPlans, goals, reviews, conversations]);
+
+
   const tabConfig = [
     { value: 'plans', label: 'Plans', icon: FileText },
     { value: 'okr', label: 'OKRs', icon: Crosshair },
@@ -417,37 +428,33 @@ export default function PerformanceManagement() {
     { value: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
+  const activeGroup = findPerformanceGroup(activeTab);
+  const activeItem = findPerformanceTab(activeTab);
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AdminSidebar />
-      <Box component="main" sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 }, overflow: 'auto' }}>
-        <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-          {/* Header */}
-          <Stack 
-            direction="row"
-            justifyContent="space-between" 
-            alignItems="center"
-            spacing={2}
-            sx={{ mb: { xs: 2, md: 3 } }}
-          >
-            <Box>
-              <Typography 
-                variant="h5" 
-                fontWeight={600} 
-                color="text.primary" 
-                sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, letterSpacing: '-0.025em' }}
-              >
-                Performance Management
-              </Typography>
-              <Typography 
-                variant="body2" 
-                color="text.secondary"
-                sx={{ display: { xs: 'none', sm: 'block' }, mt: 0.25 }}
-              >
-                Track development plans, reviews, goals, and continuous feedback
-              </Typography>
-            </Box>
 
+      {/* Module navigation column (Employee Portal pattern) */}
+      <PerformanceModuleSidebar
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        counts={navCounts}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top utility bar */}
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-4 md:px-6">
+          <div className="min-w-0">
+            <p className="hidden text-[11px] uppercase tracking-wide text-muted-foreground md:block">
+              Performance{activeGroup ? ` / ${activeGroup.label}` : ''}
+            </p>
+            <h1 className="truncate text-sm font-semibold tracking-tight md:text-[15px]">
+              {activeItem?.label ?? 'Performance Management'}
+            </h1>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
             <PerformanceNotificationBell
               goals={goals}
               reviews={reviews}
@@ -462,11 +469,15 @@ export default function PerformanceManagement() {
                 if (plan) handleViewPlan(plan);
               }}
             />
-          </Stack>
+          </div>
+        </header>
 
-          {/* Grouped Tab Navigation */}
-          <PerformanceNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-
+        <main className="flex-1 overflow-x-hidden px-4 py-5 md:px-6 md:py-6">
+          <div className="mx-auto max-w-[1400px] space-y-5">
+            {/* Compact grouped navigation for small screens */}
+            <div className="lg:hidden">
+              <PerformanceNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
 
           {/* Tab Content */}
           {activeTab === 'lms' && (
@@ -689,8 +700,9 @@ export default function PerformanceManagement() {
           </ModuleWorkspace>
           )}
 
-        </Box>
-      </Box>
+          </div>
+        </main>
+      </div>
 
       {/* Goal Detail Sheet */}
       <GoalDetailSheet
