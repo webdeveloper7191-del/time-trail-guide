@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Conversation, ConversationType, conversationTypeLabels } from '@/types/performance';
+import { useTaxonomyOptions } from '@/hooks/usePerformanceTaxonomy';
 import { StaffMember } from '@/types/staff';
 import { format, setHours, setMinutes } from 'date-fns';
 import { CalendarIcon, Clock, Video, Link2, MessageSquare } from 'lucide-react';
@@ -51,6 +52,8 @@ const meetingPlatforms: { id: MeetingPlatform; label: string; color: string; pla
 export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff, managerId }: ScheduleConversationDrawerProps) {
   const [staffId, setStaffId] = useState('');
   const [type, setType] = useState<ConversationType>('one_on_one');
+  const configuredTypes = useTaxonomyOptions('conversationTypes');
+  const typeOptions = configuredTypes.length ? configuredTypes : Object.entries(conversationTypeLabels).map(([value, label]) => ({ value, label }));
   const [title, setTitle] = useState('');
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState('10:00');
@@ -162,7 +165,7 @@ export function ScheduleConversationDrawer({ open, onOpenChange, onSubmit, staff
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(conversationTypeLabels).map(([value, label]) => (
+                {typeOptions.map(({ value, label }) => (
                   <SelectItem key={value} value={value}>{label}</SelectItem>
                 ))}
               </SelectContent>

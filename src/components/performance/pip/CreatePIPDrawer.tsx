@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 import {
   Box,
   Stack,
@@ -58,14 +59,14 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
     expectedOutcomes: [''],
     supportProvided: [''],
     startDate: format(new Date(), 'yyyy-MM-dd'),
-    endDate: format(addMonths(new Date(), 3), 'yyyy-MM-dd'),
+    endDate: format(addDays(new Date(), performanceTaxonomyStore.get().rules.pip.defaultDurationDays), 'yyyy-MM-dd'),
     milestones: [],
   });
 
   const [newMilestone, setNewMilestone] = useState({
     title: '',
     description: '',
-    targetDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    targetDate: format(addDays(new Date(), performanceTaxonomyStore.get().rules.pip.checkInCadenceDays * 2), 'yyyy-MM-dd'),
   });
 
   const handleArrayFieldChange = (field: 'performanceGaps' | 'expectedOutcomes' | 'supportProvided', index: number, value: string) => {
@@ -97,7 +98,7 @@ export function CreatePIPDrawer({ open, onClose, staff, currentUserId, onSubmit 
     setNewMilestone({
       title: '',
       description: '',
-      targetDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+      targetDate: format(addDays(new Date(), performanceTaxonomyStore.get().rules.pip.checkInCadenceDays * 2), 'yyyy-MM-dd'),
     });
   };
 

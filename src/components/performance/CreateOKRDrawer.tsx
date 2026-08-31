@@ -38,6 +38,7 @@ import type {
 import { mockObjectives, mockOKRCycles, mockTeams } from '@/data/mockOKRData';
 import { mockStaff } from '@/data/mockStaffData';
 import { toast } from 'sonner';
+import { useTaxonomyOptions } from '@/hooks/usePerformanceTaxonomy';
 
 interface CreateOKRDrawerProps {
   open: boolean;
@@ -75,6 +76,12 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<OKRLevel>('team');
+  const configuredLevels = useTaxonomyOptions('okrTypes');
+  const levelChoices = useMemo(() => {
+    const valid: OKRLevel[] = ['company', 'team', 'individual'];
+    const configured = configuredLevels.filter(o => valid.includes(o.value as OKRLevel));
+    return (configured.length ? configured : valid.map(v => ({ value: v, label: okrLevelLabels[v] }))) as { value: OKRLevel; label: string }[];
+  }, [configuredLevels]);
   const [ownerId, setOwnerId] = useState('');
   const [teamId, setTeamId] = useState('');
   const [selectedParentId, setSelectedParentId] = useState(parentObjectiveId || '');
@@ -177,7 +184,7 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
                 Company objectives cascade to teams, which cascade to individuals
               </Typography>
               <div className="flex gap-2">
-                {(['company', 'team', 'individual'] as OKRLevel[]).map((l) => {
+                {levelChoices.map(({ value: l, label: levelLabel }) => {
                   const style = getLevelStyle(l);
                   const isSelected = level === l;
                   return (
@@ -194,7 +201,7 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
                       }`}
                     >
                       {getLevelIcon(l)}
-                      <span className="text-sm font-medium">{okrLevelLabels[l]}</span>
+                      <span className="text-sm font-medium">{levelLabel}</span>
                     </button>
                   );
                 })}

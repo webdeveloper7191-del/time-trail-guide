@@ -188,7 +188,11 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
         <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
           <Box>
             <Typography variant="caption" color="text.secondary">Overtime</Typography>
-            <Typography variant="body2" fontWeight={600}>{indicator.overtimeHours}h</Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color={indicator.overtimeHours >= rules.wellbeing.overtimeHoursThreshold ? 'error.main' : 'text.primary'}
+            >{indicator.overtimeHours}h</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Avg Day</Typography>
@@ -196,7 +200,11 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Days Since Leave</Typography>
-            <Typography variant="body2" fontWeight={600}>{indicator.daysSinceLastLeave}</Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color={indicator.daysSinceLastLeave >= rules.wellbeing.daysSinceLeaveThreshold ? 'error.main' : 'text.primary'}
+            >{indicator.daysSinceLastLeave}</Typography>
           </Box>
         </Stack>
 
