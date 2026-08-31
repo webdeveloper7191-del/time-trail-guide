@@ -689,8 +689,9 @@ export default function PerformanceManagement() {
           </ModuleWorkspace>
           )}
 
-        </Box>
-      </Box>
+          </div>
+        </main>
+      </div>
 
       {/* Goal Detail Sheet */}
       <GoalDetailSheet
