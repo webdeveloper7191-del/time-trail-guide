@@ -45,6 +45,7 @@ import {
   mockMeritMatrix,
 } from '@/data/mockCompensationData';
 import { toast } from 'sonner';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 
 interface CompensationPanelProps {
   embedded?: boolean;
@@ -54,10 +55,27 @@ interface CompensationPanelProps {
 
 export function CompensationPanel({ staff, currentUserId, embedded = false }: CompensationPanelProps) {
   const [activeView, setActiveView] = useState<'overview' | 'merit' | 'bonus'>('overview');
+  const rules = usePerformanceRules();
+  const comp = rules.compensation;
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
   const getCompensation = (staffId: string) => mockEmployeeCompensation.find(c => c.staffId === staffId);
-  const getSalaryBand = (bandId: string) => mockSalaryBands.find(b => b.id === bandId);
+  /** Bands come from Performance Setup; the mock rows are only a fallback for ids an admin removed. */
+  const getSalaryBand = (bandId: string) => {
+    const configured = comp.bands.find(b => b.id === bandId);
+    const fallback = mockSalaryBands.find(b => b.id === bandId);
+    if (!configured && !fallback) return undefined;
+    return {
+      id: bandId,
+      level: fallback?.level ?? 'mid',
+      title: configured?.label ?? fallback!.title,
+      minSalary: configured?.min ?? fallback!.minSalary,
+      midSalary: configured?.mid ?? fallback!.midSalary,
+      maxSalary: configured?.max ?? fallback!.maxSalary,
+      currency: comp.currency,
+      effectiveDate: fallback?.effectiveDate ?? '',
+    } as SalaryBand;
+  };
 
   const stats = useMemo(() => {
     const pending = mockMeritRecommendations.filter(r => r.status === 'pending').length;
@@ -75,18 +93,18 @@ export function CompensationPanel({ staff, currentUserId, embedded = false }: Co
     return { pending, approved, totalBudget, avgIncrease };
   }, []);
 
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(amount);
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-AU', { style: 'currency', currency: comp.currency, maximumFractionDigits: 0 }).format(amount);
 
   const getCompaRatioVariant = (ratio: number) => {
-    if (ratio < 0.9) return 'warning';
-    if (ratio > 1.1) return 'destructive';
+    if (ratio < comp.compaRatioBelow) return 'warning';
+    if (ratio > comp.compaRatioAbove) return 'destructive';
     return 'success';
   };
 
   const getCompaRatioLabel = (ratio: number) => {
-    if (ratio < 0.9) return 'Below Range';
-    if (ratio > 1.1) return 'Above Range';
+    if (ratio < comp.compaRatioBelow) return 'Below Range';
+    if (ratio > comp.compaRatioAbove) return 'Above Range';
     return 'At Market';
   };
 
