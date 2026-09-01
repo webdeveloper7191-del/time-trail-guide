@@ -21,6 +21,7 @@ import {
   Handshake,
   ShieldCheck,
   Gem,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const navItems = [
   { icon: Users, label: 'Workforce', to: '/workforce' },
   { icon: CalendarCheck, label: 'Leave', to: '/leave' },
   { icon: MapPin, label: 'Locations', to: '/locations' },
+  { icon: Wallet, label: 'Payroll', to: '/payroll' },
   { icon: BarChart3, label: 'Reports', to: '/reports' },
   { icon: ClipboardList, label: 'Forms', to: '/forms' },
   { icon: Target, label: 'Performance', to: '/performance' },
