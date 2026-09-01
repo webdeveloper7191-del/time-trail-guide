@@ -58,11 +58,8 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
       toast.success('Pay run posted and locked for audit.');
       return;
     }
-    payrollStore.addAudit(run.id, status === 'approved' ? 'approved' : 'review');
-    payrollStore.updateRun(run.id, {
-      status,
-      approvedAt: status === 'approved' ? new Date().toISOString() : run.approvedAt,
-    });
+    payrollStore.addAudit(run.id, 'review');
+    payrollStore.updateRun(run.id, { status, approvedAt: run.approvedAt });
     toast.success(`Pay run marked ${status}.`);
   };
 
