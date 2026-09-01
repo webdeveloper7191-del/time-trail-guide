@@ -188,6 +188,15 @@ export interface PayRunLine {
   isTermination?: boolean;
 }
 
+/** An immutable audit entry recorded against a pay run. */
+export interface PayRunAuditEvent {
+  id: string;
+  at: string;
+  action: 'created' | 'review' | 'approved' | 'posted' | 'locked' | 'unlocked' | 'reversed' | 'published' | 'exported' | 'recalculated';
+  by?: string;
+  detail?: string;
+}
+
 export interface PayRun {
   id: string;
   name: string;
@@ -207,6 +216,18 @@ export interface PayRun {
   adjustments?: PayRunAdjustment[];
   /** Set once exported to an accounting platform */
   exports: PayRunExportRecord[];
+
+  /** A posted run is locked against edits until explicitly unlocked. */
+  locked?: boolean;
+  unlockedAt?: string;
+  unlockReason?: string;
+  /** Set when the run has been reversed; points at the reversal run. */
+  reversedAt?: string;
+  reversalOfRunId?: string;
+  reversedByRunId?: string;
+  /** Payslips published to the employee portal. */
+  payslipsPublishedAt?: string;
+  auditTrail?: PayRunAuditEvent[];
 }
 
 export interface PayRunTotals {
