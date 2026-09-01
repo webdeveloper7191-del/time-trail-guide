@@ -61,9 +61,10 @@ let connections: Record<AccountingPlatform, AccountingConnection> = {
 let calendars: PayCalendar[] = load<PayCalendar[]>(CALENDARS_KEY, defaultPayCalendars);
 let stp: StpSettings = { ...defaultStpSettings, ...load<Partial<StpSettings>>(STP_KEY, {}) };
 let deductions: StandingDeduction[] = load<StandingDeduction[]>(DEDUCTIONS_KEY, []);
+let taxProfiles: EmployeeTaxProfile[] = load<EmployeeTaxProfile[]>(TAX_KEY, []);
 
 const listeners = new Set<() => void>();
-let snapshot = { runs, settings, connections, calendars, stp, deductions };
+let snapshot = { runs, settings, connections, calendars, stp, deductions, taxProfiles };
 
 function persist() {
   try {
@@ -73,9 +74,14 @@ function persist() {
     localStorage.setItem(CALENDARS_KEY, JSON.stringify(calendars));
     localStorage.setItem(STP_KEY, JSON.stringify(stp));
     localStorage.setItem(DEDUCTIONS_KEY, JSON.stringify(deductions));
+    localStorage.setItem(TAX_KEY, JSON.stringify(taxProfiles));
   } catch {/* noop */}
-  snapshot = { runs, settings, connections, calendars, stp, deductions };
+  snapshot = { runs, settings, connections, calendars, stp, deductions, taxProfiles };
   listeners.forEach((fn) => fn());
+}
+
+function auditEvent(action: PayRunAuditEvent['action'], detail?: string): PayRunAuditEvent {
+  return { id: crypto.randomUUID(), at: new Date().toISOString(), action, detail };
 }
 
 export const payrollStore = {
