@@ -71,9 +71,9 @@ export interface StandingDeduction {
   notes?: string;
 }
 
-export type PayRunAdjustmentKind = 'leave' | 'deduction' | 'termination';
+export type PayRunAdjustmentKind = 'leave' | 'deduction' | 'termination' | 'back_pay';
 
-/** A one-off addition to a pay run line: leave payment, ad-hoc deduction or termination pay. */
+/** A one-off addition to a pay run line: leave payment, ad-hoc deduction, back pay or termination pay. */
 export interface PayRunAdjustment {
   id: string;
   lineId: string;
@@ -92,6 +92,16 @@ export interface PayRunAdjustment {
   category?: DeductionCategory;
   amount?: number;
 
+  // Back pay / retrospective adjustment
+  /** Period the back pay relates to, shown on the payslip. */
+  backPayFrom?: string;
+  backPayTo?: string;
+  /** Hours re-priced and the rate difference applied, when calculated from timesheets. */
+  backPayHours?: number;
+  backPayRateDifference?: number;
+  /** Back pay is superable unless it relates to a non-OTE component. */
+  superable?: boolean;
+
   // Termination pay
   unusedAnnualLeaveHours?: number;
   unusedLslHours?: number;
@@ -101,6 +111,16 @@ export interface PayRunAdjustment {
   completedYearsOfService?: number;
   genuineRedundancy?: boolean;
   notes?: string;
+}
+
+/** Per-employee tax declaration driving the ATO withholding scale. */
+export interface EmployeeTaxProfile {
+  staffId: string;
+  /** ATO scale identifier: scale1..scale6. */
+  scale: string;
+  /** Withhold the study and training support loan (HELP/VET/SFSS) component. */
+  hasStsl: boolean;
+  updatedAt?: string;
 }
 
 
