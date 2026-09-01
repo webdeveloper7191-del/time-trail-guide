@@ -41,16 +41,60 @@ export function PayrollSettingsPanel() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Tax scale</Label>
+            <Label>Withholding mode</Label>
             <Select value={s.taxScale} onValueChange={(v) => set({ taxScale: v as PayrollSettings['taxScale'] })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="resident">Resident, tax-free threshold claimed</SelectItem>
-                <SelectItem value="no_tfn">No TFN provided (47%)</SelectItem>
+                <SelectItem value="resident">Withhold PAYG</SelectItem>
+                <SelectItem value="no_tfn">Treat everyone as no TFN (47%)</SelectItem>
                 <SelectItem value="none">No withholding (export only)</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">Use ATO withholding scales</p>
+              <p className="text-xs text-muted-foreground">
+                NAT 1004 weekly coefficients, Medicare exemptions and STSL, instead of the simplified annualised model.
+              </p>
+            </div>
+            <Switch checked={s.useAtoTaxScales} onCheckedChange={(v) => set({ useAtoTaxScales: v })} />
+          </div>
+          {s.useAtoTaxScales && (
+            <div className="space-y-2">
+              <Label>Default tax scale</Label>
+              <Select value={s.defaultAtoScale} onValueChange={(v) => set({ defaultAtoScale: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TAX_SCALE_LABELS).map(([k, label]) => (
+                    <SelectItem key={k} value={k}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Applied when an employee has no tax declaration recorded. Employees without a TFN are always withheld on scale 4.
+              </p>
+            </div>
+          )}
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">Apply super maximum contribution base</p>
+              <p className="text-xs text-muted-foreground">Stop super accruing on earnings above the quarterly cap.</p>
+            </div>
+            <Switch checked={s.applySuperMaxContributionBase} onCheckedChange={(v) => set({ applySuperMaxContributionBase: v })} />
+          </div>
+          {s.applySuperMaxContributionBase && (
+            <div className="space-y-2">
+              <Label>Maximum contribution base ($ per quarter)</Label>
+              <Input
+                type="number"
+                step="100"
+                value={s.superMaxContributionBaseQuarterly}
+                onChange={(e) => set({ superMaxContributionBaseQuarterly: Number(e.target.value) })}
+              />
+              <p className="text-xs text-muted-foreground">Pro-rated to each pay period when super is calculated.</p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Ordinary hours per week</Label>
             <Input type="number" step="0.5" value={s.ordinaryHoursPerWeek} onChange={(e) => set({ ordinaryHoursPerWeek: Number(e.target.value) })} />
