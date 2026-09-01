@@ -150,6 +150,22 @@ export interface PayRunLine {
 
   hasTfn?: boolean;
   incomeStream?: StpIncomeStream;
+
+  // --- Deductions, sacrifice, leave and termination -------------------
+  /** Deductions taken before tax (excluding salary sacrifice to super). */
+  preTaxDeductions?: number;
+  postTaxDeductions?: number;
+  /** Salary sacrificed to superannuation (RESC) — reduces taxable income. */
+  salarySacrificeSuper?: number;
+  /** Paid leave included in gross. */
+  leavePay?: number;
+  /** Termination lump sums included in gross. */
+  terminationPay?: number;
+  /** Tax withheld on termination lump sums at the flat lump-sum rates. */
+  lumpSumTax?: number;
+  /** Employer super = SG + salary sacrifice. */
+  totalSuperContribution?: number;
+  isTermination?: boolean;
 }
 
 export interface PayRun {
@@ -167,6 +183,8 @@ export interface PayRun {
   lines: PayRunLine[];
   totals: PayRunTotals;
   notes?: string;
+  /** One-off leave payments, deductions and termination pay applied to lines. */
+  adjustments?: PayRunAdjustment[];
   /** Set once exported to an accounting platform */
   exports: PayRunExportRecord[];
 }
@@ -180,7 +198,11 @@ export interface PayRunTotals {
   superGuarantee: number;
   deductions: number;
   netPay: number;
+  salarySacrificeSuper?: number;
+  leavePay?: number;
+  terminationPay?: number;
 }
+
 
 export type AccountingPlatform = 'xero' | 'myob' | 'quickbooks';
 
