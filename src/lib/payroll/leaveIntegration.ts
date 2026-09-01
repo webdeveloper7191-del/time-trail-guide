@@ -111,13 +111,12 @@ export function applyLeaveForRun(run: PayRun, settings: PayrollSettings): LeaveA
         if (code === 'RDO' || code === 'ADO' || code === 'TOIL') {
           LeaveStore.postLedger({
             staffId: line.staffId,
-            staffName: line.staffName,
             kind: code,
             type: 'consumption',
             hours: -hours,
+            occurredOn: run.paymentDate,
             note: `Paid in ${run.name} (${run.id})`,
-            date: run.paymentDate,
-          } as never);
+          });
           postings.push({
             staffId: line.staffId, staffName: line.staffName, kind: code, hours: -hours,
             sourceRunId: run.id, note: `${c.label} paid — ${run.name}`,
