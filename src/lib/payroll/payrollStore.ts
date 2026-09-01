@@ -93,7 +93,7 @@ export const payrollStore = {
   },
   saveRun(run: PayRun) {
     const idx = runs.findIndex((r) => r.id === run.id);
-    if (idx >= 0) runs[idx] = run;
+    if (idx >= 0) runs = runs.map((r) => (r.id === run.id ? run : r));
     else runs = [run, ...runs];
     persist();
   },
@@ -104,13 +104,13 @@ export const payrollStore = {
   updateRun(id: string, patch: Partial<PayRun>) {
     const idx = runs.findIndex((r) => r.id === id);
     if (idx < 0) return;
-    runs[idx] = { ...runs[idx], ...patch };
+    runs = runs.map((r) => (r.id === id ? { ...r, ...patch } : r));
     persist();
   },
   recordExport(runId: string, record: PayRunExportRecord) {
     const idx = runs.findIndex((r) => r.id === runId);
     if (idx < 0) return;
-    runs[idx] = { ...runs[idx], exports: [record, ...(runs[idx].exports ?? [])] };
+    runs = runs.map((r) => (r.id === runId ? { ...r, exports: [record, ...(r.exports ?? [])] } : r));
     persist();
   },
 
@@ -133,7 +133,7 @@ export const payrollStore = {
   },
   saveCalendar(calendar: PayCalendar) {
     const idx = calendars.findIndex((c) => c.id === calendar.id);
-    if (idx >= 0) calendars[idx] = calendar;
+    if (idx >= 0) calendars = calendars.map((c) => (c.id === calendar.id ? calendar : c));
     else calendars = [...calendars, calendar];
     if (calendar.isDefault) {
       calendars = calendars.map((c) => (c.id === calendar.id ? c : { ...c, isDefault: false }));
