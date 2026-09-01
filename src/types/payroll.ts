@@ -73,6 +73,11 @@ export interface PayRunLine {
   rosterVarianceHours?: number;
   superFundName?: string;
   bankAccountMasked?: string;
+  /** Real bank details used to build the ABA payment file. */
+  bankBsb?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+
   hasTfn?: boolean;
   incomeStream?: StpIncomeStream;
 }
@@ -161,6 +166,14 @@ export interface PayrollSettings {
   roundNetToCents: boolean;
   abaBankCode?: string;
   abaAccountName?: string;
+  /** APCA user identification number on the ABA descriptive record. */
+  abaUserNumber?: string;
+  /** Withdrawal (clearing) account the ABA file debits. */
+  abaBsb?: string;
+  abaAccountNumber?: string;
+  /** Statement text shown on the employee's bank statement. */
+  abaLodgementReference?: string;
+
 
   /** Pay calendar used by default when creating a run. */
   defaultCalendarId?: string;

@@ -169,18 +169,112 @@ export function buildDetailCsv(run: PayRun): { fileName: string; content: string
   return { fileName: `pay-run-detail-${run.id}.csv`, content: csv(rows), rowCount: rows.length - 1 };
 }
 
-/** ABA (direct entry) payment file for bank upload. */
-export function buildAbaFile(run: PayRun, bankCode = 'ANZ', accountName = 'Payroll Clearing'): { fileName: string; content: string; rowCount: number } {
-  const active = run.lines.filter((l) => !l.excluded && l.netPay > 0);
-  const dateStr = format(new Date(run.paymentDate), 'ddMMyy');
-  const header = `0                 01${bankCode.padEnd(3).slice(0, 3)}       ${accountName.padEnd(26).slice(0, 26)}000000PAYROLL   ${dateStr}`;
-  const details = active.map((l) =>
-    `1${'000-000'.padEnd(7)}${(l.employeeNumber ?? '').padEnd(9).slice(0, 9)} 50${String(Math.round(l.netPay * 100)).padStart(10, '0')}${l.staffName.padEnd(32).slice(0, 32)}${run.id.padEnd(18).slice(0, 18)}`,
-  );
-  const total = active.reduce((s, l) => s + l.netPay, 0);
-  const trailer = `7999-999            ${String(Math.round(total * 100)).padStart(10, '0')}${String(Math.round(total * 100)).padStart(10, '0')}0000000000                        ${String(active.length).padStart(6, '0')}`;
-  return { fileName: `payment-${run.id}.aba`, content: [header, ...details, trailer].join('\n'), rowCount: active.length };
+/**
+ * ABA (Cemtex / APCA direct entry) payment file.
+ *
+ * Fixed-width 120-character records: one type-0 descriptive record, a type-1
+ * detail record per payable employee, and a type-7 file total. Employees with
+ * no bank details on file are skipped and reported back to the caller.
+ */
+export interface AbaOptions {
+  /** 3-letter APCA financial institution abbreviation, e.g. ANZ / WBC / CBA. */
+  bankCode?: string;
+  /** Name of the paying (clearing) account. */
+  accountName?: string;
+  /** APCA user identification number (6 digits). */
+  userNumber?: string;
+  /** Withdrawal account BSB, e.g. 083-004. */
+  bsb?: string;
+  /** Withdrawal account number. */
+  accountNumber?: string;
+  /** Text shown on the employee's statement. */
+  lodgementReference?: string;
 }
+
+const pad = (v: string | undefined, len: number) => (v ?? '').padEnd(len).slice(0, len);
+const num = (v: number, len: number) => String(Math.round(v)).padStart(len, '0').slice(-len);
+const cleanBsb = (bsb?: string) => {
+  const digits = (bsb ?? '').replace(/\D/g, '').slice(0, 6);
+  return digits.length === 6 ? `${digits.slice(0, 3)}-${digits.slice(3)}` : '';
+};
+const cleanAccount = (acct?: string) => (acct ?? '').replace(/[^\d-]/g, '').slice(0, 9);
+
+export function buildAbaFile(
+  run: PayRun,
+  options: AbaOptions | string = {},
+  legacyAccountName?: string,
+): { fileName: string; content: string; rowCount: number; skipped: string[] } {
+  const opts: AbaOptions =
+    typeof options === 'string' ? { bankCode: options, accountName: legacyAccountName } : options;
+  const bankCode = (opts.bankCode || 'ANZ').toUpperCase();
+  const accountName = opts.accountName || 'Payroll Clearing';
+  const userNumber = (opts.userNumber || '').replace(/\D/g, '').padStart(6, '0').slice(-6);
+  const selfBsb = cleanBsb(opts.bsb);
+  const selfAccount = cleanAccount(opts.accountNumber);
+  const reference = opts.lodgementReference || 'PAYROLL';
+
+  const payable = run.lines.filter((l) => !l.excluded && l.netPay > 0);
+  const skipped = payable
+    .filter((l) => !cleanBsb(l.bankBsb) || !cleanAccount(l.bankAccountNumber))
+    .map((l) => l.staffName);
+  const active = payable.filter((l) => cleanBsb(l.bankBsb) && cleanAccount(l.bankAccountNumber));
+
+  const dateStr = format(new Date(run.paymentDate), 'ddMMyy');
+
+  // Type 0 — descriptive record (120 chars)
+  const header =
+    '0' +
+    ' '.repeat(17) +
+    '01' +
+    pad(bankCode, 3) +
+    ' '.repeat(7) +
+    pad(accountName, 26) +
+    userNumber +
+    pad(reference, 12) +
+    dateStr +
+    ' '.repeat(40);
+
+  // Type 1 — detail records
+  const details = active.map((l) => {
+    const amountCents = Math.round(l.netPay * 100);
+    return (
+      '1' +
+      pad(cleanBsb(l.bankBsb), 7) +
+      cleanAccount(l.bankAccountNumber).padStart(9) +
+      ' ' + // withholding tax indicator
+      '50' + // credit — pay
+      num(amountCents, 10) +
+      pad(l.bankAccountName || l.staffName, 32) +
+      pad(reference, 18) +
+      pad(selfBsb, 7) +
+      selfAccount.padStart(9) +
+      pad(accountName, 16) +
+      num(0, 8) // withholding tax amount
+    );
+  });
+
+  // Type 7 — file total record
+  const totalCents = active.reduce((s, l) => s + Math.round(l.netPay * 100), 0);
+  const trailer =
+    '7' +
+    '999-999' +
+    ' '.repeat(12) +
+    num(totalCents, 10) + // net total
+    num(totalCents, 10) + // credit total
+    num(0, 10) + // debit total
+    ' '.repeat(24) +
+    num(active.length, 6) +
+    ' '.repeat(40);
+
+  const lines = [header, ...details, trailer].map((l) => l.padEnd(120).slice(0, 120));
+  return {
+    fileName: `payment-${run.id}.aba`,
+    content: lines.join('\r\n'),
+    rowCount: active.length,
+    skipped,
+  };
+}
+
 
 /** STP-style YTD accumulation across posted (or all) pay runs. */
 export function buildStpYtd(runs: PayRun[], financialYearStart: string): StpYtdRow[] {

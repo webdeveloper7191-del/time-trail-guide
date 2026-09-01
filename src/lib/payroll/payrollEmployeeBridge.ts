@@ -33,6 +33,11 @@ export interface EmployeePayProfile {
   payCondition?: PayCondition;
   superFundName?: string;
   bankAccountMasked?: string;
+  /** Real bank details for the ABA (direct entry) payment file. */
+  bankBsb?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+
   hasTfn: boolean;
   contractedHours?: number;
   incomeStream: StpIncomeStream;
@@ -164,6 +169,10 @@ export function resolveEmployeePayProfile(
     payCondition: pc,
     superFundName: record.bankDetails?.superFundName,
     bankAccountMasked: maskAccount(record.bankDetails?.accountNumber),
+    bankBsb: record.bankDetails?.bsb,
+    bankAccountNumber: record.bankDetails?.accountNumber,
+    bankAccountName: record.bankDetails?.accountName ?? fullName(record),
+
     hasTfn: Boolean(record.taxFileNumber),
     contractedHours: pc?.contractedHours,
     incomeStream: incomeStreamFor(employmentType),

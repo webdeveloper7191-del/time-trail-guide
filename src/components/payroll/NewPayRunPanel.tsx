@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import { Calculator } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
@@ -60,6 +60,45 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
     setPaymentDate(format(addDays(new Date(end), 3), 'yyyy-MM-dd'));
   };
 
+  const countIn = (start: string, end: string) => {
+    const inRange = timesheets.filter((t) => {
+      if (approvedOnly && t.status !== 'approved') return false;
+      return (t.weekStartDate >= start && t.weekStartDate <= end)
+        || (t.weekEndDate >= start && t.weekEndDate <= end);
+    });
+    return new Set(inRange.map((t) => t.employee.id)).size;
+  };
+
+  /**
+   * When the panel opens, land on the most recent period that actually has
+   * timesheets so the run isn't created against an empty period.
+   */
+  const [autoSelected, setAutoSelected] = useState(false);
+  useEffect(() => {
+    if (!open) { setAutoSelected(false); return; }
+    if (autoSelected || !defaultCalendar) return;
+    setAutoSelected(true);
+    if (countIn(periodStart, periodEnd) > 0) return;
+    for (let offset = -1; offset >= -12; offset--) {
+      const p = periodAtOffset(defaultCalendar, offset);
+      if (countIn(p.periodStart, p.periodEnd) > 0) {
+        setCalendarId(defaultCalendar.id);
+        setCycle(defaultCalendar.cycle);
+        setPeriodStart(p.periodStart);
+        setPeriodEnd(p.periodEnd);
+        setPaymentDate(p.paymentDate);
+        return;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  /** Existing runs whose period overlaps the selected dates — paying twice is a real risk. */
+  const overlappingRuns = useMemo(
+    () => payrollStore.getRuns().filter((r) => r.periodStart <= periodEnd && r.periodEnd >= periodStart),
+    [periodStart, periodEnd, open],
+  );
+
   const eligible = useMemo(() => {
     const staff = getPayrollStaffDirectory();
     const inRange = timesheets.filter((t) => {
@@ -72,9 +111,17 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
     return { count: employees.size, matched };
   }, [timesheets, periodStart, periodEnd, approvedOnly]);
 
+
   const eligibleCount = eligible.count;
+  const [overlapConfirmed, setOverlapConfirmed] = useState(false);
+  const blockingOverlap = overlappingRuns.length > 0 && !overlapConfirmed;
 
   const create = () => {
+    if (blockingOverlap) {
+      toast.error('This period overlaps an existing pay run — confirm the overlap before creating.');
+      return;
+    }
+
     const run = buildPayRun({
       name: name.trim() || `${cycle[0].toUpperCase()}${cycle.slice(1)} pay run ${periodStart}`,
       cycle,
@@ -105,14 +152,30 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
       size="lg"
       actions={[
         { label: 'Cancel', variant: 'outlined', onClick: onClose },
-        { label: 'Create draft run', variant: 'primary', onClick: create, disabled: eligibleCount === 0 },
+        { label: 'Create draft run', variant: 'primary', onClick: create, disabled: eligibleCount === 0 || blockingOverlap },
       ]}
     >
       <div className="space-y-5">
+        {overlappingRuns.length > 0 && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+            <p className="text-sm font-medium text-destructive">Period overlaps an existing pay run</p>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
+              {overlappingRuns.map((r) => (
+                <li key={r.id}>{r.name} · {r.periodStart} → {r.periodEnd} · {r.status}</li>
+              ))}
+            </ul>
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={overlapConfirmed} onChange={(e) => setOverlapConfirmed(e.target.checked)} />
+              I understand these hours may already have been paid — create anyway.
+            </label>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label>Pay run name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Fortnight ending 14 Sep" />
         </div>
+
 
         <div className="space-y-2">
           <Label>Pay calendar</Label>

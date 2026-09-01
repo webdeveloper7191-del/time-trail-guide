@@ -46,11 +46,27 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
 
   const exportAba = () => {
     const s = payrollStore.getSettings();
-    const f = buildAbaFile(run, s.abaBankCode, s.abaAccountName);
+    const f = buildAbaFile(run, {
+      bankCode: s.abaBankCode,
+      accountName: s.abaAccountName,
+      userNumber: s.abaUserNumber,
+      bsb: s.abaBsb,
+      accountNumber: s.abaAccountNumber,
+      lodgementReference: s.abaLodgementReference,
+    });
+    if (!f.rowCount) {
+      toast.error('No employees have bank details on file — nothing to pay in the ABA file.');
+      return;
+    }
     downloadFile(f.content, f.fileName, 'text/plain');
     payrollStore.recordExport(run.id, { id: crypto.randomUUID(), platform: 'aba', exportedAt: new Date().toISOString(), fileName: f.fileName, lineCount: f.rowCount });
-    toast.success('ABA payment file downloaded.');
+    if (f.skipped.length) {
+      toast.warning(`ABA file downloaded — ${f.skipped.length} employee(s) skipped for missing bank details: ${f.skipped.join(', ')}.`);
+    } else {
+      toast.success(`ABA payment file downloaded — ${f.rowCount} payment(s).`);
+    }
   };
+
 
   const actions = [
     { label: 'Close', variant: 'outlined' as const, onClick: onClose },

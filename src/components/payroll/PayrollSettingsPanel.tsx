@@ -120,6 +120,29 @@ export function PayrollSettingsPanel() {
             <Label>ABA account name</Label>
             <Input placeholder="Payroll Clearing" value={s.abaAccountName ?? ''} onChange={(e) => set({ abaAccountName: e.target.value })} />
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Withdrawal BSB</Label>
+              <Input placeholder="083-004" value={s.abaBsb ?? ''} onChange={(e) => set({ abaBsb: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Withdrawal account number</Label>
+              <Input placeholder="123456789" value={s.abaAccountNumber ?? ''} onChange={(e) => set({ abaAccountNumber: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>APCA user ID</Label>
+              <Input placeholder="6 digits, e.g. 123456" value={s.abaUserNumber ?? ''} onChange={(e) => set({ abaUserNumber: e.target.value })} />
+              <p className="text-xs text-muted-foreground">Issued by your bank for direct entry files.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Lodgement reference</Label>
+              <Input placeholder="PAYROLL" value={s.abaLodgementReference ?? ''} onChange={(e) => set({ abaLodgementReference: e.target.value })} />
+              <p className="text-xs text-muted-foreground">Shown on the employee's bank statement.</p>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Super guarantee monthly threshold ($)</Label>
             <Input type="number" step="10" value={s.superMonthlyThreshold} onChange={(e) => set({ superMonthlyThreshold: Number(e.target.value) })} />
