@@ -14,7 +14,7 @@ const createBreak = (id: string, startTime: string, endTime: string, type: 'lunc
   return { id, startTime, endTime, duration, type };
 };
 
-export const mockTimesheets: Timesheet[] = [
+const seedTimesheets: Timesheet[] = [
   {
     id: 'TS001',
     employee: {
@@ -244,3 +244,51 @@ export const mockTimesheets: Timesheet[] = [
     notes: 'Friday hours need to be clarified. Please provide documentation for early departure.',
   },
 ];
+
+/**
+ * The seed data is authored against the week of Mon 8 Jan 2024. Payroll and
+ * timesheet screens filter on the current pay period, so the seed is shifted
+ * forward by whole weeks (preserving weekday alignment) to land on the most
+ * recent completed weeks relative to today.
+ */
+const SEED_WEEK_START = '2024-01-08';
+
+function weekShiftDays(): number {
+  const seed = new Date(`${SEED_WEEK_START}T00:00:00`);
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sun
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const thisMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+  // Land the seed week on the last completed week.
+  const targetMonday = new Date(thisMonday.getTime() - 7 * 86400000);
+  const diff = Math.round((targetMonday.getTime() - seed.getTime()) / 86400000);
+  return Math.floor(diff / 7) * 7;
+}
+
+const SHIFT_DAYS = weekShiftDays();
+
+const shiftDate = (iso: string) => {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + SHIFT_DAYS);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const shiftStamp = (stamp?: string) => {
+  if (!stamp) return stamp;
+  const [date, rest] = stamp.split('T');
+  return rest ? `${shiftDate(date)}T${rest}` : shiftDate(date);
+};
+
+const rebase = (sheets: Timesheet[]): Timesheet[] =>
+  SHIFT_DAYS === 0
+    ? sheets
+    : sheets.map((t) => ({
+        ...t,
+        weekStartDate: shiftDate(t.weekStartDate),
+        weekEndDate: shiftDate(t.weekEndDate),
+        submittedAt: shiftStamp(t.submittedAt) as string,
+        reviewedAt: shiftStamp(t.reviewedAt),
+        entries: t.entries.map((e) => ({ ...e, date: shiftDate(e.date) })),
+      }));
+
+export const mockTimesheets: Timesheet[] = rebase(seedTimesheets);
