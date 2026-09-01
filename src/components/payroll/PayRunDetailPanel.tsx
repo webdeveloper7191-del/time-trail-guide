@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Download, FileText, Receipt } from 'lucide-react';
+import { AlertTriangle, Download, FileText, Receipt, Send } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -179,6 +179,9 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={exportDetail}><Download className="h-4 w-4 mr-2" />Detail CSV</Button>
           <Button variant="outline" size="sm" onClick={exportAba}><FileText className="h-4 w-4 mr-2" />ABA payment file</Button>
+          <Button variant="outline" size="sm" onClick={postToXero} disabled={postingXero || run.status === 'draft'}>
+            <Send className="h-4 w-4 mr-2" />{postingXero ? 'Posting to Xero…' : 'Post to Xero'}
+          </Button>
         </div>
 
         <div className="rounded-lg border overflow-hidden">
