@@ -163,6 +163,305 @@ function mergeBuckets(buckets: Bucket[]): Bucket[] {
   return Array.from(map.values());
 }
 
+
+// ---------------------------------------------------------------------------
+// Deductions, salary sacrifice, leave payments and termination pay
+// ---------------------------------------------------------------------------
+
+const pct = (amount: number, rate: number) => round2(amount * (rate / 100));
+
+/** Build the pay components for a one-off adjustment on a line. */
+export function adjustmentComponents(
+  adj: PayRunAdjustment,
+  line: PayRunLine,
+  settings: PayrollSettings,
+): PayComponent[] {
+  const out: PayComponent[] = [];
+  const rate = adj.rate ?? line.baseRate;
+
+  if (adj.kind === 'leave') {
+    const hours = adj.hours ?? 0;
+    const amount = round2(hours * rate);
+    out.push({
+      id: `${adj.id}-leave`,
+      kind: 'leave',
+      label: adj.label || 'Paid leave',
+      units: hours,
+      rate,
+      amount,
+      superable: true,
+      taxable: true,
+      source: 'adjustment',
+      stpCode: adj.leaveTypeCode ? `PaidLeave-${adj.leaveTypeCode}` : 'PaidLeave',
+    });
+    const loadingPct = adj.loadingPct ?? (settings.payLeaveLoadingOnLeaveTaken ? settings.annualLeaveLoadingPct : 0);
+    if (loadingPct > 0 && amount > 0) {
+      out.push({
+        id: `${adj.id}-loading`,
+        kind: 'leave',
+        label: `Annual leave loading ${loadingPct}%`,
+        units: 1,
+        rate: pct(amount, loadingPct),
+        amount: pct(amount, loadingPct),
+        superable: true,
+        taxable: true,
+        source: 'adjustment',
+        stpCode: 'LeaveLoading',
+      });
+    }
+    return out;
+  }
+
+  if (adj.kind === 'deduction') {
+    const amount = round2(adj.amount ?? 0);
+    out.push({
+      id: `${adj.id}-ded`,
+      kind: 'deduction',
+      label: adj.label || 'Deduction',
+      units: 1,
+      rate: amount,
+      amount,
+      superable: false,
+      taxable: false,
+      category: adj.category ?? 'post_tax',
+      source: 'adjustment',
+    });
+    return out;
+  }
+
+  // Termination pay
+  const leaveTaxRate = settings.terminationLeaveTaxRate;
+  const etpRate = settings.etpTaxRate;
+  const loadingPct = settings.payLeaveLoadingOnTermination ? settings.annualLeaveLoadingPct : 0;
+
+  const annualHours = adj.unusedAnnualLeaveHours ?? 0;
+  if (annualHours > 0) {
+    const base = round2(annualHours * rate);
+    const amount = round2(base + pct(base, loadingPct));
+    out.push({
+      id: `${adj.id}-unused-al`,
+      kind: 'termination',
+      label: `Unused annual leave${loadingPct ? ` (incl. ${loadingPct}% loading)` : ''}`,
+      units: annualHours,
+      rate,
+      amount,
+      superable: settings.superOnTerminationPay,
+      taxable: false,
+      lumpSumTax: pct(amount, leaveTaxRate),
+      source: 'adjustment',
+      stpCode: 'UnusedLeave-A',
+    });
+  }
+
+  const lslHours = adj.unusedLslHours ?? 0;
+  if (lslHours > 0) {
+    const amount = round2(lslHours * rate);
+    out.push({
+      id: `${adj.id}-unused-lsl`,
+      kind: 'termination',
+      label: 'Unused long service leave',
+      units: lslHours,
+      rate,
+      amount,
+      superable: settings.superOnTerminationPay,
+      taxable: false,
+      lumpSumTax: pct(amount, leaveTaxRate),
+      source: 'adjustment',
+      stpCode: 'LumpSumA',
+    });
+  }
+
+  const piln = round2(adj.paymentInLieuAmount ?? 0);
+  if (piln > 0) {
+    out.push({
+      id: `${adj.id}-piln`,
+      kind: 'termination',
+      label: 'Payment in lieu of notice (ETP)',
+      units: 1,
+      rate: piln,
+      amount: piln,
+      superable: false,
+      taxable: false,
+      lumpSumTax: pct(piln, etpRate),
+      source: 'adjustment',
+      stpCode: 'ETP-O',
+    });
+  }
+
+  const redundancy = round2(adj.redundancyAmount ?? 0);
+  if (redundancy > 0) {
+    const years = adj.completedYearsOfService ?? 0;
+    const cap = adj.genuineRedundancy === false
+      ? 0
+      : round2(settings.redundancyTaxFreeBase + settings.redundancyTaxFreePerYear * years);
+    const taxFree = Math.min(redundancy, cap);
+    const taxable = round2(redundancy - taxFree);
+    if (taxFree > 0) {
+      out.push({
+        id: `${adj.id}-redundancy-free`,
+        kind: 'termination',
+        label: `Genuine redundancy — tax-free (${years} yrs service)`,
+        units: 1,
+        rate: taxFree,
+        amount: taxFree,
+        superable: false,
+        taxable: false,
+        lumpSumTax: 0,
+        source: 'adjustment',
+        stpCode: 'LumpSumD',
+      });
+    }
+    if (taxable > 0) {
+      out.push({
+        id: `${adj.id}-redundancy-etp`,
+        kind: 'termination',
+        label: 'Redundancy above the tax-free cap (ETP)',
+        units: 1,
+        rate: taxable,
+        amount: taxable,
+        superable: false,
+        taxable: false,
+        lumpSumTax: pct(taxable, etpRate),
+        source: 'adjustment',
+        stpCode: 'ETP-R',
+      });
+    }
+  }
+
+  const etp = round2(adj.etpTaxableAmount ?? 0);
+  if (etp > 0) {
+    out.push({
+      id: `${adj.id}-etp`,
+      kind: 'termination',
+      label: 'Employment termination payment (taxable)',
+      units: 1,
+      rate: etp,
+      amount: etp,
+      superable: false,
+      taxable: false,
+      lumpSumTax: pct(etp, etpRate),
+      source: 'adjustment',
+      stpCode: 'ETP-O',
+    });
+  }
+
+  return out;
+}
+
+/** Build the components for the standing deductions and salary sacrifice that apply to a line. */
+export function standingDeductionComponents(
+  line: PayRunLine,
+  grossForPercent: number,
+  deductions: StandingDeduction[],
+): PayComponent[] {
+  return deductions.map((d) => {
+    const amount = d.calc === 'percent_gross' ? pct(grossForPercent, d.amount) : round2(d.amount);
+    return {
+      id: `${line.id}-${d.id}`,
+      kind: 'deduction' as const,
+      label: d.reference ? `${d.name} (${d.reference})` : d.name,
+      units: 1,
+      rate: amount,
+      amount,
+      superable: false,
+      taxable: false,
+      category: d.category,
+      source: 'standing_deduction' as const,
+    };
+  });
+}
+
+const isPreTax = (c: PayComponent) => c.category === 'pre_tax';
+const isSacrifice = (c: PayComponent) => c.category === 'salary_sacrifice_super';
+
+/**
+ * Recompute a line's money from its components: gross, salary sacrifice,
+ * pre/post-tax deductions, PAYG, lump-sum tax, super and net.
+ */
+export function composeLine(
+  line: PayRunLine,
+  settings: PayrollSettings,
+  cycle: PayCycle,
+  adjustments: PayRunAdjustment[] = [],
+  deductions?: StandingDeduction[],
+): PayRunLine {
+  const earnings = line.components.filter((c) => c.source !== 'adjustment' && c.source !== 'standing_deduction' && c.kind !== 'deduction');
+
+  const adjComponents = adjustments
+    .filter((a) => a.lineId === line.id || a.staffId === line.staffId)
+    .flatMap((a) => adjustmentComponents(a, line, settings));
+
+  const earningsAll = [...earnings, ...adjComponents.filter((c) => c.kind !== 'deduction')];
+  const grossOrdinary = round2(earningsAll.filter((c) => c.kind !== 'termination').reduce((s, c) => s + c.amount, 0));
+
+  const standing = deductions ?? payrollStore.getDeductionsForStaff(line.staffId, line.staffRecordId);
+  const deductionComponents = [
+    ...standingDeductionComponents(line, grossOrdinary, standing),
+    ...adjComponents.filter((c) => c.kind === 'deduction'),
+  ];
+
+  const components = [...earningsAll, ...deductionComponents];
+
+  const grossPay = round2(earningsAll.reduce((s, c) => s + c.amount, 0));
+  const leavePay = round2(earningsAll.filter((c) => c.kind === 'leave').reduce((s, c) => s + c.amount, 0));
+  const terminationPay = round2(earningsAll.filter((c) => c.kind === 'termination').reduce((s, c) => s + c.amount, 0));
+
+  const salarySacrificeSuper = round2(deductionComponents.filter(isSacrifice).reduce((s, c) => s + c.amount, 0));
+  const preTaxDeductions = round2(deductionComponents.filter(isPreTax).reduce((s, c) => s + c.amount, 0));
+  let postTaxDeductions = round2(
+    deductionComponents.filter((c) => !isPreTax(c) && !isSacrifice(c)).reduce((s, c) => s + c.amount, 0),
+  );
+
+  const taxableEarnings = round2(earningsAll.filter((c) => c.taxable).reduce((s, c) => s + c.amount, 0));
+  const taxableGross = Math.max(0, round2(taxableEarnings - preTaxDeductions - salarySacrificeSuper));
+
+  const scale: PayrollSettings['taxScale'] =
+    settings.taxScale === 'resident' && line.dataSource === 'staff_record' && line.hasTfn === false
+      ? 'no_tfn'
+      : settings.taxScale;
+
+  const paygTax = calculatePaygTax(taxableGross, cycle, scale);
+  const lumpSumTax = round2(earningsAll.reduce((s, c) => s + (c.lumpSumTax ?? 0), 0));
+
+  const superableGross = round2(earningsAll.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
+  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
+  const superGuarantee = monthlyEquivalent >= settings.superMonthlyThreshold
+    ? round2(superableGross * (settings.superRate / 100))
+    : 0;
+
+  // Protected earnings: trim post-tax deductions so net never falls below the floor.
+  const floor = Math.max(0, ...standing.filter((d) => d.protectedEarnings).map((d) => d.protectedEarnings ?? 0));
+  let netPay = round2(grossPay - preTaxDeductions - salarySacrificeSuper - postTaxDeductions - paygTax - lumpSumTax);
+  const warnings = line.warnings.filter((w) => !w.startsWith('Deduction reduced'));
+  if (floor > 0 && netPay < floor && postTaxDeductions > 0) {
+    const shortfall = round2(floor - netPay);
+    const trim = Math.min(shortfall, postTaxDeductions);
+    postTaxDeductions = round2(postTaxDeductions - trim);
+    netPay = round2(netPay + trim);
+    warnings.push(`Deduction reduced by $${trim.toFixed(2)} to protect the $${floor.toFixed(2)} minimum net pay.`);
+  }
+
+  return {
+    ...line,
+    components,
+    grossPay,
+    taxableGross,
+    paygTax,
+    superGuarantee,
+    deductions: round2(preTaxDeductions + salarySacrificeSuper + postTaxDeductions),
+    netPay: settings.roundNetToCents ? round2(netPay) : netPay,
+    preTaxDeductions,
+    postTaxDeductions,
+    salarySacrificeSuper,
+    leavePay,
+    terminationPay,
+    lumpSumTax,
+    totalSuperContribution: round2(superGuarantee + salarySacrificeSuper),
+    isTermination: terminationPay > 0,
+    warnings,
+  };
+}
+
 function buildLine(
   timesheets: Timesheet[],
   settings: PayrollSettings,
