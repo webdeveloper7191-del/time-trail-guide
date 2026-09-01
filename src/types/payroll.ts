@@ -16,7 +16,19 @@ export type PayComponentKind =
   | 'penalty'
   | 'allowance'
   | 'leave'
+  | 'termination'
   | 'deduction';
+
+/** How a deduction is treated for tax, super and reporting. */
+export type DeductionCategory =
+  | 'pre_tax'
+  | 'post_tax'
+  | 'salary_sacrifice_super'
+  | 'child_support'
+  | 'union'
+  | 'other';
+
+export type DeductionCalc = 'fixed' | 'percent_gross';
 
 export interface PayComponent {
   id: string;
@@ -32,7 +44,65 @@ export interface PayComponent {
   taxable: boolean;
   /** Accounting account code resolved from the mapping */
   accountCode?: string;
+  /** Deduction classification (deduction components only). */
+  category?: DeductionCategory;
+  /** Where the component came from, so recalculation can rebuild it. */
+  source?: 'earnings' | 'standing_deduction' | 'adjustment';
+  /** Tax withheld separately at a lump-sum rate (termination components). */
+  lumpSumTax?: number;
+  /** STP Phase 2 reporting code, e.g. LumpSumA, ETP, Leave-A. */
+  stpCode?: string;
 }
+
+/** A recurring deduction or salary sacrifice arrangement. */
+export interface StandingDeduction {
+  id: string;
+  name: string;
+  category: DeductionCategory;
+  calc: DeductionCalc;
+  /** Dollar amount per pay, or a percentage of gross when calc = percent_gross. */
+  amount: number;
+  /** Empty = applies to every employee in the run. */
+  staffIds: string[];
+  /** Protected earnings floor — the deduction is trimmed so net never falls below this. */
+  protectedEarnings?: number;
+  reference?: string;
+  active: boolean;
+  notes?: string;
+}
+
+export type PayRunAdjustmentKind = 'leave' | 'deduction' | 'termination';
+
+/** A one-off addition to a pay run line: leave payment, ad-hoc deduction or termination pay. */
+export interface PayRunAdjustment {
+  id: string;
+  lineId: string;
+  staffId: string;
+  kind: PayRunAdjustmentKind;
+  label: string;
+
+  // Leave payment
+  leaveTypeCode?: string;
+  hours?: number;
+  rate?: number;
+  /** Annual leave loading percentage applied on top (typically 17.5). */
+  loadingPct?: number;
+
+  // Ad-hoc deduction
+  category?: DeductionCategory;
+  amount?: number;
+
+  // Termination pay
+  unusedAnnualLeaveHours?: number;
+  unusedLslHours?: number;
+  paymentInLieuAmount?: number;
+  redundancyAmount?: number;
+  etpTaxableAmount?: number;
+  completedYearsOfService?: number;
+  genuineRedundancy?: boolean;
+  notes?: string;
+}
+
 
 export interface PayRunLine {
   id: string;
