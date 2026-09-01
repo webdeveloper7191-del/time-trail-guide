@@ -60,6 +60,45 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
     setPaymentDate(format(addDays(new Date(end), 3), 'yyyy-MM-dd'));
   };
 
+  const countIn = (start: string, end: string) => {
+    const inRange = timesheets.filter((t) => {
+      if (approvedOnly && t.status !== 'approved') return false;
+      return (t.weekStartDate >= start && t.weekStartDate <= end)
+        || (t.weekEndDate >= start && t.weekEndDate <= end);
+    });
+    return new Set(inRange.map((t) => t.employee.id)).size;
+  };
+
+  /**
+   * When the panel opens, land on the most recent period that actually has
+   * timesheets so the run isn't created against an empty period.
+   */
+  const [autoSelected, setAutoSelected] = useState(false);
+  useEffect(() => {
+    if (!open) { setAutoSelected(false); return; }
+    if (autoSelected || !defaultCalendar) return;
+    setAutoSelected(true);
+    if (countIn(periodStart, periodEnd) > 0) return;
+    for (let offset = -1; offset >= -12; offset--) {
+      const p = periodAtOffset(defaultCalendar, offset);
+      if (countIn(p.periodStart, p.periodEnd) > 0) {
+        setCalendarId(defaultCalendar.id);
+        setCycle(defaultCalendar.cycle);
+        setPeriodStart(p.periodStart);
+        setPeriodEnd(p.periodEnd);
+        setPaymentDate(p.paymentDate);
+        return;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  /** Existing runs whose period overlaps the selected dates — paying twice is a real risk. */
+  const overlappingRuns = useMemo(
+    () => payrollStore.getRuns().filter((r) => r.periodStart <= periodEnd && r.periodEnd >= periodStart),
+    [periodStart, periodEnd, open],
+  );
+
   const eligible = useMemo(() => {
     const staff = getPayrollStaffDirectory();
     const inRange = timesheets.filter((t) => {
@@ -71,6 +110,7 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
     const matched = Array.from(employees.values()).filter((e) => matchStaffRecord(e, staff)).length;
     return { count: employees.size, matched };
   }, [timesheets, periodStart, periodEnd, approvedOnly]);
+
 
   const eligibleCount = eligible.count;
 
