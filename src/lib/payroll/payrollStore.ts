@@ -5,8 +5,12 @@ import {
   PayRun,
   PayRunExportRecord,
   PayrollSettings,
+  PayCalendar,
+  StpSettings,
   defaultMappings,
+  defaultPayCalendars,
   defaultPayrollSettings,
+  defaultStpSettings,
 } from '@/types/payroll';
 
 /**
@@ -17,6 +21,8 @@ import {
 const RUNS_KEY = 'payroll:runs';
 const SETTINGS_KEY = 'payroll:settings';
 const CONN_KEY = 'payroll:connections';
+const CALENDARS_KEY = 'payroll:calendars';
+const STP_KEY = 'payroll:stp';
 
 const platforms: AccountingPlatform[] = ['xero', 'myob', 'quickbooks'];
 
@@ -47,16 +53,21 @@ let connections: Record<AccountingPlatform, AccountingConnection> = {
   ...load<Partial<Record<AccountingPlatform, AccountingConnection>>>(CONN_KEY, {}),
 } as Record<AccountingPlatform, AccountingConnection>;
 
+let calendars: PayCalendar[] = load<PayCalendar[]>(CALENDARS_KEY, defaultPayCalendars);
+let stp: StpSettings = { ...defaultStpSettings, ...load<Partial<StpSettings>>(STP_KEY, {}) };
+
 const listeners = new Set<() => void>();
-let snapshot = { runs, settings, connections };
+let snapshot = { runs, settings, connections, calendars, stp };
 
 function persist() {
   try {
     localStorage.setItem(RUNS_KEY, JSON.stringify(runs));
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     localStorage.setItem(CONN_KEY, JSON.stringify(connections));
+    localStorage.setItem(CALENDARS_KEY, JSON.stringify(calendars));
+    localStorage.setItem(STP_KEY, JSON.stringify(stp));
   } catch {/* noop */}
-  snapshot = { runs, settings, connections };
+  snapshot = { runs, settings, connections, calendars, stp };
   listeners.forEach((fn) => fn());
 }
 
@@ -105,6 +116,39 @@ export const payrollStore = {
   },
   updateSettings(patch: Partial<PayrollSettings>) {
     settings = { ...settings, ...patch };
+    persist();
+  },
+
+  // --- Pay calendars --------------------------------------------------
+  getCalendars(): PayCalendar[] {
+    return calendars;
+  },
+  getCalendar(id?: string): PayCalendar | undefined {
+    if (id) return calendars.find((c) => c.id === id);
+    return calendars.find((c) => c.isDefault && c.active) ?? calendars.find((c) => c.active) ?? calendars[0];
+  },
+  saveCalendar(calendar: PayCalendar) {
+    const idx = calendars.findIndex((c) => c.id === calendar.id);
+    if (idx >= 0) calendars[idx] = calendar;
+    else calendars = [...calendars, calendar];
+    if (calendar.isDefault) {
+      calendars = calendars.map((c) => (c.id === calendar.id ? c : { ...c, isDefault: false }));
+      settings = { ...settings, defaultCalendarId: calendar.id };
+    }
+    persist();
+  },
+  deleteCalendar(id: string) {
+    calendars = calendars.filter((c) => c.id !== id);
+    if (settings.defaultCalendarId === id) settings = { ...settings, defaultCalendarId: calendars[0]?.id };
+    persist();
+  },
+
+  // --- STP Phase 2 -----------------------------------------------------
+  getStpSettings(): StpSettings {
+    return stp;
+  },
+  updateStpSettings(patch: Partial<StpSettings>) {
+    stp = { ...stp, ...patch };
     persist();
   },
 
