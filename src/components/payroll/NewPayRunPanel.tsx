@@ -11,8 +11,12 @@ import { PayCycle } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
 import { buildPayRun } from '@/lib/payroll/payRunEngine';
 import { getPayrollOperator } from '@/lib/payroll/operator';
+import { payPeriodApprovalStore, usePayPeriodApprovals } from '@/lib/payroll/payPeriodApprovalStore';
 import { cycleLabel, periodAtOffset, periodContaining } from '@/lib/payroll/payCalendar';
 import { getPayrollStaffDirectory, matchStaffRecord } from '@/lib/payroll/payrollEmployeeBridge';
+import { Textarea } from '@/components/ui/textarea';
+import { ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface Props {
@@ -25,6 +29,7 @@ interface Props {
 const cycleDays: Record<PayCycle, number> = { weekly: 6, fortnightly: 13, monthly: 30 };
 
 export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) {
+  usePayPeriodApprovals();
   const settings = payrollStore.getSettings();
   const calendars = payrollStore.getCalendars().filter((c) => c.active);
   const defaultCalendar = payrollStore.getCalendar(settings.defaultCalendarId);
@@ -114,10 +119,54 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
 
 
   const eligibleCount = eligible.count;
+
+  /** Pre-run sign-off gate: the period must be approved before a run can be created. */
+  const [requestNote, setRequestNote] = useState('');
+  const gate = payPeriodApprovalStore.canCreateRun(periodStart, periodEnd);
+  const pendingRequest = payPeriodApprovalStore.pendingFor(periodStart, periodEnd);
+
+  const periodSummary = () => {
+    const staff = getPayrollStaffDirectory();
+    const inRange = timesheets.filter((t) =>
+      (t.weekStartDate >= periodStart && t.weekStartDate <= periodEnd)
+      || (t.weekEndDate >= periodStart && t.weekEndDate <= periodEnd));
+    const scoped = approvedOnly ? inRange.filter((t) => t.status === 'approved') : inRange;
+    const employees = new Map(scoped.map((t) => [t.employee.id, t.employee]));
+    const totalHours = scoped.reduce((sum, t) => sum + (t.totalHours || 0), 0);
+    const estimatedGross = scoped.reduce(
+      (sum, t) => sum + (t.totalHours || 0) * (t.employee.hourlyRate || 0),
+      0,
+    );
+    return {
+      employees: employees.size,
+      timesheets: scoped.length,
+      totalHours: Number(totalHours.toFixed(2)),
+      estimatedGross: Number(estimatedGross.toFixed(2)),
+      unapprovedTimesheets: inRange.filter((t) => t.status !== 'approved').length,
+      unmatchedEmployees: Array.from(employees.values()).filter((e) => !matchStaffRecord(e, staff)).length,
+    };
+  };
+
+  const requestApproval = () => {
+    if (eligibleCount === 0) { toast.error('No eligible timesheets in this period to send for approval.'); return; }
+    payPeriodApprovalStore.request({
+      periodStart,
+      periodEnd,
+      paymentDate,
+      cycle,
+      calendarId: calendarId === 'custom' ? undefined : calendarId,
+      summary: periodSummary(),
+      requestedBy: getPayrollOperator(),
+      requestNote: requestNote.trim() || undefined,
+    });
+    setRequestNote('');
+    toast.success('Pay period sent for approval — track it on the Period approvals tab.');
+  };
   const [overlapConfirmed, setOverlapConfirmed] = useState(false);
   const blockingOverlap = overlappingRuns.length > 0 && !overlapConfirmed;
 
   const create = () => {
+    if (!gate.ok) { toast.error(gate.message); return; }
     if (blockingOverlap) {
       toast.error('This period overlaps an existing pay run — confirm the overlap before creating.');
       return;
@@ -138,6 +187,7 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
       return;
     }
     payrollStore.saveRun({ ...run, createdBy: getPayrollOperator() });
+    if (gate.approval) payPeriodApprovalStore.markConsumed(gate.approval.id, run.id);
     toast.success(`Draft pay run created — ${run.lines.length} employees, $${run.totals.grossPay.toFixed(2)} gross.`);
     onCreated(run.id);
     onClose();
@@ -153,10 +203,35 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
       size="lg"
       actions={[
         { label: 'Cancel', variant: 'outlined', onClick: onClose },
-        { label: 'Create draft run', variant: 'primary', onClick: create, disabled: eligibleCount === 0 || blockingOverlap },
+        { label: 'Create draft run', variant: 'primary', onClick: create, disabled: eligibleCount === 0 || blockingOverlap || !gate.ok },
       ]}
     >
       <div className="space-y-5">
+        {settings.requirePeriodApproval && (
+          gate.ok ? (
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+              <p className="text-sm font-medium flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Pay period approved</p>
+              <p className="text-xs text-muted-foreground mt-1">{gate.message}</p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+              <p className="text-sm font-medium text-destructive flex items-center gap-2"><ShieldCheck className="h-4 w-4" />Approval required before this run can be created</p>
+              <p className="text-xs text-muted-foreground">{gate.message}</p>
+              {!pendingRequest && (
+                <div className="space-y-2 pt-1">
+                  <Textarea
+                    value={requestNote}
+                    onChange={(e) => setRequestNote(e.target.value)}
+                    rows={2}
+                    placeholder="Note for the approver (optional)"
+                  />
+                  <Button size="sm" onClick={requestApproval}>Send period for approval</Button>
+                </div>
+              )}
+            </div>
+          )
+        )}
+
         {overlappingRuns.length > 0 && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
             <p className="text-sm font-medium text-destructive">Period overlaps an existing pay run</p>
