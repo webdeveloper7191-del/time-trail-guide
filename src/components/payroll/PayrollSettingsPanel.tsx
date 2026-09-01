@@ -51,12 +51,53 @@ export function PayrollSettingsPanel() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>Ordinary hours per week</Label>
+            <Input type="number" step="0.5" value={s.ordinaryHoursPerWeek} onChange={(e) => set({ ordinaryHoursPerWeek: Number(e.target.value) })} />
+            <p className="text-xs text-muted-foreground">Used to convert salaries and weekly pay conditions into an hourly rate.</p>
+          </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <p className="text-sm font-medium">Round net pay to cents</p>
               <p className="text-xs text-muted-foreground">Disable to keep full precision in exports.</p>
             </div>
             <Switch checked={s.roundNetToCents} onCheckedChange={(v) => set({ roundNetToCents: v })} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Award & employee data</CardTitle>
+          <CardDescription>How pay runs read the workforce, award and roster records.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[
+            { key: 'useAwardRates' as const, title: 'Price from staff pay conditions and awards', desc: 'Base rate comes from the employee record; the award rate acts as the floor.' },
+            { key: 'useAwardPenalties' as const, title: 'Apply award penalty rates', desc: 'Saturday, Sunday, public holiday and night penalties from the assigned award.' },
+            { key: 'useAwardOvertimeRates' as const, title: 'Use award overtime steps', desc: 'First 2 hours then thereafter rates, instead of the flat multiplier.' },
+            { key: 'applyCasualLoading' as const, title: 'Apply casual loading', desc: 'Loads casual employees at their award loading percentage.' },
+            { key: 'superOnOvertime' as const, title: 'Accrue super on overtime', desc: 'Off by default — overtime is generally not ordinary time earnings.' },
+            { key: 'compareToRoster' as const, title: 'Reconcile against the roster', desc: 'Flags lines where paid hours differ from scheduled hours.' },
+            { key: 'requireBankDetails' as const, title: 'Require bank and TFN details', desc: 'Warns before posting when payment details are missing.' },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between rounded-lg border p-3">
+              <div className="pr-4">
+                <p className="text-sm font-medium">{row.title}</p>
+                <p className="text-xs text-muted-foreground">{row.desc}</p>
+              </div>
+              <Switch checked={Boolean(s[row.key])} onCheckedChange={(v) => set({ [row.key]: v } as Partial<PayrollSettings>)} />
+            </div>
+          ))}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Default casual loading %</Label>
+              <Input type="number" step="0.5" value={s.defaultCasualLoadingPct} onChange={(e) => set({ defaultCasualLoadingPct: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Roster variance tolerance (hrs)</Label>
+              <Input type="number" step="0.25" value={s.rosterVarianceToleranceHours} onChange={(e) => set({ rosterVarianceToleranceHours: Number(e.target.value) })} />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -78,6 +119,11 @@ export function PayrollSettingsPanel() {
           <div className="space-y-2">
             <Label>ABA account name</Label>
             <Input placeholder="Payroll Clearing" value={s.abaAccountName ?? ''} onChange={(e) => set({ abaAccountName: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Super guarantee monthly threshold ($)</Label>
+            <Input type="number" step="10" value={s.superMonthlyThreshold} onChange={(e) => set({ superMonthlyThreshold: Number(e.target.value) })} />
+            <p className="text-xs text-muted-foreground">$0 since 1 July 2022 — super accrues from the first dollar.</p>
           </div>
         </CardContent>
       </Card>
