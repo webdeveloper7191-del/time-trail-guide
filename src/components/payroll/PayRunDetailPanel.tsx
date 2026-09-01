@@ -115,7 +115,14 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
                     <TableCell>
                       <button className="text-left" onClick={() => setExpanded(expanded === line.id ? null : line.id)}>
                         <span className="font-medium">{line.staffName}</span>
-                        <span className="block text-xs text-muted-foreground">{line.locationName}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {line.locationName}
+                          {line.awardName ? ` · ${line.classification ?? line.awardName}` : ''}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {currency(line.baseRate)}/hr {line.rateSource === 'award' ? 'award rate' : line.rateSource === 'timesheet' ? 'timesheet rate' : 'pay conditions'}
+                          {line.casualLoadingPct ? ` + ${line.casualLoadingPct}% casual` : ''}
+                        </span>
                       </button>
                       {line.warnings.length > 0 && (
                         <Badge variant="outline" className="mt-1 gap-1 text-warning border-warning/40">
@@ -148,7 +155,21 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
                               </div>
                             ))}
                           </div>
-                          <p className="text-xs text-muted-foreground">Timesheets: {line.timesheetIds.join(', ')}</p>
+                          <div className="grid gap-1 pt-2 text-xs text-muted-foreground sm:grid-cols-2">
+                            <span>Timesheets: {line.timesheetIds.join(', ')}</span>
+                            <span>Source: {line.dataSource === 'staff_record' ? `Workforce record ${line.payrollId ?? line.employeeNumber ?? ''}` : 'Timesheet only (no workforce match)'}</span>
+                            {line.awardName && <span>Award: {line.awardName}{line.classification ? ` — ${line.classification}` : ''}</span>}
+                            {line.rosteredHours !== undefined && (
+                              <span>
+                                Rostered {line.rosteredHours}h vs paid {(line.ordinaryHours + line.overtimeHours).toFixed(2)}h
+                                {line.rosterVarianceHours ? ` (${line.rosterVarianceHours > 0 ? '+' : ''}${line.rosterVarianceHours}h)` : ''}
+                              </span>
+                            )}
+                            {line.superFundName && <span>Super fund: {line.superFundName}</span>}
+                            {line.bankAccountMasked && <span>Bank: {line.bankAccountMasked}</span>}
+                            <span>TFN on file: {line.hasTfn ? 'Yes' : 'No'}</span>
+                            {line.incomeStream && <span>STP income stream: {line.incomeStream}</span>}
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>
