@@ -630,16 +630,22 @@ function buildLine(
   const taxableGross = round2(components.filter((c) => c.taxable && c.kind !== 'deduction').reduce((s, c) => s + c.amount, 0));
   const superableGross = round2(components.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
 
-  const scale: PayrollSettings['taxScale'] =
-    settings.taxScale === 'resident' && profile.dataSource === 'staff_record' && !profile.hasTfn
-      ? 'no_tfn'
-      : settings.taxScale;
-
-  const paygTax = calculatePaygTax(taxableGross, cycle, scale);
-  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
-  const superGuarantee = monthlyEquivalent >= settings.superMonthlyThreshold
-    ? round2(superableGross * (settings.superRate / 100))
-    : 0;
+  const withholding = withholdingFor(
+    {
+      staffId: first.employee.id,
+      staffRecordId: profile.staffRecordId,
+      hasTfn: profile.dataSource === 'staff_record' ? profile.hasTfn : undefined,
+      taxableGross,
+      cycle,
+    },
+    settings,
+  );
+  const paygTax = withholding.total;
+  const superResult = superGuaranteeFor(superableGross, cycle, settings);
+  const superGuarantee = superResult.superGuarantee;
+  if (superResult.cappedAmount > 0) {
+    warnings.push(`$${superResult.cappedAmount.toFixed(2)} of earnings is above the super maximum contribution base — no super accrues on it.`);
+  }
   const rawNet = grossPay - paygTax - deductions;
   const netPay = settings.roundNetToCents ? round2(rawNet) : rawNet;
 
