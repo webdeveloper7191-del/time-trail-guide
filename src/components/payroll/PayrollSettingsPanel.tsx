@@ -256,6 +256,7 @@ export function PayrollSettingsPanel() {
             { key: 'accrueLeaveFromPaidHours' as const, title: 'Accrue leave from paid ordinary hours', desc: 'Annual, personal and long service leave accrue pro-rata each approved pay run.' },
             { key: 'excludeCasualsFromLeaveAccrual' as const, title: 'Exclude casuals from leave accrual', desc: 'Casual loading is paid in lieu of paid leave entitlements.' },
             { key: 'drawDownLeaveOnPayment' as const, title: 'Draw balances down when leave is paid', desc: 'Leave payments in a run reduce the employee\u2019s balance automatically.' },
+            { key: 'requirePeriodApproval' as const, title: 'Require pay period approval before a run is created', desc: 'Payroll sends the period for sign-off on the Period approvals tab; only an approved period can be turned into a pay run.' },
             { key: 'requireSeparateApprover' as const, title: 'Require a separate approver', desc: 'The person who created a run cannot approve it (segregation of duties).' },
             { key: 'requireApproverName' as const, title: 'Record the approver name', desc: 'Approval asks for a name and writes it to the audit trail.' },
             { key: 'lockTimesheetsOnApproval' as const, title: 'Lock timesheets on approval', desc: 'Paid timesheets are locked so they cannot be edited or paid twice.' },
