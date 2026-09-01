@@ -5,11 +5,14 @@ import { getDayType } from '@/lib/awardInterpreter';
 import {
   PayComponent,
   PayRun,
+  PayRunAdjustment,
   PayRunLine,
   PayRunTotals,
   PayCycle,
   PayrollSettings,
+  StandingDeduction,
 } from '@/types/payroll';
+import { payrollStore } from './payrollStore';
 import {
   EmployeePayProfile,
   getPayrollStaffDirectory,
