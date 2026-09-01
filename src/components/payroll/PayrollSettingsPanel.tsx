@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PayCycle, PayrollSettings } from '@/types/payroll';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
+import { TAX_SCALE_LABELS } from '@/lib/payroll/atoTaxScales';
 
 export function PayrollSettingsPanel() {
   usePayroll();

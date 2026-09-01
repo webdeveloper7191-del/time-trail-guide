@@ -43,7 +43,6 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
     payrollStore.updateRun(run.id, {
       status,
       approvedAt: status === 'approved' ? new Date().toISOString() : run.approvedAt,
-      postedAt: status === 'posted' ? new Date().toISOString() : run.postedAt,
     });
     toast.success(`Pay run marked ${status}.`);
   };
