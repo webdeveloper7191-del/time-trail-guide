@@ -325,6 +325,10 @@ function buildLine(
     rosterVarianceHours,
     superFundName: profile.superFundName,
     bankAccountMasked: profile.bankAccountMasked,
+    bankBsb: profile.bankBsb,
+    bankAccountNumber: profile.bankAccountNumber,
+    bankAccountName: profile.bankAccountName,
+
     hasTfn: profile.hasTfn,
     incomeStream: profile.incomeStream,
   };
