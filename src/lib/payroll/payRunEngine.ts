@@ -595,7 +595,7 @@ function buildLine(
     }
   }
 
-  return {
+  const baseLine: PayRunLine = {
     id: `line-${first.employee.id}`,
     staffId: first.employee.id,
     staffName: first.employee.name,
@@ -634,6 +634,9 @@ function buildLine(
     hasTfn: profile.hasTfn,
     incomeStream: profile.incomeStream,
   };
+
+  // Apply standing deductions / salary sacrifice and finalise the money.
+  return composeLine(baseLine, settings, cycle);
 }
 
 export function summariseTotals(lines: PayRunLine[]): PayRunTotals {
@@ -648,6 +651,9 @@ export function summariseTotals(lines: PayRunLine[]): PayRunTotals {
     superGuarantee: sum((l) => l.superGuarantee),
     deductions: sum((l) => l.deductions),
     netPay: sum((l) => l.netPay),
+    salarySacrificeSuper: sum((l) => l.salarySacrificeSuper ?? 0),
+    leavePay: sum((l) => l.leavePay ?? 0),
+    terminationPay: sum((l) => l.terminationPay ?? 0),
   };
 }
 
@@ -690,7 +696,12 @@ export function buildPayRun(input: BuildPayRunInput): PayRun {
   };
 }
 
-/** Recalculate a run in place (after excluding lines or changing settings). */
-export function recalcRun(run: PayRun): PayRun {
-  return { ...run, totals: summariseTotals(run.lines) };
+/**
+ * Recalculate a run: reapplies standing deductions and one-off adjustments
+ * (leave payments, ad-hoc deductions, termination pay) to every line.
+ */
+export function recalcRun(run: PayRun, settings?: PayrollSettings): PayRun {
+  const s = settings ?? payrollStore.getSettings();
+  const lines = run.lines.map((l) => composeLine(l, s, run.cycle, run.adjustments ?? []));
+  return { ...run, lines, totals: summariseTotals(lines) };
 }
