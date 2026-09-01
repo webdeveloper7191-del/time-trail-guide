@@ -73,6 +73,11 @@ export interface PayRunLine {
   rosterVarianceHours?: number;
   superFundName?: string;
   bankAccountMasked?: string;
+  /** Real bank details used to build the ABA payment file. */
+  bankBsb?: string;
+  bankAccountNumber?: string;
+  bankAccountName?: string;
+
   hasTfn?: boolean;
   incomeStream?: StpIncomeStream;
 }
