@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { CareerPath, CareerLevel, StaffCareerProgress, SkillLevel, skillLevelLabels, skillLevelValues } from '@/types/advancedPerformance';
 import { mockCareerPaths, mockCareerProgress, mockSkills, mockStaffSkills } from '@/data/mockAdvancedPerformanceData';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ const levelColors = [
 ];
 
 export function EmployeeCareerPathingPanel({ currentUserId }: EmployeeCareerPathingPanelProps) {
+  const careerRules = usePerformanceRules().careerPathing;
   const [showTargetSheet, setShowTargetSheet] = useState(false);
   const [selectedTargetLevel, setSelectedTargetLevel] = useState<string>('');
   const [showLevelDetail, setShowLevelDetail] = useState(false);
@@ -216,15 +218,15 @@ export function EmployeeCareerPathingPanel({ currentUserId }: EmployeeCareerPath
                   </span>
                   <Badge className={cn(
                     "text-xs",
-                    (careerProgress?.readinessPercentage || 0) >= 80 
+                    (careerProgress?.readinessPercentage || 0) >= careerRules.readinessThresholdPercent 
                       ? "bg-green-100 text-green-700" 
-                      : (careerProgress?.readinessPercentage || 0) >= 50
+                      : (careerProgress?.readinessPercentage || 0) >= careerRules.readinessThresholdPercent / 2
                         ? "bg-amber-100 text-amber-700"
                         : "bg-red-100 text-red-700"
                   )}>
-                    {(careerProgress?.readinessPercentage || 0) >= 80 
+                    {(careerProgress?.readinessPercentage || 0) >= careerRules.readinessThresholdPercent 
                       ? 'On Track' 
-                      : (careerProgress?.readinessPercentage || 0) >= 50 
+                      : (careerProgress?.readinessPercentage || 0) >= careerRules.readinessThresholdPercent / 2 
                         ? 'In Progress' 
                         : 'Getting Started'}
                   </Badge>
