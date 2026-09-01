@@ -31,7 +31,7 @@ const currency = (n: number) => `$${n.toFixed(2)}`;
 
 export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
   const settings = payrollStore.getSettings();
-  const leaveTypes = leaveTypesStore.getAll().filter((l) => l.status === 'active' && l.paid);
+  const leaveTypes = leaveTypesStore.get().filter((l) => l.status === 'active' && l.paid);
 
   const [kind, setKind] = useState<PayRunAdjustmentKind>('leave');
   const [leaveTypeCode, setLeaveTypeCode] = useState(leaveTypes[0]?.code ?? 'AL');
