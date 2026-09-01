@@ -42,9 +42,9 @@ import {
   mockEmployeeCompensation,
   mockMeritRecommendations,
   mockBonusCalculations,
-  mockMeritMatrix,
 } from '@/data/mockCompensationData';
 import { toast } from 'sonner';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 
 interface CompensationPanelProps {
   embedded?: boolean;
@@ -54,10 +54,36 @@ interface CompensationPanelProps {
 
 export function CompensationPanel({ staff, currentUserId, embedded = false }: CompensationPanelProps) {
   const [activeView, setActiveView] = useState<'overview' | 'merit' | 'bonus'>('overview');
+  const rules = usePerformanceRules();
+  const compRules = rules.compensation;
+
+  /** Merit guideline % straight from the admin matrix. */
+  const matrixIncrease = (rating: number, ratio: number): number | undefined => {
+    const row = compRules.meritByRating.find(r => r.rating === Math.round(rating));
+    if (!row) return undefined;
+    if (ratio < compRules.compaRatioBelow) return row.below;
+    if (ratio > compRules.compaRatioAbove) return row.above;
+    return row.at;
+  };
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
   const getCompensation = (staffId: string) => mockEmployeeCompensation.find(c => c.staffId === staffId);
-  const getSalaryBand = (bandId: string) => mockSalaryBands.find(b => b.id === bandId);
+  /** Bands come from Performance Setup; the mock rows are only a fallback for ids an admin removed. */
+  const getSalaryBand = (bandId: string) => {
+    const configured = compRules.bands.find(b => b.id === bandId);
+    const fallback = mockSalaryBands.find(b => b.id === bandId);
+    if (!configured && !fallback) return undefined;
+    return {
+      id: bandId,
+      level: fallback?.level ?? 'mid',
+      title: configured?.label ?? fallback!.title,
+      minSalary: configured?.min ?? fallback!.minSalary,
+      midSalary: configured?.mid ?? fallback!.midSalary,
+      maxSalary: configured?.max ?? fallback!.maxSalary,
+      currency: compRules.currency,
+      effectiveDate: fallback?.effectiveDate ?? '',
+    } as SalaryBand;
+  };
 
   const stats = useMemo(() => {
     const pending = mockMeritRecommendations.filter(r => r.status === 'pending').length;
@@ -75,18 +101,18 @@ export function CompensationPanel({ staff, currentUserId, embedded = false }: Co
     return { pending, approved, totalBudget, avgIncrease };
   }, []);
 
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(amount);
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-AU', { style: 'currency', currency: compRules.currency, maximumFractionDigits: 0 }).format(amount);
 
   const getCompaRatioVariant = (ratio: number) => {
-    if (ratio < 0.9) return 'warning';
-    if (ratio > 1.1) return 'destructive';
+    if (ratio < compRules.compaRatioBelow) return 'warning';
+    if (ratio > compRules.compaRatioAbove) return 'destructive';
     return 'success';
   };
 
   const getCompaRatioLabel = (ratio: number) => {
-    if (ratio < 0.9) return 'Below Range';
-    if (ratio > 1.1) return 'Above Range';
+    if (ratio < compRules.compaRatioBelow) return 'Below Range';
+    if (ratio > compRules.compaRatioAbove) return 'Above Range';
     return 'At Market';
   };
 
@@ -197,8 +223,8 @@ export function CompensationPanel({ staff, currentUserId, embedded = false }: Co
                   if (!staffMember || !band) return null;
 
                   const positionInBand = ((comp.currentSalary - band.minSalary) / (band.maxSalary - band.minSalary)) * 100;
-                  const isBelowRange = comp.compaRatio < 0.9;
-                  const isAboveRange = comp.compaRatio > 1.1;
+                  const isBelowRange = comp.compaRatio < compRules.compaRatioBelow;
+                  const isAboveRange = comp.compaRatio > compRules.compaRatioAbove;
 
                   return (
                     <TableRow 
@@ -297,7 +323,7 @@ export function CompensationPanel({ staff, currentUserId, embedded = false }: Co
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="subtitle2" color="text.secondary">Merit Increase Recommendations</Typography>
-            <Chip label={`Budget: ${mockMeritMatrix.budget}%`} size="small" color="primary" variant="outlined" />
+            <Chip label={`Budget: ${compRules.meritBudgetPercent}%`} size="small" color="primary" variant="outlined" />
           </Stack>
           <Card>
             <Table>
@@ -319,6 +345,9 @@ export function CompensationPanel({ staff, currentUserId, embedded = false }: Co
                   const isPending = rec.status === 'pending';
                   const isApproved = rec.status === 'approved';
                   const isHighPerformer = rec.performanceRating >= 4;
+                  const guideline = matrixIncrease(rec.performanceRating, rec.currentCompaRatio);
+                  const increasePercent = rec.managerAdjustedPercent ?? guideline ?? rec.recommendedIncreasePercent;
+                  const newSalary = rec.managerAdjustedSalary ?? Math.round(rec.currentSalary * (1 + increasePercent / 100));
 
                   return (
                     <TableRow 
@@ -365,14 +394,14 @@ export function CompensationPanel({ staff, currentUserId, embedded = false }: Co
                       </TableCell>
                       <TableCell className="py-3 text-right">
                         <Typography variant="body2" fontWeight={700} sx={{ color: 'hsl(var(--chart-2))' }}>
-                          {formatCurrency(rec.managerAdjustedSalary || rec.recommendedNewSalary)}
+                          {formatCurrency(newSalary)}
                         </Typography>
                       </TableCell>
                       <TableCell className="py-3 text-center">
                         <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5}>
                           <TrendingUp size={14} style={{ color: 'hsl(var(--chart-2))' }} />
                           <Typography variant="body2" fontWeight={600} sx={{ color: 'hsl(var(--chart-2))' }}>
-                            +{rec.managerAdjustedPercent || rec.recommendedIncreasePercent}%
+                            +{increasePercent}%
                           </Typography>
                         </Stack>
                       </TableCell>

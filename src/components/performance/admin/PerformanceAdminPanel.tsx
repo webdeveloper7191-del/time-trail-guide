@@ -37,13 +37,31 @@ const fmt = (d?: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('e
 
 interface PerformanceAdminPanelProps {
   embedded?: boolean;
+  /** Tab to open on mount (set when jumping in from a Configure link). */
+  section?: string;
+  /** DOM id of a rules card to scroll to. */
+  anchor?: string;
 }
 
-export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPanelProps) {
+export function PerformanceAdminPanel({ embedded = false, section, anchor }: PerformanceAdminPanelProps) {
   const config = useConfig();
   const [scaleDrawer, setScaleDrawer] = useState<{ open: boolean; scale: RatingScale | null }>({ open: false, scale: null });
   const [compDrawer, setCompDrawer] = useState<{ open: boolean; competency: Competency | null }>({ open: false, competency: null });
   const [cycleDrawer, setCycleDrawer] = useState<{ open: boolean; cycle: ReviewCycleConfig | null }>({ open: false, cycle: null });
+
+  const [tab, setTab] = useState(section ?? 'scales');
+
+  React.useEffect(() => {
+    if (section) setTab(section);
+  }, [section]);
+
+  React.useEffect(() => {
+    if (!anchor) return;
+    const t = window.setTimeout(() => {
+      document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [anchor, tab]);
 
   const coreWeight = config.competencies.filter(c => c.isActive).reduce((s, c) => s + c.weight, 0);
 
@@ -80,7 +98,7 @@ export function PerformanceAdminPanel({ embedded = false }: PerformanceAdminPane
         </Button>
       </div>
 
-      <Tabs defaultValue="scales">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="scales" className="gap-1.5"><Star className="h-3.5 w-3.5" /> Rating scales</TabsTrigger>
           <TabsTrigger value="competencies" className="gap-1.5"><ListChecks className="h-3.5 w-3.5" /> Competency library</TabsTrigger>

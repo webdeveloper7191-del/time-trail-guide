@@ -163,6 +163,44 @@ export interface PerformanceRules {
     intensifiers: string[];
     negators: string[];
   };
+  compensation: {
+    currency: string;
+    /** Salary bands used by the compensation panel */
+    bands: { id: string; label: string; min: number; mid: number; max: number }[];
+    /** Compa-ratio below this is "below range" */
+    compaRatioBelow: number;
+    /** Compa-ratio above this is "above range" */
+    compaRatioAbove: number;
+    meritBudgetPercent: number;
+    /** Recommended merit increase % by review rating and compa-ratio position */
+    meritByRating: { rating: number; below: number; at: number; above: number }[];
+  };
+  mentorship: {
+    skillMatchPoints: number;
+    interestMatchPoints: number;
+    careerGoalPoints: number;
+    meetingFrequencyPoints: number;
+    highAvailabilityPoints: number;
+    mediumAvailabilityPoints: number;
+    minMatchScore: number;
+    maxMenteesPerMentor: number;
+  };
+  benchmarking: {
+    primaryIndustry: string;
+    companySize: 'small' | 'medium' | 'large' | 'enterprise';
+    region: string;
+    fiscalYearStart: string;
+    enabledCategories: string[];
+    benchmarkSources: string[];
+    showConfidenceIntervals: boolean;
+    enableQuarterlyReports: boolean;
+  };
+  careerPathing: {
+    readinessThresholdPercent: number;
+    minTimeInLevelMonths: number;
+    requireAllCoreSkills: boolean;
+    showSalaryRanges: boolean;
+  };
   plans: {
     defaultDurationDays: number;
     reminderDaysBefore: number[];
@@ -184,7 +222,7 @@ export interface PerformanceTaxonomyState {
   rules: PerformanceRules;
 }
 
-const STORAGE_KEY = 'rostered.performance.taxonomy.v2';
+const STORAGE_KEY = 'rostered.performance.taxonomy.v3';
 
 const opt = (id: string, label: string, extra: Partial<TaxonomyOption> = {}): TaxonomyOption => ({
   id,
@@ -406,6 +444,53 @@ const defaultState = (): PerformanceTaxonomyState => ({
       negativeKeywords: ['poor', 'late', 'unreliable', 'missed', 'concern', 'issue', 'struggling', 'negative', 'disengaged', 'conflict'],
       intensifiers: ['very', 'extremely', 'really', 'highly', 'consistently'],
       negators: ['not', 'never', 'no', "isn't", "wasn't", 'rarely'],
+    },
+    compensation: {
+      currency: 'AUD',
+      bands: [
+        { id: 'band-1', label: 'Entry Level', min: 45000, mid: 52500, max: 60000 },
+        { id: 'band-2', label: 'Mid Level', min: 60000, mid: 72500, max: 85000 },
+        { id: 'band-3', label: 'Senior', min: 85000, mid: 100000, max: 115000 },
+        { id: 'band-4', label: 'Lead', min: 110000, mid: 130000, max: 150000 },
+        { id: 'band-5', label: 'Principal', min: 140000, mid: 165000, max: 190000 },
+        { id: 'band-6', label: 'Executive', min: 180000, mid: 220000, max: 260000 },
+      ],
+      compaRatioBelow: 0.9,
+      compaRatioAbove: 1.1,
+      meritBudgetPercent: 4,
+      meritByRating: [
+        { rating: 5, below: 8, at: 6, above: 4 },
+        { rating: 4, below: 6, at: 5, above: 3 },
+        { rating: 3, below: 4, at: 3, above: 2 },
+        { rating: 2, below: 2, at: 0, above: 0 },
+        { rating: 1, below: 0, at: 0, above: 0 },
+      ],
+    },
+    mentorship: {
+      skillMatchPoints: 15,
+      interestMatchPoints: 10,
+      careerGoalPoints: 20,
+      meetingFrequencyPoints: 10,
+      highAvailabilityPoints: 15,
+      mediumAvailabilityPoints: 8,
+      minMatchScore: 40,
+      maxMenteesPerMentor: 3,
+    },
+    benchmarking: {
+      primaryIndustry: 'technology',
+      companySize: 'medium',
+      region: 'Asia Pacific',
+      fiscalYearStart: '01',
+      enabledCategories: ['performance', 'engagement', 'development', 'retention'],
+      benchmarkSources: ['Industry Reports', 'Peer Networks', 'Public Data'],
+      showConfidenceIntervals: false,
+      enableQuarterlyReports: true,
+    },
+    careerPathing: {
+      readinessThresholdPercent: 80,
+      minTimeInLevelMonths: 12,
+      requireAllCoreSkills: true,
+      showSalaryRanges: true,
     },
     plans: {
       defaultDurationDays: 90,

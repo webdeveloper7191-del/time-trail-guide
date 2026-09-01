@@ -1,3 +1,4 @@
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
@@ -174,7 +175,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
   const [results, setResults] = useState<SentimentResult[]>([]);
   const [timeRange, setTimeRange] = useState<'all' | '3m' | '6m' | '1y'>('all');
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
-  const [settings, setSettings] = useState<SentimentSettings | undefined>(undefined);
+
 
   const rules = usePerformanceRules();
   const lexicon: SentimentLexicon = useMemo(() => ({
@@ -185,6 +186,31 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
     positiveThreshold: rules.sentiment.positiveThreshold,
     negativeThreshold: rules.sentiment.negativeThreshold,
   }), [rules.sentiment]);
+
+  const settings: SentimentSettings = {
+    positiveKeywords: rules.sentiment.positiveKeywords,
+    negativeKeywords: rules.sentiment.negativeKeywords,
+    intensifiers: rules.sentiment.intensifiers,
+    negators: rules.sentiment.negators,
+    positiveThreshold: rules.sentiment.positiveThreshold / 100,
+    negativeThreshold: rules.sentiment.negativeThreshold / 100,
+    enableAutoAnalysis: rules.sentiment.enableAutoAnalysis,
+    confidenceThreshold: 0.5,
+    highlightKeywords: rules.sentiment.highlightKeywords,
+  };
+
+  const saveSentimentSettings = (next: SentimentSettings) => {
+    performanceTaxonomyStore.updateRules('sentiment', {
+      positiveKeywords: next.positiveKeywords,
+      negativeKeywords: next.negativeKeywords,
+      intensifiers: next.intensifiers,
+      negators: next.negators,
+      positiveThreshold: Math.round(next.positiveThreshold * 100),
+      negativeThreshold: Math.round(next.negativeThreshold * 100),
+      enableAutoAnalysis: next.enableAutoAnalysis,
+      highlightKeywords: next.highlightKeywords,
+    });
+  };
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
@@ -560,7 +586,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
       <SentimentSettingsDrawer
         open={showSettingsDrawer}
         onOpenChange={setShowSettingsDrawer}
-        onSave={setSettings}
+        onSave={saveSentimentSettings}
         currentSettings={settings}
       />
     </Box>

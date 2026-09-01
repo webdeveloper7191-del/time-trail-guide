@@ -38,6 +38,7 @@ import { mockStaff } from '@/data/mockStaffData';
 import { cn } from '@/lib/utils';
 import { CareerPathSetupDrawer } from './CareerPathSetupDrawer';
 import { toast } from 'sonner';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 
 interface CareerPathingVisualizationProps {
   /** hides the panel's own title/description and summary stat cards because the parent module shell already shows them */
@@ -72,6 +73,7 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill,
 
   const staff = mockStaff.find(s => s.id === staffId);
   const careerProgress = mockCareerProgress.find(p => p.staffId === staffId);
+  const careerRules = usePerformanceRules().careerPathing;
   const currentPath = careerProgress ? careerPaths.find(p => p.id === careerProgress.currentPathId) : null;
   
   const availableSkills = mockSkills.map(s => ({ id: s.id, name: s.name }));
@@ -315,8 +317,14 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill,
                     Level {currentLevel} on {currentPath.name}
                   </Badge>
                   <Typography variant="caption" color="text.secondary">
-                    {careerProgress.readinessPercentage}% readiness for next level
+                    {careerProgress.readinessPercentage}% readiness for next level (target {careerRules.readinessThresholdPercent}%)
                   </Typography>
+                  {careerProgress.readinessPercentage >= careerRules.readinessThresholdPercent && (
+                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Promotion ready
+                    </Badge>
+                  )}
                 </Stack>
               </Box>
               <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
