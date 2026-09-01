@@ -56,6 +56,25 @@ export interface PayRunLine {
   /** Validation issues that block posting */
   warnings: string[];
   excluded?: boolean;
+
+  // --- Source data linkage -------------------------------------------
+  /** Workforce staff record the line was resolved from, when matched. */
+  staffRecordId?: string;
+  dataSource: 'staff_record' | 'timesheet_fallback';
+  baseRate: number;
+  rateSource: 'award' | 'pay_condition_hourly' | 'pay_condition_salary' | 'timesheet';
+  awardName?: string;
+  classification?: string;
+  casualLoadingPct?: number;
+  penaltyHours?: number;
+  /** Hours scheduled in the roster for the same period. */
+  rosteredHours?: number;
+  /** paid hours minus rostered hours */
+  rosterVarianceHours?: number;
+  superFundName?: string;
+  bankAccountMasked?: string;
+  hasTfn?: boolean;
+  incomeStream?: StpIncomeStream;
 }
 
 export interface PayRun {
@@ -142,7 +161,99 @@ export interface PayrollSettings {
   roundNetToCents: boolean;
   abaBankCode?: string;
   abaAccountName?: string;
+
+  /** Pay calendar used by default when creating a run. */
+  defaultCalendarId?: string;
+  /** NES ordinary hours, used to derive hourly from salary/weekly pay conditions. */
+  ordinaryHoursPerWeek: number;
+  /** Resolve the base rate from the staff member's pay conditions / award instead of the timesheet rate. */
+  useAwardRates: boolean;
+  /** Apply Saturday / Sunday / public holiday / night penalties from the staff member's award. */
+  useAwardPenalties: boolean;
+  /** Apply casual loading to casual employees whose award rate is not already loaded. */
+  applyCasualLoading: boolean;
+  defaultCasualLoadingPct: number;
+  /** Use award overtime steps (first 2 hours / thereafter) instead of the flat multiplier. */
+  useAwardOvertimeRates: boolean;
+  /** Include overtime earnings in the super guarantee base (normally excluded as it is not OTE). */
+  superOnOvertime: boolean;
+  /** Minimum monthly earnings before super accrues ($0 since 1 July 2022). */
+  superMonthlyThreshold: number;
+  /** Compare paid hours against rostered hours and flag variances. */
+  compareToRoster: boolean;
+  rosterVarianceToleranceHours: number;
+  /** Warn when an employee has no bank details or TFN on file. */
+  requireBankDetails: boolean;
 }
+
+/** A recurring pay period definition that drives pay run dates. */
+export interface PayCalendar {
+  id: string;
+  name: string;
+  cycle: PayCycle;
+  /** First day of a period in the series (yyyy-MM-dd). */
+  anchorDate: string;
+  /** Days after period end that staff are paid. */
+  paymentOffsetDays: number;
+  /** Empty = all locations. */
+  locationIds: string[];
+  isDefault: boolean;
+  active: boolean;
+}
+
+export type StpIncomeStream = 'SAW' | 'CHP' | 'WHM' | 'LAB';
+
+export interface StpSettings {
+  enabled: boolean;
+  abn: string;
+  branchCode: string;
+  bmsId: string;
+  payerName: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  reportingParty: 'employer' | 'registered_agent' | 'intermediary';
+  agentNumber?: string;
+  defaultIncomeStream: StpIncomeStream;
+  /** Phase 2 disaggregation switches. */
+  disaggregateOvertime: boolean;
+  reportAllowancesSeparately: boolean;
+  reportPaidLeaveSeparately: boolean;
+  reportSalarySacrifice: boolean;
+  finalEventForFy: boolean;
+  lastLodgedAt?: string;
+}
+
+export const defaultStpSettings: StpSettings = {
+  enabled: false,
+  abn: '',
+  branchCode: '001',
+  bmsId: 'ROSTEREDAI-BMS-001',
+  payerName: '',
+  contactName: '',
+  contactEmail: '',
+  contactPhone: '',
+  reportingParty: 'employer',
+  defaultIncomeStream: 'SAW',
+  disaggregateOvertime: true,
+  reportAllowancesSeparately: true,
+  reportPaidLeaveSeparately: true,
+  reportSalarySacrifice: false,
+  finalEventForFy: false,
+};
+
+export const defaultPayCalendars: PayCalendar[] = [
+  {
+    id: 'cal-fortnightly',
+    name: 'Fortnightly — all locations',
+    cycle: 'fortnightly',
+    anchorDate: '2026-01-05',
+    paymentOffsetDays: 3,
+    locationIds: [],
+    isDefault: true,
+    active: true,
+  },
+];
 
 export const defaultPayrollSettings: PayrollSettings = {
   defaultCycle: 'fortnightly',
@@ -151,6 +262,18 @@ export const defaultPayrollSettings: PayrollSettings = {
   taxScale: 'resident',
   financialYearStart: '2026-07-01',
   roundNetToCents: true,
+  defaultCalendarId: 'cal-fortnightly',
+  ordinaryHoursPerWeek: 38,
+  useAwardRates: true,
+  useAwardPenalties: true,
+  applyCasualLoading: true,
+  defaultCasualLoadingPct: 25,
+  useAwardOvertimeRates: true,
+  superOnOvertime: false,
+  superMonthlyThreshold: 0,
+  compareToRoster: true,
+  rosterVarianceToleranceHours: 1,
+  requireBankDetails: true,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {

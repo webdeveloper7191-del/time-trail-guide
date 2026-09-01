@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { addDays, format, startOfWeek } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { Calculator } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { Timesheet } from '@/types/timesheet';
 import { PayCycle } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
 import { buildPayRun } from '@/lib/payroll/payRunEngine';
+import { cycleLabel, periodAtOffset, periodContaining } from '@/lib/payroll/payCalendar';
+import { getPayrollStaffDirectory, matchStaffRecord } from '@/lib/payroll/payrollEmployeeBridge';
 import { toast } from 'sonner';
 
 interface Props {
@@ -23,30 +25,54 @@ const cycleDays: Record<PayCycle, number> = { weekly: 6, fortnightly: 13, monthl
 
 export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) {
   const settings = payrollStore.getSettings();
-  const defaultStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const calendars = payrollStore.getCalendars().filter((c) => c.active);
+  const defaultCalendar = payrollStore.getCalendar(settings.defaultCalendarId);
+  const initialPeriod = defaultCalendar ? periodContaining(defaultCalendar) : null;
 
-  const [cycle, setCycle] = useState<PayCycle>(settings.defaultCycle);
-  const [periodStart, setPeriodStart] = useState(defaultStart);
-  const [periodEnd, setPeriodEnd] = useState(format(addDays(new Date(defaultStart), cycleDays[settings.defaultCycle]), 'yyyy-MM-dd'));
-  const [paymentDate, setPaymentDate] = useState(format(addDays(new Date(defaultStart), cycleDays[settings.defaultCycle] + 3), 'yyyy-MM-dd'));
+  const [calendarId, setCalendarId] = useState<string>(defaultCalendar?.id ?? 'custom');
+  const [cycle, setCycle] = useState<PayCycle>(defaultCalendar?.cycle ?? settings.defaultCycle);
+  const [periodStart, setPeriodStart] = useState(initialPeriod?.periodStart ?? format(new Date(), 'yyyy-MM-dd'));
+  const [periodEnd, setPeriodEnd] = useState(
+    initialPeriod?.periodEnd ?? format(addDays(new Date(), cycleDays[settings.defaultCycle]), 'yyyy-MM-dd'),
+  );
+  const [paymentDate, setPaymentDate] = useState(
+    initialPeriod?.paymentDate ?? format(addDays(new Date(), cycleDays[settings.defaultCycle] + 3), 'yyyy-MM-dd'),
+  );
   const [name, setName] = useState('');
   const [approvedOnly, setApprovedOnly] = useState(true);
 
+  const applyCalendar = (id: string, offset = 0) => {
+    setCalendarId(id);
+    const cal = calendars.find((c) => c.id === id);
+    if (!cal) return;
+    const p = offset ? periodAtOffset(cal, offset) : periodContaining(cal);
+    setCycle(cal.cycle);
+    setPeriodStart(p.periodStart);
+    setPeriodEnd(p.periodEnd);
+    setPaymentDate(p.paymentDate);
+  };
+
   const onCycleChange = (value: PayCycle) => {
     setCycle(value);
+    setCalendarId('custom');
     const end = format(addDays(new Date(periodStart), cycleDays[value]), 'yyyy-MM-dd');
     setPeriodEnd(end);
     setPaymentDate(format(addDays(new Date(end), 3), 'yyyy-MM-dd'));
   };
 
-  const eligibleCount = useMemo(() => {
+  const eligible = useMemo(() => {
+    const staff = getPayrollStaffDirectory();
     const inRange = timesheets.filter((t) => {
       if (approvedOnly && t.status !== 'approved') return false;
       return (t.weekStartDate >= periodStart && t.weekStartDate <= periodEnd)
         || (t.weekEndDate >= periodStart && t.weekEndDate <= periodEnd);
     });
-    return new Set(inRange.map((t) => t.employee.id)).size;
+    const employees = new Map(inRange.map((t) => [t.employee.id, t.employee]));
+    const matched = Array.from(employees.values()).filter((e) => matchStaffRecord(e, staff)).length;
+    return { count: employees.size, matched };
   }, [timesheets, periodStart, periodEnd, approvedOnly]);
+
+  const eligibleCount = eligible.count;
 
   const create = () => {
     const run = buildPayRun({
@@ -89,6 +115,25 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
         </div>
 
         <div className="space-y-2">
+          <Label>Pay calendar</Label>
+          <Select value={calendarId} onValueChange={(v) => applyCalendar(v)}>
+            <SelectTrigger><SelectValue placeholder="Select a pay calendar" /></SelectTrigger>
+            <SelectContent>
+              {calendars.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name} · {cycleLabel[c.cycle]}</SelectItem>
+              ))}
+              <SelectItem value="custom">Custom dates</SelectItem>
+            </SelectContent>
+          </Select>
+          {calendarId !== 'custom' && (
+            <div className="flex gap-2 pt-1">
+              <button type="button" className="text-xs text-primary underline" onClick={() => applyCalendar(calendarId, -1)}>Previous period</button>
+              <button type="button" className="text-xs text-primary underline" onClick={() => applyCalendar(calendarId, 0)}>Current period</button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
           <Label>Pay cycle</Label>
           <Select value={cycle} onValueChange={(v) => onCycleChange(v as PayCycle)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -124,8 +169,12 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
           <Switch checked={approvedOnly} onCheckedChange={setApprovedOnly} />
         </div>
 
-        <div className="rounded-lg bg-muted/50 p-3 text-sm">
-          <span className="font-medium">{eligibleCount}</span> employee{eligibleCount === 1 ? '' : 's'} will be included in this run.
+        <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+          <p><span className="font-medium">{eligibleCount}</span> employee{eligibleCount === 1 ? '' : 's'} will be included in this run.</p>
+          <p className="text-xs text-muted-foreground">
+            {eligible.matched} matched to a workforce record — rates, awards and super come from those profiles.
+            {eligibleCount - eligible.matched > 0 && ` ${eligibleCount - eligible.matched} will fall back to the timesheet rate.`}
+          </p>
         </div>
       </div>
     </PrimaryOffCanvas>

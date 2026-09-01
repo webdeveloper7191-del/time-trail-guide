@@ -33,6 +33,7 @@ import LocationManagement from "./pages/LocationManagement";
 import ReportsPage from "./pages/ReportsPage";
 import LeaveAccrualsHub from "./pages/LeaveAccrualsHub";
 import PayrollHub from "./pages/PayrollHub";
+import PayrollSettings from "./pages/PayrollSettings";
 import LeaveHub from "./pages/LeaveHub";
 import MasterDataHub from "./pages/MasterDataHub";
 import UserPermissions from "./pages/UserPermissions";
@@ -82,6 +83,7 @@ const App = () => {
                   <Route path="/leave-accruals" element={<LeaveAccrualsHub />} />
                   <Route path="/leave" element={<LeaveHub />} />
                   <Route path="/payroll" element={<PayrollHub />} />
+                  <Route path="/settings/payroll" element={<PayrollSettings />} />
                   <Route path="/settings/master-data" element={<MasterDataHub />} />
                   <Route path="/settings/permissions" element={<UserPermissions />} />
                   <Route path="/admin/platform" element={<PlatformAdmin />} />

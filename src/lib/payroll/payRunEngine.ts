@@ -1,5 +1,7 @@
-import { Timesheet } from '@/types/timesheet';
+import { Timesheet, ClockEntry } from '@/types/timesheet';
 import { calculateAllowanceTotal } from '@/types/allowances';
+import { StaffMember } from '@/types/staff';
+import { getDayType } from '@/lib/awardInterpreter';
 import {
   PayComponent,
   PayRun,
@@ -8,16 +10,25 @@ import {
   PayCycle,
   PayrollSettings,
 } from '@/types/payroll';
+import {
+  EmployeePayProfile,
+  getPayrollStaffDirectory,
+  resolveEmployeePayProfile,
+  rosteredHoursByStaff,
+} from './payrollEmployeeBridge';
 
 /**
  * Pay run engine.
  *
- * Turns approved timesheets inside a pay period into payable lines:
- *   ordinary hours x rate
- * + overtime hours x rate x overtime multiplier
- * + allowances (from the timesheet's applied allowances)
- * = gross -> PAYG withholding -> net, plus super guarantee on ordinary earnings.
+ * Prices approved timesheets against real employee data:
+ *   • base rate resolved from the staff member's pay conditions / award floor
+ *   • casual loading for casual employment types
+ *   • Saturday / Sunday / public holiday penalties from the award
+ *   • overtime at the award's first-2-hours / thereafter steps (or a flat multiplier)
+ *   • allowances applied on the timesheet plus the staff member's standing allowances
+ *   • PAYG withholding, super guarantee and net pay from the payroll settings
  *
+ * Rostered hours from the schedule are attached for pay-vs-roster variance checks.
  * All maths is pure and deterministic so a run can be regenerated at any time.
  */
 
@@ -34,6 +45,9 @@ export interface BuildPayRunInput {
   /** Only include approved timesheets (default true) */
   approvedOnly?: boolean;
   locationIds?: string[];
+  /** Workforce directory override (defaults to the live staff list). */
+  staff?: StaffMember[];
+  calendarId?: string;
 }
 
 /** Annualisation factors used to gross up a period for the tax scale. */
@@ -71,50 +85,141 @@ function inPeriod(dateStr: string, start: string, end: string) {
   return dateStr >= start && dateStr <= end;
 }
 
+interface Bucket {
+  hours: number;
+  multiplier: number;
+  label: string;
+}
+
+/** Split a day's paid hours into ordinary/penalty buckets and overtime steps. */
+function bucketEntry(
+  entry: ClockEntry,
+  profile: EmployeePayProfile,
+  settings: PayrollSettings,
+): { ordinary: Bucket[]; overtime: Bucket[] } {
+  const paidHours = Math.max(entry.netHours ?? 0, 0);
+  const overtimeHours = Math.min(Math.max(entry.overtime ?? 0, 0), paidHours);
+  const ordinaryHours = round2(paidHours - overtimeHours);
+
+  const award = profile.award;
+  const dayType = getDayType(entry.date);
+
+  let multiplier = 1;
+  let label = 'Ordinary hours';
+  if (settings.useAwardPenalties && award) {
+    if (dayType === 'saturday' && award.saturdayRate) {
+      multiplier = award.saturdayRate / 100;
+      label = 'Saturday penalty';
+    } else if (dayType === 'sunday' && award.sundayRate) {
+      multiplier = award.sundayRate / 100;
+      label = 'Sunday penalty';
+    } else if (dayType === 'public_holiday' && award.publicHolidayRate) {
+      multiplier = award.publicHolidayRate / 100;
+      label = 'Public holiday penalty';
+    } else if (award.penaltyRates) {
+      const startHour = Number((entry.clockIn ?? '00:00').split(':')[0]);
+      const endHour = Number((entry.clockOut ?? '00:00').split(':')[0]);
+      if (award.penaltyRates.night && (startHour >= 22 || endHour >= 22 || endHour < 6)) {
+        multiplier = award.penaltyRates.night / 100;
+        label = 'Night penalty';
+      } else if (award.penaltyRates.earlyMorning && startHour < 6) {
+        multiplier = award.penaltyRates.earlyMorning / 100;
+        label = 'Early morning penalty';
+      } else if (award.penaltyRates.evening && endHour >= 18) {
+        multiplier = award.penaltyRates.evening / 100;
+        label = 'Evening penalty';
+      }
+    }
+  }
+
+  const ordinary: Bucket[] = ordinaryHours > 0 ? [{ hours: ordinaryHours, multiplier, label }] : [];
+
+  const overtime: Bucket[] = [];
+  if (overtimeHours > 0) {
+    if (settings.useAwardOvertimeRates && award?.overtimeRates) {
+      const first = Math.min(overtimeHours, 2);
+      const rest = round2(overtimeHours - first);
+      if (first > 0) overtime.push({ hours: round2(first), multiplier: award.overtimeRates.first2Hours / 100, label: `Overtime first 2 hrs (${award.overtimeRates.first2Hours}%)` });
+      if (rest > 0) overtime.push({ hours: rest, multiplier: award.overtimeRates.after2Hours / 100, label: `Overtime thereafter (${award.overtimeRates.after2Hours}%)` });
+    } else {
+      overtime.push({ hours: round2(overtimeHours), multiplier: settings.overtimeMultiplier, label: `Overtime x${settings.overtimeMultiplier}` });
+    }
+  }
+
+  return { ordinary, overtime };
+}
+
+function mergeBuckets(buckets: Bucket[]): Bucket[] {
+  const map = new Map<string, Bucket>();
+  buckets.forEach((b) => {
+    const key = `${b.label}|${b.multiplier}`;
+    const existing = map.get(key);
+    if (existing) existing.hours = round2(existing.hours + b.hours);
+    else map.set(key, { ...b });
+  });
+  return Array.from(map.values());
+}
+
 function buildLine(
   timesheets: Timesheet[],
   settings: PayrollSettings,
   cycle: PayCycle,
+  staff: StaffMember[],
+  rosterHours: Record<string, number>,
+  periodStart: string,
+  periodEnd: string,
 ): PayRunLine {
   const first = timesheets[0];
-  const rate = first.employee.hourlyRate ?? 0;
-  const warnings: string[] = [];
+  const profile = resolveEmployeePayProfile(first.employee, settings, staff);
+  const warnings: string[] = [...profile.notes];
 
-  if (!rate) warnings.push('No hourly rate on file — line pays $0 until a rate is set.');
+  const loadedRate = round2(profile.baseRate * (1 + profile.casualLoadingPct / 100));
+  if (!loadedRate) warnings.push('No hourly rate on file — line pays $0 until a rate is set.');
 
-  const overtimeHours = round2(timesheets.reduce((s, t) => s + (t.overtimeHours || 0), 0));
-  const totalHours = round2(timesheets.reduce((s, t) => s + (t.totalHours || 0), 0));
-  const ordinaryHours = round2(Math.max(totalHours - overtimeHours, 0));
+  const ordinaryBuckets: Bucket[] = [];
+  const overtimeBuckets: Bucket[] = [];
+
+  timesheets.forEach((t) => {
+    t.entries
+      .filter((e) => inPeriod(e.date, periodStart, periodEnd))
+      .forEach((e) => {
+        const { ordinary, overtime } = bucketEntry(e, profile, settings);
+        ordinaryBuckets.push(...ordinary);
+        overtimeBuckets.push(...overtime);
+      });
+  });
 
   const components: PayComponent[] = [];
 
-  if (ordinaryHours > 0) {
+  mergeBuckets(ordinaryBuckets).forEach((b, i) => {
+    const rate = round2(loadedRate * b.multiplier);
     components.push({
-      id: `${first.employee.id}-ordinary`,
-      kind: 'ordinary',
-      label: 'Ordinary hours',
-      units: ordinaryHours,
+      id: `${first.employee.id}-ord-${i}`,
+      kind: b.multiplier > 1 ? 'penalty' : 'ordinary',
+      label: profile.casualLoadingPct ? `${b.label} (incl. ${profile.casualLoadingPct}% casual loading)` : b.label,
+      units: b.hours,
       rate,
-      amount: round2(ordinaryHours * rate),
+      amount: round2(b.hours * rate),
       superable: true,
       taxable: true,
     });
-  }
+  });
 
-  if (overtimeHours > 0) {
-    const otRate = round2(rate * settings.overtimeMultiplier);
+  mergeBuckets(overtimeBuckets).forEach((b, i) => {
+    const rate = round2(loadedRate * b.multiplier);
     components.push({
-      id: `${first.employee.id}-overtime`,
+      id: `${first.employee.id}-ot-${i}`,
       kind: 'overtime',
-      label: `Overtime x${settings.overtimeMultiplier}`,
-      units: overtimeHours,
-      rate: otRate,
-      amount: round2(overtimeHours * otRate),
-      superable: false,
+      label: b.label,
+      units: b.hours,
+      rate,
+      amount: round2(b.hours * rate),
+      superable: settings.superOnOvertime,
       taxable: true,
     });
-  }
+  });
 
+  // Allowances captured on the timesheet
   timesheets.forEach((t) => {
     (t.appliedAllowances ?? []).forEach((a, i) => {
       components.push({
@@ -130,30 +235,73 @@ function buildLine(
     });
   });
 
+  const ordinaryHours = round2(mergeBuckets(ordinaryBuckets).reduce((s, b) => s + b.hours, 0));
+  const overtimeHours = round2(mergeBuckets(overtimeBuckets).reduce((s, b) => s + b.hours, 0));
+  const penaltyHours = round2(mergeBuckets(ordinaryBuckets).filter((b) => b.multiplier > 1).reduce((s, b) => s + b.hours, 0));
+  const shiftCount = timesheets.reduce((s, t) => s + t.entries.filter((e) => inPeriod(e.date, periodStart, periodEnd)).length, 0);
+
+  // Standing allowances from the staff record (award + custom)
+  const record = staff.find((s) => s.id === profile.staffRecordId);
+  const standing = [...(profile.award?.allowances ?? []), ...(record?.customAllowances ?? [])];
+  standing.forEach((a, i) => {
+    const units = a.type === 'per_hour' ? round2(ordinaryHours + overtimeHours) : a.type === 'per_shift' ? shiftCount : 1;
+    if (!units) return;
+    components.push({
+      id: `${profile.staffRecordId ?? first.employee.id}-standing-${a.id ?? i}`,
+      kind: 'allowance',
+      label: `${a.name} (${a.type.replace('_', ' ')})`,
+      units,
+      rate: a.amount,
+      amount: round2(units * a.amount),
+      superable: a.superGuarantee,
+      taxable: a.taxable,
+    });
+  });
+
   const grossPay = round2(components.filter((c) => c.kind !== 'deduction').reduce((s, c) => s + c.amount, 0));
   const deductions = round2(components.filter((c) => c.kind === 'deduction').reduce((s, c) => s + c.amount, 0));
   const taxableGross = round2(components.filter((c) => c.taxable && c.kind !== 'deduction').reduce((s, c) => s + c.amount, 0));
   const superableGross = round2(components.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
 
-  const paygTax = calculatePaygTax(taxableGross, cycle, settings.taxScale);
-  const superGuarantee = round2(superableGross * (settings.superRate / 100));
-  const netPay = round2(grossPay - paygTax - deductions);
+  const scale: PayrollSettings['taxScale'] =
+    settings.taxScale === 'resident' && profile.dataSource === 'staff_record' && !profile.hasTfn
+      ? 'no_tfn'
+      : settings.taxScale;
+
+  const paygTax = calculatePaygTax(taxableGross, cycle, scale);
+  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
+  const superGuarantee = monthlyEquivalent >= settings.superMonthlyThreshold
+    ? round2(superableGross * (settings.superRate / 100))
+    : 0;
+  const rawNet = grossPay - paygTax - deductions;
+  const netPay = settings.roundNetToCents ? round2(rawNet) : rawNet;
 
   const unapproved = timesheets.filter((t) => t.status !== 'approved');
   if (unapproved.length) warnings.push(`${unapproved.length} timesheet(s) not approved.`);
-  const openEntries = timesheets.some((t) => t.entries.some((e) => !e.clockOut));
-  if (openEntries) warnings.push('Open clock entry with no clock-out.');
-  const exceptions = timesheets.some((t) => t.entries.some((e) => e.exception && !e.exception.resolved));
-  if (exceptions) warnings.push('Unresolved timesheet exception.');
+  if (timesheets.some((t) => t.entries.some((e) => !e.clockOut))) warnings.push('Open clock entry with no clock-out.');
+  if (timesheets.some((t) => t.entries.some((e) => e.exception && !e.exception.resolved))) warnings.push('Unresolved timesheet exception.');
+
+  let rosteredHours: number | undefined;
+  let rosterVarianceHours: number | undefined;
+  if (settings.compareToRoster && profile.rosterStaffId) {
+    rosteredHours = rosterHours[profile.rosterStaffId] ?? 0;
+    rosterVarianceHours = round2(ordinaryHours + overtimeHours - rosteredHours);
+    if (Math.abs(rosterVarianceHours) > settings.rosterVarianceToleranceHours) {
+      warnings.push(
+        `Paid hours differ from the roster by ${rosterVarianceHours > 0 ? '+' : ''}${rosterVarianceHours}h (rostered ${rosteredHours}h).`,
+      );
+    }
+  }
 
   return {
     id: `line-${first.employee.id}`,
     staffId: first.employee.id,
     staffName: first.employee.name,
-    employeeNumber: first.employee.id,
+    employeeNumber: profile.employeeNumber ?? first.employee.id,
+    payrollId: profile.payrollId,
     locationId: first.location?.id,
     locationName: first.location?.name,
-    employmentType: first.employee.position,
+    employmentType: profile.employmentType ?? first.employee.position,
     timesheetIds: timesheets.map((t) => t.id),
     components,
     ordinaryHours,
@@ -165,6 +313,20 @@ function buildLine(
     deductions,
     netPay,
     warnings,
+    staffRecordId: profile.staffRecordId,
+    dataSource: profile.dataSource,
+    baseRate: profile.baseRate,
+    rateSource: profile.rateSource,
+    awardName: profile.award?.awardName,
+    classification: profile.award ? `${profile.award.classification} ${profile.award.level}` : profile.payCondition?.classification,
+    casualLoadingPct: profile.casualLoadingPct || undefined,
+    penaltyHours,
+    rosteredHours,
+    rosterVarianceHours,
+    superFundName: profile.superFundName,
+    bankAccountMasked: profile.bankAccountMasked,
+    hasTfn: profile.hasTfn,
+    incomeStream: profile.incomeStream,
   };
 }
 
@@ -185,6 +347,7 @@ export function summariseTotals(lines: PayRunLine[]): PayRunTotals {
 
 export function buildPayRun(input: BuildPayRunInput): PayRun {
   const { periodStart, periodEnd, settings, cycle, approvedOnly = true } = input;
+  const staff = input.staff ?? getPayrollStaffDirectory();
 
   const eligible = input.timesheets.filter((t) => {
     if (approvedOnly && t.status !== 'approved') return false;
@@ -200,8 +363,10 @@ export function buildPayRun(input: BuildPayRunInput): PayRun {
     byStaff.set(t.employee.id, list);
   });
 
+  const rosterHours = settings.compareToRoster ? rosteredHoursByStaff(periodStart, periodEnd) : {};
+
   const lines = Array.from(byStaff.values())
-    .map((ts) => buildLine(ts, settings, cycle))
+    .map((ts) => buildLine(ts, settings, cycle, staff, rosterHours, periodStart, periodEnd))
     .sort((a, b) => a.staffName.localeCompare(b.staffName));
 
   return {
