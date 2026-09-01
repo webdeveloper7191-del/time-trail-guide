@@ -126,6 +126,22 @@ export const payrollStore = {
   deleteRun(id: string) {
     runs = runs.filter((r) => r.id !== id);
     persist();
+    import('./payrollCloud').then((m) => m.deleteCloudRun(id)).catch(() => {/* offline */});
+  },
+  /**
+   * Pull retained pay runs from the cloud archive and merge them in.
+   * Cloud wins for runs that exist in both places (posted/locked/reversed
+   * state is the audit source of truth).
+   */
+  async hydrateFromCloud(): Promise<number> {
+    const { fetchCloudRuns } = await import('./payrollCloud');
+    const cloudRuns = await fetchCloudRuns();
+    if (cloudRuns.length === 0) return 0;
+    const byId = new Map(runs.map((r) => [r.id, r] as const));
+    cloudRuns.forEach((r) => { if (r?.id) byId.set(r.id, r); });
+    runs = Array.from(byId.values());
+    persist();
+    return cloudRuns.length;
   },
   updateRun(id: string, patch: Partial<PayRun>) {
     const idx = runs.findIndex((r) => r.id === id);
