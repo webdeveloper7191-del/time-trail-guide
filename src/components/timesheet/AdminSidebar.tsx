@@ -43,6 +43,7 @@ const navItems = [
   { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
   { icon: Database, label: 'Master Data', to: '/settings/master-data' },
+  { icon: Banknote, label: 'Payroll Settings', to: '/settings/payroll' },
   { icon: Handshake, label: 'Agency Partners', to: '/settings/agency-partners' },
   { icon: ShieldCheck, label: 'Users & Permissions', to: '/settings/permissions' },
   { icon: Gem, label: 'Plans & Entitlements', to: '/admin/platform' },
