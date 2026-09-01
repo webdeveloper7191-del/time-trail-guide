@@ -65,6 +65,7 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
   const existing = (run.adjustments ?? []).filter((a) => a.lineId === line.id || a.staffId === line.staffId);
 
   const persist = (adjustments: PayRunAdjustment[]) => {
+    if (run.locked) { toast.error('This pay run is locked. Unlock it before adding adjustments.'); return; }
     payrollStore.saveRun(recalcRun({ ...run, adjustments }, settings));
   };
 
