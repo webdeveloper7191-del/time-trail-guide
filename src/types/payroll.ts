@@ -327,6 +327,16 @@ export interface PayrollSettings {
   redundancyTaxFreePerYear: number;
   /** Super guarantee is not payable on most termination lump sums. */
   superOnTerminationPay: boolean;
+
+  // --- Withholding & super caps ----------------------------------------
+  /** Use the ATO NAT 1004 coefficient scales (incl. STSL) instead of the simplified model. */
+  useAtoTaxScales: boolean;
+  /** Scale applied when an employee has no tax declaration recorded. */
+  defaultAtoScale: string;
+  /** Cap superable earnings at the maximum contribution base. */
+  applySuperMaxContributionBase: boolean;
+  /** Maximum super contribution base per quarter (2025-26: $62,500). */
+  superMaxContributionBaseQuarterly: number;
 }
 
 
