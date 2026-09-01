@@ -480,19 +480,25 @@ export function composeLine(
   const taxableEarnings = round2(earningsAll.filter((c) => c.taxable).reduce((s, c) => s + c.amount, 0));
   const taxableGross = Math.max(0, round2(taxableEarnings - preTaxDeductions - salarySacrificeSuper));
 
-  const scale: PayrollSettings['taxScale'] =
-    settings.taxScale === 'resident' && line.dataSource === 'staff_record' && line.hasTfn === false
-      ? 'no_tfn'
-      : settings.taxScale;
-
-  const paygTax = calculatePaygTax(taxableGross, cycle, scale);
+  const withholding = withholdingFor(
+    {
+      staffId: line.staffId,
+      staffRecordId: line.staffRecordId,
+      hasTfn: line.dataSource === 'staff_record' ? line.hasTfn : undefined,
+      taxableGross,
+      cycle,
+    },
+    settings,
+  );
+  const paygTax = withholding.total;
   const lumpSumTax = round2(earningsAll.reduce((s, c) => s + (c.lumpSumTax ?? 0), 0));
 
-  const superableGross = round2(earningsAll.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
-  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
-  const superGuarantee = monthlyEquivalent >= settings.superMonthlyThreshold
-    ? round2(superableGross * (settings.superRate / 100))
-    : 0;
+  const superableGrossRaw = round2(earningsAll.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
+  const superResult = superGuaranteeFor(superableGrossRaw, cycle, settings);
+  const superGuarantee = superResult.superGuarantee;
+  const backPay = round2(
+    earningsAll.filter((c) => c.id.includes('-backpay')).reduce((s, c) => s + c.amount, 0),
+  );
 
   // Protected earnings: trim post-tax deductions so net never falls below the floor.
   const floor = Math.max(0, ...standing.filter((d) => d.protectedEarnings).map((d) => d.protectedEarnings ?? 0));
