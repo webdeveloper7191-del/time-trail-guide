@@ -56,6 +56,25 @@ export interface PayRunLine {
   /** Validation issues that block posting */
   warnings: string[];
   excluded?: boolean;
+
+  // --- Source data linkage -------------------------------------------
+  /** Workforce staff record the line was resolved from, when matched. */
+  staffRecordId?: string;
+  dataSource: 'staff_record' | 'timesheet_fallback';
+  baseRate: number;
+  rateSource: 'award' | 'pay_condition_hourly' | 'pay_condition_salary' | 'timesheet';
+  awardName?: string;
+  classification?: string;
+  casualLoadingPct?: number;
+  penaltyHours?: number;
+  /** Hours scheduled in the roster for the same period. */
+  rosteredHours?: number;
+  /** paid hours minus rostered hours */
+  rosterVarianceHours?: number;
+  superFundName?: string;
+  bankAccountMasked?: string;
+  hasTfn?: boolean;
+  incomeStream?: StpIncomeStream;
 }
 
 export interface PayRun {
@@ -243,6 +262,18 @@ export const defaultPayrollSettings: PayrollSettings = {
   taxScale: 'resident',
   financialYearStart: '2026-07-01',
   roundNetToCents: true,
+  defaultCalendarId: 'cal-fortnightly',
+  ordinaryHoursPerWeek: 38,
+  useAwardRates: true,
+  useAwardPenalties: true,
+  applyCasualLoading: true,
+  defaultCasualLoadingPct: 25,
+  useAwardOvertimeRates: true,
+  superOnOvertime: false,
+  superMonthlyThreshold: 0,
+  compareToRoster: true,
+  rosterVarianceToleranceHours: 1,
+  requireBankDetails: true,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {
