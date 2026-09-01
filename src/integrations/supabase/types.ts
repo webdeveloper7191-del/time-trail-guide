@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      pay_runs: {
+        Row: {
+          created_at: string
+          id: string
+          locked: boolean
+          name: string
+          payload: Json
+          period_end: string | null
+          period_start: string | null
+          reversal_of_run_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          locked?: boolean
+          name?: string
+          payload: Json
+          period_end?: string | null
+          period_start?: string | null
+          reversal_of_run_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          name?: string
+          payload?: Json
+          period_end?: string | null
+          period_start?: string | null
+          reversal_of_run_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

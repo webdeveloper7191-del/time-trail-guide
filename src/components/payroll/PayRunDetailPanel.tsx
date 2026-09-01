@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Download, FileText, Receipt } from 'lucide-react';
+import { AlertTriangle, Download, FileText, Receipt, Send } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PayRun, PayRunLine } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
 import { recalcRun } from '@/lib/payroll/payRunEngine';
-import { buildDetailCsv, buildAbaFile, downloadFile, exportPayslipPdf } from '@/lib/payroll/accountingExport';
+import { buildDetailCsv, buildAbaFile, buildJournal, downloadFile, exportPayslipPdf } from '@/lib/payroll/accountingExport';
+import { postJournalToXero } from '@/lib/payroll/payrollCloud';
 import { PayRunAdjustmentSheet } from './PayRunAdjustmentSheet';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ const currency = (n: number) => `$${n.toLocaleString('en-AU', { minimumFractionD
 export function PayRunDetailPanel({ run, open, onClose }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState<PayRunLine | null>(null);
+  const [postingXero, setPostingXero] = useState(false);
   if (!run) return null;
 
   const current = adjusting ? run.lines.find((l) => l.id === adjusting.id) ?? adjusting : null;
@@ -77,6 +79,30 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
     }
   };
 
+
+  const postToXero = async () => {
+    const conn = payrollStore.getSnapshot().connections.xero;
+    setPostingXero(true);
+    try {
+      const journal = buildJournal(run, conn);
+      const result = await postJournalToXero(run, journal);
+      if (!result.ok) {
+        toast.error(result.connected ? `Xero rejected the journal: ${result.message}` : result.message);
+        return;
+      }
+      payrollStore.recordExport(run.id, {
+        id: crypto.randomUUID(),
+        platform: 'xero',
+        exportedAt: new Date().toISOString(),
+        fileName: `Xero manual journal ${result.manualJournalId ?? ''}`.trim(),
+        lineCount: journal.length,
+      });
+      payrollStore.addAudit(run.id, 'exported', `Posted to Xero (journal ${result.manualJournalId ?? 'created'}).`);
+      toast.success('Payroll journal posted to Xero.');
+    } finally {
+      setPostingXero(false);
+    }
+  };
 
   const publishPayslips = () => {
     payrollStore.updateRun(run.id, { payslipsPublishedAt: new Date().toISOString() });
@@ -153,6 +179,9 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={exportDetail}><Download className="h-4 w-4 mr-2" />Detail CSV</Button>
           <Button variant="outline" size="sm" onClick={exportAba}><FileText className="h-4 w-4 mr-2" />ABA payment file</Button>
+          <Button variant="outline" size="sm" onClick={postToXero} disabled={postingXero || run.status === 'draft'}>
+            <Send className="h-4 w-4 mr-2" />{postingXero ? 'Posting to Xero…' : 'Post to Xero'}
+          </Button>
         </div>
 
         <div className="rounded-lg border overflow-hidden">

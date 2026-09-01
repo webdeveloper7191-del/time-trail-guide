@@ -66,6 +66,22 @@ let taxProfiles: EmployeeTaxProfile[] = load<EmployeeTaxProfile[]>(TAX_KEY, []);
 const listeners = new Set<() => void>();
 let snapshot = { runs, settings, connections, calendars, stp, deductions, taxProfiles };
 
+/** Cloud mirroring (audit retention) — best effort, never blocks the UI. */
+let cloudTimer: ReturnType<typeof setTimeout> | undefined;
+let cloudEnabled = true;
+function mirrorToCloud() {
+  if (!cloudEnabled || runs.length === 0) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => {
+    import('./payrollCloud')
+      .then((m) => m.pushCloudRuns(runs))
+      .catch((err) => {
+        cloudEnabled = false;
+        console.warn('Pay run cloud sync unavailable; using local storage only.', err);
+      });
+  }, 600);
+}
+
 function persist() {
   try {
     localStorage.setItem(RUNS_KEY, JSON.stringify(runs));
@@ -78,6 +94,7 @@ function persist() {
   } catch {/* noop */}
   snapshot = { runs, settings, connections, calendars, stp, deductions, taxProfiles };
   listeners.forEach((fn) => fn());
+  mirrorToCloud();
 }
 
 function auditEvent(action: PayRunAuditEvent['action'], detail?: string): PayRunAuditEvent {
@@ -109,6 +126,22 @@ export const payrollStore = {
   deleteRun(id: string) {
     runs = runs.filter((r) => r.id !== id);
     persist();
+    import('./payrollCloud').then((m) => m.deleteCloudRun(id)).catch(() => {/* offline */});
+  },
+  /**
+   * Pull retained pay runs from the cloud archive and merge them in.
+   * Cloud wins for runs that exist in both places (posted/locked/reversed
+   * state is the audit source of truth).
+   */
+  async hydrateFromCloud(): Promise<number> {
+    const { fetchCloudRuns } = await import('./payrollCloud');
+    const cloudRuns = await fetchCloudRuns();
+    if (cloudRuns.length === 0) return 0;
+    const byId = new Map(runs.map((r) => [r.id, r] as const));
+    cloudRuns.forEach((r) => { if (r?.id) byId.set(r.id, r); });
+    runs = Array.from(byId.values());
+    persist();
+    return cloudRuns.length;
   },
   updateRun(id: string, patch: Partial<PayRun>) {
     const idx = runs.findIndex((r) => r.id === id);
