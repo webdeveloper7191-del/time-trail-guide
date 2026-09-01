@@ -216,9 +216,16 @@ export interface PayRun {
   paymentDate: string;
   status: PayRunStatus;
   createdAt: string;
+  /** Operator who created / submitted the run (maker in maker-checker). */
+  createdBy?: string;
+  submittedBy?: string;
   approvedAt?: string;
   approvedBy?: string;
   postedAt?: string;
+  /** Leave accruals / drawdowns have been posted to the leave ledger for this run. */
+  leaveAppliedAt?: string;
+  /** Source timesheets locked back against editing by this run. */
+  lockedTimesheetIds?: string[];
   lines: PayRunLine[];
   totals: PayRunTotals;
   notes?: string;
@@ -368,6 +375,28 @@ export interface PayrollSettings {
   applySuperMaxContributionBase: boolean;
   /** Maximum super contribution base per quarter (2025-26: $62,500). */
   superMaxContributionBaseQuarterly: number;
+
+  // --- Leave balance integration ---------------------------------------
+  /** Accrue annual / personal leave from paid ordinary hours in each pay run. */
+  accrueLeaveFromPaidHours: boolean;
+  /** NES annual leave weeks per year (4 for most employees, 5 for shiftworkers). */
+  annualLeaveWeeksPerYear: number;
+  /** NES paid personal / carer's leave days per year (10). */
+  personalLeaveDaysPerYear: number;
+  /** Long service leave weeks accrued per year of service (state based, ~0.8667). */
+  lslWeeksPerYear: number;
+  /** Casual employees do not accrue paid leave. */
+  excludeCasualsFromLeaveAccrual: boolean;
+  /** Draw leave payments in a run down from the employee's leave balance. */
+  drawDownLeaveOnPayment: boolean;
+
+  // --- Approval controls -------------------------------------------------
+  /** The approver must be a different person to whoever created the run. */
+  requireSeparateApprover: boolean;
+  /** Record the approver's name against the run (maker-checker evidence). */
+  requireApproverName: boolean;
+  /** Lock the source timesheets once the run is approved so they cannot be re-edited. */
+  lockTimesheetsOnApproval: boolean;
 }
 
 
@@ -471,6 +500,15 @@ export const defaultPayrollSettings: PayrollSettings = {
   defaultAtoScale: 'scale2',
   applySuperMaxContributionBase: true,
   superMaxContributionBaseQuarterly: 62500,
+  accrueLeaveFromPaidHours: true,
+  annualLeaveWeeksPerYear: 4,
+  personalLeaveDaysPerYear: 10,
+  lslWeeksPerYear: 0.8667,
+  excludeCasualsFromLeaveAccrual: true,
+  drawDownLeaveOnPayment: true,
+  requireSeparateApprover: true,
+  requireApproverName: true,
+  lockTimesheetsOnApproval: true,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {

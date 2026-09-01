@@ -11,6 +11,12 @@ import { recalcRun } from '@/lib/payroll/payRunEngine';
 import { buildDetailCsv, buildAbaFile, buildJournal, downloadFile, exportPayslipPdf } from '@/lib/payroll/accountingExport';
 import { postJournalToXero } from '@/lib/payroll/payrollCloud';
 import { PayRunAdjustmentSheet } from './PayRunAdjustmentSheet';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { getPayrollOperator, setPayrollOperator } from '@/lib/payroll/operator';
+import { payslipLeaveBalances } from '@/lib/payroll/leaveIntegration';
+import { timesheetLockStore } from '@/lib/payroll/timesheetLock';
 import { toast } from 'sonner';
 
 interface Props {
@@ -25,6 +31,8 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState<PayRunLine | null>(null);
   const [postingXero, setPostingXero] = useState(false);
+  const [approveOpen, setApproveOpen] = useState(false);
+  const [approver, setApprover] = useState(getPayrollOperator());
   if (!run) return null;
 
   const current = adjusting ? run.lines.find((l) => l.id === adjusting.id) ?? adjusting : null;
@@ -35,7 +43,16 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
     payrollStore.saveRun(recalcRun({ ...run, lines }));
   };
 
+  const confirmApproval = () => {
+    const result = payrollStore.approveRun(run.id, approver);
+    if (!result.ok) { toast.error(result.message); return; }
+    setPayrollOperator(approver);
+    setApproveOpen(false);
+    toast.success(`Pay run approved. ${result.message}`);
+  };
+
   const advance = (status: PayRun['status']) => {
+    if (status === 'approved') { setApproveOpen(true); return; }
     if (status === 'posted') {
       payrollStore.postAndLock(run.id);
       toast.success('Pay run posted and locked for audit.');
@@ -176,6 +193,17 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
           </div>
         )}
 
+        {(run.approvedBy || run.lockedTimesheetIds?.length || run.leaveAppliedAt) && (
+          <div className="rounded-lg border p-3 space-y-1 text-sm">
+            {run.createdBy && <p className="text-muted-foreground">Created by <span className="text-foreground font-medium">{run.createdBy}</span></p>}
+            {run.approvedBy && <p className="text-muted-foreground">Approved by <span className="text-foreground font-medium">{run.approvedBy}</span>{run.approvedAt ? ` on ${run.approvedAt.slice(0, 10)}` : ''}</p>}
+            {!!run.lockedTimesheetIds?.length && (
+              <p className="text-muted-foreground">{run.lockedTimesheetIds.length} source timesheet(s) locked against further edits — unlock or reverse this run to release them.</p>
+            )}
+            {run.leaveAppliedAt && <p className="text-muted-foreground">Leave accruals and drawdowns posted to the leave ledger.</p>}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={exportDetail}><Download className="h-4 w-4 mr-2" />Detail CSV</Button>
           <Button variant="outline" size="sm" onClick={exportAba}><FileText className="h-4 w-4 mr-2" />ABA payment file</Button>
@@ -272,6 +300,14 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
                             {Boolean(line.totalSuperContribution) && <span>Total super: {currency(line.totalSuperContribution ?? 0)}</span>}
                             {line.isTermination && <span>Final pay — includes termination lump sums</span>}
                             {line.incomeStream && <span>STP income stream: {line.incomeStream}</span>}
+                            {timesheetLockStore.lockFor(line.timesheetIds[0]) && (
+                              <span>Timesheets locked by {timesheetLockStore.lockFor(line.timesheetIds[0])?.runName}</span>
+                            )}
+                            {payslipLeaveBalances(line.staffId).length > 0 && (
+                              <span>
+                                Leave balances: {payslipLeaveBalances(line.staffId).map((b) => `${b.label} ${b.hours.toFixed(2)}h`).join(' · ')}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -296,6 +332,36 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve pay run</DialogTitle>
+            <DialogDescription>
+              Approving locks the source timesheets against further edits and posts leave accruals and drawdowns to the
+              leave ledger. The approver is recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="approver-name">Approver</Label>
+            <Input
+              id="approver-name"
+              value={approver}
+              onChange={(e) => setApprover(e.target.value)}
+              placeholder="Full name of the approver"
+            />
+            {run.createdBy && (
+              <p className="text-xs text-muted-foreground">
+                Created by {run.createdBy}. Segregation of duties requires a different approver.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveOpen(false)}>Cancel</Button>
+            <Button onClick={confirmApproval}>Approve run</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {current && (
         <PayRunAdjustmentSheet

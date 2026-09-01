@@ -15,6 +15,7 @@ import { ExportDialog } from '@/components/timesheet/ExportDialog';
 import { NotificationCenter, generateMockNotifications, Notification } from '@/components/timesheet/NotificationCenter';
 import { ApprovalDelegationModal, generateMockDelegations } from '@/components/timesheet/ApprovalDelegationModal';
 import { AddTimesheetPanel } from '@/components/timesheet/AddTimesheetPanel';
+import { timesheetLockStore, useTimesheetLocks } from '@/lib/payroll/timesheetLock';
 import { DailyClockView } from '@/components/timesheet/DailyClockView';
 import { ImportTimesheetModal } from '@/components/timesheet/ImportTimesheetModal';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ type TabValue = 'all' | 'exceptions' | TimesheetStatus;
 type ViewMode = 'table' | 'daily' | 'analytics' | 'calendar' | 'audit' | 'compliance';
 
 export default function TimesheetAdmin() {
+  useTimesheetLocks();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialView = (searchParams.get('view') as ViewMode) || 'table';
   const [timesheets, setTimesheets] = useState<Timesheet[]>(mockTimesheets);
@@ -156,11 +158,20 @@ export default function TimesheetAdmin() {
   };
 
   const handleEdit = (timesheet: Timesheet) => {
+    const lock = timesheetLockStore.lockFor(timesheet.id);
+    if (lock) {
+      toast.error(`Locked by pay run "${lock.runName}" — unlock or reverse that pay run to edit this timesheet.`);
+      return;
+    }
     setSelectedTimesheet(timesheet);
     setIsEditModalOpen(true);
   };
 
   const handleSave = (updatedTimesheet: Timesheet) => {
+    if (timesheetLockStore.isLocked(updatedTimesheet.id)) {
+      toast.error('This timesheet has been paid and is locked against changes.');
+      return;
+    }
     setTimesheets((prev) =>
       prev.map((t) => (t.id === updatedTimesheet.id ? updatedTimesheet : t))
     );

@@ -242,6 +242,48 @@ export function PayrollSettingsPanel() {
           ))}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div>
+            <h2 className="text-base font-semibold">Leave accrual & approval controls</h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+              Accrue paid leave from ordinary hours in every run, draw balances down when leave is paid, and enforce
+              maker-checker approval with timesheet lock-back.
+            </p>
+          </div>
+          {[
+            { key: 'accrueLeaveFromPaidHours' as const, title: 'Accrue leave from paid ordinary hours', desc: 'Annual, personal and long service leave accrue pro-rata each approved pay run.' },
+            { key: 'excludeCasualsFromLeaveAccrual' as const, title: 'Exclude casuals from leave accrual', desc: 'Casual loading is paid in lieu of paid leave entitlements.' },
+            { key: 'drawDownLeaveOnPayment' as const, title: 'Draw balances down when leave is paid', desc: 'Leave payments in a run reduce the employee\u2019s balance automatically.' },
+            { key: 'requireSeparateApprover' as const, title: 'Require a separate approver', desc: 'The person who created a run cannot approve it (segregation of duties).' },
+            { key: 'requireApproverName' as const, title: 'Record the approver name', desc: 'Approval asks for a name and writes it to the audit trail.' },
+            { key: 'lockTimesheetsOnApproval' as const, title: 'Lock timesheets on approval', desc: 'Paid timesheets are locked so they cannot be edited or paid twice.' },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between rounded-lg border p-3">
+              <div className="pr-4">
+                <p className="text-sm font-medium">{row.title}</p>
+                <p className="text-xs text-muted-foreground">{row.desc}</p>
+              </div>
+              <Switch checked={Boolean(s[row.key])} onCheckedChange={(v) => set({ [row.key]: v } as Partial<PayrollSettings>)} />
+            </div>
+          ))}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Annual leave weeks per year</Label>
+              <Input type="number" step="0.5" value={s.annualLeaveWeeksPerYear} onChange={(e) => set({ annualLeaveWeeksPerYear: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Personal leave days per year</Label>
+              <Input type="number" step="1" value={s.personalLeaveDaysPerYear} onChange={(e) => set({ personalLeaveDaysPerYear: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>LSL weeks per year of service</Label>
+              <Input type="number" step="0.0001" value={s.lslWeeksPerYear} onChange={(e) => set({ lslWeeksPerYear: Number(e.target.value) })} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

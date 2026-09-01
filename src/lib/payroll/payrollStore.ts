@@ -15,6 +15,8 @@ import {
   defaultPayrollSettings,
   defaultStpSettings,
 } from '@/types/payroll';
+import { timesheetLockStore } from './timesheetLock';
+import { applyLeaveForRun, reverseLeaveForRun } from './leaveIntegration';
 
 /**
  * localStorage-backed payroll store (mock mode).
@@ -97,6 +99,12 @@ function persist() {
   mirrorToCloud();
 }
 
+/** Release timesheet locks and roll back leave postings held by a run. */
+function releaseRunSideEffects(runId: string) {
+  try { timesheetLockStore.releaseRun(runId); } catch {/* noop */}
+  try { reverseLeaveForRun(runId); } catch {/* noop */}
+}
+
 function auditEvent(action: PayRunAuditEvent['action'], detail?: string): PayRunAuditEvent {
   return { id: crypto.randomUUID(), at: new Date().toISOString(), action, detail };
 }
@@ -124,6 +132,7 @@ export const payrollStore = {
     persist();
   },
   deleteRun(id: string) {
+    releaseRunSideEffects(id);
     runs = runs.filter((r) => r.id !== id);
     persist();
     import('./payrollCloud').then((m) => m.deleteCloudRun(id)).catch(() => {/* offline */});
@@ -163,6 +172,72 @@ export const payrollStore = {
     );
     persist();
   },
+  /**
+   * Approve a run (checker step of maker-checker):
+   *  - blocks self-approval when segregation of duties is required
+   *  - locks the source timesheets back so they cannot be re-edited or re-paid
+   *  - posts leave accruals and drawdowns to the leave ledger
+   */
+  approveRun(runId: string, approver: string): { ok: boolean; message: string } {
+    const run = runs.find((r) => r.id === runId);
+    if (!run) return { ok: false, message: 'Pay run not found.' };
+    const name = approver.trim();
+    if (settings.requireApproverName && !name) {
+      return { ok: false, message: 'An approver name is required for the audit trail.' };
+    }
+    const maker = (run.createdBy ?? run.submittedBy ?? '').trim().toLowerCase();
+    if (settings.requireSeparateApprover && maker && maker === name.toLowerCase()) {
+      return { ok: false, message: `Segregation of duties: ${run.createdBy} created this run and cannot approve it.` };
+    }
+
+    const now = new Date().toISOString();
+    const timesheetIds = run.lines.filter((l) => !l.excluded).flatMap((l) => l.timesheetIds ?? []);
+    const notes: string[] = [];
+
+    let lockedIds: string[] = [];
+    if (settings.lockTimesheetsOnApproval && timesheetIds.length) {
+      const conflicts = timesheetLockStore.conflictsWith(runId, timesheetIds);
+      if (conflicts.length) {
+        return {
+          ok: false,
+          message: `${conflicts.length} timesheet(s) are already locked by ${conflicts[0].runName}. Reverse or unlock that run first.`,
+        };
+      }
+      const count = timesheetLockStore.lockForRun(runId, run.name, timesheetIds);
+      lockedIds = Array.from(new Set(timesheetIds));
+      notes.push(`${count} timesheet(s) locked back`);
+    }
+
+    let leaveAppliedAt: string | undefined;
+    try {
+      const result = applyLeaveForRun(run, settings);
+      leaveAppliedAt = now;
+      notes.push(`leave ledger updated (+${result.accruedHours}h accrued, ${result.drawnHours}h taken)`);
+      if (result.warnings.length) notes.push(`${result.warnings.length} leave warning(s)`);
+    } catch (err) {
+      console.warn('Leave integration failed for pay run', runId, err);
+    }
+
+    runs = runs.map((r) =>
+      r.id === runId
+        ? {
+            ...r,
+            status: 'approved' as const,
+            approvedAt: now,
+            approvedBy: name || undefined,
+            leaveAppliedAt,
+            lockedTimesheetIds: lockedIds.length ? lockedIds : r.lockedTimesheetIds,
+            auditTrail: [
+              auditEvent('approved', `Approved by ${name || 'unnamed operator'}${notes.length ? ` — ${notes.join('; ')}` : ''}.`),
+              ...(r.auditTrail ?? []),
+            ],
+          }
+        : r,
+    );
+    persist();
+    return { ok: true, message: `Approved by ${name}${notes.length ? ` — ${notes.join('; ')}.` : '.'}` };
+  },
+
   /** Post a run and lock it against further edits. */
   postAndLock(runId: string) {
     const now = new Date().toISOString();
@@ -182,6 +257,7 @@ export const payrollStore = {
   /** Unlock a posted run so corrections can be made; keeps the audit trail. */
   unlockRun(runId: string, reason: string) {
     const now = new Date().toISOString();
+    releaseRunSideEffects(runId);
     runs = runs.map((r) =>
       r.id === runId
         ? {
@@ -190,7 +266,8 @@ export const payrollStore = {
             status: 'approved' as const,
             unlockedAt: now,
             unlockReason: reason,
-            auditTrail: [auditEvent('unlocked', reason), ...(r.auditTrail ?? [])],
+            leaveAppliedAt: undefined,
+            auditTrail: [auditEvent('unlocked', `${reason} — timesheet locks released and leave postings rolled back.`), ...(r.auditTrail ?? [])],
           }
         : r,
     );
@@ -203,6 +280,7 @@ export const payrollStore = {
   reverseRun(runId: string, reason: string): PayRun | undefined {
     const original = runs.find((r) => r.id === runId);
     if (!original) return undefined;
+    releaseRunSideEffects(runId);
     const now = new Date().toISOString();
     const negate = (n: number) => Math.round(-n * 100) / 100;
     const reversal: PayRun = {
