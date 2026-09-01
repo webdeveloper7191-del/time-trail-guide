@@ -150,6 +150,54 @@ export function PayrollSettingsPanel() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Leave & termination pay</CardTitle>
+          <CardDescription>Leave loading and the flat withholding rates applied to final pays.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Annual leave loading %</Label>
+              <Input type="number" step="0.5" value={s.annualLeaveLoadingPct} onChange={(e) => set({ annualLeaveLoadingPct: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Unused leave tax rate %</Label>
+              <Input type="number" step="1" value={s.terminationLeaveTaxRate} onChange={(e) => set({ terminationLeaveTaxRate: Number(e.target.value) })} />
+              <p className="text-xs text-muted-foreground">Schedule 7 flat rate on unused annual and long service leave.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>ETP tax rate %</Label>
+              <Input type="number" step="1" value={s.etpTaxRate} onChange={(e) => set({ etpTaxRate: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Redundancy tax-free base ($)</Label>
+              <Input type="number" step="1" value={s.redundancyTaxFreeBase} onChange={(e) => set({ redundancyTaxFreeBase: Number(e.target.value) })} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Redundancy tax-free per completed year ($)</Label>
+            <Input type="number" step="1" value={s.redundancyTaxFreePerYear} onChange={(e) => set({ redundancyTaxFreePerYear: Number(e.target.value) })} />
+          </div>
+          {[
+            { key: 'payLeaveLoadingOnLeaveTaken' as const, title: 'Pay leave loading on annual leave taken', desc: 'Adds the loading percentage to paid annual leave in a pay run.' },
+            { key: 'payLeaveLoadingOnTermination' as const, title: 'Pay leave loading on termination payouts', desc: 'Only where the award or agreement requires it on unused leave.' },
+            { key: 'superOnTerminationPay' as const, title: 'Accrue super on termination lump sums', desc: 'Off by default — unused leave and ETPs are not ordinary time earnings.' },
+          ].map((row) => (
+            <div key={row.key} className="flex items-center justify-between rounded-lg border p-3">
+              <div className="pr-4">
+                <p className="text-sm font-medium">{row.title}</p>
+                <p className="text-xs text-muted-foreground">{row.desc}</p>
+              </div>
+              <Switch checked={Boolean(s[row.key])} onCheckedChange={(v) => set({ [row.key]: v } as Partial<PayrollSettings>)} />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
