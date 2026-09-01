@@ -113,8 +113,15 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
 
 
   const eligibleCount = eligible.count;
+  const [overlapConfirmed, setOverlapConfirmed] = useState(false);
+  const blockingOverlap = overlappingRuns.length > 0 && !overlapConfirmed;
 
   const create = () => {
+    if (blockingOverlap) {
+      toast.error('This period overlaps an existing pay run — confirm the overlap before creating.');
+      return;
+    }
+
     const run = buildPayRun({
       name: name.trim() || `${cycle[0].toUpperCase()}${cycle.slice(1)} pay run ${periodStart}`,
       cycle,
