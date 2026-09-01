@@ -426,6 +426,10 @@ export const defaultPayrollSettings: PayrollSettings = {
   redundancyTaxFreeBase: 12524,
   redundancyTaxFreePerYear: 6264,
   superOnTerminationPay: false,
+  useAtoTaxScales: true,
+  defaultAtoScale: 'scale2',
+  applySuperMaxContributionBase: true,
+  superMaxContributionBaseQuarterly: 62500,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {
