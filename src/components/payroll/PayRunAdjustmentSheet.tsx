@@ -39,6 +39,14 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
   const [rate, setRate] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(settings.payLeaveLoadingOnLeaveTaken);
 
+  const [backLabel, setBackLabel] = useState('Back pay');
+  const [backHours, setBackHours] = useState(0);
+  const [backDiff, setBackDiff] = useState(0);
+  const [backAmount, setBackAmount] = useState(0);
+  const [backFrom, setBackFrom] = useState('');
+  const [backTo, setBackTo] = useState('');
+  const [backSuperable, setBackSuperable] = useState(true);
+
   const [dedLabel, setDedLabel] = useState('');
   const [dedCategory, setDedCategory] = useState<DeductionCategory>('post_tax');
   const [dedAmount, setDedAmount] = useState(0);
@@ -57,6 +65,7 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
   const existing = (run.adjustments ?? []).filter((a) => a.lineId === line.id || a.staffId === line.staffId);
 
   const persist = (adjustments: PayRunAdjustment[]) => {
+    if (run.locked) { toast.error('This pay run is locked. Unlock it before adding adjustments.'); return; }
     payrollStore.saveRun(recalcRun({ ...run, adjustments }, settings));
   };
 
@@ -79,6 +88,19 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
         hours,
         rate: rate ?? line.baseRate,
         loadingPct: loading && leaveTypeCode === 'AL' ? settings.annualLeaveLoadingPct : 0,
+      };
+    } else if (kind === 'back_pay') {
+      const total = backAmount || Number((backHours * backDiff).toFixed(2));
+      if (!total) { toast.error('Enter a back pay amount, or hours and a rate difference.'); return; }
+      adj = {
+        ...base,
+        label: backLabel || 'Back pay',
+        amount: total,
+        backPayHours: backHours || undefined,
+        backPayRateDifference: backDiff || undefined,
+        backPayFrom: backFrom || undefined,
+        backPayTo: backTo || undefined,
+        superable: backSuperable,
       };
     } else if (kind === 'deduction') {
       if (!dedAmount) { toast.error('Enter a deduction amount.'); return; }
@@ -131,6 +153,7 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
                   <p className="font-medium">{a.label}</p>
                   <p className="text-xs text-muted-foreground">
                     {a.kind === 'leave' && `${a.hours} hrs @ ${currency(a.rate ?? line.baseRate)}${a.loadingPct ? ` + ${a.loadingPct}% loading` : ''}`}
+                    {a.kind === 'back_pay' && `${currency(a.amount ?? 0)}${a.backPayFrom ? ` · ${a.backPayFrom} → ${a.backPayTo}` : ''}`}
                     {a.kind === 'deduction' && `${currency(a.amount ?? 0)} · ${a.category?.replace('_', ' ')}`}
                     {a.kind === 'termination' && 'Unused leave, notice and ETP components'}
                   </p>
@@ -144,6 +167,7 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
         <Tabs value={kind} onValueChange={(v) => setKind(v as PayRunAdjustmentKind)}>
           <TabsList>
             <TabsTrigger value="leave">Leave payment</TabsTrigger>
+            <TabsTrigger value="back_pay">Back pay</TabsTrigger>
             <TabsTrigger value="deduction">One-off deduction</TabsTrigger>
             <TabsTrigger value="termination">Termination pay</TabsTrigger>
           </TabsList>
@@ -181,6 +205,48 @@ export function PayRunAdjustmentSheet({ run, line, open, onClose }: Props) {
             <p className="text-sm text-muted-foreground">
               Adds {currency(hours * (rate ?? line.baseRate) * (1 + (loading && leaveTypeCode === 'AL' ? settings.annualLeaveLoadingPct / 100 : 0)))} to
               gross, taxed at the normal scale and superable.
+            </p>
+          </TabsContent>
+
+          <TabsContent value="back_pay" className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input value={backLabel} onChange={(e) => setBackLabel(e.target.value)} placeholder="e.g. Award increase back pay" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Period from</Label>
+                <Input type="date" value={backFrom} onChange={(e) => setBackFrom(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Period to</Label>
+                <Input type="date" value={backTo} onChange={(e) => setBackTo(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Hours re-priced</Label>
+                <Input type="number" step="0.1" value={backHours} onChange={(e) => setBackHours(Number(e.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Rate difference ($/hr)</Label>
+                <Input type="number" step="0.01" value={backDiff} onChange={(e) => setBackDiff(Number(e.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Or total amount ($)</Label>
+                <Input type="number" step="0.01" value={backAmount} onChange={(e) => setBackAmount(Number(e.target.value))} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Superable</p>
+                <p className="text-xs text-muted-foreground">Back pay on ordinary time earnings attracts super guarantee.</p>
+              </div>
+              <Switch checked={backSuperable} onCheckedChange={setBackSuperable} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Adds {currency(backAmount || backHours * backDiff)} to gross, taxed at the employee's normal scale and
+              itemised separately on the payslip.
             </p>
           </TabsContent>
 

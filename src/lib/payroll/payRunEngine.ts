@@ -13,6 +13,7 @@ import {
   StandingDeduction,
 } from '@/types/payroll';
 import { payrollStore } from './payrollStore';
+import { AtoTaxScale, calculateWithholding } from './atoTaxScales';
 import {
   EmployeePayProfile,
   getPayrollStaffDirectory,
@@ -62,7 +63,7 @@ const PERIODS_PER_YEAR: Record<PayCycle, number> = {
 
 /**
  * Simplified resident PAYG withholding using the ATO annual thresholds.
- * Annualises period gross, applies marginal rates, then divides back down.
+ * Kept as a fallback when ATO coefficient scales are switched off.
  */
 export function calculatePaygTax(taxableGross: number, cycle: PayCycle, scale: PayrollSettings['taxScale']): number {
   if (scale === 'none' || taxableGross <= 0) return 0;
@@ -82,6 +83,70 @@ export function calculatePaygTax(taxableGross: number, cycle: PayCycle, scale: P
   if (annual > 27222) tax += annual * 0.02;
 
   return round2(tax / periods);
+}
+
+/**
+ * Resolve the ATO scale for an employee: their tax declaration when recorded,
+ * otherwise the payroll default, downgraded to scale 4 when no TFN is held.
+ */
+export function resolveTaxScale(
+  staffId: string | undefined,
+  staffRecordId: string | undefined,
+  hasTfn: boolean | undefined,
+  settings: PayrollSettings,
+): { scale: AtoTaxScale; hasStsl: boolean } {
+  const profile = staffId ? payrollStore.getTaxProfile(staffId, staffRecordId) : undefined;
+  let scale = (profile?.scale as AtoTaxScale) ?? (settings.defaultAtoScale as AtoTaxScale) ?? 'scale2';
+  if (hasTfn === false) scale = 'scale4';
+  return { scale, hasStsl: Boolean(profile?.hasStsl) };
+}
+
+/** PAYG withholding for a line: ATO coefficient scales incl. STSL, or the legacy model. */
+export function withholdingFor(
+  args: { staffId?: string; staffRecordId?: string; hasTfn?: boolean; taxableGross: number; cycle: PayCycle },
+  settings: PayrollSettings,
+): { total: number; tax: number; stsl: number; scaleUsed: string } {
+  const { taxableGross, cycle } = args;
+  if (settings.taxScale === 'none' || taxableGross <= 0) {
+    return { total: 0, tax: 0, stsl: 0, scaleUsed: 'none' };
+  }
+  if (!settings.useAtoTaxScales) {
+    const legacy: PayrollSettings['taxScale'] = args.hasTfn === false ? 'no_tfn' : settings.taxScale;
+    return { total: calculatePaygTax(taxableGross, cycle, legacy), tax: calculatePaygTax(taxableGross, cycle, legacy), stsl: 0, scaleUsed: legacy };
+  }
+  const { scale, hasStsl } = resolveTaxScale(args.staffId, args.staffRecordId, args.hasTfn, settings);
+  const result = calculateWithholding({ taxableGross, cycle, scale, hasStsl });
+  return { ...result, scaleUsed: scale };
+}
+
+/**
+ * Super guarantee with the maximum contribution base applied.
+ * The MCB is a quarterly cap, so it is pro-rated to the pay period.
+ */
+export function superGuaranteeFor(
+  superableGross: number,
+  cycle: PayCycle,
+  settings: PayrollSettings,
+): { superGuarantee: number; cappedAmount: number; superableAfterCap: number } {
+  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
+  if (monthlyEquivalent < settings.superMonthlyThreshold) {
+    return { superGuarantee: 0, cappedAmount: 0, superableAfterCap: 0 };
+  }
+  let base = superableGross;
+  let cappedAmount = 0;
+  if (settings.applySuperMaxContributionBase && settings.superMaxContributionBaseQuarterly > 0) {
+    // Quarterly cap → per-period cap (4 quarters per year).
+    const perPeriodCap = round2((settings.superMaxContributionBaseQuarterly * 4) / PERIODS_PER_YEAR[cycle]);
+    if (base > perPeriodCap) {
+      cappedAmount = round2(base - perPeriodCap);
+      base = perPeriodCap;
+    }
+  }
+  return {
+    superGuarantee: round2(base * (settings.superRate / 100)),
+    cappedAmount,
+    superableAfterCap: round2(base),
+  };
 }
 
 function inPeriod(dateStr: string, start: string, end: string) {
@@ -225,6 +290,26 @@ export function adjustmentComponents(
       taxable: false,
       category: adj.category ?? 'post_tax',
       source: 'adjustment',
+    });
+    return out;
+  }
+
+  if (adj.kind === 'back_pay') {
+    const hours = adj.backPayHours ?? 0;
+    const diff = adj.backPayRateDifference ?? 0;
+    const amount = round2(adj.amount ?? hours * diff);
+    const period = adj.backPayFrom && adj.backPayTo ? ` (${adj.backPayFrom} → ${adj.backPayTo})` : '';
+    out.push({
+      id: `${adj.id}-backpay`,
+      kind: 'ordinary',
+      label: `${adj.label || 'Back pay'}${period}`,
+      units: hours || 1,
+      rate: hours ? round2(amount / hours) : amount,
+      amount,
+      superable: adj.superable !== false,
+      taxable: true,
+      source: 'adjustment',
+      stpCode: 'BackPay',
     });
     return out;
   }
@@ -415,30 +500,41 @@ export function composeLine(
   const taxableEarnings = round2(earningsAll.filter((c) => c.taxable).reduce((s, c) => s + c.amount, 0));
   const taxableGross = Math.max(0, round2(taxableEarnings - preTaxDeductions - salarySacrificeSuper));
 
-  const scale: PayrollSettings['taxScale'] =
-    settings.taxScale === 'resident' && line.dataSource === 'staff_record' && line.hasTfn === false
-      ? 'no_tfn'
-      : settings.taxScale;
-
-  const paygTax = calculatePaygTax(taxableGross, cycle, scale);
+  const withholding = withholdingFor(
+    {
+      staffId: line.staffId,
+      staffRecordId: line.staffRecordId,
+      hasTfn: line.dataSource === 'staff_record' ? line.hasTfn : undefined,
+      taxableGross,
+      cycle,
+    },
+    settings,
+  );
+  const paygTax = withholding.total;
   const lumpSumTax = round2(earningsAll.reduce((s, c) => s + (c.lumpSumTax ?? 0), 0));
 
-  const superableGross = round2(earningsAll.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
-  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
-  const superGuarantee = monthlyEquivalent >= settings.superMonthlyThreshold
-    ? round2(superableGross * (settings.superRate / 100))
-    : 0;
+  const superableGrossRaw = round2(earningsAll.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
+  const superResult = superGuaranteeFor(superableGrossRaw, cycle, settings);
+  const superGuarantee = superResult.superGuarantee;
+  const backPay = round2(
+    earningsAll.filter((c) => c.id.includes('-backpay')).reduce((s, c) => s + c.amount, 0),
+  );
 
   // Protected earnings: trim post-tax deductions so net never falls below the floor.
   const floor = Math.max(0, ...standing.filter((d) => d.protectedEarnings).map((d) => d.protectedEarnings ?? 0));
   let netPay = round2(grossPay - preTaxDeductions - salarySacrificeSuper - postTaxDeductions - paygTax - lumpSumTax);
-  const warnings = line.warnings.filter((w) => !w.startsWith('Deduction reduced'));
+  const warnings = line.warnings.filter(
+    (w) => !w.startsWith('Deduction reduced') && !w.includes('maximum contribution base'),
+  );
   if (floor > 0 && netPay < floor && postTaxDeductions > 0) {
     const shortfall = round2(floor - netPay);
     const trim = Math.min(shortfall, postTaxDeductions);
     postTaxDeductions = round2(postTaxDeductions - trim);
     netPay = round2(netPay + trim);
     warnings.push(`Deduction reduced by $${trim.toFixed(2)} to protect the $${floor.toFixed(2)} minimum net pay.`);
+  }
+  if (superResult.cappedAmount > 0) {
+    warnings.push(`$${superResult.cappedAmount.toFixed(2)} of earnings is above the super maximum contribution base — no super accrues on it.`);
   }
 
   return {
@@ -455,7 +551,12 @@ export function composeLine(
     salarySacrificeSuper,
     leavePay,
     terminationPay,
+    backPay,
     lumpSumTax,
+    taxScaleUsed: withholding.scaleUsed,
+    stslWithheld: withholding.stsl,
+    superableGross: superResult.superableAfterCap,
+    superCappedAmount: superResult.cappedAmount || undefined,
     totalSuperContribution: round2(superGuarantee + salarySacrificeSuper),
     isTermination: terminationPay > 0,
     warnings,
@@ -565,16 +666,22 @@ function buildLine(
   const taxableGross = round2(components.filter((c) => c.taxable && c.kind !== 'deduction').reduce((s, c) => s + c.amount, 0));
   const superableGross = round2(components.filter((c) => c.superable).reduce((s, c) => s + c.amount, 0));
 
-  const scale: PayrollSettings['taxScale'] =
-    settings.taxScale === 'resident' && profile.dataSource === 'staff_record' && !profile.hasTfn
-      ? 'no_tfn'
-      : settings.taxScale;
-
-  const paygTax = calculatePaygTax(taxableGross, cycle, scale);
-  const monthlyEquivalent = superableGross * (PERIODS_PER_YEAR[cycle] / 12);
-  const superGuarantee = monthlyEquivalent >= settings.superMonthlyThreshold
-    ? round2(superableGross * (settings.superRate / 100))
-    : 0;
+  const withholding = withholdingFor(
+    {
+      staffId: first.employee.id,
+      staffRecordId: profile.staffRecordId,
+      hasTfn: profile.dataSource === 'staff_record' ? profile.hasTfn : undefined,
+      taxableGross,
+      cycle,
+    },
+    settings,
+  );
+  const paygTax = withholding.total;
+  const superResult = superGuaranteeFor(superableGross, cycle, settings);
+  const superGuarantee = superResult.superGuarantee;
+  if (superResult.cappedAmount > 0) {
+    warnings.push(`$${superResult.cappedAmount.toFixed(2)} of earnings is above the super maximum contribution base — no super accrues on it.`);
+  }
   const rawNet = grossPay - paygTax - deductions;
   const netPay = settings.roundNetToCents ? round2(rawNet) : rawNet;
 

@@ -50,6 +50,7 @@ import { EmployeeRecognitionPanel } from '@/components/performance/EmployeeRecog
 import { EmployeeCareerPathingPanel } from '@/components/performance/employee/EmployeeCareerPathingPanel';
 import { EmployeeOnboardingPanel } from '@/components/employee/EmployeeOnboardingPanel';
 import { EmployeeDocumentsPanel } from '@/components/employee/EmployeeDocumentsPanel';
+import { EmployeePayslipsPanel } from '@/components/employee/EmployeePayslipsPanel';
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
 import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
@@ -130,6 +131,14 @@ export function EmployeePortal() {
         );
       case 'leave-balances':
         return <LeaveBalancesView employeeName={currentEmployee.name} />;
+      case 'payslips':
+        return (
+          <EmployeePayslipsPanel
+            employeeId={currentEmployee.id}
+            staffRecordId={currentEmployee.staffId}
+            employeeName={currentEmployee.name}
+          />
+        );
       case 'documents':
         return <EmployeeDocumentsPanel employeeName={currentEmployee.name} />;
 

@@ -71,9 +71,9 @@ export interface StandingDeduction {
   notes?: string;
 }
 
-export type PayRunAdjustmentKind = 'leave' | 'deduction' | 'termination';
+export type PayRunAdjustmentKind = 'leave' | 'deduction' | 'termination' | 'back_pay';
 
-/** A one-off addition to a pay run line: leave payment, ad-hoc deduction or termination pay. */
+/** A one-off addition to a pay run line: leave payment, ad-hoc deduction, back pay or termination pay. */
 export interface PayRunAdjustment {
   id: string;
   lineId: string;
@@ -92,6 +92,16 @@ export interface PayRunAdjustment {
   category?: DeductionCategory;
   amount?: number;
 
+  // Back pay / retrospective adjustment
+  /** Period the back pay relates to, shown on the payslip. */
+  backPayFrom?: string;
+  backPayTo?: string;
+  /** Hours re-priced and the rate difference applied, when calculated from timesheets. */
+  backPayHours?: number;
+  backPayRateDifference?: number;
+  /** Back pay is superable unless it relates to a non-OTE component. */
+  superable?: boolean;
+
   // Termination pay
   unusedAnnualLeaveHours?: number;
   unusedLslHours?: number;
@@ -101,6 +111,16 @@ export interface PayRunAdjustment {
   completedYearsOfService?: number;
   genuineRedundancy?: boolean;
   notes?: string;
+}
+
+/** Per-employee tax declaration driving the ATO withholding scale. */
+export interface EmployeeTaxProfile {
+  staffId: string;
+  /** ATO scale identifier: scale1..scale6. */
+  scale: string;
+  /** Withhold the study and training support loan (HELP/VET/SFSS) component. */
+  hasStsl: boolean;
+  updatedAt?: string;
 }
 
 
@@ -150,6 +170,16 @@ export interface PayRunLine {
 
   hasTfn?: boolean;
   incomeStream?: StpIncomeStream;
+  /** ATO scale used to withhold on this line. */
+  taxScaleUsed?: string;
+  /** Study and training support loan component included in paygTax. */
+  stslWithheld?: number;
+  /** Superable earnings after the maximum contribution base cap. */
+  superableGross?: number;
+  /** Earnings excluded from super by the maximum contribution base. */
+  superCappedAmount?: number;
+  /** Back pay / retrospective adjustments included in gross. */
+  backPay?: number;
 
   // --- Deductions, sacrifice, leave and termination -------------------
   /** Deductions taken before tax (excluding salary sacrifice to super). */
@@ -166,6 +196,15 @@ export interface PayRunLine {
   /** Employer super = SG + salary sacrifice. */
   totalSuperContribution?: number;
   isTermination?: boolean;
+}
+
+/** An immutable audit entry recorded against a pay run. */
+export interface PayRunAuditEvent {
+  id: string;
+  at: string;
+  action: 'created' | 'review' | 'approved' | 'posted' | 'locked' | 'unlocked' | 'reversed' | 'published' | 'exported' | 'recalculated';
+  by?: string;
+  detail?: string;
 }
 
 export interface PayRun {
@@ -187,6 +226,18 @@ export interface PayRun {
   adjustments?: PayRunAdjustment[];
   /** Set once exported to an accounting platform */
   exports: PayRunExportRecord[];
+
+  /** A posted run is locked against edits until explicitly unlocked. */
+  locked?: boolean;
+  unlockedAt?: string;
+  unlockReason?: string;
+  /** Set when the run has been reversed; points at the reversal run. */
+  reversedAt?: string;
+  reversalOfRunId?: string;
+  reversedByRunId?: string;
+  /** Payslips published to the employee portal. */
+  payslipsPublishedAt?: string;
+  auditTrail?: PayRunAuditEvent[];
 }
 
 export interface PayRunTotals {
@@ -307,6 +358,16 @@ export interface PayrollSettings {
   redundancyTaxFreePerYear: number;
   /** Super guarantee is not payable on most termination lump sums. */
   superOnTerminationPay: boolean;
+
+  // --- Withholding & super caps ----------------------------------------
+  /** Use the ATO NAT 1004 coefficient scales (incl. STSL) instead of the simplified model. */
+  useAtoTaxScales: boolean;
+  /** Scale applied when an employee has no tax declaration recorded. */
+  defaultAtoScale: string;
+  /** Cap superable earnings at the maximum contribution base. */
+  applySuperMaxContributionBase: boolean;
+  /** Maximum super contribution base per quarter (2025-26: $62,500). */
+  superMaxContributionBaseQuarterly: number;
 }
 
 
@@ -406,6 +467,10 @@ export const defaultPayrollSettings: PayrollSettings = {
   redundancyTaxFreeBase: 12524,
   redundancyTaxFreePerYear: 6264,
   superOnTerminationPay: false,
+  useAtoTaxScales: true,
+  defaultAtoScale: 'scale2',
+  applySuperMaxContributionBase: true,
+  superMaxContributionBaseQuarterly: 62500,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {
