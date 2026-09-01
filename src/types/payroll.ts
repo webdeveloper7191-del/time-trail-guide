@@ -398,6 +398,14 @@ export const defaultPayrollSettings: PayrollSettings = {
   compareToRoster: true,
   rosterVarianceToleranceHours: 1,
   requireBankDetails: true,
+  annualLeaveLoadingPct: 17.5,
+  payLeaveLoadingOnLeaveTaken: true,
+  payLeaveLoadingOnTermination: false,
+  terminationLeaveTaxRate: 32,
+  etpTaxRate: 32,
+  redundancyTaxFreeBase: 12524,
+  redundancyTaxFreePerYear: 6264,
+  superOnTerminationPay: false,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {
@@ -407,6 +415,7 @@ export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow
     { key: 'penalty', label: 'Penalties & loadings', accountCode: '479', taxCode: 'BAS Excluded' },
     { key: 'allowance', label: 'Allowances', accountCode: '480', taxCode: 'BAS Excluded' },
     { key: 'leave', label: 'Leave payments', accountCode: '481', taxCode: 'BAS Excluded' },
+    { key: 'termination', label: 'Termination payments', accountCode: '482', taxCode: 'BAS Excluded' },
     { key: 'deduction', label: 'Deductions', accountCode: '814', taxCode: 'BAS Excluded' },
     { key: 'payg', label: 'PAYG withholding', accountCode: '825', taxCode: 'BAS Excluded' },
     { key: 'super', label: 'Superannuation', accountCode: '826', taxCode: 'BAS Excluded' },
