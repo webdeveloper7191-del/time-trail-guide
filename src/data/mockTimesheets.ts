@@ -19,8 +19,8 @@ export const mockTimesheets: Timesheet[] = [
     id: 'TS001',
     employee: {
       id: 'E001',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@company.com',
+      name: 'Mark John',
+      email: 'mark.john@example.com',
       department: 'Engineering',
       position: 'Senior Developer',
       hourlyRate: 65,
@@ -46,8 +46,8 @@ export const mockTimesheets: Timesheet[] = [
     id: 'TS002',
     employee: {
       id: 'E002',
-      name: 'Michael Chen',
-      email: 'michael.chen@company.com',
+      name: 'Sarah Williams',
+      email: 'sarah.williams@example.com',
       department: 'Design',
       position: 'UI/UX Designer',
       hourlyRate: 55,
@@ -76,7 +76,7 @@ export const mockTimesheets: Timesheet[] = [
     employee: {
       id: 'E003',
       name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@company.com',
+      email: 'emily.rodriguez@example.com',
       department: 'Marketing',
       position: 'Marketing Manager',
       hourlyRate: 60,
@@ -105,8 +105,8 @@ export const mockTimesheets: Timesheet[] = [
     id: 'TS004',
     employee: {
       id: 'E004',
-      name: 'David Kim',
-      email: 'david.kim@company.com',
+      name: 'James Chen',
+      email: 'james.chen@example.com',
       department: 'Engineering',
       position: 'DevOps Engineer',
       hourlyRate: 70,
@@ -132,8 +132,8 @@ export const mockTimesheets: Timesheet[] = [
     id: 'TS005',
     employee: {
       id: 'E005',
-      name: 'Jessica Taylor',
-      email: 'jessica.taylor@company.com',
+      name: 'Michael Thompson',
+      email: 'michael.t@example.com',
       department: 'HR',
       position: 'HR Specialist',
       hourlyRate: 50,
