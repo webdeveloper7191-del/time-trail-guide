@@ -216,9 +216,16 @@ export interface PayRun {
   paymentDate: string;
   status: PayRunStatus;
   createdAt: string;
+  /** Operator who created / submitted the run (maker in maker-checker). */
+  createdBy?: string;
+  submittedBy?: string;
   approvedAt?: string;
   approvedBy?: string;
   postedAt?: string;
+  /** Leave accruals / drawdowns have been posted to the leave ledger for this run. */
+  leaveAppliedAt?: string;
+  /** Source timesheets locked back against editing by this run. */
+  lockedTimesheetIds?: string[];
   lines: PayRunLine[];
   totals: PayRunTotals;
   notes?: string;
