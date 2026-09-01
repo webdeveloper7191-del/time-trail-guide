@@ -78,6 +78,30 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
   };
 
 
+  const postToXero = async () => {
+    const conn = payrollStore.getSnapshot().connections.xero;
+    setPostingXero(true);
+    try {
+      const journal = buildJournal(run, conn);
+      const result = await postJournalToXero(run, journal);
+      if (!result.ok) {
+        toast.error(result.connected ? `Xero rejected the journal: ${result.message}` : result.message);
+        return;
+      }
+      payrollStore.recordExport(run.id, {
+        id: crypto.randomUUID(),
+        platform: 'xero',
+        exportedAt: new Date().toISOString(),
+        fileName: `Xero manual journal ${result.manualJournalId ?? ''}`.trim(),
+        lineCount: journal.length,
+      });
+      payrollStore.addAudit(run.id, 'exported', `Posted to Xero (journal ${result.manualJournalId ?? 'created'}).`);
+      toast.success('Payroll journal posted to Xero.');
+    } finally {
+      setPostingXero(false);
+    }
+  };
+
   const publishPayslips = () => {
     payrollStore.updateRun(run.id, { payslipsPublishedAt: new Date().toISOString() });
     payrollStore.addAudit(run.id, 'published', `${run.lines.filter((l) => !l.excluded).length} payslip(s) published to the employee portal.`);
