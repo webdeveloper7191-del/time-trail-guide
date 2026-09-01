@@ -13,6 +13,7 @@ import {
   StandingDeduction,
 } from '@/types/payroll';
 import { payrollStore } from './payrollStore';
+import { AtoTaxScale, calculateWithholding } from './atoTaxScales';
 import {
   EmployeePayProfile,
   getPayrollStaffDirectory,
