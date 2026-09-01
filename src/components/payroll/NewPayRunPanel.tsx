@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import { Calculator } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
