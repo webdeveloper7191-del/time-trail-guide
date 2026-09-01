@@ -28,11 +28,18 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
   const current = adjusting ? run.lines.find((l) => l.id === adjusting.id) ?? adjusting : null;
 
   const toggleExclude = (line: PayRunLine) => {
+    if (run.locked) { toast.error('This pay run is locked. Unlock it before making changes.'); return; }
     const lines = run.lines.map((l) => (l.id === line.id ? { ...l, excluded: !l.excluded } : l));
     payrollStore.saveRun(recalcRun({ ...run, lines }));
   };
 
   const advance = (status: PayRun['status']) => {
+    if (status === 'posted') {
+      payrollStore.postAndLock(run.id);
+      toast.success('Pay run posted and locked for audit.');
+      return;
+    }
+    payrollStore.addAudit(run.id, status === 'approved' ? 'approved' : 'review');
     payrollStore.updateRun(run.id, {
       status,
       approvedAt: status === 'approved' ? new Date().toISOString() : run.approvedAt,
@@ -72,11 +79,37 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
   };
 
 
+  const publishPayslips = () => {
+    payrollStore.updateRun(run.id, { payslipsPublishedAt: new Date().toISOString() });
+    payrollStore.addAudit(run.id, 'published', `${run.lines.filter((l) => !l.excluded).length} payslip(s) published to the employee portal.`);
+    toast.success('Payslips published — employees can now see them in their portal.');
+  };
+
+  const unlock = () => {
+    const reason = window.prompt('Why is this posted pay run being unlocked? (recorded in the audit trail)');
+    if (!reason) return;
+    payrollStore.unlockRun(run.id, reason);
+    toast.success('Pay run unlocked for correction.');
+  };
+
+  const reverse = () => {
+    const reason = window.prompt('Reason for reversing this pay run? (recorded in the audit trail)');
+    if (!reason) return;
+    const reversal = payrollStore.reverseRun(run.id, reason);
+    toast.success(reversal ? `Reversal run ${reversal.id} created.` : 'Reversal created.');
+    onClose();
+  };
+
   const actions = [
     { label: 'Close', variant: 'outlined' as const, onClick: onClose },
     ...(run.status === 'draft' ? [{ label: 'Send for review', variant: 'primary' as const, onClick: () => advance('review') }] : []),
     ...(run.status === 'review' ? [{ label: 'Approve run', variant: 'primary' as const, onClick: () => advance('approved') }] : []),
-    ...(run.status === 'approved' ? [{ label: 'Mark posted', variant: 'primary' as const, onClick: () => advance('posted') }] : []),
+    ...(run.status === 'approved' ? [{ label: 'Post & lock', variant: 'primary' as const, onClick: () => advance('posted') }] : []),
+    ...(run.status === 'posted' && !run.reversedAt && run.locked ? [{ label: 'Unlock', variant: 'outlined' as const, onClick: unlock }] : []),
+    ...(run.status === 'posted' && !run.reversedAt ? [{ label: 'Reverse run', variant: 'outlined' as const, onClick: reverse }] : []),
+    ...((run.status === 'approved' || run.status === 'posted') && !run.payslipsPublishedAt
+      ? [{ label: 'Publish payslips', variant: 'primary' as const, onClick: publishPayslips }]
+      : []),
   ];
 
   return (
@@ -108,6 +141,15 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
             </div>
           ))}
         </div>
+
+        {(run.locked || run.reversedAt || run.payslipsPublishedAt) && (
+          <div className="flex flex-wrap gap-2">
+            {run.locked && <Badge variant="secondary">Locked — posted {run.postedAt?.slice(0, 10)}</Badge>}
+            {run.reversedAt && <Badge variant="outline">Reversed {run.reversedAt.slice(0, 10)}{run.reversedByRunId ? ` · ${run.reversedByRunId}` : ''}</Badge>}
+            {run.reversalOfRunId && <Badge variant="outline">Reversal of {run.reversalOfRunId}</Badge>}
+            {run.payslipsPublishedAt && <Badge variant="secondary">Payslips published {run.payslipsPublishedAt.slice(0, 10)}</Badge>}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={exportDetail}><Download className="h-4 w-4 mr-2" />Detail CSV</Button>
