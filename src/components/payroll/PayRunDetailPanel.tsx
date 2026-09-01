@@ -300,6 +300,14 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
                             {Boolean(line.totalSuperContribution) && <span>Total super: {currency(line.totalSuperContribution ?? 0)}</span>}
                             {line.isTermination && <span>Final pay — includes termination lump sums</span>}
                             {line.incomeStream && <span>STP income stream: {line.incomeStream}</span>}
+                            {timesheetLockStore.lockFor(line.timesheetIds[0]) && (
+                              <span>Timesheets locked by {timesheetLockStore.lockFor(line.timesheetIds[0])?.runName}</span>
+                            )}
+                            {payslipLeaveBalances(line.staffId).length > 0 && (
+                              <span>
+                                Leave balances: {payslipLeaveBalances(line.staffId).map((b) => `${b.label} ${b.hours.toFixed(2)}h`).join(' · ')}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -324,6 +332,36 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve pay run</DialogTitle>
+            <DialogDescription>
+              Approving locks the source timesheets against further edits and posts leave accruals and drawdowns to the
+              leave ledger. The approver is recorded in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="approver-name">Approver</Label>
+            <Input
+              id="approver-name"
+              value={approver}
+              onChange={(e) => setApprover(e.target.value)}
+              placeholder="Full name of the approver"
+            />
+            {run.createdBy && (
+              <p className="text-xs text-muted-foreground">
+                Created by {run.createdBy}. Segregation of duties requires a different approver.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveOpen(false)}>Cancel</Button>
+            <Button onClick={confirmApproval}>Approve run</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {current && (
         <PayRunAdjustmentSheet
