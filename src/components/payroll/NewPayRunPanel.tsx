@@ -152,14 +152,30 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
       size="lg"
       actions={[
         { label: 'Cancel', variant: 'outlined', onClick: onClose },
-        { label: 'Create draft run', variant: 'primary', onClick: create, disabled: eligibleCount === 0 },
+        { label: 'Create draft run', variant: 'primary', onClick: create, disabled: eligibleCount === 0 || blockingOverlap },
       ]}
     >
       <div className="space-y-5">
+        {overlappingRuns.length > 0 && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+            <p className="text-sm font-medium text-destructive">Period overlaps an existing pay run</p>
+            <ul className="text-xs text-muted-foreground space-y-0.5">
+              {overlappingRuns.map((r) => (
+                <li key={r.id}>{r.name} · {r.periodStart} → {r.periodEnd} · {r.status}</li>
+              ))}
+            </ul>
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={overlapConfirmed} onChange={(e) => setOverlapConfirmed(e.target.checked)} />
+              I understand these hours may already have been paid — create anyway.
+            </label>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label>Pay run name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Fortnight ending 14 Sep" />
         </div>
+
 
         <div className="space-y-2">
           <Label>Pay calendar</Label>
