@@ -42,7 +42,6 @@ import {
   mockEmployeeCompensation,
   mockMeritRecommendations,
   mockBonusCalculations,
-  mockMeritMatrix,
 } from '@/data/mockCompensationData';
 import { toast } from 'sonner';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';

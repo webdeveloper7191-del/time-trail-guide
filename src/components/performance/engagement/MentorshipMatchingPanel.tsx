@@ -63,6 +63,8 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
   const [showMatchDrawer, setShowMatchDrawer] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MentorshipMatch | null>(null);
 
+  const matchRules = usePerformanceRules().mentorship;
+
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
   const getMentorByStaffId = (staffId: string) => mentors.find(m => m.staffId === staffId);
   const getMenteeByStaffId = (staffId: string) => mentees.find(m => m.staffId === staffId);
@@ -75,36 +77,36 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
     // Skills overlap
     const skillsMatch = mentor.skills.filter(s => mentee.desiredSkills.some(ds => ds.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(ds.toLowerCase())));
     if (skillsMatch.length > 0) {
-      score += skillsMatch.length * 15;
+      score += skillsMatch.length * matchRules.skillMatchPoints;
       reasons.push(`Skills match: ${skillsMatch.join(', ')}`);
     }
 
     // Interests overlap
     const interestsMatch = mentor.interests.filter(i => mentee.interests.some(mi => mi.toLowerCase() === i.toLowerCase()));
     if (interestsMatch.length > 0) {
-      score += interestsMatch.length * 10;
+      score += interestsMatch.length * matchRules.interestMatchPoints;
       reasons.push(`Shared interests: ${interestsMatch.join(', ')}`);
     }
 
     // Career goals alignment
     const goalsMatch = mentor.careerGoals.some(g => mentee.careerGoals.some(mg => mg.toLowerCase().includes(g.toLowerCase().split(' ')[0])));
     if (goalsMatch) {
-      score += 20;
+      score += matchRules.careerGoalPoints;
       reasons.push('Career goals aligned');
     }
 
     // Meeting frequency match
     if (mentor.preferredMeetingFrequency === mentee.preferredMeetingFrequency) {
-      score += 10;
+      score += matchRules.meetingFrequencyPoints;
       reasons.push('Meeting frequency compatible');
     }
 
     // Availability bonus
     if (mentor.availability === 'high' && mentor.currentMentees < mentor.maxMentees) {
-      score += 15;
+      score += matchRules.highAvailabilityPoints;
       reasons.push('High mentor availability');
     } else if (mentor.availability === 'medium' && mentor.currentMentees < mentor.maxMentees) {
-      score += 8;
+      score += matchRules.mediumAvailabilityPoints;
     }
 
     return { score: Math.min(score, 100), reasons };
