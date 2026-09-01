@@ -6,6 +6,7 @@ import {
   PayRunExportRecord,
   PayrollSettings,
   PayCalendar,
+  StandingDeduction,
   StpSettings,
   defaultMappings,
   defaultPayCalendars,
@@ -23,6 +24,7 @@ const SETTINGS_KEY = 'payroll:settings';
 const CONN_KEY = 'payroll:connections';
 const CALENDARS_KEY = 'payroll:calendars';
 const STP_KEY = 'payroll:stp';
+const DEDUCTIONS_KEY = 'payroll:deductions';
 
 const platforms: AccountingPlatform[] = ['xero', 'myob', 'quickbooks'];
 
@@ -55,9 +57,10 @@ let connections: Record<AccountingPlatform, AccountingConnection> = {
 
 let calendars: PayCalendar[] = load<PayCalendar[]>(CALENDARS_KEY, defaultPayCalendars);
 let stp: StpSettings = { ...defaultStpSettings, ...load<Partial<StpSettings>>(STP_KEY, {}) };
+let deductions: StandingDeduction[] = load<StandingDeduction[]>(DEDUCTIONS_KEY, []);
 
 const listeners = new Set<() => void>();
-let snapshot = { runs, settings, connections, calendars, stp };
+let snapshot = { runs, settings, connections, calendars, stp, deductions };
 
 function persist() {
   try {
@@ -66,8 +69,9 @@ function persist() {
     localStorage.setItem(CONN_KEY, JSON.stringify(connections));
     localStorage.setItem(CALENDARS_KEY, JSON.stringify(calendars));
     localStorage.setItem(STP_KEY, JSON.stringify(stp));
+    localStorage.setItem(DEDUCTIONS_KEY, JSON.stringify(deductions));
   } catch {/* noop */}
-  snapshot = { runs, settings, connections, calendars, stp };
+  snapshot = { runs, settings, connections, calendars, stp, deductions };
   listeners.forEach((fn) => fn());
 }
 
@@ -89,7 +93,7 @@ export const payrollStore = {
   },
   saveRun(run: PayRun) {
     const idx = runs.findIndex((r) => r.id === run.id);
-    if (idx >= 0) runs[idx] = run;
+    if (idx >= 0) runs = runs.map((r) => (r.id === run.id ? run : r));
     else runs = [run, ...runs];
     persist();
   },
@@ -100,13 +104,13 @@ export const payrollStore = {
   updateRun(id: string, patch: Partial<PayRun>) {
     const idx = runs.findIndex((r) => r.id === id);
     if (idx < 0) return;
-    runs[idx] = { ...runs[idx], ...patch };
+    runs = runs.map((r) => (r.id === id ? { ...r, ...patch } : r));
     persist();
   },
   recordExport(runId: string, record: PayRunExportRecord) {
     const idx = runs.findIndex((r) => r.id === runId);
     if (idx < 0) return;
-    runs[idx] = { ...runs[idx], exports: [record, ...(runs[idx].exports ?? [])] };
+    runs = runs.map((r) => (r.id === runId ? { ...r, exports: [record, ...(r.exports ?? [])] } : r));
     persist();
   },
 
@@ -129,7 +133,7 @@ export const payrollStore = {
   },
   saveCalendar(calendar: PayCalendar) {
     const idx = calendars.findIndex((c) => c.id === calendar.id);
-    if (idx >= 0) calendars[idx] = calendar;
+    if (idx >= 0) calendars = calendars.map((c) => (c.id === calendar.id ? calendar : c));
     else calendars = [...calendars, calendar];
     if (calendar.isDefault) {
       calendars = calendars.map((c) => (c.id === calendar.id ? c : { ...c, isDefault: false }));
@@ -149,6 +153,27 @@ export const payrollStore = {
   },
   updateStpSettings(patch: Partial<StpSettings>) {
     stp = { ...stp, ...patch };
+    persist();
+  },
+
+  // --- Standing deductions & salary sacrifice --------------------------
+  getDeductions(): StandingDeduction[] {
+    return deductions;
+  },
+  /** Deductions that apply to a given employee (empty staffIds = everyone). */
+  getDeductionsForStaff(staffId: string, staffRecordId?: string): StandingDeduction[] {
+    return deductions.filter(
+      (d) => d.active && (!d.staffIds.length || d.staffIds.includes(staffId) || (staffRecordId ? d.staffIds.includes(staffRecordId) : false)),
+    );
+  },
+  saveDeduction(deduction: StandingDeduction) {
+    const idx = deductions.findIndex((d) => d.id === deduction.id);
+    if (idx >= 0) deductions[idx] = deduction;
+    else deductions = [...deductions, deduction];
+    persist();
+  },
+  deleteDeduction(id: string) {
+    deductions = deductions.filter((d) => d.id !== id);
     persist();
   },
 

@@ -89,9 +89,11 @@ export function buildJournal(run: PayRun, conn: AccountingConnection): JournalLi
     lines.push({ accountCode: m?.accountCode ?? '', description: 'Super payable', debit: 0, credit: Number(money(superTotal)), taxCode: m?.taxCode });
   }
 
-  if (run.totals.paygTax > 0) {
+  const lumpSumTax = run.lines.filter((l) => !l.excluded).reduce((s, l) => s + (l.lumpSumTax ?? 0), 0);
+  const withheld = run.totals.paygTax + lumpSumTax;
+  if (withheld > 0) {
     const m = mapOf('payg');
-    lines.push({ accountCode: m?.accountCode ?? '', description: m?.label ?? 'PAYG withholding', debit: 0, credit: Number(money(run.totals.paygTax)), taxCode: m?.taxCode });
+    lines.push({ accountCode: m?.accountCode ?? '', description: m?.label ?? 'PAYG withholding', debit: 0, credit: Number(money(withheld)), taxCode: m?.taxCode });
   }
 
   if (run.totals.deductions > 0) {
@@ -349,10 +351,15 @@ export function exportPayslipPdf(run: PayRun, line: PayRunLine) {
     startY: y,
     body: [
       ['Gross pay', `$${money(line.grossPay)}`],
+      ...(line.leavePay ? [['  incl. paid leave', `$${money(line.leavePay)}`]] : []),
+      ...(line.terminationPay ? [['  incl. termination payments', `$${money(line.terminationPay)}`]] : []),
       ['PAYG withholding', `-$${money(line.paygTax)}`],
-      ['Deductions', `-$${money(line.deductions)}`],
+      ...(line.lumpSumTax ? [['Lump-sum tax withheld', `-$${money(line.lumpSumTax)}`]] : []),
+      ...(line.salarySacrificeSuper ? [['Salary sacrifice to super', `-$${money(line.salarySacrificeSuper)}`]] : []),
+      ['Deductions', `-$${money(line.deductions - (line.salarySacrificeSuper ?? 0))}`],
       ['Net pay', `$${money(line.netPay)}`],
       ['Superannuation guarantee', `$${money(line.superGuarantee)}`],
+      ...(line.salarySacrificeSuper ? [['Total super contribution', `$${money(line.totalSuperContribution ?? line.superGuarantee)}`]] : []),
     ],
     theme: 'plain',
     columnStyles: { 0: { fontStyle: 'bold' } },

@@ -16,7 +16,19 @@ export type PayComponentKind =
   | 'penalty'
   | 'allowance'
   | 'leave'
+  | 'termination'
   | 'deduction';
+
+/** How a deduction is treated for tax, super and reporting. */
+export type DeductionCategory =
+  | 'pre_tax'
+  | 'post_tax'
+  | 'salary_sacrifice_super'
+  | 'child_support'
+  | 'union'
+  | 'other';
+
+export type DeductionCalc = 'fixed' | 'percent_gross';
 
 export interface PayComponent {
   id: string;
@@ -32,7 +44,65 @@ export interface PayComponent {
   taxable: boolean;
   /** Accounting account code resolved from the mapping */
   accountCode?: string;
+  /** Deduction classification (deduction components only). */
+  category?: DeductionCategory;
+  /** Where the component came from, so recalculation can rebuild it. */
+  source?: 'earnings' | 'standing_deduction' | 'adjustment';
+  /** Tax withheld separately at a lump-sum rate (termination components). */
+  lumpSumTax?: number;
+  /** STP Phase 2 reporting code, e.g. LumpSumA, ETP, Leave-A. */
+  stpCode?: string;
 }
+
+/** A recurring deduction or salary sacrifice arrangement. */
+export interface StandingDeduction {
+  id: string;
+  name: string;
+  category: DeductionCategory;
+  calc: DeductionCalc;
+  /** Dollar amount per pay, or a percentage of gross when calc = percent_gross. */
+  amount: number;
+  /** Empty = applies to every employee in the run. */
+  staffIds: string[];
+  /** Protected earnings floor — the deduction is trimmed so net never falls below this. */
+  protectedEarnings?: number;
+  reference?: string;
+  active: boolean;
+  notes?: string;
+}
+
+export type PayRunAdjustmentKind = 'leave' | 'deduction' | 'termination';
+
+/** A one-off addition to a pay run line: leave payment, ad-hoc deduction or termination pay. */
+export interface PayRunAdjustment {
+  id: string;
+  lineId: string;
+  staffId: string;
+  kind: PayRunAdjustmentKind;
+  label: string;
+
+  // Leave payment
+  leaveTypeCode?: string;
+  hours?: number;
+  rate?: number;
+  /** Annual leave loading percentage applied on top (typically 17.5). */
+  loadingPct?: number;
+
+  // Ad-hoc deduction
+  category?: DeductionCategory;
+  amount?: number;
+
+  // Termination pay
+  unusedAnnualLeaveHours?: number;
+  unusedLslHours?: number;
+  paymentInLieuAmount?: number;
+  redundancyAmount?: number;
+  etpTaxableAmount?: number;
+  completedYearsOfService?: number;
+  genuineRedundancy?: boolean;
+  notes?: string;
+}
+
 
 export interface PayRunLine {
   id: string;
@@ -80,6 +150,22 @@ export interface PayRunLine {
 
   hasTfn?: boolean;
   incomeStream?: StpIncomeStream;
+
+  // --- Deductions, sacrifice, leave and termination -------------------
+  /** Deductions taken before tax (excluding salary sacrifice to super). */
+  preTaxDeductions?: number;
+  postTaxDeductions?: number;
+  /** Salary sacrificed to superannuation (RESC) — reduces taxable income. */
+  salarySacrificeSuper?: number;
+  /** Paid leave included in gross. */
+  leavePay?: number;
+  /** Termination lump sums included in gross. */
+  terminationPay?: number;
+  /** Tax withheld on termination lump sums at the flat lump-sum rates. */
+  lumpSumTax?: number;
+  /** Employer super = SG + salary sacrifice. */
+  totalSuperContribution?: number;
+  isTermination?: boolean;
 }
 
 export interface PayRun {
@@ -97,6 +183,8 @@ export interface PayRun {
   lines: PayRunLine[];
   totals: PayRunTotals;
   notes?: string;
+  /** One-off leave payments, deductions and termination pay applied to lines. */
+  adjustments?: PayRunAdjustment[];
   /** Set once exported to an accounting platform */
   exports: PayRunExportRecord[];
 }
@@ -110,7 +198,11 @@ export interface PayRunTotals {
   superGuarantee: number;
   deductions: number;
   netPay: number;
+  salarySacrificeSuper?: number;
+  leavePay?: number;
+  terminationPay?: number;
 }
+
 
 export type AccountingPlatform = 'xero' | 'myob' | 'quickbooks';
 
@@ -197,7 +289,26 @@ export interface PayrollSettings {
   rosterVarianceToleranceHours: number;
   /** Warn when an employee has no bank details or TFN on file. */
   requireBankDetails: boolean;
+
+  // --- Leave & termination --------------------------------------------
+  /** Annual leave loading paid on annual leave taken (typically 17.5%). */
+  annualLeaveLoadingPct: number;
+  /** Pay leave loading on annual leave taken during the period. */
+  payLeaveLoadingOnLeaveTaken: boolean;
+  /** Include annual leave loading in unused-leave termination payouts. */
+  payLeaveLoadingOnTermination: boolean;
+  /** Flat withholding rate on unused annual/LSL paid on termination (schedule 7). */
+  terminationLeaveTaxRate: number;
+  /** Flat withholding rate on the taxable component of an ETP under the cap. */
+  etpTaxRate: number;
+  /** Genuine redundancy tax-free base amount for the financial year. */
+  redundancyTaxFreeBase: number;
+  /** Genuine redundancy tax-free amount per completed year of service. */
+  redundancyTaxFreePerYear: number;
+  /** Super guarantee is not payable on most termination lump sums. */
+  superOnTerminationPay: boolean;
 }
+
 
 /** A recurring pay period definition that drives pay run dates. */
 export interface PayCalendar {
@@ -287,6 +398,14 @@ export const defaultPayrollSettings: PayrollSettings = {
   compareToRoster: true,
   rosterVarianceToleranceHours: 1,
   requireBankDetails: true,
+  annualLeaveLoadingPct: 17.5,
+  payLeaveLoadingOnLeaveTaken: true,
+  payLeaveLoadingOnTermination: false,
+  terminationLeaveTaxRate: 32,
+  etpTaxRate: 32,
+  redundancyTaxFreeBase: 12524,
+  redundancyTaxFreePerYear: 6264,
+  superOnTerminationPay: false,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {
@@ -296,6 +415,7 @@ export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow
     { key: 'penalty', label: 'Penalties & loadings', accountCode: '479', taxCode: 'BAS Excluded' },
     { key: 'allowance', label: 'Allowances', accountCode: '480', taxCode: 'BAS Excluded' },
     { key: 'leave', label: 'Leave payments', accountCode: '481', taxCode: 'BAS Excluded' },
+    { key: 'termination', label: 'Termination payments', accountCode: '482', taxCode: 'BAS Excluded' },
     { key: 'deduction', label: 'Deductions', accountCode: '814', taxCode: 'BAS Excluded' },
     { key: 'payg', label: 'PAYG withholding', accountCode: '825', taxCode: 'BAS Excluded' },
     { key: 'super', label: 'Superannuation', accountCode: '826', taxCode: 'BAS Excluded' },
