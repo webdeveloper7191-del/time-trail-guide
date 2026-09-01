@@ -14,6 +14,7 @@ import { NewPayRunPanel } from '@/components/payroll/NewPayRunPanel';
 import { PayRunDetailPanel } from '@/components/payroll/PayRunDetailPanel';
 import { AccountingIntegrationsPanel } from '@/components/payroll/AccountingIntegrationsPanel';
 import { StpSummaryPanel } from '@/components/payroll/StpSummaryPanel';
+import { PayrollReportsPanel } from '@/components/payroll/PayrollReportsPanel';
 import { Link } from 'react-router-dom';
 import { Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -79,6 +80,7 @@ export default function PayrollHub() {
             <TabsList>
               <TabsTrigger value="runs">Pay runs</TabsTrigger>
               <TabsTrigger value="accounting">Accounting exports</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="stp">STP summaries</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -139,6 +141,10 @@ export default function PayrollHub() {
 
             <TabsContent value="accounting" className="mt-4">
               <AccountingIntegrationsPanel runs={runs} />
+            </TabsContent>
+
+            <TabsContent value="reports" className="mt-4">
+              <PayrollReportsPanel runs={runs} />
             </TabsContent>
 
             <TabsContent value="stp" className="mt-4">

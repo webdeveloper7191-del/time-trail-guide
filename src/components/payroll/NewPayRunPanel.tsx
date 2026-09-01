@@ -10,6 +10,7 @@ import { Timesheet } from '@/types/timesheet';
 import { PayCycle } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
 import { buildPayRun } from '@/lib/payroll/payRunEngine';
+import { getPayrollOperator } from '@/lib/payroll/operator';
 import { cycleLabel, periodAtOffset, periodContaining } from '@/lib/payroll/payCalendar';
 import { getPayrollStaffDirectory, matchStaffRecord } from '@/lib/payroll/payrollEmployeeBridge';
 import { toast } from 'sonner';
@@ -136,7 +137,7 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
       toast.error('No eligible timesheets in this period.');
       return;
     }
-    payrollStore.saveRun(run);
+    payrollStore.saveRun({ ...run, createdBy: getPayrollOperator() });
     toast.success(`Draft pay run created — ${run.lines.length} employees, $${run.totals.grossPay.toFixed(2)} gross.`);
     onCreated(run.id);
     onClose();
