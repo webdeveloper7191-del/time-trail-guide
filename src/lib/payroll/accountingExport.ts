@@ -89,9 +89,11 @@ export function buildJournal(run: PayRun, conn: AccountingConnection): JournalLi
     lines.push({ accountCode: m?.accountCode ?? '', description: 'Super payable', debit: 0, credit: Number(money(superTotal)), taxCode: m?.taxCode });
   }
 
-  if (run.totals.paygTax > 0) {
+  const lumpSumTax = run.lines.filter((l) => !l.excluded).reduce((s, l) => s + (l.lumpSumTax ?? 0), 0);
+  const withheld = run.totals.paygTax + lumpSumTax;
+  if (withheld > 0) {
     const m = mapOf('payg');
-    lines.push({ accountCode: m?.accountCode ?? '', description: m?.label ?? 'PAYG withholding', debit: 0, credit: Number(money(run.totals.paygTax)), taxCode: m?.taxCode });
+    lines.push({ accountCode: m?.accountCode ?? '', description: m?.label ?? 'PAYG withholding', debit: 0, credit: Number(money(withheld)), taxCode: m?.taxCode });
   }
 
   if (run.totals.deductions > 0) {
