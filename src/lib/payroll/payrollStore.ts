@@ -66,6 +66,22 @@ let taxProfiles: EmployeeTaxProfile[] = load<EmployeeTaxProfile[]>(TAX_KEY, []);
 const listeners = new Set<() => void>();
 let snapshot = { runs, settings, connections, calendars, stp, deductions, taxProfiles };
 
+/** Cloud mirroring (audit retention) — best effort, never blocks the UI. */
+let cloudTimer: ReturnType<typeof setTimeout> | undefined;
+let cloudEnabled = true;
+function mirrorToCloud() {
+  if (!cloudEnabled || runs.length === 0) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => {
+    import('./payrollCloud')
+      .then((m) => m.pushCloudRuns(runs))
+      .catch((err) => {
+        cloudEnabled = false;
+        console.warn('Pay run cloud sync unavailable; using local storage only.', err);
+      });
+  }, 600);
+}
+
 function persist() {
   try {
     localStorage.setItem(RUNS_KEY, JSON.stringify(runs));
@@ -78,6 +94,7 @@ function persist() {
   } catch {/* noop */}
   snapshot = { runs, settings, connections, calendars, stp, deductions, taxProfiles };
   listeners.forEach((fn) => fn());
+  mirrorToCloud();
 }
 
 function auditEvent(action: PayRunAuditEvent['action'], detail?: string): PayRunAuditEvent {
