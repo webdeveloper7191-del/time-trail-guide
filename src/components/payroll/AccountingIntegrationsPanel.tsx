@@ -21,6 +21,7 @@ export function AccountingIntegrationsPanel({ runs }: Props) {
   usePayroll();
   const [platform, setPlatform] = useState<AccountingPlatform>('xero');
   const [runId, setRunId] = useState<string>(runs[0]?.id ?? '');
+  const [testingXero, setTestingXero] = useState(false);
 
   const conn = payrollStore.getConnection(platform);
   const run = runs.find((r) => r.id === runId);
