@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ClipboardCheck, Calendar, Clock, CalendarCheck,
   FileSignature, Sparkles, Target, TrendingUp, MessageSquare, Users,
-  GraduationCap, Hourglass, CheckCircle2, DollarSign, FileText,
+  GraduationCap, Hourglass, CheckCircle2, DollarSign, FileText, Receipt,
 } from 'lucide-react';
 import type { WorkspaceKpi, WorkspaceStep } from '@/components/performance/shared/ModuleWorkspace';
 
@@ -62,6 +62,16 @@ export const employeeWorkspaceConfig: Record<string, EmployeeWorkspaceMeta> = {
       { title: 'Check your balance', body: 'Balances update automatically as you accrue hours and take leave.' },
       { title: 'Review the ledger', body: 'Every accrual and deduction is listed with the shift or timesheet that caused it.' },
       { title: 'Request leave', body: 'Submit a request for the leave type you need — approvals route to your manager.' },
+    ],
+  },
+  payslips: {
+    icon: Receipt,
+    title: 'My Payslips',
+    description: 'Every payslip published to you, with year-to-date gross, tax and super.',
+    steps: [
+      { title: 'Open a payslip', body: 'Select a pay period to see hours, penalties, allowances, deductions and back pay in full.' },
+      { title: 'Check your year to date', body: 'The KPI strip totals gross, tax withheld, super and net pay for the financial year.' },
+      { title: 'Download a copy', body: 'Download any payslip as a PDF for your records or for a loan or rental application.' },
     ],
   },
   documents: {
