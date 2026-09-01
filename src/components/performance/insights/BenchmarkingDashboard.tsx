@@ -48,6 +48,9 @@ import {
 } from 'lucide-react';
 import { Goal, PerformanceReview, Feedback } from '@/types/performance';
 import { BenchmarkingSettingsDrawer, BenchmarkingSettings } from './BenchmarkingSettingsDrawer';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
+import { ConfigureLink } from '../ConfigureLink';
 
 interface BenchmarkingDashboardProps {
   embedded?: boolean;
@@ -133,6 +136,8 @@ const industryBenchmarks: Record<Industry, BenchmarkMetric[]> = {
   ],
 };
 
+const benchmarkIndustries: Industry[] = ['technology', 'healthcare', 'retail', 'finance', 'manufacturing', 'education'];
+
 const industryLabels: Record<Industry, string> = {
   technology: 'Technology',
   healthcare: 'Healthcare',
@@ -150,10 +155,47 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
 };
 
 export function BenchmarkingDashboard({ goals, reviews, feedback, embedded = false }: BenchmarkingDashboardProps) {
-  const [selectedIndustry, setSelectedIndustry] = useState<Industry>('technology');
+  const benchRules = usePerformanceRules().benchmarking;
+  const [selectedIndustry, setSelectedIndustry] = useState<Industry>(
+    (benchmarkIndustries.includes(benchRules.primaryIndustry as Industry) ? benchRules.primaryIndustry : 'technology') as Industry,
+  );
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
-  const [benchmarkSettings, setBenchmarkSettings] = useState<BenchmarkingSettings | undefined>(undefined);
+  const [customMetrics, setCustomMetrics] = useState<BenchmarkingSettings['customMetrics']>([]);
+
+  // Admin-configured peer group drives the default industry.
+  React.useEffect(() => {
+    if (benchmarkIndustries.includes(benchRules.primaryIndustry as Industry)) {
+      setSelectedIndustry(benchRules.primaryIndustry as Industry);
+    }
+  }, [benchRules.primaryIndustry]);
+
+  const benchmarkSettings: BenchmarkingSettings = {
+    companyName: '',
+    primaryIndustry: benchRules.primaryIndustry,
+    companySize: benchRules.companySize,
+    region: benchRules.region,
+    fiscalYearStart: benchRules.fiscalYearStart,
+    enableQuarterlyReports: benchRules.enableQuarterlyReports,
+    showConfidenceIntervals: benchRules.showConfidenceIntervals,
+    customMetrics,
+    enabledCategories: benchRules.enabledCategories,
+    benchmarkSources: benchRules.benchmarkSources,
+  };
+
+  const saveBenchmarkSettings = (next: BenchmarkingSettings) => {
+    setCustomMetrics(next.customMetrics);
+    performanceTaxonomyStore.updateRules('benchmarking', {
+      primaryIndustry: next.primaryIndustry,
+      companySize: next.companySize,
+      region: next.region,
+      fiscalYearStart: next.fiscalYearStart,
+      enableQuarterlyReports: next.enableQuarterlyReports,
+      showConfidenceIntervals: next.showConfidenceIntervals,
+      enabledCategories: next.enabledCategories,
+      benchmarkSources: next.benchmarkSources,
+    });
+  };
 
   // Calculate actual metrics from data
   const calculatedMetrics = useMemo(() => {
@@ -184,11 +226,23 @@ export function BenchmarkingDashboard({ goals, reviews, feedback, embedded = fal
 
   // Get benchmarks with calculated values
   const benchmarks = useMemo(() => {
-    return industryBenchmarks[selectedIndustry].map(b => ({
-      ...b,
-      yourValue: calculatedMetrics[b.id as keyof typeof calculatedMetrics] || 0,
+    const custom: BenchmarkMetric[] = customMetrics.map(m => ({
+      id: m.id,
+      name: m.name,
+      category: m.category,
+      yourValue: m.yourTarget,
+      industryAvg: m.industryAvg,
+      topQuartile: m.topQuartile,
+      unit: m.unit,
+      higherIsBetter: m.higherIsBetter,
     }));
-  }, [selectedIndustry, calculatedMetrics]);
+    return [...industryBenchmarks[selectedIndustry], ...custom]
+      .filter(b => benchRules.enabledCategories.includes(b.category))
+      .map(b => ({
+        ...b,
+        yourValue: calculatedMetrics[b.id as keyof typeof calculatedMetrics] ?? b.yourValue ?? 0,
+      }));
+  }, [selectedIndustry, calculatedMetrics, benchRules.enabledCategories, customMetrics]);
 
   const filteredBenchmarks = useMemo(() => {
     if (selectedCategory === 'all') return benchmarks;
@@ -213,10 +267,13 @@ export function BenchmarkingDashboard({ goals, reviews, feedback, embedded = fal
 
   // Radar chart data
   const radarData = useMemo(() => {
-    const categories = ['performance', 'engagement', 'development', 'retention'];
-    
+    const categories = benchRules.enabledCategories;
+
     return categories.map(cat => {
       const catMetrics = benchmarks.filter(b => b.category === cat);
+      if (catMetrics.length === 0) {
+        return { category: cat.charAt(0).toUpperCase() + cat.slice(1), You: 0, Industry: 0, TopQuartile: 100 };
+      }
       const avgYourValue = catMetrics.reduce((sum, b) => {
         const normalized = b.higherIsBetter
           ? (b.yourValue / b.topQuartile) * 100
@@ -456,7 +513,7 @@ export function BenchmarkingDashboard({ goals, reviews, feedback, embedded = fal
       <BenchmarkingSettingsDrawer
         open={showSettingsDrawer}
         onOpenChange={setShowSettingsDrawer}
-        onSave={setBenchmarkSettings}
+        onSave={saveBenchmarkSettings}
         currentSettings={benchmarkSettings}
       />
     </Box>
