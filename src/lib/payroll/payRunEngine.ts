@@ -503,13 +503,18 @@ export function composeLine(
   // Protected earnings: trim post-tax deductions so net never falls below the floor.
   const floor = Math.max(0, ...standing.filter((d) => d.protectedEarnings).map((d) => d.protectedEarnings ?? 0));
   let netPay = round2(grossPay - preTaxDeductions - salarySacrificeSuper - postTaxDeductions - paygTax - lumpSumTax);
-  const warnings = line.warnings.filter((w) => !w.startsWith('Deduction reduced'));
+  const warnings = line.warnings.filter(
+    (w) => !w.startsWith('Deduction reduced') && !w.includes('maximum contribution base'),
+  );
   if (floor > 0 && netPay < floor && postTaxDeductions > 0) {
     const shortfall = round2(floor - netPay);
     const trim = Math.min(shortfall, postTaxDeductions);
     postTaxDeductions = round2(postTaxDeductions - trim);
     netPay = round2(netPay + trim);
     warnings.push(`Deduction reduced by $${trim.toFixed(2)} to protect the $${floor.toFixed(2)} minimum net pay.`);
+  }
+  if (superResult.cappedAmount > 0) {
+    warnings.push(`$${superResult.cappedAmount.toFixed(2)} of earnings is above the super maximum contribution base — no super accrues on it.`);
   }
 
   return {
@@ -526,7 +531,12 @@ export function composeLine(
     salarySacrificeSuper,
     leavePay,
     terminationPay,
+    backPay,
     lumpSumTax,
+    taxScaleUsed: withholding.scaleUsed,
+    stslWithheld: withholding.stsl,
+    superableGross: superResult.superableAfterCap,
+    superCappedAmount: superResult.cappedAmount || undefined,
     totalSuperContribution: round2(superGuarantee + salarySacrificeSuper),
     isTermination: terminationPay > 0,
     warnings,
