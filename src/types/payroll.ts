@@ -397,6 +397,39 @@ export interface PayrollSettings {
   requireApproverName: boolean;
   /** Lock the source timesheets once the run is approved so they cannot be re-edited. */
   lockTimesheetsOnApproval: boolean;
+  /** A pay period must be approved (pre-run sign-off) before a pay run can be created for it. */
+  requirePeriodApproval: boolean;
+}
+
+/** Pre-run sign-off on a pay period: payroll requests, an authorised approver decides. */
+export type PayPeriodApprovalStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+
+export interface PayPeriodApproval {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  paymentDate: string;
+  cycle: PayCycle;
+  calendarId?: string;
+  status: PayPeriodApprovalStatus;
+  /** Snapshot of what payroll is asking to be signed off. */
+  summary: {
+    employees: number;
+    timesheets: number;
+    totalHours: number;
+    estimatedGross: number;
+    unapprovedTimesheets: number;
+    unmatchedEmployees: number;
+  };
+  requestedBy: string;
+  requestedAt: string;
+  requestNote?: string;
+  decidedBy?: string;
+  decidedAt?: string;
+  decisionNote?: string;
+  /** Set once a pay run has been created against this approval (single use). */
+  consumedByRunId?: string;
+  consumedAt?: string;
 }
 
 
@@ -509,6 +542,7 @@ export const defaultPayrollSettings: PayrollSettings = {
   requireSeparateApprover: true,
   requireApproverName: true,
   lockTimesheetsOnApproval: true,
+  requirePeriodApproval: true,
 };
 
 export const defaultMappings = (platform: AccountingPlatform): AccountMappingRow[] => {

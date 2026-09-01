@@ -133,6 +133,7 @@ export const payrollStore = {
   },
   deleteRun(id: string) {
     releaseRunSideEffects(id);
+    import('./payPeriodApprovalStore').then((m) => m.payPeriodApprovalStore.releaseRun(id)).catch(() => {/* noop */});
     runs = runs.filter((r) => r.id !== id);
     persist();
     import('./payrollCloud').then((m) => m.deleteCloudRun(id)).catch(() => {/* offline */});
