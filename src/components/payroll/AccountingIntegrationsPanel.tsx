@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AccountingPlatform, PayRun } from '@/types/payroll';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
 import { buildJournal, buildPlatformCsv, downloadFile, journalBalance, platformLabel } from '@/lib/payroll/accountingExport';
+import { checkXeroConnection, postJournalToXero } from '@/lib/payroll/payrollCloud';
 import { toast } from 'sonner';
 
 interface Props {
@@ -50,8 +51,75 @@ export function AccountingIntegrationsPanel({ runs }: Props) {
     toast.success(`${platformLabel[platform]} file downloaded — import it under Accounting → Journals.`);
   };
 
+  const testXero = async () => {
+    setTestingXero(true);
+    try {
+      const result = await checkXeroConnection();
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+      const org = result.tenants?.[0];
+      payrollStore.updateConnection('xero', {
+        connected: true,
+        organisationName: org?.tenantName ?? 'Xero organisation',
+        tenantRef: org?.tenantId,
+        lastSyncedAt: new Date().toISOString(),
+      });
+      toast.success(`Live Xero connection verified — ${org?.tenantName ?? 'organisation linked'}.`);
+    } finally {
+      setTestingXero(false);
+    }
+  };
+
+  const postXeroJournal = async () => {
+    if (!run) return;
+    setTestingXero(true);
+    try {
+      const result = await postJournalToXero(run, journal);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+      payrollStore.recordExport(run.id, {
+        id: crypto.randomUUID(),
+        platform: 'xero',
+        exportedAt: new Date().toISOString(),
+        fileName: `Xero manual journal ${result.manualJournalId ?? ''}`.trim(),
+        lineCount: journal.length,
+      });
+      payrollStore.updateConnection('xero', { lastSyncedAt: new Date().toISOString() });
+      toast.success('Journal posted to Xero.');
+    } finally {
+      setTestingXero(false);
+    }
+  };
+
+  const restoreFromCloud = async () => {
+    try {
+      const count = await payrollStore.hydrateFromCloud();
+      toast.success(count ? `${count} pay run(s) restored from the cloud archive.` : 'No archived pay runs found.');
+    } catch {
+      toast.error('Could not reach the cloud archive.');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border bg-muted/30 p-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">Live Xero posting &amp; audit retention</p>
+          <p className="text-xs text-muted-foreground">
+            Verify the Xero organisation, post the selected run as a manual journal, or restore posted runs from the cloud archive.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={testXero} disabled={testingXero}>Test Xero connection</Button>
+          <Button variant="outline" size="sm" onClick={postXeroJournal} disabled={testingXero || !run}>Post journal to Xero</Button>
+          <Button variant="outline" size="sm" onClick={restoreFromCloud}>Restore from cloud</Button>
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         {payrollStore.getConnections().map((c) => (
           <Card key={c.platform} className={platform === c.platform ? 'border-primary' : ''}>
