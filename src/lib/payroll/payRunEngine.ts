@@ -294,6 +294,26 @@ export function adjustmentComponents(
     return out;
   }
 
+  if (adj.kind === 'back_pay') {
+    const hours = adj.backPayHours ?? 0;
+    const diff = adj.backPayRateDifference ?? 0;
+    const amount = round2(adj.amount ?? hours * diff);
+    const period = adj.backPayFrom && adj.backPayTo ? ` (${adj.backPayFrom} → ${adj.backPayTo})` : '';
+    out.push({
+      id: `${adj.id}-backpay`,
+      kind: 'ordinary',
+      label: `${adj.label || 'Back pay'}${period}`,
+      units: hours || 1,
+      rate: hours ? round2(amount / hours) : amount,
+      amount,
+      superable: adj.superable !== false,
+      taxable: true,
+      source: 'adjustment',
+      stpCode: 'BackPay',
+    });
+    return out;
+  }
+
   // Termination pay
   const leaveTaxRate = settings.terminationLeaveTaxRate;
   const etpRate = settings.etpTaxRate;
