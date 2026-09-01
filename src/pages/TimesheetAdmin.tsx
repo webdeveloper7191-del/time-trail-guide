@@ -62,6 +62,7 @@ type TabValue = 'all' | 'exceptions' | TimesheetStatus;
 type ViewMode = 'table' | 'daily' | 'analytics' | 'calendar' | 'audit' | 'compliance';
 
 export default function TimesheetAdmin() {
+  useTimesheetLocks();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialView = (searchParams.get('view') as ViewMode) || 'table';
   const [timesheets, setTimesheets] = useState<Timesheet[]>(mockTimesheets);
