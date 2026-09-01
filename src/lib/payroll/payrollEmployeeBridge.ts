@@ -169,6 +169,10 @@ export function resolveEmployeePayProfile(
     payCondition: pc,
     superFundName: record.bankDetails?.superFundName,
     bankAccountMasked: maskAccount(record.bankDetails?.accountNumber),
+    bankBsb: record.bankDetails?.bsb,
+    bankAccountNumber: record.bankDetails?.accountNumber,
+    bankAccountName: record.bankDetails?.accountName ?? fullName(record),
+
     hasTfn: Boolean(record.taxFileNumber),
     contractedHours: pc?.contractedHours,
     incomeStream: incomeStreamFor(employmentType),
