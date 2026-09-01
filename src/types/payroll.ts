@@ -170,6 +170,16 @@ export interface PayRunLine {
 
   hasTfn?: boolean;
   incomeStream?: StpIncomeStream;
+  /** ATO scale used to withhold on this line. */
+  taxScaleUsed?: string;
+  /** Study and training support loan component included in paygTax. */
+  stslWithheld?: number;
+  /** Superable earnings after the maximum contribution base cap. */
+  superableGross?: number;
+  /** Earnings excluded from super by the maximum contribution base. */
+  superCappedAmount?: number;
+  /** Back pay / retrospective adjustments included in gross. */
+  backPay?: number;
 
   // --- Deductions, sacrifice, leave and termination -------------------
   /** Deductions taken before tax (excluding salary sacrifice to super). */
