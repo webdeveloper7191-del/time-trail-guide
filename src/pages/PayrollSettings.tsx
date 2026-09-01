@@ -8,6 +8,7 @@ import { PayCalendarsPanel } from '@/components/payroll/PayCalendarsPanel';
 import { PayrollSettingsPanel } from '@/components/payroll/PayrollSettingsPanel';
 import { AccountingIntegrationsPanel } from '@/components/payroll/AccountingIntegrationsPanel';
 import { StpSettingsPanel } from '@/components/payroll/StpSettingsPanel';
+import { DeductionsPanel } from '@/components/payroll/DeductionsPanel';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
 import { cycleLabel, periodContaining } from '@/lib/payroll/payCalendar';
 
@@ -62,12 +63,14 @@ export default function PayrollSettings() {
             <TabsList>
               <TabsTrigger value="calendars">Pay periods</TabsTrigger>
               <TabsTrigger value="rules">Calculation rules</TabsTrigger>
+              <TabsTrigger value="deductions">Deductions</TabsTrigger>
               <TabsTrigger value="accounts">Account mappings</TabsTrigger>
               <TabsTrigger value="stp">STP Phase 2</TabsTrigger>
             </TabsList>
 
             <TabsContent value="calendars" className="mt-4"><PayCalendarsPanel /></TabsContent>
             <TabsContent value="rules" className="mt-4"><PayrollSettingsPanel /></TabsContent>
+            <TabsContent value="deductions" className="mt-4"><DeductionsPanel /></TabsContent>
             <TabsContent value="accounts" className="mt-4"><AccountingIntegrationsPanel runs={runs} /></TabsContent>
             <TabsContent value="stp" className="mt-4"><StpSettingsPanel /></TabsContent>
           </Tabs>

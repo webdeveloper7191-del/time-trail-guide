@@ -9,6 +9,7 @@ import { PayRun, PayRunLine } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
 import { recalcRun } from '@/lib/payroll/payRunEngine';
 import { buildDetailCsv, buildAbaFile, downloadFile, exportPayslipPdf } from '@/lib/payroll/accountingExport';
+import { PayRunAdjustmentSheet } from './PayRunAdjustmentSheet';
 import { toast } from 'sonner';
 
 interface Props {
@@ -21,7 +22,10 @@ const currency = (n: number) => `$${n.toLocaleString('en-AU', { minimumFractionD
 
 export function PayRunDetailPanel({ run, open, onClose }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [adjusting, setAdjusting] = useState<PayRunLine | null>(null);
   if (!run) return null;
+
+  const current = adjusting ? run.lines.find((l) => l.id === adjusting.id) ?? adjusting : null;
 
   const toggleExclude = (line: PayRunLine) => {
     const lines = run.lines.map((l) => (l.id === line.id ? { ...l, excluded: !l.excluded } : l));
@@ -93,6 +97,10 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
             { label: 'PAYG', value: currency(run.totals.paygTax) },
             { label: 'Super', value: currency(run.totals.superGuarantee) },
             { label: 'Net', value: currency(run.totals.netPay) },
+            ...(run.totals.deductions ? [{ label: 'Deductions', value: currency(run.totals.deductions) }] : []),
+            ...(run.totals.salarySacrificeSuper ? [{ label: 'Salary sacrifice', value: currency(run.totals.salarySacrificeSuper) }] : []),
+            ...(run.totals.leavePay ? [{ label: 'Leave pay', value: currency(run.totals.leavePay) }] : []),
+            ...(run.totals.terminationPay ? [{ label: 'Termination pay', value: currency(run.totals.terminationPay) }] : []),
           ].map((s) => (
             <div key={s.label} className="rounded-lg border p-3">
               <p className="text-xs text-muted-foreground">{s.label}</p>
@@ -153,7 +161,10 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
                     <TableCell className="text-right tabular-nums">{currency(line.superGuarantee)}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{currency(line.netPay)}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => exportPayslipPdf(run, line)}>Payslip</Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setAdjusting(line)}>Adjust</Button>
+                        <Button variant="ghost" size="sm" onClick={() => exportPayslipPdf(run, line)}>Payslip</Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                   {expanded === line.id && (
@@ -184,6 +195,12 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
                             {line.superFundName && <span>Super fund: {line.superFundName}</span>}
                             {line.bankAccountMasked && <span>Bank: {line.bankAccountMasked}</span>}
                             <span>TFN on file: {line.hasTfn ? 'Yes' : 'No'}</span>
+                            {Boolean(line.preTaxDeductions) && <span>Pre-tax deductions: {currency(line.preTaxDeductions ?? 0)}</span>}
+                            {Boolean(line.postTaxDeductions) && <span>Post-tax deductions: {currency(line.postTaxDeductions ?? 0)}</span>}
+                            {Boolean(line.salarySacrificeSuper) && <span>Salary sacrifice (RESC): {currency(line.salarySacrificeSuper ?? 0)}</span>}
+                            {Boolean(line.lumpSumTax) && <span>Lump-sum tax withheld: {currency(line.lumpSumTax ?? 0)}</span>}
+                            {Boolean(line.totalSuperContribution) && <span>Total super: {currency(line.totalSuperContribution ?? 0)}</span>}
+                            {line.isTermination && <span>Final pay — includes termination lump sums</span>}
                             {line.incomeStream && <span>STP income stream: {line.incomeStream}</span>}
                           </div>
                         </div>
@@ -209,6 +226,15 @@ export function PayRunDetailPanel({ run, open, onClose }: Props) {
           </div>
         )}
       </div>
+
+      {current && (
+        <PayRunAdjustmentSheet
+          run={run}
+          line={current}
+          open={Boolean(adjusting)}
+          onClose={() => setAdjusting(null)}
+        />
+      )}
     </PrimaryOffCanvas>
   );
 }
