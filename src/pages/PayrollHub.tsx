@@ -32,7 +32,9 @@ const statusVariant: Record<PayRunStatus, 'default' | 'secondary' | 'outline'> =
 
 export default function PayrollHub() {
   usePayroll();
+  usePayPeriodApprovals();
   const runs = payrollStore.getRuns();
+  const pendingApprovals = payPeriodApprovalStore.byStatus('pending').length;
   const settings = payrollStore.getSettings();
   const calendar = payrollStore.getCalendar(settings.defaultCalendarId);
   const stp = payrollStore.getStpSettings();
