@@ -289,7 +289,26 @@ export interface PayrollSettings {
   rosterVarianceToleranceHours: number;
   /** Warn when an employee has no bank details or TFN on file. */
   requireBankDetails: boolean;
+
+  // --- Leave & termination --------------------------------------------
+  /** Annual leave loading paid on annual leave taken (typically 17.5%). */
+  annualLeaveLoadingPct: number;
+  /** Pay leave loading on annual leave taken during the period. */
+  payLeaveLoadingOnLeaveTaken: boolean;
+  /** Include annual leave loading in unused-leave termination payouts. */
+  payLeaveLoadingOnTermination: boolean;
+  /** Flat withholding rate on unused annual/LSL paid on termination (schedule 7). */
+  terminationLeaveTaxRate: number;
+  /** Flat withholding rate on the taxable component of an ETP under the cap. */
+  etpTaxRate: number;
+  /** Genuine redundancy tax-free base amount for the financial year. */
+  redundancyTaxFreeBase: number;
+  /** Genuine redundancy tax-free amount per completed year of service. */
+  redundancyTaxFreePerYear: number;
+  /** Super guarantee is not payable on most termination lump sums. */
+  superOnTerminationPay: boolean;
 }
+
 
 /** A recurring pay period definition that drives pay run dates. */
 export interface PayCalendar {
