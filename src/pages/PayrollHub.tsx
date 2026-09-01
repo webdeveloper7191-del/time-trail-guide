@@ -9,11 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { mockTimesheets } from '@/data/mockTimesheets';
 import { PayRun, PayRunStatus } from '@/types/payroll';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
+import { periodContaining } from '@/lib/payroll/payCalendar';
 import { NewPayRunPanel } from '@/components/payroll/NewPayRunPanel';
 import { PayRunDetailPanel } from '@/components/payroll/PayRunDetailPanel';
 import { AccountingIntegrationsPanel } from '@/components/payroll/AccountingIntegrationsPanel';
 import { StpSummaryPanel } from '@/components/payroll/StpSummaryPanel';
-import { PayrollSettingsPanel } from '@/components/payroll/PayrollSettingsPanel';
+import { Link } from 'react-router-dom';
+import { Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const currency = (n: number) => `$${n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -28,6 +30,9 @@ const statusVariant: Record<PayRunStatus, 'default' | 'secondary' | 'outline'> =
 export default function PayrollHub() {
   usePayroll();
   const runs = payrollStore.getRuns();
+  const settings = payrollStore.getSettings();
+  const calendar = payrollStore.getCalendar(settings.defaultCalendarId);
+  const stp = payrollStore.getStpSettings();
   const [newOpen, setNewOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -141,7 +146,31 @@ export default function PayrollHub() {
             </TabsContent>
 
             <TabsContent value="settings" className="mt-4">
-              <PayrollSettingsPanel />
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Payroll configuration</h2>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+                      Pay calendars, calculation rules, accounting account mappings and STP Phase 2 payer details are
+                      managed in Settings and applied to every pay run generated here.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      { label: 'Default pay calendar', value: calendar ? `${calendar.name}` : 'Not set' },
+                      { label: 'Current period', value: calendar ? `${periodContaining(calendar).periodStart} → ${periodContaining(calendar).periodEnd}` : '—' },
+                      { label: 'Super guarantee', value: `${settings.superRate}%` },
+                      { label: 'STP Phase 2', value: stp.enabled ? `Enabled · ABN ${stp.abn || 'not set'}` : 'Disabled' },
+                    ].map((i) => (
+                      <div key={i.label} className="rounded-lg border p-3">
+                        <p className="text-xs text-muted-foreground">{i.label}</p>
+                        <p className="text-sm font-medium">{i.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button asChild><Link to="/settings/payroll"><Settings2 className="h-4 w-4 mr-2" />Open payroll settings</Link></Button>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
