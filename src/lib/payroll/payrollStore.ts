@@ -2,7 +2,9 @@ import { useSyncExternalStore } from 'react';
 import {
   AccountingConnection,
   AccountingPlatform,
+  EmployeeTaxProfile,
   PayRun,
+  PayRunAuditEvent,
   PayRunExportRecord,
   PayrollSettings,
   PayCalendar,
@@ -25,6 +27,7 @@ const CONN_KEY = 'payroll:connections';
 const CALENDARS_KEY = 'payroll:calendars';
 const STP_KEY = 'payroll:stp';
 const DEDUCTIONS_KEY = 'payroll:deductions';
+const TAX_KEY = 'payroll:taxProfiles';
 
 const platforms: AccountingPlatform[] = ['xero', 'myob', 'quickbooks'];
 
