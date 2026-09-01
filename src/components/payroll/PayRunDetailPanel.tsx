@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PayRun, PayRunLine } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
 import { recalcRun } from '@/lib/payroll/payRunEngine';
-import { buildDetailCsv, buildAbaFile, downloadFile, exportPayslipPdf } from '@/lib/payroll/accountingExport';
+import { buildDetailCsv, buildAbaFile, buildJournal, downloadFile, exportPayslipPdf } from '@/lib/payroll/accountingExport';
+import { postJournalToXero } from '@/lib/payroll/payrollCloud';
 import { PayRunAdjustmentSheet } from './PayRunAdjustmentSheet';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ const currency = (n: number) => `$${n.toLocaleString('en-AU', { minimumFractionD
 export function PayRunDetailPanel({ run, open, onClose }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState<PayRunLine | null>(null);
+  const [postingXero, setPostingXero] = useState(false);
   if (!run) return null;
 
   const current = adjusting ? run.lines.find((l) => l.id === adjusting.id) ?? adjusting : null;
