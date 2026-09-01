@@ -15,6 +15,8 @@ import {
   defaultPayrollSettings,
   defaultStpSettings,
 } from '@/types/payroll';
+import { timesheetLockStore } from './timesheetLock';
+import { applyLeaveForRun, reverseLeaveForRun } from './leaveIntegration';
 
 /**
  * localStorage-backed payroll store (mock mode).
@@ -97,22 +99,10 @@ function persist() {
   mirrorToCloud();
 }
 
-/**
- * Side-effect modules are required lazily so the store stays importable in
- * tests and non-browser contexts.
- */
-function requireTimesheetLocks() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('./timesheetLock') as typeof import('./timesheetLock');
-}
-function requireLeaveIntegration() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('./leaveIntegration') as typeof import('./leaveIntegration');
-}
 /** Release timesheet locks and roll back leave postings held by a run. */
 function releaseRunSideEffects(runId: string) {
-  try { requireTimesheetLocks().timesheetLockStore.releaseRun(runId); } catch {/* noop */}
-  try { requireLeaveIntegration().reverseLeaveForRun(runId); } catch {/* noop */}
+  try { timesheetLockStore.releaseRun(runId); } catch {/* noop */}
+  try { reverseLeaveForRun(runId); } catch {/* noop */}
 }
 
 function auditEvent(action: PayRunAuditEvent['action'], detail?: string): PayRunAuditEvent {
@@ -206,7 +196,6 @@ export const payrollStore = {
 
     let lockedIds: string[] = [];
     if (settings.lockTimesheetsOnApproval && timesheetIds.length) {
-      const { timesheetLockStore } = requireTimesheetLocks();
       const conflicts = timesheetLockStore.conflictsWith(runId, timesheetIds);
       if (conflicts.length) {
         return {
@@ -221,7 +210,6 @@ export const payrollStore = {
 
     let leaveAppliedAt: string | undefined;
     try {
-      const { applyLeaveForRun } = requireLeaveIntegration();
       const result = applyLeaveForRun(run, settings);
       leaveAppliedAt = now;
       notes.push(`leave ledger updated (+${result.accruedHours}h accrued, ${result.drawnHours}h taken)`);
