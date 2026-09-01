@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import {
   Box,
   Stack,
@@ -117,18 +118,19 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
       !matches.some(m => m.menteeId === mentee.id && (m.status === 'active' || m.status === 'pending'))
     );
 
-    const availableMentors = mentors.filter(m => m.isActive && m.currentMentees < m.maxMentees);
+    const cap = (m: MentorProfile) => Math.min(m.maxMentees, matchRules.maxMenteesPerMentor);
+    const availableMentors = mentors.filter(m => m.isActive && m.currentMentees < cap(m));
 
     return unmatchedMentees.map(mentee => {
       const matchedMentors = availableMentors.map(mentor => ({
         mentor,
         mentee,
         ...calculateMatchScore(mentor, mentee),
-      })).sort((a, b) => b.score - a.score);
+      })).filter(m => m.score >= matchRules.minMatchScore).sort((a, b) => b.score - a.score);
 
       return { mentee, potentialMentors: matchedMentors };
     });
-  }, [mentees, mentors, matches]);
+  }, [mentees, mentors, matches, matchRules]);
 
   const stats = useMemo(() => ({
     activeMentors: mentors.filter(m => m.isActive).length,
