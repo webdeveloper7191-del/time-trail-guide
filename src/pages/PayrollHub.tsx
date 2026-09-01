@@ -10,6 +10,8 @@ import { mockTimesheets } from '@/data/mockTimesheets';
 import { PayRun, PayRunStatus } from '@/types/payroll';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
 import { periodContaining } from '@/lib/payroll/payCalendar';
+import { PayPeriodApprovalsPanel } from '@/components/payroll/PayPeriodApprovalsPanel';
+import { payPeriodApprovalStore, usePayPeriodApprovals } from '@/lib/payroll/payPeriodApprovalStore';
 import { NewPayRunPanel } from '@/components/payroll/NewPayRunPanel';
 import { PayRunDetailPanel } from '@/components/payroll/PayRunDetailPanel';
 import { AccountingIntegrationsPanel } from '@/components/payroll/AccountingIntegrationsPanel';
@@ -79,6 +81,7 @@ export default function PayrollHub() {
           <Tabs defaultValue="runs">
             <TabsList>
               <TabsTrigger value="runs">Pay runs</TabsTrigger>
+              <TabsTrigger value="approvals">Period approvals{pendingApprovals ? ` (${pendingApprovals})` : ''}</TabsTrigger>
               <TabsTrigger value="accounting">Accounting exports</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="stp">STP summaries</TabsTrigger>
@@ -137,6 +140,10 @@ export default function PayrollHub() {
                   </TableBody>
                 </Table>
               </div>
+            </TabsContent>
+
+            <TabsContent value="approvals" className="mt-4">
+              <PayPeriodApprovalsPanel onCreateRunFor={() => setNewOpen(true)} />
             </TabsContent>
 
             <TabsContent value="accounting" className="mt-4">
