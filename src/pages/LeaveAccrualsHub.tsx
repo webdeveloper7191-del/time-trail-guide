@@ -331,18 +331,18 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Layer 2 · Location policies</CardTitle>
-          <CardDescription>Operational defaults per location. Overrides tighten but never loosen the award floor.</CardDescription>
+          <CardTitle className="text-base">Location policies</CardTitle>
+          <CardDescription>Operational defaults per location. A location policy may narrow the award settings but cannot exceed them.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Location</TableHead>
-                <TableHead>RDO strategy</TableHead>
-                <TableHead>ADO on hire</TableHead>
-                <TableHead>TOIL cap (h)</TableHead>
-                <TableHead>Notice (days)</TableHead>
+                <TableHead>RDO scheduling method</TableHead>
+                <TableHead>ADO offered at commencement</TableHead>
+                <TableHead>TOIL balance cap (hours)</TableHead>
+                <TableHead>Minimum notice to take leave (days)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -353,9 +353,9 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
                     <Select value={l.rdoStrategy} onValueChange={(v) => LeaveStore.updateLocation(l.locationId, { rdoStrategy: v as typeof l.rdoStrategy })}>
                       <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed_day">Fixed day of month</SelectItem>
-                        <SelectItem value="rolling">Rolling schedule</SelectItem>
-                        <SelectItem value="staff_choice">Staff choice</SelectItem>
+                        <SelectItem value="fixed_day">Fixed day each cycle</SelectItem>
+                        <SelectItem value="rolling">Rolling roster</SelectItem>
+                        <SelectItem value="staff_choice">Employee's choice</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -380,8 +380,8 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Layer 3 · Staff opt-ins & balances</CardTitle>
-          <CardDescription>Per-employee enrolment. Balances shown are live from the ledger.</CardDescription>
+          <CardTitle className="text-base">Staff enrolment &amp; balances</CardTitle>
+          <CardDescription>Per-employee participation in each leave scheme. Balances shown are live from the accrual ledger.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
