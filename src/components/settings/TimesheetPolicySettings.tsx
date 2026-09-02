@@ -1164,7 +1164,12 @@ interface BaseRowProps {
   overridden: boolean;
   onReset: () => void;
   comingSoon?: boolean;
+  /** Raw tenant-default value, shown on the "Inherited" badge so it's obvious what is in force. */
+  tenantValue?: unknown;
+  /** Pre-formatted tenant default, supplied by the concrete row type. */
+  tenantValueLabel?: string;
 }
+
 
 function HelpHint({ content }: { content: React.ReactNode }) {
   return (
