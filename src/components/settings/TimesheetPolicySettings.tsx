@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { Building2, Globe2, RotateCcw, Info, HelpCircle } from 'lucide-react';
+import { Building2, Globe2, RotateCcw, Info, HelpCircle, AlertTriangle } from 'lucide-react';
 import { mockLocations } from '@/data/mockLocationData';
 import {
   TimesheetPolicy,
@@ -257,7 +257,6 @@ export function PolicyTimeTracking() {
               onChange={v => {
                 const mode = v as TimesheetPolicy['timeTracking']['kioskVerificationMode'];
                 setField('timeTracking', 'kioskVerificationMode', mode);
-                setField('timeTracking', 'requireKioskPhoto', mode !== 'pin');
               }}
             />
             <NumberRow
@@ -334,6 +333,22 @@ export function PolicyPermissions() {
               value={resolved.permissions.earlyClockInMinutes}
               onChange={v => setField('permissions', 'earlyClockInMinutes', v)}
             />
+          )}
+          {resolved.permissions.earlyClockInPolicy === 'within_minutes'
+            && resolved.issues.flagClockBoundaryBreach !== 'off'
+            && resolved.issues.earlyClockInToleranceMinutes < resolved.permissions.earlyClockInMinutes && (
+            <div className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
+              <div>
+                <p className="font-medium">Inconsistent early clock-in settings</p>
+                <p className="text-muted-foreground">
+                  Staff may clock in up to {resolved.permissions.earlyClockInMinutes} min early, but Anomaly Flags
+                  raise an out-of-bounds flag after {resolved.issues.earlyClockInToleranceMinutes} min. Punches
+                  between the two are allowed and then flagged. Set the tolerance in
+                  <span className="font-medium text-foreground"> Anomaly Flags</span> to at least {resolved.permissions.earlyClockInMinutes} min.
+                </p>
+              </div>
+            </div>
           )}
           <NumberRow
             {...fieldProps('permissions', 'lateClockInGraceMinutes', 'Late clock-in grace (minutes)',
@@ -762,6 +777,19 @@ export function PolicyUnscheduled() {
             onChange={v => setField('unscheduled', 'requireTrainingForUnscheduled', v)}
           />
         )}
+        {flagged && u.rosterFlagSeverity === 'off' && (
+          <div className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
+            <div>
+              <p className="font-medium">This combination raises no flag</p>
+              <p className="text-muted-foreground">
+                You chose "Allow and flag" but the roster flag severity is Off, so the unrostered punch is
+                accepted silently. Pick Info, Warning or Critical below — or change the action above to
+                "Allow silently".
+              </p>
+            </div>
+          </div>
+        )}
         {flagged && (
           <SelectRow
             {...fieldProps('unscheduled', 'rosterFlagSeverity', 'Flag severity on the roster',
@@ -997,7 +1025,7 @@ export function PolicyIssues() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
 
   // ---- Variance helpers: map enum <-> {enabled, minutes} for clearer UX ----
-  type VFlag = TimesheetPolicy['issues']['flagShiftTimeVariance'];
+  type VFlag = TimesheetPolicy['issues']['flagBreakDurationVariance'];
   const varianceMinutes = (v: VFlag): number =>
     v === 'over_5m' ? 5 : v === 'over_10m' ? 10 : v === 'over_15m' ? 15 : v === 'always' ? 0 : 10;
   const varianceEnabled = (v: VFlag) => v !== 'never';

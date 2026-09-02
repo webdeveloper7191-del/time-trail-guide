@@ -28,7 +28,6 @@ export interface TimeTrackingSettings {
   enableSmsClock: boolean;
   /** How staff identify themselves at the shared Rostered.ai Kiosk App. */
   kioskVerificationMode: KioskVerificationMode;
-  requireKioskPhoto: boolean; // derived: true when mode includes face verification
   minTimesheetMinutes: number;
 }
 
@@ -103,7 +102,6 @@ export interface UnscheduledShiftsSettings {
 
 export interface BreaksSettings {
   autoIncludeScheduledOnClockOut: boolean;
-  flagShortOrMissedBreaks: boolean;
   paidMealBreaks: PaidMealMode;
   /** @deprecated legacy minutes threshold — no longer surfaced in UI */
   paidMealOverMinutesThreshold?: number;
@@ -126,7 +124,6 @@ export type ClockBoundaryReference = 'operating_window' | 'scheduled_shift';
 
 export interface TimesheetIssuesSettings {
   // Time variance
-  flagShiftTimeVariance: VarianceFlag;
   flagBreakDurationVariance: VarianceFlag;
   // Missing / unusual entries
   flagMissingClockOut: AnomalySeverity;
@@ -181,7 +178,6 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
     geofenceRadiusMeters: 100,
     enableSmsClock: false,
     kioskVerificationMode: 'pin',
-    requireKioskPhoto: false,
     minTimesheetMinutes: 15,
   },
   permissions: {
@@ -231,7 +227,6 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
 
   breaks: {
     autoIncludeScheduledOnClockOut: false,
-    flagShortOrMissedBreaks: false,
     paidMealBreaks: 'never',
     paidMealOverMinutesThreshold: 30,
     paidMealOverShiftHours: 6,
@@ -241,7 +236,6 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
 
   },
   issues: {
-    flagShiftTimeVariance: 'never',
     flagBreakDurationVariance: 'over_10m',
     flagMissingClockOut: 'critical',
     clockBoundaryReference: 'scheduled_shift',
