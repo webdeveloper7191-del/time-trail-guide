@@ -33,8 +33,43 @@ export interface AwardLeaveRule {
     conversion: 'time_for_time' | 'penalty_equivalent';
     expiryDays: number;      // must be taken within
     requiresPreApproval: boolean;
+    /** Cash-out of banked TOIL */
+    cashoutEnabled?: boolean;
+    /**
+     * Which rate the cash-out is paid at:
+     *  - 'accrual_rate' (DEFAULT): pay each banked hour at the rate/penalty that
+     *    applied when it was earned (FIFO through the ledger). Protects the employer
+     *    from paying old cheap hours at today's higher rate.
+     *  - 'current_rate': pay all hours at the employee's rate on the cash-out date.
+     */
+    cashoutRateBasis?: ToilCashoutBasis;
+    /** Re-apply the original overtime multiplier (1.5/2.0) when paying out. */
+    cashoutIncludesPenalty?: boolean;
+    cashoutRequiresApproval?: boolean;
+    minCashoutHours?: number;
+    maxCashoutHoursPerRequest?: number;
   };
+  /** What happens when a drawdown exceeds the available balance. */
+  shortfall?: BalanceShortfallPolicy;
 }
+
+export type ToilCashoutBasis = 'accrual_rate' | 'current_rate';
+export type ShortfallTreatment = 'leave_without_pay' | 'allow_negative';
+
+export interface BalanceShortfallPolicy {
+  /** Applied per leave kind — RDO/ADO/TOIL can differ. */
+  treatment: Record<LeaveKind, ShortfallTreatment>;
+  /** Only when treatment = allow_negative: how far below zero a balance may go. */
+  maxNegativeHours: Record<LeaveKind, number>;
+  /** Going negative needs a manager sign-off. */
+  requiresApprovalToGoNegative: boolean;
+}
+
+export const DEFAULT_SHORTFALL: BalanceShortfallPolicy = {
+  treatment: { RDO: 'leave_without_pay', ADO: 'leave_without_pay', TOIL: 'leave_without_pay' },
+  maxNegativeHours: { RDO: 0, ADO: 0, TOIL: 0 },
+  requiresApprovalToGoNegative: true,
+};
 
 export interface LocationLeavePolicy {
   locationId: string;
@@ -47,9 +82,12 @@ export interface LocationLeavePolicy {
   overrides?: Partial<Record<LeaveKind, boolean>>; // disable a kind at this location
 }
 
+
 export interface StaffLeaveConfig {
   staffId: string;
   staffName: string;
+  /** Award this employee is covered by — drives cash-out and shortfall rules. */
+  awardCode?: string;
   optedIn: Record<LeaveKind, boolean>;
   balanceHours: Record<LeaveKind, number>;
   rdoAnchorDate?: string; // ISO — first scheduled RDO
@@ -86,7 +124,51 @@ export interface LedgerEntry {
   sourceShiftId?: string;
   note?: string;
   createdAt: string;
+  /** Base hourly rate that applied when these hours were banked (accruals only). */
+  rateAtAccrual?: number;
+  /** Overtime/penalty multiplier that applied when banked (e.g. 1.5). */
+  multiplierAtAccrual?: number;
+  /** Hours of this accrual layer already consumed or cashed out (FIFO bookkeeping). */
+  drawnHours?: number;
+  /** Set on consumption entries that could not be covered by the balance. */
+  unpaidHours?: number;
 }
+
+// ---------- TOIL cash-out ----------
+
+export type CashoutStatus = 'pending' | 'approved' | 'rejected' | 'paid';
+
+export interface ToilCashoutRequest {
+  id: string;
+  staffId: string;
+  staffName: string;
+  hours: number;
+  requestedOn: string;
+  reason?: string;
+  status: CashoutStatus;
+  basis: ToilCashoutBasis;
+  /** Rate used when basis = current_rate. */
+  currentRate: number;
+  /** Calculated gross value at request time. */
+  estimatedAmount: number;
+  breakdown: CashoutLayer[];
+  decidedBy?: string;
+  decidedOn?: string;
+  decisionNote?: string;
+  /** Set when picked up by a timesheet / pay run. */
+  paidInPeriod?: string;
+  payItemCode?: string;
+}
+
+export interface CashoutLayer {
+  sourceEntryId: string;
+  accruedOn: string;
+  hours: number;
+  rate: number;
+  multiplier: number;
+  amount: number;
+}
+
 
 // ---------- Shift tagging ----------
 
@@ -109,27 +191,40 @@ export interface DerivedShiftTag {
 
 // ---------- Seed data ----------
 
+const TOIL_CASHOUT_DEFAULTS = {
+  cashoutEnabled: true,
+  cashoutRateBasis: 'accrual_rate' as ToilCashoutBasis,
+  cashoutIncludesPenalty: true,
+  cashoutRequiresApproval: true,
+  minCashoutHours: 4,
+  maxCashoutHoursPerRequest: 38,
+};
+
 export const DEFAULT_AWARDS: AwardLeaveRule[] = [
   {
     awardCode: 'MA000010',
     awardName: 'Manufacturing & Associated Industries Award',
     rdo: { cycleWeeks: 4, hoursPerCycle: 8, accrualPerOrdinaryHour: 0.4 / 38 },
     ado: { accrualPerOrdinaryHour: 0.4 / 38, maxBalanceHours: 80, minBlockHours: 4 },
-    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 90, requiresPreApproval: true },
+    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 90, requiresPreApproval: true, ...TOIL_CASHOUT_DEFAULTS },
+    shortfall: { ...DEFAULT_SHORTFALL, treatment: { ...DEFAULT_SHORTFALL.treatment }, maxNegativeHours: { ...DEFAULT_SHORTFALL.maxNegativeHours } },
   },
   {
     awardCode: 'MA000100',
     awardName: 'Social, Community, Home Care & Disability Services (SCHADS)',
     ado: { accrualPerOrdinaryHour: 0.2 / 38, maxBalanceHours: 40, minBlockHours: 4 },
-    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 180, requiresPreApproval: false },
+    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 180, requiresPreApproval: false, ...TOIL_CASHOUT_DEFAULTS },
+    shortfall: { ...DEFAULT_SHORTFALL, treatment: { ...DEFAULT_SHORTFALL.treatment }, maxNegativeHours: { ...DEFAULT_SHORTFALL.maxNegativeHours } },
   },
   {
     awardCode: 'MA000020',
     awardName: 'Building & Construction General On-site Award',
     rdo: { cycleWeeks: 4, hoursPerCycle: 8, accrualPerOrdinaryHour: 0.4 / 38 },
-    toil: { enabled: false, conversion: 'time_for_time', expiryDays: 60, requiresPreApproval: true },
+    toil: { enabled: false, conversion: 'time_for_time', expiryDays: 60, requiresPreApproval: true, ...TOIL_CASHOUT_DEFAULTS, cashoutEnabled: false },
+    shortfall: { ...DEFAULT_SHORTFALL, treatment: { ...DEFAULT_SHORTFALL.treatment }, maxNegativeHours: { ...DEFAULT_SHORTFALL.maxNegativeHours } },
   },
 ];
+
 
 export const DEFAULT_LOCATIONS: LocationLeavePolicy[] = [
   {
@@ -153,7 +248,7 @@ export const DEFAULT_LOCATIONS: LocationLeavePolicy[] = [
 
 // ---------- In-memory store (with localStorage persistence) ----------
 
-const LS_KEY = 'rostered.leaveAccruals.v1';
+const LS_KEY = 'rostered.leaveAccruals.v2';
 
 const _defaults = {
   awards: [...DEFAULT_AWARDS],
@@ -164,12 +259,14 @@ const _defaults = {
     { staffId: 's-3', staffName: 'Priya Patel',   optedIn: { RDO: true,  ADO: true,  TOIL: false }, balanceHours: { RDO: 8,  ADO: 16, TOIL: 0   } },
   ] as StaffLeaveConfig[],
   ledger: [
-    { id: 'l-1', staffId: 's-1', kind: 'RDO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  8,   occurredOn: '2026-07-01', sourceShiftId: 'sh-101', note: '4-week cycle',           createdAt: '2026-07-01T09:00:00Z' },
-    { id: 'l-2', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'accrual'     as LedgerType, hours:  2.5, occurredOn: '2026-07-05', sourceShiftId: 'sh-118', note: 'OT converted to TOIL',   createdAt: '2026-07-05T18:00:00Z' },
-    { id: 'l-3', staffId: 's-2', kind: 'ADO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  1.6, occurredOn: '2026-07-10', sourceShiftId: 'sh-140', note: 'Weekly ADO accrual',     createdAt: '2026-07-10T17:00:00Z' },
+    { id: 'l-1', staffId: 's-1', kind: 'RDO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  8,   occurredOn: '2026-07-01', sourceShiftId: 'sh-101', note: '4-week cycle',           createdAt: '2026-07-01T09:00:00Z', rateAtAccrual: 32.5, multiplierAtAccrual: 1 },
+    { id: 'l-2', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'accrual'     as LedgerType, hours:  2.5, occurredOn: '2026-07-05', sourceShiftId: 'sh-118', note: 'OT converted to TOIL',   createdAt: '2026-07-05T18:00:00Z', rateAtAccrual: 32.5, multiplierAtAccrual: 1.5 },
+    { id: 'l-3', staffId: 's-2', kind: 'ADO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  1.6, occurredOn: '2026-07-10', sourceShiftId: 'sh-140', note: 'Weekly ADO accrual',     createdAt: '2026-07-10T17:00:00Z', rateAtAccrual: 30.1, multiplierAtAccrual: 1 },
     { id: 'l-4', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'consumption' as LedgerType, hours: -4,   occurredOn: '2026-07-14', sourceShiftId: 'sh-150', note: 'TOIL leave taken',       createdAt: '2026-07-14T09:00:00Z' },
   ] as LedgerEntry[],
+  cashouts: [] as ToilCashoutRequest[],
 };
+
 
 function hydrate() {
   if (typeof window === 'undefined') return { ..._defaults };
@@ -182,6 +279,7 @@ function hydrate() {
       locations: parsed.locations ?? _defaults.locations,
       staff: parsed.staff ?? _defaults.staff,
       ledger: parsed.ledger ?? _defaults.ledger,
+      cashouts: parsed.cashouts ?? _defaults.cashouts,
     };
   } catch {
     return { ..._defaults };
@@ -201,6 +299,7 @@ let _snapshot = {
   locations: _store.locations,
   staff: _store.staff,
   ledger: _store.ledger,
+  cashouts: _store.cashouts,
 };
 function emit() {
   _snapshot = {
@@ -208,6 +307,7 @@ function emit() {
     locations: [..._store.locations],
     staff: [..._store.staff],
     ledger: [..._store.ledger],
+    cashouts: [..._store.cashouts],
   };
   persist();
   listeners.forEach(fn => fn());
@@ -219,6 +319,7 @@ export function resetLeaveStore() {
   _store.locations = [..._defaults.locations];
   _store.staff = _defaults.staff.map(s => ({ ...s, optedIn: { ...s.optedIn }, balanceHours: { ...s.balanceHours } }));
   _store.ledger = [..._defaults.ledger];
+  _store.cashouts = [];
   emit();
 }
 
@@ -229,6 +330,7 @@ export const LeaveStore = {
   getLocations: () => _store.locations,
   getStaff: () => _store.staff,
   getLedger: () => _store.ledger,
+  getCashouts: () => _store.cashouts,
   getStaffBalance: (staffId: string): Record<LeaveKind, number> => {
     const s = _store.staff.find(x => x.staffId === staffId);
     return s?.balanceHours ?? { RDO: 0, ADO: 0, TOIL: 0 };
@@ -248,15 +350,286 @@ export const LeaveStore = {
     if (idx >= 0) { _store.awards[idx] = { ..._store.awards[idx], ...patch }; emit(); }
   },
   postLedger: (e: Omit<LedgerEntry, 'id' | 'createdAt'>) => {
-    const entry: LedgerEntry = { ...e, id: `l-${Date.now()}`, createdAt: new Date().toISOString() };
+    const entry: LedgerEntry = { ...e, id: `l-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, createdAt: new Date().toISOString() };
     _store.ledger.unshift(entry);
-    // Update balance
+    // Update balance — floor at zero only when the award forbids negatives.
     const staff = _store.staff.find(s => s.staffId === e.staffId);
-    if (staff) staff.balanceHours[e.kind] = Math.max(0, (staff.balanceHours[e.kind] ?? 0) + e.hours);
+    if (staff) {
+      const next = (staff.balanceHours[e.kind] ?? 0) + e.hours;
+      staff.balanceHours[e.kind] = Math.round(next * 100) / 100;
+    }
     emit();
     return entry;
   },
+  upsertCashout: (req: ToilCashoutRequest) => {
+    const idx = _store.cashouts.findIndex(c => c.id === req.id);
+    if (idx >= 0) _store.cashouts[idx] = req; else _store.cashouts.unshift(req);
+    emit();
+    return req;
+  },
 };
+
+// ---------- Balance shortfall (negative balance vs leave without pay) ----------
+
+export function getShortfallPolicy(awardCode?: string): BalanceShortfallPolicy {
+  return findAward(awardCode)?.shortfall ?? DEFAULT_SHORTFALL;
+}
+
+export interface DrawdownPlan {
+  requestedHours: number;
+  /** Hours covered by the existing balance. */
+  paidFromBalance: number;
+  /** Hours taken into a negative balance (advance). */
+  negativeHours: number;
+  /** Hours that become leave without pay. */
+  unpaidHours: number;
+  treatment: ShortfallTreatment;
+  requiresApproval: boolean;
+  message: string;
+}
+
+/**
+ * Work out how a drawdown that exceeds the balance is treated.
+ * Either the balance is allowed to go negative (advance, up to a floor) or
+ * the uncovered hours fall to leave without pay.
+ */
+export function planDrawdown(input: {
+  staffId: string;
+  kind: LeaveKind;
+  hours: number;
+  awardCode?: string;
+}): DrawdownPlan {
+  const requested = Math.abs(input.hours);
+  const balance = LeaveStore.getStaffBalance(input.staffId)[input.kind] ?? 0;
+  const policy = getShortfallPolicy(input.awardCode);
+  const treatment = policy.treatment[input.kind];
+  const paidFromBalance = Math.max(0, Math.min(requested, balance));
+  const shortfall = round2(requested - paidFromBalance);
+
+  if (shortfall <= 0) {
+    return {
+      requestedHours: requested, paidFromBalance, negativeHours: 0, unpaidHours: 0,
+      treatment, requiresApproval: false,
+      message: 'Fully covered by the current balance.',
+    };
+  }
+
+  if (treatment === 'allow_negative') {
+    const floor = policy.maxNegativeHours[input.kind] ?? 0;
+    const roomBelowZero = Math.max(0, floor - Math.max(0, -Math.min(0, balance)));
+    const negativeHours = round2(Math.min(shortfall, roomBelowZero));
+    const unpaidHours = round2(shortfall - negativeHours);
+    return {
+      requestedHours: requested, paidFromBalance, negativeHours, unpaidHours,
+      treatment,
+      requiresApproval: policy.requiresApprovalToGoNegative && negativeHours > 0,
+      message: unpaidHours > 0
+        ? `${negativeHours}h advanced against future accrual (floor ${floor}h); ${unpaidHours}h beyond the floor becomes leave without pay.`
+        : `${negativeHours}h advanced against future accrual — balance goes negative and repays as the employee accrues.`,
+    };
+  }
+
+  return {
+    requestedHours: requested, paidFromBalance, negativeHours: 0, unpaidHours: shortfall,
+    treatment, requiresApproval: false,
+    message: `${shortfall}h is not covered by the balance and is paid as leave without pay.`,
+  };
+}
+
+/** Post a drawdown honouring the shortfall policy. Returns the plan that was applied. */
+export function consumeLeave(input: {
+  staffId: string;
+  kind: LeaveKind;
+  hours: number;
+  occurredOn: string;
+  awardCode?: string;
+  sourceShiftId?: string;
+  note?: string;
+}): { plan: DrawdownPlan; entry: LedgerEntry | null } {
+  const plan = planDrawdown(input);
+  const drawn = round2(plan.paidFromBalance + plan.negativeHours);
+  if (drawn <= 0) return { plan, entry: null };
+  const entry = LeaveStore.postLedger({
+    staffId: input.staffId,
+    kind: input.kind,
+    type: 'consumption',
+    hours: -drawn,
+    occurredOn: input.occurredOn,
+    sourceShiftId: input.sourceShiftId,
+    unpaidHours: plan.unpaidHours || undefined,
+    note: input.note ?? `${input.kind} taken${plan.unpaidHours ? ` (+${plan.unpaidHours}h leave without pay)` : ''}${plan.negativeHours ? ` — ${plan.negativeHours}h advanced` : ''}`,
+  });
+  return { plan, entry };
+}
+
+// ---------- TOIL cash-out valuation ----------
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+export interface CashoutQuote {
+  hours: number;
+  basis: ToilCashoutBasis;
+  amount: number;
+  blendedRate: number;
+  layers: CashoutLayer[];
+  shortHours: number;      // requested beyond available balance
+  warnings: string[];
+}
+
+/**
+ * Value a TOIL cash-out.
+ *  - accrual_rate: FIFO through the TOIL accrual layers, each hour paid at the
+ *    base rate (and optionally the OT multiplier) that applied when it was banked.
+ *  - current_rate: every hour paid at today's rate.
+ */
+export function quoteToilCashout(input: {
+  staffId: string;
+  hours: number;
+  currentRate: number;
+  awardCode?: string;
+  basisOverride?: ToilCashoutBasis;
+}): CashoutQuote {
+  const award = findAward(input.awardCode);
+  const toil = award?.toil;
+  const basis = input.basisOverride ?? toil?.cashoutRateBasis ?? 'accrual_rate';
+  const includePenalty = toil?.cashoutIncludesPenalty ?? true;
+  const warnings: string[] = [];
+
+  const balance = LeaveStore.getStaffBalance(input.staffId).TOIL ?? 0;
+  const requested = Math.max(0, input.hours);
+  const payable = Math.min(requested, Math.max(0, balance));
+  const shortHours = round2(requested - payable);
+  if (shortHours > 0) warnings.push(`Only ${payable.toFixed(2)}h of TOIL is available — ${shortHours}h cannot be cashed out.`);
+  if (toil && toil.cashoutEnabled === false) warnings.push('Cash-out is disabled on this award.');
+  if (toil?.minCashoutHours && requested < toil.minCashoutHours) warnings.push(`Minimum cash-out is ${toil.minCashoutHours}h.`);
+  if (toil?.maxCashoutHoursPerRequest && requested > toil.maxCashoutHoursPerRequest) warnings.push(`Maximum cash-out per request is ${toil.maxCashoutHoursPerRequest}h.`);
+
+  const layers: CashoutLayer[] = [];
+
+  if (basis === 'current_rate') {
+    if (payable > 0) {
+      layers.push({
+        sourceEntryId: 'current', accruedOn: new Date().toISOString().slice(0, 10),
+        hours: round2(payable), rate: input.currentRate, multiplier: 1,
+        amount: round2(payable * input.currentRate),
+      });
+    }
+  } else {
+    // FIFO across TOIL accruals net of prior consumption/payout
+    const entries = _store.ledger
+      .filter(e => e.staffId === input.staffId && e.kind === 'TOIL')
+      .slice()
+      .sort((a, b) => (a.occurredOn < b.occurredOn ? -1 : 1));
+
+    const accruals = entries.filter(e => e.hours > 0).map(e => ({ e, remaining: e.hours }));
+    let alreadyDrawn = entries.filter(e => e.hours < 0).reduce((n, e) => n + Math.abs(e.hours), 0);
+    for (const layer of accruals) {
+      if (alreadyDrawn <= 0) break;
+      const take = Math.min(layer.remaining, alreadyDrawn);
+      layer.remaining -= take;
+      alreadyDrawn -= take;
+    }
+
+    let left = payable;
+    for (const layer of accruals) {
+      if (left <= 0) break;
+      if (layer.remaining <= 0) continue;
+      const take = round2(Math.min(layer.remaining, left));
+      const rate = layer.e.rateAtAccrual ?? input.currentRate;
+      const mult = includePenalty ? (layer.e.multiplierAtAccrual ?? 1) : 1;
+      layers.push({
+        sourceEntryId: layer.e.id, accruedOn: layer.e.occurredOn,
+        hours: take, rate, multiplier: mult, amount: round2(take * rate * mult),
+      });
+      left = round2(left - take);
+    }
+    if (left > 0) {
+      warnings.push(`${left}h had no recorded accrual rate — valued at the current rate.`);
+      layers.push({
+        sourceEntryId: 'unmatched', accruedOn: new Date().toISOString().slice(0, 10),
+        hours: left, rate: input.currentRate, multiplier: 1, amount: round2(left * input.currentRate),
+      });
+    }
+  }
+
+  const amount = round2(layers.reduce((n, l) => n + l.amount, 0));
+  const hours = round2(layers.reduce((n, l) => n + l.hours, 0));
+  return {
+    hours, basis, amount,
+    blendedRate: hours > 0 ? round2(amount / hours) : 0,
+    layers, shortHours, warnings,
+  };
+}
+
+/** Employee-initiated cash-out request. Auto-approves when the award allows. */
+export function requestToilCashout(input: {
+  staffId: string;
+  staffName: string;
+  hours: number;
+  currentRate: number;
+  awardCode?: string;
+  reason?: string;
+}): ToilCashoutRequest {
+  const award = findAward(input.awardCode);
+  const quote = quoteToilCashout(input);
+  const needsApproval = award?.toil?.cashoutRequiresApproval ?? true;
+  const req: ToilCashoutRequest = {
+    id: `toil-co-${Date.now()}`,
+    staffId: input.staffId,
+    staffName: input.staffName,
+    hours: quote.hours,
+    requestedOn: new Date().toISOString().slice(0, 10),
+    reason: input.reason,
+    status: needsApproval ? 'pending' : 'approved',
+    basis: quote.basis,
+    currentRate: input.currentRate,
+    estimatedAmount: quote.amount,
+    breakdown: quote.layers,
+    payItemCode: 'TOIL_CASHOUT',
+  };
+  LeaveStore.upsertCashout(req);
+  if (!needsApproval) approveToilCashout(req.id, 'Auto-approved by award rule');
+  return req;
+}
+
+/** Manager approval — posts the payout to the ledger so the balance drops. */
+export function approveToilCashout(id: string, note?: string, approver = 'Manager'): ToilCashoutRequest | null {
+  const req = _store.cashouts.find(c => c.id === id);
+  if (!req || (req.status !== 'pending' && req.status !== 'approved')) return null;
+  const already = _store.ledger.some(e => e.sourceShiftId === req.id);
+  if (!already) {
+    LeaveStore.postLedger({
+      staffId: req.staffId, kind: 'TOIL', type: 'payout',
+      hours: -Math.abs(req.hours), occurredOn: new Date().toISOString().slice(0, 10),
+      sourceShiftId: req.id,
+      note: `TOIL cash-out ${req.hours}h @ ${req.basis === 'current_rate' ? 'current rate' : 'original accrual rates'} = $${req.estimatedAmount.toFixed(2)}`,
+    });
+  }
+  const updated: ToilCashoutRequest = { ...req, status: 'approved', decidedBy: approver, decidedOn: new Date().toISOString().slice(0, 10), decisionNote: note };
+  return LeaveStore.upsertCashout(updated);
+}
+
+export function rejectToilCashout(id: string, note: string, approver = 'Manager'): ToilCashoutRequest | null {
+  const req = _store.cashouts.find(c => c.id === id);
+  if (!req) return null;
+  return LeaveStore.upsertCashout({ ...req, status: 'rejected', decidedBy: approver, decidedOn: new Date().toISOString().slice(0, 10), decisionNote: note });
+}
+
+/** Marks an approved cash-out as picked up by a timesheet / pay run period. */
+export function markCashoutPaid(id: string, period: string): ToilCashoutRequest | null {
+  const req = _store.cashouts.find(c => c.id === id);
+  if (!req || req.status !== 'approved') return null;
+  return LeaveStore.upsertCashout({ ...req, status: 'paid', paidInPeriod: period });
+}
+
+/**
+ * Approved-but-unpaid cash-outs for a staff member — consumed by the timesheet
+ * and pay-run builders as a `TOIL_CASHOUT` earnings line.
+ */
+export function getPayableCashouts(staffId?: string): ToilCashoutRequest[] {
+  return _store.cashouts.filter(c => c.status === 'approved' && (!staffId || c.staffId === staffId));
+}
+
 
 // ---------- Shift tag derivation ----------
 

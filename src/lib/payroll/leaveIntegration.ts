@@ -15,7 +15,7 @@
  */
 
 import { PayRun, PayrollSettings } from '@/types/payroll';
-import { LeaveStore, LeaveKind } from '@/lib/leaveAccrualEngine';
+import { LeaveStore, LeaveKind, getPayableCashouts, markCashoutPaid } from '@/lib/leaveAccrualEngine';
 import { leaveBalanceStore, LeaveLedgerEntry, PayrollLeaveKind } from './leaveBalances';
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -139,8 +139,32 @@ export function applyLeaveForRun(run: PayRun, settings: PayrollSettings): LeaveA
     });
   });
 
+  // --- TOIL cash-outs approved but not yet paid ------------------------
+  run.lines.filter((l) => !l.excluded).forEach((line) => {
+    getPayableCashouts(line.staffId).forEach((c) => {
+      markCashoutPaid(c.id, run.name);
+      warnings.push(`${line.staffName}: TOIL cash-out of ${c.hours.toFixed(2)}h ($${c.estimatedAmount.toFixed(2)}) released in this run.`);
+    });
+  });
+
   return { accruedHours: round2(accruedHours), drawnHours: round2(drawnHours), entries: postings.length, warnings };
 }
+
+/**
+ * Approved TOIL cash-outs as pay-run earnings lines. The TOIL balance was already
+ * reduced at approval, so these are money-only components.
+ */
+export function toilCashoutEarnings(staffId: string) {
+  return getPayableCashouts(staffId).map((c) => ({
+    id: c.id,
+    label: `TOIL cash-out (${c.basis === 'current_rate' ? 'current rate' : 'accrual rates'})`,
+    stpCode: 'TOIL_CASHOUT',
+    units: c.hours,
+    rate: c.hours > 0 ? round2(c.estimatedAmount / c.hours) : 0,
+    amount: c.estimatedAmount,
+  }));
+}
+
 
 /** Remove a run's leave postings (unlock, reverse or delete). */
 export function reverseLeaveForRun(runId: string) {
