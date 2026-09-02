@@ -102,7 +102,7 @@ export function LeaveBalancesView({ employeeName }: Props) {
     <div className="p-6 space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Leave balances</h1>
-        <p className="text-sm text-muted-foreground">Your accrued RDO, ADO and TOIL time.</p>
+        <p className="text-sm text-muted-foreground">Your accrued Rostered Day Off (RDO), Accrued Day Off (ADO) and Time Off in Lieu (TOIL) balances.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -114,13 +114,13 @@ export function LeaveBalancesView({ employeeName }: Props) {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>{c.label}</span>
-                  <Badge variant={optedIn ? 'default' : 'outline'}>{optedIn ? 'Opted in' : 'Not opted in'}</Badge>
+                  <Badge variant={optedIn ? 'default' : 'outline'}>{optedIn ? 'Enrolled' : 'Not enrolled'}</Badge>
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">{c.desc}</p>
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-semibold tracking-tight ${bal < 0 ? 'text-destructive' : ''}`}>{bal.toFixed(2)}<span className="text-sm text-muted-foreground ml-1">hrs</span></div>
-                {bal < 0 && <p className="text-xs text-destructive mt-1">Advanced against future accrual</p>}
+                {bal < 0 && <p className="text-xs text-destructive mt-1">Leave in advance — to be offset against future accruals</p>}
                 <Button
                   size="sm" variant="outline" className="mt-3 w-full"
                   onClick={() => setRequestOpen(c.kind)}
@@ -133,7 +133,7 @@ export function LeaveBalancesView({ employeeName }: Props) {
                     disabled={bal <= 0}
                     onClick={() => setCashoutOpen(true)}
                   >
-                    <Banknote className="h-3 w-3 mr-1.5" /> Cash out TOIL
+                    <Banknote className="h-3 w-3 mr-1.5" /> Request TOIL payout
                   </Button>
                 )}
               </CardContent>
@@ -144,14 +144,14 @@ export function LeaveBalancesView({ employeeName }: Props) {
 
       {myCashouts.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">TOIL cash-out requests</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">TOIL payout requests</CardTitle></CardHeader>
           <CardContent className="divide-y">
             {myCashouts.map(r => (
               <div key={r.id} className="flex items-center justify-between py-2 text-sm">
                 <div>
                   <div className="font-medium">{r.hours.toFixed(2)}h · ${r.estimatedAmount.toFixed(2)}</div>
                   <div className="text-xs text-muted-foreground">
-                    {r.requestedOn} — paid at {r.basis === 'current_rate' ? 'current rate' : 'original accrual rates'}
+                    {r.requestedOn} — paid at the {r.basis === 'current_rate' ? 'rate at date of payment' : 'rate at time of accrual'}
                     {r.paidInPeriod ? ` • paid in ${r.paidInPeriod}` : ''}
                   </div>
                 </div>
