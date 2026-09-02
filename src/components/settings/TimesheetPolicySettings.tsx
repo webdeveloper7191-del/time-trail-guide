@@ -257,7 +257,6 @@ export function PolicyTimeTracking() {
               onChange={v => {
                 const mode = v as TimesheetPolicy['timeTracking']['kioskVerificationMode'];
                 setField('timeTracking', 'kioskVerificationMode', mode);
-                setField('timeTracking', 'requireKioskPhoto', mode !== 'pin');
               }}
             />
             <NumberRow
@@ -997,7 +996,7 @@ export function PolicyIssues() {
   const { resolved, setField, fieldProps } = usePolicyAndScope();
 
   // ---- Variance helpers: map enum <-> {enabled, minutes} for clearer UX ----
-  type VFlag = TimesheetPolicy['issues']['flagShiftTimeVariance'];
+  type VFlag = TimesheetPolicy['issues']['flagBreakDurationVariance'];
   const varianceMinutes = (v: VFlag): number =>
     v === 'over_5m' ? 5 : v === 'over_10m' ? 10 : v === 'over_15m' ? 15 : v === 'always' ? 0 : 10;
   const varianceEnabled = (v: VFlag) => v !== 'never';
