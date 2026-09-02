@@ -246,7 +246,7 @@ export const DEFAULT_LOCATIONS: LocationLeavePolicy[] = [
 
 // ---------- In-memory store (with localStorage persistence) ----------
 
-const LS_KEY = 'rostered.leaveAccruals.v1';
+const LS_KEY = 'rostered.leaveAccruals.v2';
 
 const _defaults = {
   awards: [...DEFAULT_AWARDS],
