@@ -99,8 +99,12 @@ function usePolicyAndScope() {
 
 // ---------- Scope bar (exported) ----------
 export function TimesheetPolicyScopeBar() {
+  useSyncExternalStore(timesheetPolicyStore.subscribe, getPolicyVersion);
   const scope = useScope();
   const isTenant = scope === TENANT_SCOPE;
+  const counts = timesheetPolicyStore.getOverrideCounts();
+  const overrideCount = isTenant ? 0 : (counts[scope] ?? 0);
+  const customisedLocations = Object.keys(counts).length;
   return (
     <Card>
       <CardContent className="pt-6">
@@ -108,13 +112,30 @@ export function TimesheetPolicyScopeBar() {
           <div className="flex items-center gap-3">
             {isTenant ? <Globe2 className="h-5 w-5 text-primary" /> : <Building2 className="h-5 w-5 text-primary" />}
             <div>
-              <p className="text-sm font-medium tracking-tight">
-                {isTenant ? 'Editing tenant defaults' : 'Editing location override'}
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium tracking-tight">
+                  {isTenant ? 'Editing tenant defaults' : 'Editing location override'}
+                </p>
+                {isTenant ? (
+                  <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground">
+                    {customisedLocations === 0
+                      ? 'All locations inherit these'
+                      : `${customisedLocations} location${customisedLocations === 1 ? '' : 's'} customised`}
+                  </Badge>
+                ) : overrideCount === 0 ? (
+                  <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1">
+                    <Info className="h-3 w-3" /> No overrides — fully inheriting tenant defaults
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] h-5">
+                    {overrideCount} field{overrideCount === 1 ? '' : 's'} overridden
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {isTenant
                   ? 'These settings apply to every location unless explicitly overridden.'
-                  : 'Only changed fields override the tenant default. Reset a field to fall back to tenant.'}
+                  : 'Only changed fields override the tenant default. Fields marked "Inherited" follow the tenant value live — if the tenant default changes, this location changes with it.'}
               </p>
             </div>
           </div>
@@ -127,7 +148,14 @@ export function TimesheetPolicyScopeBar() {
               <SelectContent>
                 <SelectItem value={TENANT_SCOPE}>Tenant defaults (global)</SelectItem>
                 {mockLocations.map(loc => (
-                  <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                  <SelectItem key={loc.id} value={loc.id}>
+                    <span className="flex items-center gap-2">
+                      {loc.name}
+                      <span className="text-[10px] text-muted-foreground">
+                        {counts[loc.id] ? `${counts[loc.id]} override${counts[loc.id] === 1 ? '' : 's'}` : 'inherits tenant'}
+                      </span>
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -135,6 +163,7 @@ export function TimesheetPolicyScopeBar() {
               <Button
                 variant="outline"
                 size="sm"
+                disabled={overrideCount === 0}
                 onClick={() => timesheetPolicyStore.resetLocation(scope)}
                 className="gap-1.5"
               >
@@ -148,6 +177,7 @@ export function TimesheetPolicyScopeBar() {
     </Card>
   );
 }
+
 
 // ---------- Tab content (one per section, exported) ----------
 export function PolicyTimeTracking() {
