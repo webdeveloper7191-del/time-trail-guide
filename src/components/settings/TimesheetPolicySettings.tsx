@@ -1075,9 +1075,9 @@ export function PolicyIssues() {
             onChange={v => setField('issues', 'flagMissingClockOut', v as TimesheetPolicy['issues']['flagMissingClockOut'])}
           />
           <SelectRow
-            {...fieldProps('issues', 'flagClockBoundaryBreach', 'Flag Out-of-Bounds Clock Events',
-              'Raise a flag when staff clock in too early or clock out too late, relative to the boundary chosen below.',
-              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>, boundary = <em>Scheduled shift</em>, early tolerance = <em>15 min</em>. Clock-in 20 min before shift start → flagged. 10 min early → no flag.</p>{severityOptionGuide}</>)}
+            {...fieldProps('issues', 'flagClockBoundaryBreach', 'Alert on very early clock-ins / very late clock-outs',
+              'Review-only alert: it never changes the recorded time or pay — it just flags the timesheet for a manager when a punch falls too far outside the allowed grace windows below.',
+              <><p className="font-medium mb-1">Example</p><p>Severity = <em>Warning</em>, grace = <em>15 min</em>, shift starts 9:00 AM. Clock-in 8:50 AM → no alert. Clock-in 8:30 AM → timesheet flagged for review; the recorded time stays 8:30 AM.</p>{severityOptionGuide}</>)}
             value={resolved.issues.flagClockBoundaryBreach}
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagClockBoundaryBreach', v as TimesheetPolicy['issues']['flagClockBoundaryBreach'])}
@@ -1092,16 +1092,16 @@ export function PolicyIssues() {
             onChange={v => setField('issues', 'clockBoundaryReference', v as TimesheetPolicy['issues']['clockBoundaryReference'])}
           />
           <NumberRow
-            {...fieldProps('issues', 'earlyClockInToleranceMinutes', 'Early Clock-In Tolerance (minutes)',
-              'Grace window for the flag above — it never changes the recorded time. A clock-in earlier than this raises the flag at the severity set in "Flag Out-of-Bounds Clock Events". Keep it larger than your rounding interval so rounding and flagging do not double-handle the same punch.',
-              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster start 9:00 AM. Clock-in 8:35 AM → ok. Clock-in 8:20 AM → flagged.</p></>)}
+            {...fieldProps('issues', 'earlyClockInToleranceMinutes', 'Grace before shift start (minutes)',
+              'How early a clock-in may be without raising the alert above. This is a review threshold only — it never changes the recorded time or pay (that\'s what rounding does). Keep it larger than your rounding interval so the two don\'t double-handle the same punch.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>, shift starts 9:00 AM. Clock-in 8:35 AM → no alert. Clock-in 8:20 AM → flagged for review (recorded time is still 8:20 AM).</p></>)}
             value={resolved.issues.earlyClockInToleranceMinutes}
             onChange={v => setField('issues', 'earlyClockInToleranceMinutes', Math.max(0, v))}
           />
           <NumberRow
-            {...fieldProps('issues', 'lateClockOutToleranceMinutes', 'Late Clock-Out Tolerance (minutes)',
-              'Grace window for the flag above — it never changes the recorded time. A clock-out later than this raises the flag at the severity set in "Flag Out-of-Bounds Clock Events".',
-              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster end 5:00 PM. Clock-out 5:25 PM → ok. Clock-out 5:45 PM → flagged.</p></>)}
+            {...fieldProps('issues', 'lateClockOutToleranceMinutes', 'Grace after shift end (minutes)',
+              'How late a clock-out may be without raising the alert above. Review threshold only — the recorded time and pay are never changed by this setting.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>, shift ends 5:00 PM. Clock-out 5:25 PM → no alert. Clock-out 5:45 PM → flagged for review.</p></>)}
             value={resolved.issues.lateClockOutToleranceMinutes}
             onChange={v => setField('issues', 'lateClockOutToleranceMinutes', Math.max(0, v))}
           />
