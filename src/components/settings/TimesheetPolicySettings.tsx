@@ -19,7 +19,6 @@ import {
   unscheduledRosterFlagOptions,
   unscheduledShiftCreationOptions,
   unscheduledEndTimeRuleOptions,
-  paidMealOptions,
   
   earlyClockInOptions,
   kioskVerificationOptions,
@@ -506,7 +505,7 @@ export function PolicyApproving() {
           </div>
           <ToggleRow
             {...fieldProps('approving', 'roundingEnabled', 'Timesheet Rounding (Auto)',
-              'Master switch for automatic rounding of start and end times. When off, the rules below are ignored.',
+              'Master switch. When off, recorded times are used exactly as punched and every rule below is ignored.',
               <>
                 <p className="font-medium mb-1">What it does</p>
                 <p>Turns on the rounding engine. When OFF, recorded times are used verbatim and the four rules below are ignored (even if individually set).</p>
@@ -520,8 +519,8 @@ export function PolicyApproving() {
           <div className={roundingOn ? '' : 'opacity-50 pointer-events-none select-none'}>
             <div className="space-y-1 divide-y">
               <ToggleRow
-                {...fieldProps('approving', 'adjustStartToScheduledIfEarlier', 'Snap start to scheduled if earlier',
-                  'Early clock-ins are rounded forward to the scheduled start. Later clock-ins follow the rounding rule below.',
+                {...fieldProps('approving', 'adjustStartToScheduledIfEarlier', 'Step 1 — Snap start to scheduled if earlier',
+                  'Runs first. Only applies to clock-ins BEFORE the rostered start: the time is pulled forward to the scheduled start and Step 2 is skipped. Late clock-ins are untouched here.',
                   <>
                     <p className="font-medium mb-1">Example</p>
                     <p>Roster start 9:00. Staff clocks in 8:52. With <strong>ON</strong>, the recorded start becomes 9:00 (no early-start pay). With OFF, 8:52 is preserved and rounded per the rule below.</p>
@@ -530,8 +529,8 @@ export function PolicyApproving() {
                 onChange={v => setField('approving', 'adjustStartToScheduledIfEarlier', v)}
               />
               <SelectRow
-                {...fieldProps('approving', 'startTimeAdjustment', 'Start Time Rounding',
-                  'How non-snapped start times are rounded. Later rounding may reduce payable hours.',
+                {...fieldProps('approving', 'startTimeAdjustment', 'Step 2 — Start Time Rounding',
+                  'Runs only on start times Step 1 did not snap (late clock-ins, or any clock-in when snapping is off). Rounds to the chosen interval.',
                   <>
                     <p className="font-medium mb-1">Example</p>
                     <p>Choose <em>"Nearest 15 minutes"</em>. Clock-in 9:07 → recorded as 9:00. Clock-in 9:08 → 9:15. Choose <em>"Round up to 15"</em> to always favour the employee on late starts.</p>
@@ -542,8 +541,8 @@ export function PolicyApproving() {
                 onChange={v => setField('approving', 'startTimeAdjustment', v as TimesheetPolicy['approving']['startTimeAdjustment'])}
               />
               <ToggleRow
-                {...fieldProps('approving', 'adjustEndToScheduledIfDelayed', 'Snap end to scheduled if delayed',
-                  'Late clock-outs are rounded back to the scheduled end. Early clock-outs follow the rounding rule below.',
+                {...fieldProps('approving', 'adjustEndToScheduledIfDelayed', 'Step 1 — Snap end to scheduled if delayed',
+                  'Runs first. Only applies to clock-outs AFTER the rostered end: the time is pulled back to the scheduled end and Step 2 is skipped. Early clock-outs are untouched here.',
                   <>
                     <p className="font-medium mb-1">Example</p>
                     <p>Roster end 17:00. Staff clocks out 17:09. With <strong>ON</strong>, the recorded end becomes 17:00 (no unapproved overtime). With OFF, 17:09 is preserved and rounded per the rule below — and may trigger overtime.</p>
@@ -552,8 +551,8 @@ export function PolicyApproving() {
                 onChange={v => setField('approving', 'adjustEndToScheduledIfDelayed', v)}
               />
               <SelectRow
-                {...fieldProps('approving', 'endTimeAdjustment', 'End Time Rounding',
-                  'How non-snapped end times are rounded. Earlier rounding may reduce total hours paid.',
+                {...fieldProps('approving', 'endTimeAdjustment', 'Step 2 — End Time Rounding',
+                  'Runs only on end times Step 1 did not snap (early clock-outs, or any clock-out when snapping is off). Rounds to the chosen interval.',
                   <>
                     <p className="font-medium mb-1">Example</p>
                     <p>Choose <em>"Nearest 15 minutes"</em>. Clock-out 16:53 → 16:45 (staff loses 5 min). Choose <em>"Round down to 15"</em> for strict trimming, or <em>"Nearest 5"</em> for a fairer split.</p>
@@ -694,6 +693,15 @@ export function PolicyUnscheduled() {
             value={u.allowTimeDriftMatching}
             options={timeDriftOptions}
             onChange={v => setField('unscheduled', 'allowTimeDriftMatching', v as TimesheetPolicy['unscheduled']['allowTimeDriftMatching'])}
+          />
+        )}
+        {u.linkUnscheduledToScheduled !== 'never' && u.allowTimeDriftMatching === 'custom' && (
+          <NumberRow
+            {...fieldProps('unscheduled', 'allowTimeDriftCustomMinutes', 'Best-fit match window (minutes)',
+              'Exact number of minutes a punch may sit either side of the rostered start and still be matched to that shift. The closest rostered shift within this window wins.',
+              <><p className="font-medium mb-1">Example</p><p>Set to <strong>45</strong>. Rostered start 9:00 AM: a punch at 9:40 AM matches; a punch at 9:50 AM does not and follows step 2. If two shifts are within the window, the one with the smallest time difference is chosen.</p></>)}
+            value={u.allowTimeDriftCustomMinutes}
+            onChange={v => setField('unscheduled', 'allowTimeDriftCustomMinutes', Math.max(0, v))}
           />
         )}
 
@@ -897,17 +905,11 @@ export function PolicyBreaks() {
             value={resolved.breaks.autoIncludeScheduledOnClockOut}
             onChange={v => setField('breaks', 'autoIncludeScheduledOnClockOut', v)}
           />
-          <SelectRow
-            {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
-              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.",
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Never (unpaid)"</em> to deduct meal breaks from paid time, or <em>"Always paid"</em> to keep meal breaks paid. Award rules (if defined) always take precedence over this fallback.</p>{paidMealOptionGuide}</>)}
-            value={resolved.breaks.paidMealBreaks}
-            options={paidMealOptions}
-            onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
-          />
           <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Current outcome: </span>
-            {paidMealSummary(resolved.breaks)}
+            <span className="font-medium text-foreground">Paid vs unpaid meal breaks: </span>
+            determined by the applicable Award / Enterprise Agreement, and otherwise by the
+            <span className="font-medium text-foreground"> Break Rules</span> library below. There is no
+            timesheet-level override.
           </div>
 
         </PermissionGroup>
@@ -1020,6 +1022,7 @@ export function PolicyIssues() {
             options={anomalySeverityOptions}
             onChange={v => setField('issues', 'flagClockBoundaryBreach', v as TimesheetPolicy['issues']['flagClockBoundaryBreach'])}
           />
+          <div className={resolved.issues.flagClockBoundaryBreach === 'off' ? 'opacity-50 pointer-events-none select-none' : ''}>
           <SelectRow
             {...fieldProps('issues', 'clockBoundaryReference', 'Boundary Reference',
               'Decide whether the tolerances below are measured against each staff member\'s scheduled shift, or against the location\'s operating hours (configured in Location settings). Choose Scheduled shift for roster-driven sites; choose Operating window for open-floor / drop-in sites.',
@@ -1030,19 +1033,19 @@ export function PolicyIssues() {
           />
           <NumberRow
             {...fieldProps('issues', 'earlyClockInToleranceMinutes', 'Early Clock-In Tolerance (minutes)',
-              'How many minutes a clock-in may precede the boundary (shift start or operating window open) without being flagged.',
+              'Grace window for the flag above — it never changes the recorded time. A clock-in earlier than this raises the flag at the severity set in "Flag Out-of-Bounds Clock Events". Keep it larger than your rounding interval so rounding and flagging do not double-handle the same punch.',
               <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster start 9:00 AM. Clock-in 8:35 AM → ok. Clock-in 8:20 AM → flagged.</p></>)}
             value={resolved.issues.earlyClockInToleranceMinutes}
             onChange={v => setField('issues', 'earlyClockInToleranceMinutes', Math.max(0, v))}
           />
           <NumberRow
             {...fieldProps('issues', 'lateClockOutToleranceMinutes', 'Late Clock-Out Tolerance (minutes)',
-              'How many minutes a clock-out may exceed the boundary (shift end or operating window close) without being flagged.',
+              'Grace window for the flag above — it never changes the recorded time. A clock-out later than this raises the flag at the severity set in "Flag Out-of-Bounds Clock Events".',
               <><p className="font-medium mb-1">Example</p><p>Set to <strong>30</strong>. Roster end 5:00 PM. Clock-out 5:25 PM → ok. Clock-out 5:45 PM → flagged.</p></>)}
             value={resolved.issues.lateClockOutToleranceMinutes}
             onChange={v => setField('issues', 'lateClockOutToleranceMinutes', Math.max(0, v))}
           />
-
+          </div>
 
         </PermissionGroup>
 
@@ -1285,20 +1288,9 @@ const timeDriftOptionGuide = (
     { label: 'Within 15 / 30 minutes', description: 'Small buffer for routine variation in clock-in habits.' },
     { label: 'Within 1 / 2 hours', description: 'Broad buffer for variable start times (e.g. on-call, callouts).' },
     { label: 'Within 4 hours', description: 'Very loose — useful only for fully ad-hoc rostering.' },
+    { label: 'Custom (minutes)', description: 'Enter your own best-fit window; the closest rostered shift inside it is matched.' },
   ]} />
 );
-
-const paidMealOptionGuide = (
-  <OptionGuide items={[
-    { label: 'Never (unpaid)', description: 'Meal breaks are always unpaid (default for most awards).' },
-    { label: 'Always paid', description: 'Meal breaks are always paid regardless of shift length.' },
-  ]} />
-);
-
-function paidMealSummary(b: TimesheetPolicy['breaks']): string {
-  if (b.paidMealBreaks === 'never') return 'Meal breaks are unpaid and deducted from paid time.';
-  return 'Every meal break is paid and not deducted from paid time.';
-}
 
 
 const boundaryReferenceOptionGuide = (
