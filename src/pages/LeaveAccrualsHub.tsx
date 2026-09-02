@@ -49,15 +49,15 @@ export function LeaveAccrualsWorkforceSection() {
   return (
     <Tabs defaultValue="staff" className="w-full">
       <TabsList>
-        <TabsTrigger value="staff"><CalendarClock className="h-4 w-4 mr-1.5" />Staff opt-ins & balances</TabsTrigger>
-        <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Ledger</TabsTrigger>
+        <TabsTrigger value="staff"><CalendarClock className="h-4 w-4 mr-1.5" />Staff enrolment &amp; balances</TabsTrigger>
+        <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Accrual ledger</TabsTrigger>
         <TabsTrigger value="tagging"><ArrowLeftRight className="h-4 w-4 mr-1.5" />Roster tagging</TabsTrigger>
       </TabsList>
       <TabsContent value="staff" className="mt-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Staff opt-ins & balances</CardTitle>
-            <CardDescription>Per-employee enrolment. Balances shown are live from the ledger.</CardDescription>
+            <CardTitle className="text-base">Staff enrolment &amp; balances</CardTitle>
+            <CardDescription>Per-employee participation in each leave scheme. Balances shown are live from the accrual ledger.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -67,7 +67,7 @@ export function LeaveAccrualsWorkforceSection() {
                   {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
                     <TableHead key={k} className="text-center">{k}</TableHead>
                   ))}
-                  <TableHead className="text-right">Balance (h)</TableHead>
+                  <TableHead className="text-right">Balance (hours)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -389,9 +389,9 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
               <TableRow>
                 <TableHead>Staff</TableHead>
                 {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
-                  <TableHead key={k} className="text-center">{k}</TableHead>
+                <TableHead key={k} className="text-center">{k}</TableHead>
                 ))}
-                <TableHead className="text-right">Balance (h)</TableHead>
+                <TableHead className="text-right">Balance (hours)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
