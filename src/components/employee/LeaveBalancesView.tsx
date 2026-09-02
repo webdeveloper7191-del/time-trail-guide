@@ -119,19 +119,49 @@ export function LeaveBalancesView({ employeeName }: Props) {
                 <p className="text-xs text-muted-foreground">{c.desc}</p>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-semibold tracking-tight">{bal.toFixed(2)}<span className="text-sm text-muted-foreground ml-1">hrs</span></div>
+                <div className={`text-3xl font-semibold tracking-tight ${bal < 0 ? 'text-destructive' : ''}`}>{bal.toFixed(2)}<span className="text-sm text-muted-foreground ml-1">hrs</span></div>
+                {bal < 0 && <p className="text-xs text-destructive mt-1">Advanced against future accrual</p>}
                 <Button
                   size="sm" variant="outline" className="mt-3 w-full"
-                  disabled={bal <= 0}
                   onClick={() => setRequestOpen(c.kind)}
                 >
                   <Send className="h-3 w-3 mr-1.5" /> Request {c.label} leave
                 </Button>
+                {c.kind === 'TOIL' && (
+                  <Button
+                    size="sm" variant="secondary" className="mt-2 w-full"
+                    disabled={bal <= 0}
+                    onClick={() => setCashoutOpen(true)}
+                  >
+                    <Banknote className="h-3 w-3 mr-1.5" /> Cash out TOIL
+                  </Button>
+                )}
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {myCashouts.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">TOIL cash-out requests</CardTitle></CardHeader>
+          <CardContent className="divide-y">
+            {myCashouts.map(r => (
+              <div key={r.id} className="flex items-center justify-between py-2 text-sm">
+                <div>
+                  <div className="font-medium">{r.hours.toFixed(2)}h · ${r.estimatedAmount.toFixed(2)}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {r.requestedOn} — paid at {r.basis === 'current_rate' ? 'current rate' : 'original accrual rates'}
+                    {r.paidInPeriod ? ` • paid in ${r.paidInPeriod}` : ''}
+                  </div>
+                </div>
+                <Badge variant="outline">{r.status}</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader><CardTitle className="text-base">Recent activity</CardTitle></CardHeader>
