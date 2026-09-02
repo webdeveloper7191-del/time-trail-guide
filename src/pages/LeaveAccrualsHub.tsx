@@ -97,9 +97,9 @@ export function LeaveAccrualsWorkforceSection() {
 }
 
 const KIND_META: Record<LeaveKind, { label: string; hue: string; blurb: string }> = {
-  RDO:  { label: 'RDO — Rostered Day Off', hue: 'bg-blue-50 text-blue-700 border-blue-200', blurb: 'Fixed cyclical day off funded by working slightly longer than the ordinary week.' },
-  ADO:  { label: 'ADO — Accrued Day Off',  hue: 'bg-emerald-50 text-emerald-700 border-emerald-200', blurb: 'Time banked per ordinary hour worked, drawn down as full days when balance reaches a block.' },
-  TOIL: { label: 'TOIL — Time Off In Lieu', hue: 'bg-violet-50 text-violet-700 border-violet-200', blurb: 'Overtime converted to leave (time-for-time or penalty-equivalent), instead of being paid out.' },
+  RDO:  { label: 'RDO — Rostered Day Off', hue: 'bg-blue-50 text-blue-700 border-blue-200', blurb: 'A fixed day off each roster cycle, accrued by working additional time on ordinary days (e.g. a 38-hour week worked over 19 days).' },
+  ADO:  { label: 'ADO — Accrued Day Off',  hue: 'bg-emerald-50 text-emerald-700 border-emerald-200', blurb: 'Time accrued for each ordinary hour worked, taken as a full day once the minimum block balance is reached.' },
+  TOIL: { label: 'TOIL — Time Off in Lieu', hue: 'bg-violet-50 text-violet-700 border-violet-200', blurb: 'Overtime hours banked as paid time off instead of an overtime payment, taken at the rate prescribed by the award (time-for-time or penalty-equivalent).' },
 };
 
 export default function LeaveAccrualsHub() {
@@ -111,15 +111,12 @@ export default function LeaveAccrualsHub() {
       <main className="flex-1 overflow-x-hidden">
         <div className="max-w-[1400px] mx-auto p-6 space-y-6">
           <header className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" /> Full end-to-end slice
-            </div>
             <h1 className="text-2xl font-semibold tracking-tight" style={{ letterSpacing: '-0.025em' }}>
-              RDO · ADO · TOIL management
+              Flexibility &amp; Accrued Leave (RDO · ADO · TOIL)
             </h1>
             <p className="text-sm text-muted-foreground max-w-3xl">
-              Configure how rostered, accrued, and lieu days are earned and consumed across your awards, locations,
-              and staff — and preview how the roster editor tags shifts based on that configuration.
+              Configure how Rostered Days Off, Accrued Days Off and Time Off in Lieu are accrued, taken and paid out.
+              Settings apply at three levels: award defaults, location policies, and individual staff enrolment.
             </p>
           </header>
 
