@@ -2,18 +2,21 @@ import { useSyncExternalStore, useMemo, useState } from 'react';
 import {
   subscribeLeave,
   getLeaveSnapshot,
-  LeaveStore,
   findStaffByName,
+  consumeLeave,
+  planDrawdown,
+  quoteToilCashout,
+  requestToilCashout,
   type LeaveKind,
 } from '@/lib/leaveAccrualEngine';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Send } from 'lucide-react';
+import { Calendar, Clock, Send, Banknote, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -27,6 +30,9 @@ export function LeaveBalancesView({ employeeName }: Props) {
   const [reqDate, setReqDate] = useState('');
   const [reqHours, setReqHours] = useState('8');
   const [reqNote, setReqNote] = useState('');
+  const [cashoutOpen, setCashoutOpen] = useState(false);
+  const [cashHours, setCashHours] = useState('8');
+  const [cashReason, setCashReason] = useState('');
 
   if (!staff) {
     return <div className="p-8 text-sm text-muted-foreground">No leave profile found for {employeeName}.</div>;
@@ -36,34 +42,61 @@ export function LeaveBalancesView({ employeeName }: Props) {
     .filter(l => l.staffId === staff.staffId)
     .sort((a, b) => (a.occurredOn < b.occurredOn ? 1 : -1));
 
+  const myCashouts = (snap.cashouts ?? []).filter(c => c.staffId === staff.staffId);
+
+  // Current base rate: most recent recorded accrual rate, else a sensible default.
+  const currentRate = myLedger.find(l => l.rateAtAccrual)?.rateAtAccrual ?? 35;
+
   const cards: { kind: LeaveKind; label: string; desc: string }[] = [
     { kind: 'RDO',  label: 'RDO',  desc: 'Rostered Day Off' },
     { kind: 'ADO',  label: 'ADO',  desc: 'Accrued Day Off' },
     { kind: 'TOIL', label: 'TOIL', desc: 'Time Off In Lieu' },
   ];
 
+  const drawdownPreview = requestOpen && Number(reqHours) > 0
+    ? planDrawdown({ staffId: staff.staffId, kind: requestOpen, hours: Number(reqHours), awardCode: staff.awardCode })
+    : null;
+
+  const cashoutQuote = cashoutOpen && Number(cashHours) > 0
+    ? quoteToilCashout({ staffId: staff.staffId, hours: Number(cashHours), currentRate, awardCode: staff.awardCode })
+    : null;
+
   const submitRequest = () => {
     if (!requestOpen || !reqDate) return;
     const hours = Number(reqHours);
     if (!hours || hours <= 0) return;
-    if ((staff.balanceHours[requestOpen] ?? 0) < hours) {
-      toast.error('Insufficient balance');
-      return;
-    }
-    const entry = LeaveStore.postLedger({
+    const { plan } = consumeLeave({
       staffId: staff.staffId,
       kind: requestOpen,
-      type: 'consumption',
-      hours: -Math.abs(hours),
+      hours,
       occurredOn: reqDate,
+      awardCode: staff.awardCode,
       note: reqNote || `${requestOpen} leave request`,
     });
     toast.success(`${requestOpen} leave requested`, {
-      description: `−${hours}h on ${reqDate} • entry ${entry.id}`,
+      description: plan.unpaidHours > 0 || plan.negativeHours > 0 ? plan.message : `−${hours}h on ${reqDate}`,
     });
     setRequestOpen(null);
     setReqDate(''); setReqHours('8'); setReqNote('');
   };
+
+  const submitCashout = () => {
+    const hours = Number(cashHours);
+    if (!hours || hours <= 0) return;
+    const req = requestToilCashout({
+      staffId: staff.staffId,
+      staffName: staff.staffName,
+      hours,
+      currentRate,
+      awardCode: staff.awardCode,
+      reason: cashReason,
+    });
+    toast.success(req.status === 'approved' ? 'TOIL cash-out approved' : 'TOIL cash-out submitted for approval', {
+      description: `${req.hours.toFixed(2)}h ≈ $${req.estimatedAmount.toFixed(2)} — paid via your next timesheet.`,
+    });
+    setCashoutOpen(false); setCashHours('8'); setCashReason('');
+  };
+
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
