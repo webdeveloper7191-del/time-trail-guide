@@ -86,6 +86,8 @@ export interface LocationLeavePolicy {
 export interface StaffLeaveConfig {
   staffId: string;
   staffName: string;
+  /** Award this employee is covered by — drives cash-out and shortfall rules. */
+  awardCode?: string;
   optedIn: Record<LeaveKind, boolean>;
   balanceHours: Record<LeaveKind, number>;
   rdoAnchorDate?: string; // ISO — first scheduled RDO
