@@ -208,6 +208,12 @@ export function LeaveBalancesView({ employeeName }: Props) {
             <p className="text-xs text-muted-foreground">
               Current balance: <strong>{(staff.balanceHours[requestOpen ?? 'TOIL'] ?? 0).toFixed(2)}h</strong>
             </p>
+            {drawdownPreview && (drawdownPreview.unpaidHours > 0 || drawdownPreview.negativeHours > 0) && (
+              <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>{drawdownPreview.message}</span>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRequestOpen(null)}>Cancel</Button>
@@ -215,6 +221,54 @@ export function LeaveBalancesView({ employeeName }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={cashoutOpen} onOpenChange={setCashoutOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Cash out TOIL</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Hours to cash out</Label>
+              <Input type="number" min="0" step="0.25" value={cashHours} onChange={e => setCashHours(e.target.value)} />
+              <p className="text-xs text-muted-foreground">Available: {(staff.balanceHours.TOIL ?? 0).toFixed(2)}h</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Reason (optional)</Label>
+              <Textarea rows={2} value={cashReason} onChange={e => setCashReason(e.target.value)} placeholder="Why you're cashing out" />
+            </div>
+            {cashoutQuote && (
+              <div className="rounded-md border p-3 space-y-2 text-xs">
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span>Estimated payment</span>
+                  <span className="tabular-nums">${cashoutQuote.amount.toFixed(2)}</span>
+                </div>
+                <p className="text-muted-foreground">
+                  {cashoutQuote.basis === 'current_rate'
+                    ? `Paid at your current rate of $${currentRate.toFixed(2)}/h.`
+                    : 'Paid at the rate that applied when each hour was banked (oldest hours first).'}
+                  {' '}Blended rate ${cashoutQuote.blendedRate.toFixed(2)}/h.
+                </p>
+                {cashoutQuote.layers.map((l, i) => (
+                  <div key={i} className="flex justify-between text-muted-foreground">
+                    <span>{l.hours.toFixed(2)}h banked {l.accruedOn} @ ${l.rate.toFixed(2)}{l.multiplier !== 1 ? ` × ${l.multiplier}` : ''}</span>
+                    <span className="tabular-nums">${l.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                {cashoutQuote.warnings.map((w, i) => (
+                  <div key={i} className="flex gap-2 text-amber-700"><AlertTriangle className="h-3.5 w-3.5 shrink-0" />{w}</div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Once approved, the hours leave your TOIL balance and the amount appears on your next timesheet as a TOIL cash-out line.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCashoutOpen(false)}>Cancel</Button>
+            <Button onClick={submitCashout} disabled={!cashoutQuote || cashoutQuote.hours <= 0}>Submit cash-out</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
