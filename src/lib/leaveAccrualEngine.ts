@@ -122,7 +122,51 @@ export interface LedgerEntry {
   sourceShiftId?: string;
   note?: string;
   createdAt: string;
+  /** Base hourly rate that applied when these hours were banked (accruals only). */
+  rateAtAccrual?: number;
+  /** Overtime/penalty multiplier that applied when banked (e.g. 1.5). */
+  multiplierAtAccrual?: number;
+  /** Hours of this accrual layer already consumed or cashed out (FIFO bookkeeping). */
+  drawnHours?: number;
+  /** Set on consumption entries that could not be covered by the balance. */
+  unpaidHours?: number;
 }
+
+// ---------- TOIL cash-out ----------
+
+export type CashoutStatus = 'pending' | 'approved' | 'rejected' | 'paid';
+
+export interface ToilCashoutRequest {
+  id: string;
+  staffId: string;
+  staffName: string;
+  hours: number;
+  requestedOn: string;
+  reason?: string;
+  status: CashoutStatus;
+  basis: ToilCashoutBasis;
+  /** Rate used when basis = current_rate. */
+  currentRate: number;
+  /** Calculated gross value at request time. */
+  estimatedAmount: number;
+  breakdown: CashoutLayer[];
+  decidedBy?: string;
+  decidedOn?: string;
+  decisionNote?: string;
+  /** Set when picked up by a timesheet / pay run. */
+  paidInPeriod?: string;
+  payItemCode?: string;
+}
+
+export interface CashoutLayer {
+  sourceEntryId: string;
+  accruedOn: string;
+  hours: number;
+  rate: number;
+  multiplier: number;
+  amount: number;
+}
+
 
 // ---------- Shift tagging ----------
 
