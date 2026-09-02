@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AccountingPlatform, PayRun } from '@/types/payroll';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
 import { buildJournal, buildPlatformCsv, downloadFile, journalBalance, platformLabel } from '@/lib/payroll/accountingExport';
-import { checkXeroConnection, postJournalToXero } from '@/lib/payroll/payrollCloud';
+import { checkAccountingConnection, postJournalToPlatform } from '@/lib/payroll/payrollCloud';
 import { toast } from 'sonner';
 
 interface Props {
@@ -21,7 +21,7 @@ export function AccountingIntegrationsPanel({ runs }: Props) {
   usePayroll();
   const [platform, setPlatform] = useState<AccountingPlatform>('xero');
   const [runId, setRunId] = useState<string>(runs[0]?.id ?? '');
-  const [testingXero, setTestingXero] = useState(false);
+  const [posting, setPosting] = useState(false);
 
   const conn = payrollStore.getConnection(platform);
   const run = runs.find((r) => r.id === runId);
@@ -52,47 +52,51 @@ export function AccountingIntegrationsPanel({ runs }: Props) {
     toast.success(`${platformLabel[platform]} file downloaded — import it under Accounting → Journals.`);
   };
 
-  const testXero = async () => {
-    setTestingXero(true);
+  const testConnection = async () => {
+    setPosting(true);
     try {
-      const result = await checkXeroConnection();
+      const result = await checkAccountingConnection(platform);
       if (!result.ok) {
         toast.error(result.message);
         return;
       }
       const org = result.tenants?.[0];
-      payrollStore.updateConnection('xero', {
+      payrollStore.updateConnection(platform, {
         connected: true,
-        organisationName: org?.tenantName ?? 'Xero organisation',
+        organisationName: org?.tenantName ?? `${platformLabel[platform]} organisation`,
         tenantRef: org?.tenantId,
         lastSyncedAt: new Date().toISOString(),
       });
-      toast.success(`Live Xero connection verified — ${org?.tenantName ?? 'organisation linked'}.`);
+      toast.success(`Live ${platformLabel[platform]} connection verified — ${org?.tenantName ?? 'organisation linked'}.`);
     } finally {
-      setTestingXero(false);
+      setPosting(false);
     }
   };
 
-  const postXeroJournal = async () => {
+  const postLiveJournal = async () => {
     if (!run) return;
-    setTestingXero(true);
+    if (!balance.balanced) {
+      toast.error('Journal does not balance — check the account mappings.');
+      return;
+    }
+    setPosting(true);
     try {
-      const result = await postJournalToXero(run, journal);
+      const result = await postJournalToPlatform(platform, run, journal, conn.tenantRef);
       if (!result.ok) {
         toast.error(result.message);
         return;
       }
       payrollStore.recordExport(run.id, {
         id: crypto.randomUUID(),
-        platform: 'xero',
+        platform,
         exportedAt: new Date().toISOString(),
-        fileName: `Xero manual journal ${result.manualJournalId ?? ''}`.trim(),
+        fileName: `${platformLabel[platform]} journal ${result.manualJournalId ?? ''}`.trim(),
         lineCount: journal.length,
       });
-      payrollStore.updateConnection('xero', { lastSyncedAt: new Date().toISOString() });
-      toast.success('Journal posted to Xero.');
+      payrollStore.updateConnection(platform, { connected: true, lastSyncedAt: new Date().toISOString() });
+      toast.success(`Journal posted to ${platformLabel[platform]}.`);
     } finally {
-      setTestingXero(false);
+      setPosting(false);
     }
   };
 
@@ -109,14 +113,18 @@ export function AccountingIntegrationsPanel({ runs }: Props) {
     <div className="space-y-6">
       <div className="rounded-lg border bg-muted/30 p-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium">Live Xero posting &amp; audit retention</p>
+          <p className="text-sm font-medium">Live {platformLabel[platform]} posting &amp; audit retention</p>
           <p className="text-xs text-muted-foreground">
-            Verify the Xero organisation, post the selected run as a manual journal, or restore posted runs from the cloud archive.
+            Verify the connected {platformLabel[platform]} organisation, post the selected run as a journal, or restore posted runs from the cloud archive.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={testXero} disabled={testingXero}>Test Xero connection</Button>
-          <Button variant="outline" size="sm" onClick={postXeroJournal} disabled={testingXero || !run}>Post journal to Xero</Button>
+          <Button variant="outline" size="sm" onClick={testConnection} disabled={posting}>
+            Test {platformLabel[platform]} connection
+          </Button>
+          <Button variant="outline" size="sm" onClick={postLiveJournal} disabled={posting || !run}>
+            Post journal to {platformLabel[platform]}
+          </Button>
           <Button variant="outline" size="sm" onClick={restoreFromCloud}>Restore from cloud</Button>
         </div>
       </div>

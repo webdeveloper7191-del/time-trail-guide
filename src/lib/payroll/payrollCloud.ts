@@ -37,8 +37,22 @@ export interface XeroPostResult {
   tenants?: { tenantId: string; tenantName: string }[];
 }
 
-async function callXero(body: Record<string, unknown>): Promise<XeroPostResult> {
-  const { data, error } = await supabase.functions.invoke('xero-post-journal', { body });
+export type LivePlatform = 'xero' | 'myob' | 'quickbooks';
+
+const functionFor: Record<LivePlatform, string> = {
+  xero: 'xero-post-journal',
+  myob: 'myob-post-journal',
+  quickbooks: 'quickbooks-post-journal',
+};
+
+const labelFor: Record<LivePlatform, string> = {
+  xero: 'Xero',
+  myob: 'MYOB',
+  quickbooks: 'QuickBooks',
+};
+
+async function callAccounting(platform: LivePlatform, body: Record<string, unknown>): Promise<XeroPostResult> {
+  const { data, error } = await supabase.functions.invoke(functionFor[platform], { body });
   if (error) {
     const details =
       typeof (error as { context?: { text?: () => Promise<string> } }).context?.text === 'function'
@@ -56,27 +70,28 @@ async function callXero(body: Record<string, unknown>): Promise<XeroPostResult> 
   return {
     ok: true,
     connected: true,
-    message: 'Journal posted to Xero.',
+    message: `Journal posted to ${labelFor[platform]}.`,
     manualJournalId: data?.manualJournalId ?? null,
     tenants: data?.tenants,
   };
 }
 
-/** Verify the Xero connection and list available organisations. */
-export function checkXeroConnection(): Promise<XeroPostResult> {
-  return callXero({ mode: 'check' });
+/** Verify a live accounting connection and list available organisations. */
+export function checkAccountingConnection(platform: LivePlatform): Promise<XeroPostResult> {
+  return callAccounting(platform, { mode: 'check' });
 }
 
-/** Post a balanced payroll journal to the connected Xero organisation. */
-export function postJournalToXero(
+/** Post a balanced payroll journal to the connected accounting organisation. */
+export function postJournalToPlatform(
+  platform: LivePlatform,
   run: PayRun,
   lines: JournalLine[],
   tenantId?: string,
 ): Promise<XeroPostResult> {
-  return callXero({
+  return callAccounting(platform, {
     mode: 'post',
     tenantId,
-    date: run.periodEnd,
+    date: run.paymentDate ?? run.periodEnd,
     narration: `Payroll — ${run.name}`,
     lines: lines.map((l) => ({
       accountCode: l.accountCode,
@@ -86,3 +101,11 @@ export function postJournalToXero(
     })),
   });
 }
+
+/** Verify the Xero connection and list available organisations. */
+export const checkXeroConnection = () => checkAccountingConnection('xero');
+
+/** Post a balanced payroll journal to the connected Xero organisation. */
+export const postJournalToXero = (run: PayRun, lines: JournalLine[], tenantId?: string) =>
+  postJournalToPlatform('xero', run, lines, tenantId);
+
