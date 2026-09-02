@@ -161,6 +161,15 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     scope: 'Tenant',
   },
   {
+    id: 'payroll',
+    label: 'Payroll',
+    group: 'Pay & Compliance',
+    description:
+      'Pay calendars, period approvals, pay runs, payslips, deductions, super, STP and accounting exports.',
+    actions: ['view', 'manage', 'approve', 'export', 'configure'],
+    scope: 'Tenant',
+  },
+  {
     id: 'compliance',
     label: 'Compliance & Ratios',
     group: 'Pay & Compliance',
@@ -168,6 +177,7 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     actions: ['view', 'export', 'configure'],
     scope: 'Location',
   },
+
   {
     id: 'locations',
     label: 'Locations & Areas',
