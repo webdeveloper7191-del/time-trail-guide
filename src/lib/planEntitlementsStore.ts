@@ -12,7 +12,7 @@ import {
 import { tenantStore } from '@/lib/tenantStore';
 import { permissionsStore } from '@/lib/permissionsStore';
 
-const KEY = 'rai.plan.entitlements.v6';
+const KEY = 'rai.plan.entitlements.v7';
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
