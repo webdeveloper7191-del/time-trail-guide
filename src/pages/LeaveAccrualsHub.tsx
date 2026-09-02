@@ -224,51 +224,51 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
               {a.toil?.enabled && (
                 <div className="rounded-md border bg-muted/20 p-3 space-y-3">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">TOIL cash-out</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">TOIL payout (cashing out)</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Controls how banked TOIL is valued when paid out. Hours banked years ago were earned at an older base rate —
-                      choose whether to honour those original rates or today's rate.
+                      Controls how banked TOIL hours are valued when an employee is paid out instead of taking the time off.
+                      Because TOIL may have been banked at an earlier base rate, choose the rate that applies at payment.
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Cash-out allowed</Label>
+                        <Label className="text-xs">Permit TOIL payout</Label>
                         <Switch checked={a.toil.cashoutEnabled ?? false}
                           onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutEnabled: c } })} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Manager approval</Label>
+                        <Label className="text-xs">Requires manager approval</Label>
                         <Switch checked={a.toil.cashoutRequiresApproval ?? true}
                           onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutRequiresApproval: c } })} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Re-apply OT penalty</Label>
+                        <Label className="text-xs">Include overtime penalty in payout</Label>
                         <Switch checked={a.toil.cashoutIncludesPenalty ?? true}
                           onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutIncludesPenalty: c } })} />
                       </div>
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label className="text-xs">Rate used for cash-out</Label>
+                      <Label className="text-xs">Payout rate basis</Label>
                       <Select
                         value={a.toil.cashoutRateBasis ?? 'accrual_rate'}
                         onValueChange={(v) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutRateBasis: v as ToilCashoutBasis } })}
                       >
                         <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="accrual_rate">Original rate when banked (default)</SelectItem>
-                          <SelectItem value="current_rate">Employee's current rate</SelectItem>
+                          <SelectItem value="accrual_rate">Rate at time of accrual (award default)</SelectItem>
+                          <SelectItem value="current_rate">Rate at date of payment</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
                         {(a.toil.cashoutRateBasis ?? 'accrual_rate') === 'accrual_rate'
-                          ? 'Each banked hour is paid out FIFO at the base rate (and overtime multiplier) recorded when it was earned.'
-                          : 'All banked hours are paid at the rate on the cash-out date, so pay rises increase the value of old TOIL.'}
+                          ? 'Hours are paid oldest-first at the base rate (and overtime multiplier) that applied when each hour was banked.'
+                          : 'All banked hours are paid at the employee’s base rate on the payment date, so later pay increases raise the payout value.'}
                       </p>
                       <div className="grid grid-cols-2 gap-3">
-                        <Field label="Min hours" value={a.toil.minCashoutHours ?? 0}
+                        <Field label="Minimum payout (hours)" value={a.toil.minCashoutHours ?? 0}
                           onChange={(v) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, minCashoutHours: Number(v) } })} />
-                        <Field label="Max per request" value={a.toil.maxCashoutHoursPerRequest ?? 0}
+                        <Field label="Maximum per payout (hours)" value={a.toil.maxCashoutHoursPerRequest ?? 0}
                           onChange={(v) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, maxCashoutHoursPerRequest: Number(v) } })} />
                       </div>
                     </div>
@@ -278,10 +278,11 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
 
               <div className="rounded-md border bg-muted/20 p-3 space-y-3">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Negative balance treatment</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Insufficient balance treatment</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    What happens when a day off is taken but the balance doesn't cover it: let the balance go negative (an advance
-                    repaid by future accrual) or pay the uncovered hours as leave without pay.
+                    When leave is taken without sufficient accrued balance, choose how the shortfall is treated:
+                    record the shortfall as unpaid leave (leave without pay), or allow the balance to go negative
+                    (leave in advance), to be offset against future accruals.
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-3">
@@ -298,12 +299,12 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
                         >
                           <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="leave_without_pay">Leave without pay</SelectItem>
-                            <SelectItem value="allow_negative">Allow negative balance</SelectItem>
+                            <SelectItem value="leave_without_pay">Leave without pay (default)</SelectItem>
+                            <SelectItem value="allow_negative">Leave in advance (negative balance)</SelectItem>
                           </SelectContent>
                         </Select>
                         {sf.treatment[k] === 'allow_negative' && (
-                          <Field label="Max negative (h)" value={sf.maxNegativeHours[k] ?? 0}
+                          <Field label="Maximum negative balance (hours)" value={sf.maxNegativeHours[k] ?? 0}
                             onChange={(v) => LeaveStore.updateAward(a.awardCode, {
                               shortfall: { ...sf, maxNegativeHours: { ...sf.maxNegativeHours, [k]: Number(v) } },
                             })} />
@@ -313,7 +314,7 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
                   })}
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs">Going negative needs manager approval</Label>
+                  <Label className="text-xs">Leave in advance requires manager approval</Label>
                   <Switch
                     checked={(a.shortfall ?? DEFAULT_SHORTFALL).requiresApprovalToGoNegative}
                     onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, {
