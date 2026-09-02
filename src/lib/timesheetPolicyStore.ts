@@ -154,7 +154,28 @@ export const timesheetPolicyStore = {
     if (!ov || !ov[section]) return false;
     return (ov[section] as Record<string, unknown>)[field as string] !== undefined;
   },
+
+  /** How many individual fields this location overrides. 0 = fully inheriting tenant defaults. */
+  getOverrideCount(locationId: string): number {
+    const ov = locationOverrides[locationId];
+    if (!ov) return 0;
+    return Object.values(ov).reduce<number>((n, section) => {
+      if (!section) return n;
+      return n + Object.values(section).filter(v => v !== undefined).length;
+    }, 0);
+  },
+
+  /** Override counts keyed by location id — only locations that actually override something. */
+  getOverrideCounts(): Record<string, number> {
+    const out: Record<string, number> = {};
+    Object.keys(locationOverrides).forEach(id => {
+      const n = timesheetPolicyStore.getOverrideCount(id);
+      if (n > 0) out[id] = n;
+    });
+    return out;
+  },
 };
+
 
 import { useSyncExternalStore } from 'react';
 

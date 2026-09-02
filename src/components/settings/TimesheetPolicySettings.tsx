@@ -89,16 +89,22 @@ function usePolicyAndScope() {
   ) => ({
     overridden: isOverridden(section, field),
     onReset: () => clearOverride(section, field),
+    tenantValue: tenant[section][field] as unknown,
     label, description, example, isTenant,
   });
 
   return { scope, isTenant, resolved, setField, fieldProps };
 }
 
+
 // ---------- Scope bar (exported) ----------
 export function TimesheetPolicyScopeBar() {
+  useSyncExternalStore(timesheetPolicyStore.subscribe, getPolicyVersion);
   const scope = useScope();
   const isTenant = scope === TENANT_SCOPE;
+  const counts = timesheetPolicyStore.getOverrideCounts();
+  const overrideCount = isTenant ? 0 : (counts[scope] ?? 0);
+  const customisedLocations = Object.keys(counts).length;
   return (
     <Card>
       <CardContent className="pt-6">
@@ -106,13 +112,30 @@ export function TimesheetPolicyScopeBar() {
           <div className="flex items-center gap-3">
             {isTenant ? <Globe2 className="h-5 w-5 text-primary" /> : <Building2 className="h-5 w-5 text-primary" />}
             <div>
-              <p className="text-sm font-medium tracking-tight">
-                {isTenant ? 'Editing tenant defaults' : 'Editing location override'}
-              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium tracking-tight">
+                  {isTenant ? 'Editing tenant defaults' : 'Editing location override'}
+                </p>
+                {isTenant ? (
+                  <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground">
+                    {customisedLocations === 0
+                      ? 'All locations inherit these'
+                      : `${customisedLocations} location${customisedLocations === 1 ? '' : 's'} customised`}
+                  </Badge>
+                ) : overrideCount === 0 ? (
+                  <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1">
+                    <Info className="h-3 w-3" /> No overrides — fully inheriting tenant defaults
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px] h-5">
+                    {overrideCount} field{overrideCount === 1 ? '' : 's'} overridden
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {isTenant
                   ? 'These settings apply to every location unless explicitly overridden.'
-                  : 'Only changed fields override the tenant default. Reset a field to fall back to tenant.'}
+                  : 'Only changed fields override the tenant default. Fields marked "Inherited" follow the tenant value live — if the tenant default changes, this location changes with it.'}
               </p>
             </div>
           </div>
@@ -125,7 +148,14 @@ export function TimesheetPolicyScopeBar() {
               <SelectContent>
                 <SelectItem value={TENANT_SCOPE}>Tenant defaults (global)</SelectItem>
                 {mockLocations.map(loc => (
-                  <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                  <SelectItem key={loc.id} value={loc.id}>
+                    <span className="flex items-center gap-2">
+                      {loc.name}
+                      <span className="text-[10px] text-muted-foreground">
+                        {counts[loc.id] ? `${counts[loc.id]} override${counts[loc.id] === 1 ? '' : 's'}` : 'inherits tenant'}
+                      </span>
+                    </span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -133,6 +163,7 @@ export function TimesheetPolicyScopeBar() {
               <Button
                 variant="outline"
                 size="sm"
+                disabled={overrideCount === 0}
                 onClick={() => timesheetPolicyStore.resetLocation(scope)}
                 className="gap-1.5"
               >
@@ -146,6 +177,7 @@ export function TimesheetPolicyScopeBar() {
     </Card>
   );
 }
+
 
 // ---------- Tab content (one per section, exported) ----------
 export function PolicyTimeTracking() {
@@ -1162,7 +1194,12 @@ interface BaseRowProps {
   overridden: boolean;
   onReset: () => void;
   comingSoon?: boolean;
+  /** Raw tenant-default value, shown on the "Inherited" badge so it's obvious what is in force. */
+  tenantValue?: unknown;
+  /** Pre-formatted tenant default, supplied by the concrete row type. */
+  tenantValueLabel?: string;
 }
+
 
 function HelpHint({ content }: { content: React.ReactNode }) {
   return (
@@ -1310,7 +1347,7 @@ const varianceThresholdOptionGuide = (
 );
 
 
-function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
+function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, tenantValueLabel, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
     <div className={`flex items-start justify-between gap-6 py-4 ${comingSoon ? 'opacity-60' : ''}`}>
       <div className="flex-1 min-w-0">
@@ -1328,9 +1365,21 @@ function RowShell({ label, description, example, isTenant, overridden, onReset, 
                 Overridden
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1">
-                <Info className="h-3 w-3" /> Inherited
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1 cursor-help">
+                      <Info className="h-3 w-3" />
+                      {tenantValueLabel ? `Inherited · ${tenantValueLabel}` : 'Inherited'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    No location-specific value is set, so the tenant default
+                    {tenantValueLabel ? <> (<strong>{tenantValueLabel}</strong>)</> : null} applies.
+                    Changing it here creates an override for this location only.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )
           )}
           {!isTenant && overridden && !comingSoon && (
@@ -1353,16 +1402,24 @@ function RowShell({ label, description, example, isTenant, overridden, onReset, 
 }
 
 function ToggleRow(props: BaseRowProps & { value: boolean; onChange: (v: boolean) => void }) {
-  const { value, onChange, comingSoon, ...rest } = props;
-  return <RowShell {...rest} comingSoon={comingSoon} control={<Switch checked={value} onCheckedChange={onChange} disabled={comingSoon} />} />;
+  const { value, onChange, comingSoon, tenantValue, ...rest } = props;
+  return (
+    <RowShell
+      {...rest}
+      comingSoon={comingSoon}
+      tenantValueLabel={typeof tenantValue === 'boolean' ? (tenantValue ? 'On' : 'Off') : undefined}
+      control={<Switch checked={value} onCheckedChange={onChange} disabled={comingSoon} />}
+    />
+  );
 }
 
 
 function NumberRow(props: BaseRowProps & { value: number; onChange: (v: number) => void }) {
-  const { value, onChange, ...rest } = props;
+  const { value, onChange, tenantValue, ...rest } = props;
   return (
     <RowShell
       {...rest}
+      tenantValueLabel={typeof tenantValue === 'number' ? String(tenantValue) : undefined}
       control={
         <Input
           type="number"
@@ -1378,10 +1435,11 @@ function NumberRow(props: BaseRowProps & { value: number; onChange: (v: number) 
 function SelectRow<T extends string>(props: BaseRowProps & {
   value: T; options: { value: T; label: string }[]; onChange: (v: T) => void;
 }) {
-  const { value, options, onChange, ...rest } = props;
+  const { value, options, onChange, tenantValue, ...rest } = props;
   return (
     <RowShell
       {...rest}
+      tenantValueLabel={options.find(o => o.value === tenantValue)?.label}
       control={
         <Select value={value} onValueChange={v => onChange(v as T)}>
           <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
@@ -1393,6 +1451,7 @@ function SelectRow<T extends string>(props: BaseRowProps & {
     />
   );
 }
+
 
 
 
