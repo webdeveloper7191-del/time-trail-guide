@@ -1288,6 +1288,7 @@ const timeDriftOptionGuide = (
     { label: 'Within 15 / 30 minutes', description: 'Small buffer for routine variation in clock-in habits.' },
     { label: 'Within 1 / 2 hours', description: 'Broad buffer for variable start times (e.g. on-call, callouts).' },
     { label: 'Within 4 hours', description: 'Very loose — useful only for fully ad-hoc rostering.' },
+    { label: 'Custom (minutes)', description: 'Enter your own best-fit window; the closest rostered shift inside it is matched.' },
   ]} />
 );
 
