@@ -354,7 +354,7 @@ export const LeaveStore = {
     const staff = _store.staff.find(s => s.staffId === e.staffId);
     if (staff) {
       const next = (staff.balanceHours[e.kind] ?? 0) + e.hours;
-      staff.balanceHours[e.kind] = e.hours < 0 && (e.unpaidHours ?? 0) === 0 ? next : Math.max(next, e.hours < 0 ? next : 0);
+      staff.balanceHours[e.kind] = Math.round(next * 100) / 100;
     }
     emit();
     return entry;
