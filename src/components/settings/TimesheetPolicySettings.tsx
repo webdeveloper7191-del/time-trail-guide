@@ -89,11 +89,13 @@ function usePolicyAndScope() {
   ) => ({
     overridden: isOverridden(section, field),
     onReset: () => clearOverride(section, field),
+    tenantValue: tenant[section][field] as unknown,
     label, description, example, isTenant,
   });
 
   return { scope, isTenant, resolved, setField, fieldProps };
 }
+
 
 // ---------- Scope bar (exported) ----------
 export function TimesheetPolicyScopeBar() {
