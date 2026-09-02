@@ -137,12 +137,17 @@ export default function LeaveAccrualsHub() {
           <Tabs defaultValue="config" className="w-full">
             <TabsList>
               <TabsTrigger value="config"><CalendarClock className="h-4 w-4 mr-1.5" />Configuration</TabsTrigger>
+              <TabsTrigger value="cashouts"><Sparkles className="h-4 w-4 mr-1.5" />TOIL cash-outs</TabsTrigger>
               <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Ledger</TabsTrigger>
               <TabsTrigger value="tagging"><ArrowLeftRight className="h-4 w-4 mr-1.5" />Roster tagging</TabsTrigger>
             </TabsList>
 
             <TabsContent value="config" className="space-y-6 mt-4">
               <ConfigurationTab snap={snap} />
+            </TabsContent>
+
+            <TabsContent value="cashouts" className="mt-4">
+              <CashoutsTab snap={snap} />
             </TabsContent>
 
             <TabsContent value="ledger" className="mt-4">
@@ -153,6 +158,7 @@ export default function LeaveAccrualsHub() {
               <RosterTaggingTab snap={snap} />
             </TabsContent>
           </Tabs>
+
         </div>
       </main>
     </div>
