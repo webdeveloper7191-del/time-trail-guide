@@ -542,11 +542,11 @@ export function PolicyApproving() {
 
         <PermissionGroup title="Rounding">
           <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-3 text-xs text-foreground/80 mb-2">
-            <p className="font-medium text-foreground mb-1">Rounding vs. clock-event flags — what's the difference?</p>
+            <p className="font-medium text-foreground mb-1">Rounding (this tab) changes pay. Alerts (Anomaly Flags tab) only flag for review.</p>
             <ul className="space-y-1 list-disc pl-4">
-              <li><span className="font-medium">Rounding</span> silently <em>changes</em> the recorded time → affects what gets paid.</li>
-              <li><span className="font-medium">Out-of-bounds clock flags</span> (in the <span className="font-medium">Anomaly Flags</span> tab) leave times untouched and just raise a flag → affects what gets reviewed.</li>
-              <li>If both are on, rounding runs first, so flags only fire on what's left over. Keep your early/late tolerances higher than your rounding step to avoid double-handling.</li>
+              <li><span className="font-medium">Rounding</span> <em>changes</em> the recorded time → e.g. clock-in 8:52 AM becomes 9:00 AM, and 9:00 AM is what gets paid.</li>
+              <li><span className="font-medium">Early/late clock alerts</span> (in the <span className="font-medium">Anomaly Flags</span> tab) never touch the time — 8:52 AM stays 8:52 AM, the timesheet is just flagged for a manager.</li>
+              <li>If both are on, rounding runs first, so alerts only fire on what's left over. Keep your alert grace windows larger than your rounding step to avoid double-handling.</li>
             </ul>
 
           </div>
@@ -570,7 +570,7 @@ export function PolicyApproving() {
                   'Runs first. Only applies to clock-ins BEFORE the rostered start: the time is pulled forward to the scheduled start and Step 2 is skipped. Late clock-ins are untouched here.',
                   <>
                     <p className="font-medium mb-1">Example</p>
-                    <p>Roster start 9:00. Staff clocks in 8:52. With <strong>ON</strong>, the recorded start becomes 9:00 (no early-start pay). With OFF, 8:52 is preserved and rounded per the rule below.</p>
+                    <p>Roster start 9:00 AM. Staff clocks in 8:52 AM. With <strong>ON</strong>, the recorded start becomes 9:00 AM (no early-start pay). With OFF, 8:52 AM is preserved and rounded per the rule below.</p>
                   </>)}
                 value={resolved.approving.adjustStartToScheduledIfEarlier}
                 onChange={v => setField('approving', 'adjustStartToScheduledIfEarlier', v)}
@@ -580,7 +580,7 @@ export function PolicyApproving() {
                   'Runs only on start times Step 1 did not snap (late clock-ins, or any clock-in when snapping is off). Rounds to the chosen interval.',
                   <>
                     <p className="font-medium mb-1">Example</p>
-                    <p>Choose <em>"Nearest 15 minutes"</em>. Clock-in 9:07 → recorded as 9:00. Clock-in 9:08 → 9:15. Choose <em>"Round up to 15"</em> to always favour the employee on late starts.</p>
+                    <p>Choose <em>"Nearest 15 minutes"</em>. Clock-in 9:07 AM → recorded as 9:00 AM. Clock-in 9:08 AM → 9:15 AM. Choose <em>"Round up to 15"</em> to always favour the employee on late starts.</p>
                     {roundingOptionGuide}
                   </>)}
                 value={resolved.approving.startTimeAdjustment}
@@ -592,7 +592,7 @@ export function PolicyApproving() {
                   'Runs first. Only applies to clock-outs AFTER the rostered end: the time is pulled back to the scheduled end and Step 2 is skipped. Early clock-outs are untouched here.',
                   <>
                     <p className="font-medium mb-1">Example</p>
-                    <p>Roster end 17:00. Staff clocks out 17:09. With <strong>ON</strong>, the recorded end becomes 17:00 (no unapproved overtime). With OFF, 17:09 is preserved and rounded per the rule below — and may trigger overtime.</p>
+                    <p>Roster end 5:00 PM. Staff clocks out 5:09 PM. With <strong>ON</strong>, the recorded end becomes 5:00 PM (no unapproved overtime). With OFF, 5:09 PM is preserved and rounded per the rule below — and may trigger overtime.</p>
                   </>)}
                 value={resolved.approving.adjustEndToScheduledIfDelayed}
                 onChange={v => setField('approving', 'adjustEndToScheduledIfDelayed', v)}
@@ -602,7 +602,7 @@ export function PolicyApproving() {
                   'Runs only on end times Step 1 did not snap (early clock-outs, or any clock-out when snapping is off). Rounds to the chosen interval.',
                   <>
                     <p className="font-medium mb-1">Example</p>
-                    <p>Choose <em>"Nearest 15 minutes"</em>. Clock-out 16:53 → 16:45 (staff loses 5 min). Choose <em>"Round down to 15"</em> for strict trimming, or <em>"Nearest 5"</em> for a fairer split.</p>
+                    <p>Choose <em>"Nearest 15 minutes"</em>. Clock-out 4:53 PM → 4:45 PM (staff loses 5 min). Choose <em>"Round down to 15"</em> for strict trimming, or <em>"Nearest 5"</em> for a fairer split.</p>
                     {roundingOptionGuide}
                   </>)}
                 value={resolved.approving.endTimeAdjustment}
