@@ -1317,7 +1317,7 @@ const varianceThresholdOptionGuide = (
 );
 
 
-function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, control }: BaseRowProps & { control: React.ReactNode }) {
+function RowShell({ label, description, example, isTenant, overridden, onReset, comingSoon, tenantValueLabel, control }: BaseRowProps & { control: React.ReactNode }) {
   return (
     <div className={`flex items-start justify-between gap-6 py-4 ${comingSoon ? 'opacity-60' : ''}`}>
       <div className="flex-1 min-w-0">
@@ -1335,9 +1335,21 @@ function RowShell({ label, description, example, isTenant, overridden, onReset, 
                 Overridden
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1">
-                <Info className="h-3 w-3" /> Inherited
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="text-[10px] h-5 text-muted-foreground gap-1 cursor-help">
+                      <Info className="h-3 w-3" />
+                      {tenantValueLabel ? `Inherited · ${tenantValueLabel}` : 'Inherited'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    No location-specific value is set, so the tenant default
+                    {tenantValueLabel ? <> (<strong>{tenantValueLabel}</strong>)</> : null} applies.
+                    Changing it here creates an override for this location only.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )
           )}
           {!isTenant && overridden && !comingSoon && (
@@ -1360,16 +1372,24 @@ function RowShell({ label, description, example, isTenant, overridden, onReset, 
 }
 
 function ToggleRow(props: BaseRowProps & { value: boolean; onChange: (v: boolean) => void }) {
-  const { value, onChange, comingSoon, ...rest } = props;
-  return <RowShell {...rest} comingSoon={comingSoon} control={<Switch checked={value} onCheckedChange={onChange} disabled={comingSoon} />} />;
+  const { value, onChange, comingSoon, tenantValue, ...rest } = props;
+  return (
+    <RowShell
+      {...rest}
+      comingSoon={comingSoon}
+      tenantValueLabel={typeof tenantValue === 'boolean' ? (tenantValue ? 'On' : 'Off') : undefined}
+      control={<Switch checked={value} onCheckedChange={onChange} disabled={comingSoon} />}
+    />
+  );
 }
 
 
 function NumberRow(props: BaseRowProps & { value: number; onChange: (v: number) => void }) {
-  const { value, onChange, ...rest } = props;
+  const { value, onChange, tenantValue, ...rest } = props;
   return (
     <RowShell
       {...rest}
+      tenantValueLabel={typeof tenantValue === 'number' ? String(tenantValue) : undefined}
       control={
         <Input
           type="number"
@@ -1385,10 +1405,11 @@ function NumberRow(props: BaseRowProps & { value: number; onChange: (v: number) 
 function SelectRow<T extends string>(props: BaseRowProps & {
   value: T; options: { value: T; label: string }[]; onChange: (v: T) => void;
 }) {
-  const { value, options, onChange, ...rest } = props;
+  const { value, options, onChange, tenantValue, ...rest } = props;
   return (
     <RowShell
       {...rest}
+      tenantValueLabel={options.find(o => o.value === tenantValue)?.label}
       control={
         <Select value={value} onValueChange={v => onChange(v as T)}>
           <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
@@ -1400,6 +1421,7 @@ function SelectRow<T extends string>(props: BaseRowProps & {
     />
   );
 }
+
 
 
 
