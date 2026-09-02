@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { Building2, Globe2, RotateCcw, Info, HelpCircle } from 'lucide-react';
+import { Building2, Globe2, RotateCcw, Info, HelpCircle, AlertTriangle } from 'lucide-react';
 import { mockLocations } from '@/data/mockLocationData';
 import {
   TimesheetPolicy,
