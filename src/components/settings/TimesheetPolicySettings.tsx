@@ -19,7 +19,6 @@ import {
   unscheduledRosterFlagOptions,
   unscheduledShiftCreationOptions,
   unscheduledEndTimeRuleOptions,
-  paidMealOptions,
   
   earlyClockInOptions,
   kioskVerificationOptions,
@@ -1281,18 +1280,6 @@ const timeDriftOptionGuide = (
     { label: 'Within 4 hours', description: 'Very loose — useful only for fully ad-hoc rostering.' },
   ]} />
 );
-
-const paidMealOptionGuide = (
-  <OptionGuide items={[
-    { label: 'Never (unpaid)', description: 'Meal breaks are always unpaid (default for most awards).' },
-    { label: 'Always paid', description: 'Meal breaks are always paid regardless of shift length.' },
-  ]} />
-);
-
-function paidMealSummary(b: TimesheetPolicy['breaks']): string {
-  if (b.paidMealBreaks === 'never') return 'Meal breaks are unpaid and deducted from paid time.';
-  return 'Every meal break is paid and not deducted from paid time.';
-}
 
 
 const boundaryReferenceOptionGuide = (
