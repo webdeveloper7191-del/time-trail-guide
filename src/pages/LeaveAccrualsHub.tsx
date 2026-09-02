@@ -134,7 +134,7 @@ export default function LeaveAccrualsHub() {
           <Tabs defaultValue="config" className="w-full">
             <TabsList>
               <TabsTrigger value="config"><CalendarClock className="h-4 w-4 mr-1.5" />Configuration</TabsTrigger>
-              <TabsTrigger value="cashouts"><Sparkles className="h-4 w-4 mr-1.5" />TOIL cash-outs</TabsTrigger>
+              <TabsTrigger value="cashouts"><Sparkles className="h-4 w-4 mr-1.5" />TOIL payouts</TabsTrigger>
               <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Ledger</TabsTrigger>
               <TabsTrigger value="tagging"><ArrowLeftRight className="h-4 w-4 mr-1.5" />Roster tagging</TabsTrigger>
             </TabsList>
@@ -169,8 +169,8 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Layer 1 · Award rules</CardTitle>
-          <CardDescription>Baseline accrual mechanics inherited by every location. Edits here apply plan-wide.</CardDescription>
+          <CardTitle className="text-base">Award rules (organisation defaults)</CardTitle>
+          <CardDescription>Baseline accrual mechanics for each award. Every location inherits these settings unless a location policy narrows them.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {snap.awards.map(a => (
