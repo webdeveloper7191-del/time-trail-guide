@@ -9,7 +9,7 @@
 export type RoundingDirection = 'never' | 'nearest_5' | 'nearest_10' | 'nearest_15' | 'up_nearest_15' | 'down_nearest_15';
 export type ApprovalCadence = 'never' | 'daily' | 'on_submit' | 'matches_schedule';
 export type LinkUnscheduled = 'never' | 'best_fit' | 'exact_match' | 'same_location';
-export type TimeDrift = 'never' | 'within_15m' | 'within_30m' | 'within_1h' | 'within_2h' | 'within_4h';
+export type TimeDrift = 'never' | 'within_15m' | 'within_30m' | 'within_1h' | 'within_2h' | 'within_4h' | 'custom';
 export type PaidMealMode = 'never' | 'always';
 export type VarianceFlag = 'never' | 'over_5m' | 'over_10m' | 'over_15m' | 'always';
 
@@ -84,6 +84,8 @@ export type UnscheduledEndTimeRule =
 export interface UnscheduledShiftsSettings {
   linkUnscheduledToScheduled: LinkUnscheduled;
   allowTimeDriftMatching: TimeDrift;
+  /** Used when allowTimeDriftMatching === 'custom'. Best-fit window in minutes. */
+  allowTimeDriftCustomMinutes: number;
   requireTrainingForUnscheduled: boolean;
   // Clock-in with no rostered shift
   noShiftClockInAction: NoShiftClockInAction;
@@ -214,6 +216,7 @@ export const defaultTimesheetPolicy: TimesheetPolicy = {
   unscheduled: {
     linkUnscheduledToScheduled: 'never',
     allowTimeDriftMatching: 'never',
+    allowTimeDriftCustomMinutes: 45,
     requireTrainingForUnscheduled: false,
     noShiftClockInAction: 'allow_flag',
     rosterFlagSeverity: 'warning',
@@ -310,6 +313,7 @@ export const timeDriftOptions: { value: TimeDrift; label: string }[] = [
   { value: 'within_1h', label: 'Within 1 hour' },
   { value: 'within_2h', label: 'Within 2 hours' },
   { value: 'within_4h', label: 'Within 4 hours' },
+  { value: 'custom', label: 'Custom (minutes)' },
 ];
 
 export const paidMealOptions: { value: PaidMealMode; label: string }[] = [
