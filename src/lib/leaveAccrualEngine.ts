@@ -189,27 +189,40 @@ export interface DerivedShiftTag {
 
 // ---------- Seed data ----------
 
+const TOIL_CASHOUT_DEFAULTS = {
+  cashoutEnabled: true,
+  cashoutRateBasis: 'accrual_rate' as ToilCashoutBasis,
+  cashoutIncludesPenalty: true,
+  cashoutRequiresApproval: true,
+  minCashoutHours: 4,
+  maxCashoutHoursPerRequest: 38,
+};
+
 export const DEFAULT_AWARDS: AwardLeaveRule[] = [
   {
     awardCode: 'MA000010',
     awardName: 'Manufacturing & Associated Industries Award',
     rdo: { cycleWeeks: 4, hoursPerCycle: 8, accrualPerOrdinaryHour: 0.4 / 38 },
     ado: { accrualPerOrdinaryHour: 0.4 / 38, maxBalanceHours: 80, minBlockHours: 4 },
-    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 90, requiresPreApproval: true },
+    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 90, requiresPreApproval: true, ...TOIL_CASHOUT_DEFAULTS },
+    shortfall: { ...DEFAULT_SHORTFALL, treatment: { ...DEFAULT_SHORTFALL.treatment }, maxNegativeHours: { ...DEFAULT_SHORTFALL.maxNegativeHours } },
   },
   {
     awardCode: 'MA000100',
     awardName: 'Social, Community, Home Care & Disability Services (SCHADS)',
     ado: { accrualPerOrdinaryHour: 0.2 / 38, maxBalanceHours: 40, minBlockHours: 4 },
-    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 180, requiresPreApproval: false },
+    toil: { enabled: true, conversion: 'time_for_time', expiryDays: 180, requiresPreApproval: false, ...TOIL_CASHOUT_DEFAULTS },
+    shortfall: { ...DEFAULT_SHORTFALL, treatment: { ...DEFAULT_SHORTFALL.treatment }, maxNegativeHours: { ...DEFAULT_SHORTFALL.maxNegativeHours } },
   },
   {
     awardCode: 'MA000020',
     awardName: 'Building & Construction General On-site Award',
     rdo: { cycleWeeks: 4, hoursPerCycle: 8, accrualPerOrdinaryHour: 0.4 / 38 },
-    toil: { enabled: false, conversion: 'time_for_time', expiryDays: 60, requiresPreApproval: true },
+    toil: { enabled: false, conversion: 'time_for_time', expiryDays: 60, requiresPreApproval: true, ...TOIL_CASHOUT_DEFAULTS, cashoutEnabled: false },
+    shortfall: { ...DEFAULT_SHORTFALL, treatment: { ...DEFAULT_SHORTFALL.treatment }, maxNegativeHours: { ...DEFAULT_SHORTFALL.maxNegativeHours } },
   },
 ];
+
 
 export const DEFAULT_LOCATIONS: LocationLeavePolicy[] = [
   {
