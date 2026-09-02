@@ -897,17 +897,11 @@ export function PolicyBreaks() {
             value={resolved.breaks.autoIncludeScheduledOnClockOut}
             onChange={v => setField('breaks', 'autoIncludeScheduledOnClockOut', v)}
           />
-          <SelectRow
-            {...fieldProps('breaks', 'paidMealBreaks', 'Paid Meal Breaks (fallback)',
-              "Applies only when no Break Rule and no Award rule defines whether a meal break is paid. Acts as the final fallback.",
-              <><p className="font-medium mb-1">Example</p><p>Choose <em>"Never (unpaid)"</em> to deduct meal breaks from paid time, or <em>"Always paid"</em> to keep meal breaks paid. Award rules (if defined) always take precedence over this fallback.</p>{paidMealOptionGuide}</>)}
-            value={resolved.breaks.paidMealBreaks}
-            options={paidMealOptions}
-            onChange={v => setField('breaks', 'paidMealBreaks', v as TimesheetPolicy['breaks']['paidMealBreaks'])}
-          />
           <div className="rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Current outcome: </span>
-            {paidMealSummary(resolved.breaks)}
+            <span className="font-medium text-foreground">Paid vs unpaid meal breaks: </span>
+            determined by the applicable Award / Enterprise Agreement, and otherwise by the
+            <span className="font-medium text-foreground"> Break Rules</span> library below. There is no
+            timesheet-level override.
           </div>
 
         </PermissionGroup>
