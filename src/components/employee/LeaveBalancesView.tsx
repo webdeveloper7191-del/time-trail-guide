@@ -91,8 +91,8 @@ export function LeaveBalancesView({ employeeName }: Props) {
       awardCode: staff.awardCode,
       reason: cashReason,
     });
-    toast.success(req.status === 'approved' ? 'TOIL cash-out approved' : 'TOIL cash-out submitted for approval', {
-      description: `${req.hours.toFixed(2)}h ≈ $${req.estimatedAmount.toFixed(2)} — paid via your next timesheet.`,
+    toast.success(req.status === 'approved' ? 'TOIL payout approved' : 'TOIL payout submitted for approval', {
+      description: `${req.hours.toFixed(2)}h ≈ $${req.estimatedAmount.toFixed(2)} — paid in your next pay run.`,
     });
     setCashoutOpen(false); setCashHours('8'); setCashReason('');
   };
@@ -102,7 +102,7 @@ export function LeaveBalancesView({ employeeName }: Props) {
     <div className="p-6 space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Leave balances</h1>
-        <p className="text-sm text-muted-foreground">Your accrued RDO, ADO and TOIL time.</p>
+        <p className="text-sm text-muted-foreground">Your accrued Rostered Day Off (RDO), Accrued Day Off (ADO) and Time Off in Lieu (TOIL) balances.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -114,13 +114,13 @@ export function LeaveBalancesView({ employeeName }: Props) {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>{c.label}</span>
-                  <Badge variant={optedIn ? 'default' : 'outline'}>{optedIn ? 'Opted in' : 'Not opted in'}</Badge>
+                  <Badge variant={optedIn ? 'default' : 'outline'}>{optedIn ? 'Enrolled' : 'Not enrolled'}</Badge>
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">{c.desc}</p>
               </CardHeader>
               <CardContent>
                 <div className={`text-3xl font-semibold tracking-tight ${bal < 0 ? 'text-destructive' : ''}`}>{bal.toFixed(2)}<span className="text-sm text-muted-foreground ml-1">hrs</span></div>
-                {bal < 0 && <p className="text-xs text-destructive mt-1">Advanced against future accrual</p>}
+                {bal < 0 && <p className="text-xs text-destructive mt-1">Leave in advance — to be offset against future accruals</p>}
                 <Button
                   size="sm" variant="outline" className="mt-3 w-full"
                   onClick={() => setRequestOpen(c.kind)}
@@ -133,7 +133,7 @@ export function LeaveBalancesView({ employeeName }: Props) {
                     disabled={bal <= 0}
                     onClick={() => setCashoutOpen(true)}
                   >
-                    <Banknote className="h-3 w-3 mr-1.5" /> Cash out TOIL
+                    <Banknote className="h-3 w-3 mr-1.5" /> Request TOIL payout
                   </Button>
                 )}
               </CardContent>
@@ -144,14 +144,14 @@ export function LeaveBalancesView({ employeeName }: Props) {
 
       {myCashouts.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">TOIL cash-out requests</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">TOIL payout requests</CardTitle></CardHeader>
           <CardContent className="divide-y">
             {myCashouts.map(r => (
               <div key={r.id} className="flex items-center justify-between py-2 text-sm">
                 <div>
                   <div className="font-medium">{r.hours.toFixed(2)}h · ${r.estimatedAmount.toFixed(2)}</div>
                   <div className="text-xs text-muted-foreground">
-                    {r.requestedOn} — paid at {r.basis === 'current_rate' ? 'current rate' : 'original accrual rates'}
+                    {r.requestedOn} — paid at the {r.basis === 'current_rate' ? 'rate at date of payment' : 'rate at time of accrual'}
                     {r.paidInPeriod ? ` • paid in ${r.paidInPeriod}` : ''}
                   </div>
                 </div>
@@ -202,8 +202,8 @@ export function LeaveBalancesView({ employeeName }: Props) {
               <Input type="number" min="0" step="0.25" value={reqHours} onChange={e => setReqHours(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Note (optional)</Label>
-              <Input value={reqNote} onChange={e => setReqNote(e.target.value)} placeholder="Reason / cover arrangements" />
+              <Label>Reason (optional)</Label>
+              <Input value={reqNote} onChange={e => setReqNote(e.target.value)} placeholder="Reason for leave or cover arrangements" />
             </div>
             <p className="text-xs text-muted-foreground">
               Current balance: <strong>{(staff.balanceHours[requestOpen ?? 'TOIL'] ?? 0).toFixed(2)}h</strong>
@@ -224,16 +224,16 @@ export function LeaveBalancesView({ employeeName }: Props) {
 
       <Dialog open={cashoutOpen} onOpenChange={setCashoutOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Cash out TOIL</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Request TOIL payout</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label>Hours to cash out</Label>
+              <Label>Hours to be paid out</Label>
               <Input type="number" min="0" step="0.25" value={cashHours} onChange={e => setCashHours(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Available: {(staff.balanceHours.TOIL ?? 0).toFixed(2)}h</p>
+              <p className="text-xs text-muted-foreground">Available TOIL balance: {(staff.balanceHours.TOIL ?? 0).toFixed(2)} hours</p>
             </div>
             <div className="space-y-1">
               <Label>Reason (optional)</Label>
-              <Textarea rows={2} value={cashReason} onChange={e => setCashReason(e.target.value)} placeholder="Why you're cashing out" />
+              <Textarea rows={2} value={cashReason} onChange={e => setCashReason(e.target.value)} placeholder="Reason for requesting a payout" />
             </div>
             {cashoutQuote && (
               <div className="rounded-md border p-3 space-y-2 text-xs">
@@ -243,13 +243,13 @@ export function LeaveBalancesView({ employeeName }: Props) {
                 </div>
                 <p className="text-muted-foreground">
                   {cashoutQuote.basis === 'current_rate'
-                    ? `Paid at your current rate of $${currentRate.toFixed(2)}/h.`
-                    : 'Paid at the rate that applied when each hour was banked (oldest hours first).'}
-                  {' '}Blended rate ${cashoutQuote.blendedRate.toFixed(2)}/h.
+                    ? `Paid at your current base rate of $${currentRate.toFixed(2)}/hour.`
+                    : 'Paid at the base rate that applied when each hour was accrued (oldest hours paid first).'}
+                  {' '}Blended rate: ${cashoutQuote.blendedRate.toFixed(2)}/hour.
                 </p>
                 {cashoutQuote.layers.map((l, i) => (
                   <div key={i} className="flex justify-between text-muted-foreground">
-                    <span>{l.hours.toFixed(2)}h banked {l.accruedOn} @ ${l.rate.toFixed(2)}{l.multiplier !== 1 ? ` × ${l.multiplier}` : ''}</span>
+                    <span>{l.hours.toFixed(2)}h accrued {l.accruedOn} @ ${l.rate.toFixed(2)}/h{l.multiplier !== 1 ? ` × ${l.multiplier} overtime` : ''}</span>
                     <span className="tabular-nums">${l.amount.toFixed(2)}</span>
                   </div>
                 ))}
@@ -259,12 +259,12 @@ export function LeaveBalancesView({ employeeName }: Props) {
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Once approved, the hours leave your TOIL balance and the amount appears on your next timesheet as a TOIL cash-out line.
+              Once approved, the hours are deducted from your TOIL balance and the amount is paid in your next pay run as a TOIL payout line.
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCashoutOpen(false)}>Cancel</Button>
-            <Button onClick={submitCashout} disabled={!cashoutQuote || cashoutQuote.hours <= 0}>Submit cash-out</Button>
+            <Button onClick={submitCashout} disabled={!cashoutQuote || cashoutQuote.hours <= 0}>Submit payout request</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

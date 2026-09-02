@@ -49,15 +49,15 @@ export function LeaveAccrualsWorkforceSection() {
   return (
     <Tabs defaultValue="staff" className="w-full">
       <TabsList>
-        <TabsTrigger value="staff"><CalendarClock className="h-4 w-4 mr-1.5" />Staff opt-ins & balances</TabsTrigger>
-        <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Ledger</TabsTrigger>
+        <TabsTrigger value="staff"><CalendarClock className="h-4 w-4 mr-1.5" />Staff enrolment &amp; balances</TabsTrigger>
+        <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Accrual ledger</TabsTrigger>
         <TabsTrigger value="tagging"><ArrowLeftRight className="h-4 w-4 mr-1.5" />Roster tagging</TabsTrigger>
       </TabsList>
       <TabsContent value="staff" className="mt-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Staff opt-ins & balances</CardTitle>
-            <CardDescription>Per-employee enrolment. Balances shown are live from the ledger.</CardDescription>
+            <CardTitle className="text-base">Staff enrolment &amp; balances</CardTitle>
+            <CardDescription>Per-employee participation in each leave scheme. Balances shown are live from the accrual ledger.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -67,7 +67,7 @@ export function LeaveAccrualsWorkforceSection() {
                   {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
                     <TableHead key={k} className="text-center">{k}</TableHead>
                   ))}
-                  <TableHead className="text-right">Balance (h)</TableHead>
+                  <TableHead className="text-right">Balance (hours)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -97,9 +97,9 @@ export function LeaveAccrualsWorkforceSection() {
 }
 
 const KIND_META: Record<LeaveKind, { label: string; hue: string; blurb: string }> = {
-  RDO:  { label: 'RDO — Rostered Day Off', hue: 'bg-blue-50 text-blue-700 border-blue-200', blurb: 'Fixed cyclical day off funded by working slightly longer than the ordinary week.' },
-  ADO:  { label: 'ADO — Accrued Day Off',  hue: 'bg-emerald-50 text-emerald-700 border-emerald-200', blurb: 'Time banked per ordinary hour worked, drawn down as full days when balance reaches a block.' },
-  TOIL: { label: 'TOIL — Time Off In Lieu', hue: 'bg-violet-50 text-violet-700 border-violet-200', blurb: 'Overtime converted to leave (time-for-time or penalty-equivalent), instead of being paid out.' },
+  RDO:  { label: 'RDO — Rostered Day Off', hue: 'bg-blue-50 text-blue-700 border-blue-200', blurb: 'A fixed day off each roster cycle, accrued by working additional time on ordinary days (e.g. a 38-hour week worked over 19 days).' },
+  ADO:  { label: 'ADO — Accrued Day Off',  hue: 'bg-emerald-50 text-emerald-700 border-emerald-200', blurb: 'Time accrued for each ordinary hour worked, taken as a full day once the minimum block balance is reached.' },
+  TOIL: { label: 'TOIL — Time Off in Lieu', hue: 'bg-violet-50 text-violet-700 border-violet-200', blurb: 'Overtime hours banked as paid time off instead of an overtime payment, taken at the rate prescribed by the award (time-for-time or penalty-equivalent).' },
 };
 
 export default function LeaveAccrualsHub() {
@@ -111,15 +111,12 @@ export default function LeaveAccrualsHub() {
       <main className="flex-1 overflow-x-hidden">
         <div className="max-w-[1400px] mx-auto p-6 space-y-6">
           <header className="space-y-1">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5" /> Full end-to-end slice
-            </div>
             <h1 className="text-2xl font-semibold tracking-tight" style={{ letterSpacing: '-0.025em' }}>
-              RDO · ADO · TOIL management
+              Flexibility &amp; Accrued Leave (RDO · ADO · TOIL)
             </h1>
             <p className="text-sm text-muted-foreground max-w-3xl">
-              Configure how rostered, accrued, and lieu days are earned and consumed across your awards, locations,
-              and staff — and preview how the roster editor tags shifts based on that configuration.
+              Configure how Rostered Days Off, Accrued Days Off and Time Off in Lieu are accrued, taken and paid out.
+              Settings apply at three levels: award defaults, location policies, and individual staff enrolment.
             </p>
           </header>
 
@@ -137,7 +134,7 @@ export default function LeaveAccrualsHub() {
           <Tabs defaultValue="config" className="w-full">
             <TabsList>
               <TabsTrigger value="config"><CalendarClock className="h-4 w-4 mr-1.5" />Configuration</TabsTrigger>
-              <TabsTrigger value="cashouts"><Sparkles className="h-4 w-4 mr-1.5" />TOIL cash-outs</TabsTrigger>
+              <TabsTrigger value="cashouts"><Sparkles className="h-4 w-4 mr-1.5" />TOIL payouts</TabsTrigger>
               <TabsTrigger value="ledger"><ScrollText className="h-4 w-4 mr-1.5" />Ledger</TabsTrigger>
               <TabsTrigger value="tagging"><ArrowLeftRight className="h-4 w-4 mr-1.5" />Roster tagging</TabsTrigger>
             </TabsList>
@@ -172,8 +169,8 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Layer 1 · Award rules</CardTitle>
-          <CardDescription>Baseline accrual mechanics inherited by every location. Edits here apply plan-wide.</CardDescription>
+          <CardTitle className="text-base">Award rules (organisation defaults)</CardTitle>
+          <CardDescription>Baseline accrual mechanics for each award. Every location inherits these settings unless a location policy narrows them.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {snap.awards.map(a => (
@@ -227,51 +224,51 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
               {a.toil?.enabled && (
                 <div className="rounded-md border bg-muted/20 p-3 space-y-3">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">TOIL cash-out</div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">TOIL payout (cashing out)</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Controls how banked TOIL is valued when paid out. Hours banked years ago were earned at an older base rate —
-                      choose whether to honour those original rates or today's rate.
+                      Controls how banked TOIL hours are valued when an employee is paid out instead of taking the time off.
+                      Because TOIL may have been banked at an earlier base rate, choose the rate that applies at payment.
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Cash-out allowed</Label>
+                        <Label className="text-xs">Permit TOIL payout</Label>
                         <Switch checked={a.toil.cashoutEnabled ?? false}
                           onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutEnabled: c } })} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Manager approval</Label>
+                        <Label className="text-xs">Requires manager approval</Label>
                         <Switch checked={a.toil.cashoutRequiresApproval ?? true}
                           onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutRequiresApproval: c } })} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs">Re-apply OT penalty</Label>
+                        <Label className="text-xs">Include overtime penalty in payout</Label>
                         <Switch checked={a.toil.cashoutIncludesPenalty ?? true}
                           onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutIncludesPenalty: c } })} />
                       </div>
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label className="text-xs">Rate used for cash-out</Label>
+                      <Label className="text-xs">Payout rate basis</Label>
                       <Select
                         value={a.toil.cashoutRateBasis ?? 'accrual_rate'}
                         onValueChange={(v) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, cashoutRateBasis: v as ToilCashoutBasis } })}
                       >
                         <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="accrual_rate">Original rate when banked (default)</SelectItem>
-                          <SelectItem value="current_rate">Employee's current rate</SelectItem>
+                          <SelectItem value="accrual_rate">Rate at time of accrual (award default)</SelectItem>
+                          <SelectItem value="current_rate">Rate at date of payment</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
                         {(a.toil.cashoutRateBasis ?? 'accrual_rate') === 'accrual_rate'
-                          ? 'Each banked hour is paid out FIFO at the base rate (and overtime multiplier) recorded when it was earned.'
-                          : 'All banked hours are paid at the rate on the cash-out date, so pay rises increase the value of old TOIL.'}
+                          ? 'Hours are paid oldest-first at the base rate (and overtime multiplier) that applied when each hour was banked.'
+                          : 'All banked hours are paid at the employee’s base rate on the payment date, so later pay increases raise the payout value.'}
                       </p>
                       <div className="grid grid-cols-2 gap-3">
-                        <Field label="Min hours" value={a.toil.minCashoutHours ?? 0}
+                        <Field label="Minimum payout (hours)" value={a.toil.minCashoutHours ?? 0}
                           onChange={(v) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, minCashoutHours: Number(v) } })} />
-                        <Field label="Max per request" value={a.toil.maxCashoutHoursPerRequest ?? 0}
+                        <Field label="Maximum per payout (hours)" value={a.toil.maxCashoutHoursPerRequest ?? 0}
                           onChange={(v) => LeaveStore.updateAward(a.awardCode, { toil: { ...a.toil!, maxCashoutHoursPerRequest: Number(v) } })} />
                       </div>
                     </div>
@@ -281,10 +278,11 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
 
               <div className="rounded-md border bg-muted/20 p-3 space-y-3">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Negative balance treatment</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Insufficient balance treatment</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    What happens when a day off is taken but the balance doesn't cover it: let the balance go negative (an advance
-                    repaid by future accrual) or pay the uncovered hours as leave without pay.
+                    When leave is taken without sufficient accrued balance, choose how the shortfall is treated:
+                    record the shortfall as unpaid leave (leave without pay), or allow the balance to go negative
+                    (leave in advance), to be offset against future accruals.
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-3">
@@ -301,12 +299,12 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
                         >
                           <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="leave_without_pay">Leave without pay</SelectItem>
-                            <SelectItem value="allow_negative">Allow negative balance</SelectItem>
+                            <SelectItem value="leave_without_pay">Leave without pay (default)</SelectItem>
+                            <SelectItem value="allow_negative">Leave in advance (negative balance)</SelectItem>
                           </SelectContent>
                         </Select>
                         {sf.treatment[k] === 'allow_negative' && (
-                          <Field label="Max negative (h)" value={sf.maxNegativeHours[k] ?? 0}
+                          <Field label="Maximum negative balance (hours)" value={sf.maxNegativeHours[k] ?? 0}
                             onChange={(v) => LeaveStore.updateAward(a.awardCode, {
                               shortfall: { ...sf, maxNegativeHours: { ...sf.maxNegativeHours, [k]: Number(v) } },
                             })} />
@@ -316,7 +314,7 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
                   })}
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs">Going negative needs manager approval</Label>
+                  <Label className="text-xs">Leave in advance requires manager approval</Label>
                   <Switch
                     checked={(a.shortfall ?? DEFAULT_SHORTFALL).requiresApprovalToGoNegative}
                     onCheckedChange={(c) => LeaveStore.updateAward(a.awardCode, {
@@ -333,18 +331,18 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Layer 2 · Location policies</CardTitle>
-          <CardDescription>Operational defaults per location. Overrides tighten but never loosen the award floor.</CardDescription>
+          <CardTitle className="text-base">Location policies</CardTitle>
+          <CardDescription>Operational defaults per location. A location policy may narrow the award settings but cannot exceed them.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Location</TableHead>
-                <TableHead>RDO strategy</TableHead>
-                <TableHead>ADO on hire</TableHead>
-                <TableHead>TOIL cap (h)</TableHead>
-                <TableHead>Notice (days)</TableHead>
+                <TableHead>RDO scheduling method</TableHead>
+                <TableHead>ADO offered at commencement</TableHead>
+                <TableHead>TOIL balance cap (hours)</TableHead>
+                <TableHead>Minimum notice to take leave (days)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -355,9 +353,9 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
                     <Select value={l.rdoStrategy} onValueChange={(v) => LeaveStore.updateLocation(l.locationId, { rdoStrategy: v as typeof l.rdoStrategy })}>
                       <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed_day">Fixed day of month</SelectItem>
-                        <SelectItem value="rolling">Rolling schedule</SelectItem>
-                        <SelectItem value="staff_choice">Staff choice</SelectItem>
+                        <SelectItem value="fixed_day">Fixed day each cycle</SelectItem>
+                        <SelectItem value="rolling">Rolling roster</SelectItem>
+                        <SelectItem value="staff_choice">Employee's choice</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
@@ -382,8 +380,8 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Layer 3 · Staff opt-ins & balances</CardTitle>
-          <CardDescription>Per-employee enrolment. Balances shown are live from the ledger.</CardDescription>
+          <CardTitle className="text-base">Staff enrolment &amp; balances</CardTitle>
+          <CardDescription>Per-employee participation in each leave scheme. Balances shown are live from the accrual ledger.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -391,9 +389,9 @@ function ConfigurationTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
               <TableRow>
                 <TableHead>Staff</TableHead>
                 {(['RDO', 'ADO', 'TOIL'] as LeaveKind[]).map(k => (
-                  <TableHead key={k} className="text-center">{k}</TableHead>
+                <TableHead key={k} className="text-center">{k}</TableHead>
                 ))}
-                <TableHead className="text-right">Balance (h)</TableHead>
+                <TableHead className="text-right">Balance (hours)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -592,8 +590,8 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Simulated shift context</CardTitle>
-          <CardDescription>Set the inputs the roster editor would have when a shift is saved.</CardDescription>
+          <CardTitle className="text-base">Simulated shift</CardTitle>
+          <CardDescription>Preview how the roster editor will tag a shift, given the employee, award and shift details below.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -645,7 +643,7 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
             <Select value={ctx.manualTag ?? 'NONE'} onValueChange={(v) => setCtx({ ...ctx, manualTag: v as ShiftContext['manualTag'] })}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="NONE">Auto (derive from context)</SelectItem>
+                <SelectItem value="NONE">Automatic (derived from shift details)</SelectItem>
                 <SelectItem value="RDO">Force RDO</SelectItem>
                 <SelectItem value="ADO">Force ADO</SelectItem>
                 <SelectItem value="TOIL">Force TOIL</SelectItem>
@@ -658,9 +656,9 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="h-4 w-4" /> Derived tag
+            <Clock className="h-4 w-4" /> Resulting tag
           </CardTitle>
-          <CardDescription>What the roster editor would attach to this shift and post to the ledger.</CardDescription>
+          <CardDescription>The leave type the roster editor attaches to this shift and the accrual posted to the ledger.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border p-4 bg-muted/30 space-y-3">
@@ -692,7 +690,7 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
   );
 }
 
-// ---------- TOIL cash-outs tab ----------
+// ---------- TOIL payouts tab ----------
 
 const CASHOUT_BADGE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -706,10 +704,10 @@ function CashoutsTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">TOIL cash-out requests</CardTitle>
+        <CardTitle className="text-base">TOIL payout requests</CardTitle>
         <CardDescription>
-          Employees request a cash-out from their portal. On approval the hours leave the TOIL balance and the amount is
-          released to the next timesheet/pay run as a <span className="font-mono text-xs">TOIL_CASHOUT</span> earnings line.
+          Employees request a payout from the employee portal. On approval, the hours are deducted from the TOIL balance
+          and the amount is released to the next pay run as a <span className="font-mono text-xs">TOIL_CASHOUT</span> earnings line.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -735,7 +733,7 @@ function CashoutsTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
                   <TableCell className="text-muted-foreground">{r.requestedOn}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.hours.toFixed(2)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {r.basis === 'current_rate' ? 'Current rate' : 'Original accrual rates'}
+                    {r.basis === 'current_rate' ? 'Rate at date of payment' : 'Rate at time of accrual'}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">${r.estimatedAmount.toFixed(2)}</TableCell>
                   <TableCell><Badge variant="outline" className={CASHOUT_BADGE[r.status]}>{r.status}</Badge></TableCell>
