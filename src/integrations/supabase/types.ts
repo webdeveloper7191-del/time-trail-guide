@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_tokens: {
+        Row: {
+          company_file_id: string | null
+          created_at: string
+          platform: string
+          realm_id: string | null
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          company_file_id?: string | null
+          created_at?: string
+          platform: string
+          realm_id?: string | null
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          company_file_id?: string | null
+          created_at?: string
+          platform?: string
+          realm_id?: string | null
+          refresh_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pay_runs: {
         Row: {
           created_at: string
