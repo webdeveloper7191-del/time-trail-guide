@@ -91,8 +91,8 @@ export function LeaveBalancesView({ employeeName }: Props) {
       awardCode: staff.awardCode,
       reason: cashReason,
     });
-    toast.success(req.status === 'approved' ? 'TOIL cash-out approved' : 'TOIL cash-out submitted for approval', {
-      description: `${req.hours.toFixed(2)}h ≈ $${req.estimatedAmount.toFixed(2)} — paid via your next timesheet.`,
+    toast.success(req.status === 'approved' ? 'TOIL payout approved' : 'TOIL payout submitted for approval', {
+      description: `${req.hours.toFixed(2)}h ≈ $${req.estimatedAmount.toFixed(2)} — paid in your next pay run.`,
     });
     setCashoutOpen(false); setCashHours('8'); setCashReason('');
   };
@@ -202,8 +202,8 @@ export function LeaveBalancesView({ employeeName }: Props) {
               <Input type="number" min="0" step="0.25" value={reqHours} onChange={e => setReqHours(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Note (optional)</Label>
-              <Input value={reqNote} onChange={e => setReqNote(e.target.value)} placeholder="Reason / cover arrangements" />
+              <Label>Reason (optional)</Label>
+              <Input value={reqNote} onChange={e => setReqNote(e.target.value)} placeholder="Reason for leave or cover arrangements" />
             </div>
             <p className="text-xs text-muted-foreground">
               Current balance: <strong>{(staff.balanceHours[requestOpen ?? 'TOIL'] ?? 0).toFixed(2)}h</strong>
@@ -224,16 +224,16 @@ export function LeaveBalancesView({ employeeName }: Props) {
 
       <Dialog open={cashoutOpen} onOpenChange={setCashoutOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Cash out TOIL</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Request TOIL payout</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label>Hours to cash out</Label>
+              <Label>Hours to be paid out</Label>
               <Input type="number" min="0" step="0.25" value={cashHours} onChange={e => setCashHours(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Available: {(staff.balanceHours.TOIL ?? 0).toFixed(2)}h</p>
+              <p className="text-xs text-muted-foreground">Available TOIL balance: {(staff.balanceHours.TOIL ?? 0).toFixed(2)} hours</p>
             </div>
             <div className="space-y-1">
               <Label>Reason (optional)</Label>
-              <Textarea rows={2} value={cashReason} onChange={e => setCashReason(e.target.value)} placeholder="Why you're cashing out" />
+              <Textarea rows={2} value={cashReason} onChange={e => setCashReason(e.target.value)} placeholder="Reason for requesting a payout" />
             </div>
             {cashoutQuote && (
               <div className="rounded-md border p-3 space-y-2 text-xs">
@@ -243,13 +243,13 @@ export function LeaveBalancesView({ employeeName }: Props) {
                 </div>
                 <p className="text-muted-foreground">
                   {cashoutQuote.basis === 'current_rate'
-                    ? `Paid at your current rate of $${currentRate.toFixed(2)}/h.`
-                    : 'Paid at the rate that applied when each hour was banked (oldest hours first).'}
-                  {' '}Blended rate ${cashoutQuote.blendedRate.toFixed(2)}/h.
+                    ? `Paid at your current base rate of $${currentRate.toFixed(2)}/hour.`
+                    : 'Paid at the base rate that applied when each hour was accrued (oldest hours paid first).'}
+                  {' '}Blended rate: ${cashoutQuote.blendedRate.toFixed(2)}/hour.
                 </p>
                 {cashoutQuote.layers.map((l, i) => (
                   <div key={i} className="flex justify-between text-muted-foreground">
-                    <span>{l.hours.toFixed(2)}h banked {l.accruedOn} @ ${l.rate.toFixed(2)}{l.multiplier !== 1 ? ` × ${l.multiplier}` : ''}</span>
+                    <span>{l.hours.toFixed(2)}h accrued {l.accruedOn} @ ${l.rate.toFixed(2)}/h{l.multiplier !== 1 ? ` × ${l.multiplier} overtime` : ''}</span>
                     <span className="tabular-nums">${l.amount.toFixed(2)}</span>
                   </div>
                 ))}
@@ -259,12 +259,12 @@ export function LeaveBalancesView({ employeeName }: Props) {
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Once approved, the hours leave your TOIL balance and the amount appears on your next timesheet as a TOIL cash-out line.
+              Once approved, the hours are deducted from your TOIL balance and the amount is paid in your next pay run as a TOIL payout line.
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCashoutOpen(false)}>Cancel</Button>
-            <Button onClick={submitCashout} disabled={!cashoutQuote || cashoutQuote.hours <= 0}>Submit cash-out</Button>
+            <Button onClick={submitCashout} disabled={!cashoutQuote || cashoutQuote.hours <= 0}>Submit payout request</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
