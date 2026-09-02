@@ -33,8 +33,43 @@ export interface AwardLeaveRule {
     conversion: 'time_for_time' | 'penalty_equivalent';
     expiryDays: number;      // must be taken within
     requiresPreApproval: boolean;
+    /** Cash-out of banked TOIL */
+    cashoutEnabled?: boolean;
+    /**
+     * Which rate the cash-out is paid at:
+     *  - 'accrual_rate' (DEFAULT): pay each banked hour at the rate/penalty that
+     *    applied when it was earned (FIFO through the ledger). Protects the employer
+     *    from paying old cheap hours at today's higher rate.
+     *  - 'current_rate': pay all hours at the employee's rate on the cash-out date.
+     */
+    cashoutRateBasis?: ToilCashoutBasis;
+    /** Re-apply the original overtime multiplier (1.5/2.0) when paying out. */
+    cashoutIncludesPenalty?: boolean;
+    cashoutRequiresApproval?: boolean;
+    minCashoutHours?: number;
+    maxCashoutHoursPerRequest?: number;
   };
+  /** What happens when a drawdown exceeds the available balance. */
+  shortfall?: BalanceShortfallPolicy;
 }
+
+export type ToilCashoutBasis = 'accrual_rate' | 'current_rate';
+export type ShortfallTreatment = 'leave_without_pay' | 'allow_negative';
+
+export interface BalanceShortfallPolicy {
+  /** Applied per leave kind — RDO/ADO/TOIL can differ. */
+  treatment: Record<LeaveKind, ShortfallTreatment>;
+  /** Only when treatment = allow_negative: how far below zero a balance may go. */
+  maxNegativeHours: Record<LeaveKind, number>;
+  /** Going negative needs a manager sign-off. */
+  requiresApprovalToGoNegative: boolean;
+}
+
+export const DEFAULT_SHORTFALL: BalanceShortfallPolicy = {
+  treatment: { RDO: 'leave_without_pay', ADO: 'leave_without_pay', TOIL: 'leave_without_pay' },
+  maxNegativeHours: { RDO: 0, ADO: 0, TOIL: 0 },
+  requiresApprovalToGoNegative: true,
+};
 
 export interface LocationLeavePolicy {
   locationId: string;
@@ -46,6 +81,7 @@ export interface LocationLeavePolicy {
   minNoticeDaysToTake: number;
   overrides?: Partial<Record<LeaveKind, boolean>>; // disable a kind at this location
 }
+
 
 export interface StaffLeaveConfig {
   staffId: string;
