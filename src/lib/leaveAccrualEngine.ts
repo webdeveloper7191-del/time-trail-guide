@@ -257,12 +257,14 @@ const _defaults = {
     { staffId: 's-3', staffName: 'Priya Patel',   optedIn: { RDO: true,  ADO: true,  TOIL: false }, balanceHours: { RDO: 8,  ADO: 16, TOIL: 0   } },
   ] as StaffLeaveConfig[],
   ledger: [
-    { id: 'l-1', staffId: 's-1', kind: 'RDO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  8,   occurredOn: '2026-07-01', sourceShiftId: 'sh-101', note: '4-week cycle',           createdAt: '2026-07-01T09:00:00Z' },
-    { id: 'l-2', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'accrual'     as LedgerType, hours:  2.5, occurredOn: '2026-07-05', sourceShiftId: 'sh-118', note: 'OT converted to TOIL',   createdAt: '2026-07-05T18:00:00Z' },
-    { id: 'l-3', staffId: 's-2', kind: 'ADO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  1.6, occurredOn: '2026-07-10', sourceShiftId: 'sh-140', note: 'Weekly ADO accrual',     createdAt: '2026-07-10T17:00:00Z' },
+    { id: 'l-1', staffId: 's-1', kind: 'RDO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  8,   occurredOn: '2026-07-01', sourceShiftId: 'sh-101', note: '4-week cycle',           createdAt: '2026-07-01T09:00:00Z', rateAtAccrual: 32.5, multiplierAtAccrual: 1 },
+    { id: 'l-2', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'accrual'     as LedgerType, hours:  2.5, occurredOn: '2026-07-05', sourceShiftId: 'sh-118', note: 'OT converted to TOIL',   createdAt: '2026-07-05T18:00:00Z', rateAtAccrual: 32.5, multiplierAtAccrual: 1.5 },
+    { id: 'l-3', staffId: 's-2', kind: 'ADO'  as LeaveKind, type: 'accrual'     as LedgerType, hours:  1.6, occurredOn: '2026-07-10', sourceShiftId: 'sh-140', note: 'Weekly ADO accrual',     createdAt: '2026-07-10T17:00:00Z', rateAtAccrual: 30.1, multiplierAtAccrual: 1 },
     { id: 'l-4', staffId: 's-1', kind: 'TOIL' as LeaveKind, type: 'consumption' as LedgerType, hours: -4,   occurredOn: '2026-07-14', sourceShiftId: 'sh-150', note: 'TOIL leave taken',       createdAt: '2026-07-14T09:00:00Z' },
   ] as LedgerEntry[],
+  cashouts: [] as ToilCashoutRequest[],
 };
+
 
 function hydrate() {
   if (typeof window === 'undefined') return { ..._defaults };
