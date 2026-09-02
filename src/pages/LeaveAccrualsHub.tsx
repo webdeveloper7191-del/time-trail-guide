@@ -691,3 +691,75 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
     </div>
   );
 }
+
+// ---------- TOIL cash-outs tab ----------
+
+const CASHOUT_BADGE: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  approved: 'bg-blue-50 text-blue-700 border-blue-200',
+  rejected: 'bg-destructive/10 text-destructive border-destructive/20',
+  paid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
+
+function CashoutsTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
+  const requests = snap.cashouts ?? [];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">TOIL cash-out requests</CardTitle>
+        <CardDescription>
+          Employees request a cash-out from their portal. On approval the hours leave the TOIL balance and the amount is
+          released to the next timesheet/pay run as a <span className="font-mono text-xs">TOIL_CASHOUT</span> earnings line.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {requests.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-8 text-center">No cash-out requests yet.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Employee</TableHead>
+                <TableHead>Requested</TableHead>
+                <TableHead className="text-right">Hours</TableHead>
+                <TableHead>Basis</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests.map(r => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.staffName}</TableCell>
+                  <TableCell className="text-muted-foreground">{r.requestedOn}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.hours.toFixed(2)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {r.basis === 'current_rate' ? 'Current rate' : 'Original accrual rates'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">${r.estimatedAmount.toFixed(2)}</TableCell>
+                  <TableCell><Badge variant="outline" className={CASHOUT_BADGE[r.status]}>{r.status}</Badge></TableCell>
+                  <TableCell className="text-right space-x-1.5">
+                    {r.status === 'pending' && (
+                      <>
+                        <Button size="sm" className="h-7" onClick={() => { approveToilCashout(r.id); toast.success('Cash-out approved'); }}>Approve</Button>
+                        <Button size="sm" variant="outline" className="h-7" onClick={() => { rejectToilCashout(r.id, 'Declined by manager'); toast('Cash-out rejected'); }}>Reject</Button>
+                      </>
+                    )}
+                    {r.status === 'approved' && (
+                      <Button size="sm" variant="outline" className="h-7"
+                        onClick={() => { markCashoutPaid(r.id, new Date().toISOString().slice(0, 7)); toast.success('Marked as paid'); }}>
+                        Mark paid
+                      </Button>
+                    )}
+                    {r.status === 'paid' && <span className="text-xs text-muted-foreground">{r.paidInPeriod}</span>}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
