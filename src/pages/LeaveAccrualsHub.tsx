@@ -590,8 +590,8 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Simulated shift context</CardTitle>
-          <CardDescription>Set the inputs the roster editor would have when a shift is saved.</CardDescription>
+          <CardTitle className="text-base">Simulated shift</CardTitle>
+          <CardDescription>Preview how the roster editor will tag a shift, given the employee, award and shift details below.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -643,7 +643,7 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
             <Select value={ctx.manualTag ?? 'NONE'} onValueChange={(v) => setCtx({ ...ctx, manualTag: v as ShiftContext['manualTag'] })}>
               <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="NONE">Auto (derive from context)</SelectItem>
+                <SelectItem value="NONE">Automatic (derived from shift details)</SelectItem>
                 <SelectItem value="RDO">Force RDO</SelectItem>
                 <SelectItem value="ADO">Force ADO</SelectItem>
                 <SelectItem value="TOIL">Force TOIL</SelectItem>
@@ -656,9 +656,9 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="h-4 w-4" /> Derived tag
+            <Clock className="h-4 w-4" /> Resulting tag
           </CardTitle>
-          <CardDescription>What the roster editor would attach to this shift and post to the ledger.</CardDescription>
+          <CardDescription>The leave type the roster editor attaches to this shift and the accrual posted to the ledger.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border p-4 bg-muted/30 space-y-3">
@@ -690,7 +690,7 @@ function RosterTaggingTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> 
   );
 }
 
-// ---------- TOIL cash-outs tab ----------
+// ---------- TOIL payouts tab ----------
 
 const CASHOUT_BADGE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -704,10 +704,10 @@ function CashoutsTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">TOIL cash-out requests</CardTitle>
+        <CardTitle className="text-base">TOIL payout requests</CardTitle>
         <CardDescription>
-          Employees request a cash-out from their portal. On approval the hours leave the TOIL balance and the amount is
-          released to the next timesheet/pay run as a <span className="font-mono text-xs">TOIL_CASHOUT</span> earnings line.
+          Employees request a payout from the employee portal. On approval, the hours are deducted from the TOIL balance
+          and the amount is released to the next pay run as a <span className="font-mono text-xs">TOIL_CASHOUT</span> earnings line.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -733,7 +733,7 @@ function CashoutsTab({ snap }: { snap: ReturnType<typeof useLeaveSnapshot> }) {
                   <TableCell className="text-muted-foreground">{r.requestedOn}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.hours.toFixed(2)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {r.basis === 'current_rate' ? 'Current rate' : 'Original accrual rates'}
+                    {r.basis === 'current_rate' ? 'Rate at date of payment' : 'Rate at time of accrual'}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">${r.estimatedAmount.toFixed(2)}</TableCell>
                   <TableCell><Badge variant="outline" className={CASHOUT_BADGE[r.status]}>{r.status}</Badge></TableCell>
