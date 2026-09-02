@@ -334,6 +334,22 @@ export function PolicyPermissions() {
               onChange={v => setField('permissions', 'earlyClockInMinutes', v)}
             />
           )}
+          {resolved.permissions.earlyClockInPolicy === 'within_minutes'
+            && resolved.issues.flagClockBoundaryBreach !== 'off'
+            && resolved.issues.earlyClockInToleranceMinutes < resolved.permissions.earlyClockInMinutes && (
+            <div className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
+              <div>
+                <p className="font-medium">Inconsistent early clock-in settings</p>
+                <p className="text-muted-foreground">
+                  Staff may clock in up to {resolved.permissions.earlyClockInMinutes} min early, but Anomaly Flags
+                  raise an out-of-bounds flag after {resolved.issues.earlyClockInToleranceMinutes} min. Punches
+                  between the two are allowed and then flagged. Set the tolerance in
+                  <span className="font-medium text-foreground"> Anomaly Flags</span> to at least {resolved.permissions.earlyClockInMinutes} min.
+                </p>
+              </div>
+            </div>
+          )}
           <NumberRow
             {...fieldProps('permissions', 'lateClockInGraceMinutes', 'Late clock-in grace (minutes)',
               'Clock-ins within this many minutes after the scheduled start still count as on-time (no late flag).',
@@ -760,6 +776,19 @@ export function PolicyUnscheduled() {
             value={u.requireTrainingForUnscheduled}
             onChange={v => setField('unscheduled', 'requireTrainingForUnscheduled', v)}
           />
+        )}
+        {flagged && u.rosterFlagSeverity === 'off' && (
+          <div className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
+            <div>
+              <p className="font-medium">This combination raises no flag</p>
+              <p className="text-muted-foreground">
+                You chose "Allow and flag" but the roster flag severity is Off, so the unrostered punch is
+                accepted silently. Pick Info, Warning or Critical below — or change the action above to
+                "Allow silently".
+              </p>
+            </div>
+          </div>
         )}
         {flagged && (
           <SelectRow
