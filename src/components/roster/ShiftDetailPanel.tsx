@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { CallbackEvent } from './CallbackEventLoggingPanel';
 import { SleepoverEvent, SplitShiftEvent } from '@/types/shiftEvents';
-import { Shift, StaffMember, DemandData, RosterComplianceFlag, Room, Centre, TimeOff, RecurrencePattern, RecurrenceEndType, ShiftTemplate, defaultShiftTemplates } from '@/types/roster';
+import { Shift, StaffMember, DemandData, RosterComplianceFlag, Centre, TimeOff } from '@/types/roster';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,41 +10,30 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FormSection, FormField, FormRow } from '@/components/ui/off-canvas/FormSection';
-import { 
-  Clock, 
-  AlertTriangle, 
+import {
+  Clock,
+  AlertTriangle,
   DollarSign,
   Calendar,
-  MapPin,
-  Coffee,
   Save,
   Trash2,
   Copy,
   ArrowLeftRight,
   Zap,
-  BarChart3,
   UserX,
   CheckCircle2,
-  FileText,
   UserPlus,
-  RefreshCw,
   Repeat,
   PhoneCall,
   Shield,
   Timer,
   Car,
-  Plus,
   XCircle,
   Moon,
-  BedDouble,
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isWithinInterval } from 'date-fns';
-import { DemandHistogram } from './DemandHistogram';
 import { ShiftTypeEditor } from './ShiftTypeEditor';
 import { AllowanceEligibilityPanel } from './AllowanceEligibilityPanel';
 import { ManualAllowancesEditor } from './ManualAllowancesEditor';
@@ -56,8 +45,6 @@ import { toast } from 'sonner';
 import { ShiftCoverageSuggestionModal } from './ShiftCoverageSuggestionModal';
 import { timesheetApi } from '@/lib/api/timesheetApi';
 import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/rosterColors';
-import { useRecurringPatterns } from '@/hooks/useRecurringPatterns';
-import { recurrencePatternLabels } from '@/types/advancedRoster';
 import { applyShiftLeaveEffect } from '@/lib/leaveAccrualEngine';
 import { StaffAvailabilityWarnings } from './StaffAvailabilityWarnings';
 
@@ -68,7 +55,7 @@ interface ShiftDetailPanelProps {
   shift: Shift;
   staff: StaffMember[];
   centre: Centre;
-  demandData: DemandData[];
+  demandData?: DemandData[];
   complianceFlags: RosterComplianceFlag[];
   existingShifts?: Shift[];
   callbackEvents?: CallbackEvent[];
@@ -96,11 +83,93 @@ const shiftStatusOptions: { value: ShiftStatus; label: string; description: stri
   { value: 'completed', label: shiftStatusColors.completed.legendLabel, description: shiftStatusColors.completed.legendDescription, color: `${shiftStatusColors.completed.badgeBg} ${shiftStatusColors.completed.text}` },
 ];
 
+const eventStatusColors: Record<string, string> = {
+  logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
+  approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+  rejected: 'bg-destructive/15 text-destructive border-destructive/40',
+  paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
+};
+
+const shortTime = (value?: string) => (value ? format(new Date(value), 'h:mm a') : '—');
+
+/** Compact summary tiles used above each event list. */
+const StatTiles = ({ items }: { items: { value: string; label: string }[] }) => (
+  <div className="grid grid-cols-3 gap-3">
+    {items.map(item => (
+      <div key={item.label} className="rounded-lg border bg-muted/30 p-3 text-center">
+        <p className="text-2xl font-bold text-foreground">{item.value}</p>
+        <p className="text-[10px] text-muted-foreground font-medium">{item.label}</p>
+      </div>
+    ))}
+  </div>
+);
+
+/** One logged event (callback / sleepover / split shift) with its approval actions. */
+const EventCard = ({ icon: Icon, label, tone, status, flag, rows, notes, onStatusChange }: {
+  icon: React.ElementType;
+  label: string;
+  tone: string;
+  status: string;
+  flag?: string;
+  rows: React.ReactNode[];
+  notes?: React.ReactNode;
+  onStatusChange?: (next: 'approved' | 'rejected' | 'paid') => void;
+}) => (
+  <div className={cn('rounded-lg border p-3 space-y-2', tone)}>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        <span className="text-sm font-semibold">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {flag && <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">{flag}</Badge>}
+        <Badge variant="outline" className={cn('text-[9px]', eventStatusColors[status])}>{status}</Badge>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">{rows}</div>
+
+    {notes && <div className="text-[11px] text-muted-foreground border-t border-border/50 pt-1.5">{notes}</div>}
+
+    {onStatusChange && (status === 'logged' || status === 'approved') && (
+      <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
+        {status === 'logged' ? (
+          <>
+            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onStatusChange('approved')}>
+              <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={() => onStatusChange('rejected')}>
+              <XCircle className="h-3 w-3 mr-1" /> Reject
+            </Button>
+          </>
+        ) : (
+          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onStatusChange('paid')}>
+            <DollarSign className="h-3 w-3 mr-1" /> Mark as Paid
+          </Button>
+        )}
+      </div>
+    )}
+  </div>
+);
+
+const EventRow = ({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) => (
+  <div className="flex items-center gap-1.5">
+    <Icon className="h-3 w-3" />
+    <span>{children}</span>
+  </div>
+);
+
+const EmptyEvents = ({ icon: Icon, message }: { icon: React.ElementType; message: string }) => (
+  <div className="text-center py-6">
+    <Icon className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+    <p className="text-sm text-muted-foreground">{message}</p>
+  </div>
+);
+
 export function ShiftDetailPanel({
   shift,
   staff,
   centre,
-  demandData,
   complianceFlags,
   existingShifts = [],
   callbackEvents = [],
@@ -121,54 +190,37 @@ export function ShiftDetailPanel({
 }: ShiftDetailPanelProps) {
   const [editedShift, setEditedShift] = useState<Shift>(shift);
   const [showCoverageModal, setShowCoverageModal] = useState(false);
-  const [templateMode, setTemplateMode] = useState<'shift' | 'recurring'>('shift');
-  
-  // Get recurring patterns from shared hook
-  const { activePatterns } = useRecurringPatterns();
 
   // IMPORTANT: keep local state in sync when user clicks a different shift card
   useEffect(() => {
     setEditedShift(shift);
     setShowCoverageModal(false);
   }, [shift]);
-  
+
   // Track absent state from the shift itself
   const isAbsent = editedShift.isAbsent || false;
-  
+
   const assignedStaff = staff.find(s => s.id === editedShift.staffId);
   const room = centre.rooms.find(r => r.id === shift.roomId);
-  
+  const isOnCall = editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall';
+
   const relatedFlags = complianceFlags.filter(
-    f => f.date === shift.date && 
-         f.roomId === shift.roomId && 
+    f => f.date === shift.date &&
+         f.roomId === shift.roomId &&
          f.centreId === shift.centreId
   );
 
-  // Check if staff has approved leave for this shift date
-  const staffApprovedLeave = useMemo(() => {
+  const findLeave = (status: TimeOff['status']) => {
     if (!assignedStaff?.timeOff) return null;
-    
-    return assignedStaff.timeOff.find(leave => {
-      if (leave.status !== 'approved') return false;
-      const shiftDate = parseISO(shift.date);
-      const leaveStart = parseISO(leave.startDate);
-      const leaveEnd = parseISO(leave.endDate);
-      return isWithinInterval(shiftDate, { start: leaveStart, end: leaveEnd });
-    });
-  }, [assignedStaff, shift.date]);
+    return assignedStaff.timeOff.find(leave =>
+      leave.status === status &&
+      isWithinInterval(parseISO(shift.date), { start: parseISO(leave.startDate), end: parseISO(leave.endDate) })
+    ) ?? null;
+  };
 
-  // Check if there's pending leave for this date
-  const staffPendingLeave = useMemo(() => {
-    if (!assignedStaff?.timeOff) return null;
-    
-    return assignedStaff.timeOff.find(leave => {
-      if (leave.status !== 'pending') return false;
-      const shiftDate = parseISO(shift.date);
-      const leaveStart = parseISO(leave.startDate);
-      const leaveEnd = parseISO(leave.endDate);
-      return isWithinInterval(shiftDate, { start: leaveStart, end: leaveEnd });
-    });
-  }, [assignedStaff, shift.date]);
+  const staffApprovedLeave = useMemo(() => findLeave('approved'), [assignedStaff, shift.date]);
+  const staffPendingLeave = useMemo(() => findLeave('pending'), [assignedStaff, shift.date]);
+  const relevantLeave = staffApprovedLeave ?? staffPendingLeave;
 
   const leaveTypeLabels: Record<TimeOff['type'], string> = {
     annual_leave: 'Annual Leave',
@@ -182,8 +234,8 @@ export function ShiftDetailPanel({
 
   // Filter events for this specific shift
   const shiftCallbackEvents = useMemo(() => {
-    return callbackEvents.filter(e => 
-      e.staffId === editedShift.staffId && 
+    return callbackEvents.filter(e =>
+      e.staffId === editedShift.staffId &&
       (e.onCallShiftId === editedShift.id || e.workStartTime?.startsWith(editedShift.date))
     );
   }, [callbackEvents, editedShift.staffId, editedShift.date, editedShift.id]);
@@ -196,6 +248,8 @@ export function ShiftDetailPanel({
     return splitShiftEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
   }, [splitShiftEvents, editedShift.staffId, editedShift.date]);
 
+  const totalEventCount = shiftCallbackEvents.length + shiftSleepoverEvents.length + shiftSplitShiftEvents.length;
+
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
   const shiftDuration = useMemo(() => {
@@ -206,22 +260,12 @@ export function ShiftDetailPanel({
   }, [editedShift]);
 
   // Use context-aware cost calculation with custom rules and rate overrides
-  const { estimatedCost, costBreakdown } = useMemo(() => {
-    if (!assignedStaff) {
-      return { estimatedCost: 0, costBreakdown: null };
-    }
+  const estimatedCost = useMemo(() => {
+    if (!assignedStaff) return 0;
     try {
-      const breakdown = calculateCost(editedShift, assignedStaff);
-      return { 
-        estimatedCost: breakdown.totalCost, 
-        costBreakdown: breakdown 
-      };
+      return calculateCost(editedShift, assignedStaff).totalCost;
     } catch {
-      // Fallback to quick estimate
-      return { 
-        estimatedCost: getQuickEstimate(editedShift, assignedStaff), 
-        costBreakdown: null 
-      };
+      return getQuickEstimate(editedShift, assignedStaff);
     }
   }, [editedShift, assignedStaff, calculateCost, getQuickEstimate]);
 
@@ -271,17 +315,9 @@ export function ShiftDetailPanel({
       notes: `${editedShift.notes ? editedShift.notes + '\n' : ''}[ABSENT] ${staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : 'Marked absent by manager'}`,
     };
 
-    console.log('[absent] saving shift', {
-      id: absentShift.id,
-      staffId: absentShift.staffId,
-      date: absentShift.date,
-      isAbsent: absentShift.isAbsent,
-      replacementStaffId: absentShift.replacementStaffId,
-    });
-
     setEditedShift(absentShift);
     onSave(absentShift);
-    
+
     // Update timesheet for this date
     try {
       const result = await timesheetApi.markTimesheetAbsent(
@@ -292,7 +328,7 @@ export function ShiftDetailPanel({
         editedShift.endTime,
         staffApprovedLeave ? `Leave: ${leaveTypeLabels[staffApprovedLeave.type]}` : undefined
       );
-      
+
       if (result.data.updated) {
         toast.success('Shift marked as absent', {
           description: 'Timesheet updated to reflect absence'
@@ -357,9 +393,7 @@ export function ShiftDetailPanel({
   };
 
   const handleSkipCoverage = async () => {
-    // First mark the shift as absent (including saving it)
     await handleConfirmAbsent(false);
-    // Then close the modal
     setShowCoverageModal(false);
   };
 
@@ -367,16 +401,9 @@ export function ShiftDetailPanel({
     setEditedShift(prev => ({ ...prev, status: newStatus }));
   };
 
-  // Get shift type from central config
-  const getShiftTypeIndicator = () => {
-    if (!editedShift.shiftType || editedShift.shiftType === 'regular') {
-      return null;
-    }
-    const config = getShiftTypeConfig(editedShift.shiftType);
-    return { icon: config.icon, color: config.color, label: config.label };
-  };
-
-  const shiftTypeIndicator = getShiftTypeIndicator();
+  const shiftTypeConfig = editedShift.shiftType && editedShift.shiftType !== 'regular'
+    ? getShiftTypeConfig(editedShift.shiftType)
+    : null;
 
   const actions: OffCanvasAction[] = [
     { label: 'Save Changes', onClick: handleSave, variant: 'primary', icon: <Save className="h-4 w-4" /> },
@@ -388,12 +415,9 @@ export function ShiftDetailPanel({
         <ArrowLeftRight className="h-4 w-4 mr-1" />
         Swap
       </Button>
-      <Button variant="outline" size="sm" onClick={() => onCopyShift?.(shift)}>
+      <Button variant="outline" size="sm" onClick={() => (onCopyShift ? onCopyShift(shift) : onDuplicate(shift))}>
         <Copy className="h-4 w-4 mr-1" />
         Copy
-      </Button>
-      <Button variant="outline" size="icon" onClick={() => onDuplicate(shift)}>
-        <Copy className="h-4 w-4" />
       </Button>
       <Button variant="outline" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDelete(shift.id)}>
         <Trash2 className="h-4 w-4" />
@@ -412,79 +436,37 @@ export function ShiftDetailPanel({
       actions={actions}
       headerActions={headerActions}
     >
-      {/* Shift Type Badge */}
-      {shiftTypeIndicator && (
-        <div className="py-2 px-3 mb-4 -mt-2 rounded-lg bg-muted/50 border border-border">
-          <Badge variant="outline" className={cn("flex items-center gap-1 w-fit", shiftTypeIndicator.color)}>
-            <shiftTypeIndicator.icon className="h-3 w-3" />
-            {shiftTypeIndicator.label}
-          </Badge>
+      {/* Shift type + recurring series context */}
+      {(shiftTypeConfig || editedShift.recurring?.isRecurring) && (
+        <div className="py-2 px-3 mb-4 -mt-2 rounded-lg bg-muted/50 border border-border flex items-center gap-2 flex-wrap">
+          {shiftTypeConfig && (
+            <Badge variant="outline" className={cn('flex items-center gap-1 w-fit', shiftTypeConfig.color)}>
+              <shiftTypeConfig.icon className="h-3 w-3" />
+              {shiftTypeConfig.label}
+            </Badge>
+          )}
+          {editedShift.recurring?.isRecurring && (
+            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+              <Repeat className="h-3 w-3" />
+              Part of a recurring series
+            </Badge>
+          )}
         </div>
       )}
 
-      {/* Leave Accrual Tag (RDO / ADO / TOIL) */}
-      <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Leave accrual tag</Label>
-          <a href="/leave-accruals" target="_blank" rel="noreferrer" className="text-[11px] text-primary hover:underline">Configure RDO/ADO/TOIL →</a>
-        </div>
-        <Select
-          value={editedShift.leaveTag ?? 'AUTO'}
-          onValueChange={(v) => setEditedShift(prev => ({ ...prev, leaveTag: v as NonNullable<Shift['leaveTag']> }))}
-        >
-          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="AUTO">Auto (derive from award &amp; staff opt-in)</SelectItem>
-            <SelectItem value="NONE">None — no leave impact</SelectItem>
-            <SelectItem value="RDO">Accrue RDO</SelectItem>
-            <SelectItem value="ADO">Accrue ADO</SelectItem>
-            <SelectItem value="TOIL">Accrue TOIL (bank overtime)</SelectItem>
-            <SelectItem value="RDO_LEAVE">RDO Leave — consume RDO balance</SelectItem>
-            <SelectItem value="ADO_LEAVE">ADO Leave — consume ADO balance</SelectItem>
-            <SelectItem value="TOIL_LEAVE">TOIL Leave — consume TOIL balance</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-[11px] text-muted-foreground">
-          On save, a ledger entry is posted for the assigned staff member. "Auto" uses the award rules and their opt-in.
-        </p>
-      </div>
-
-      {/* Tabs for different sections */}
       <Tabs defaultValue="details" className="flex-1 flex flex-col">
         <TabsList className="h-10 w-full justify-start rounded-none border-b bg-transparent mb-4">
           <TabsTrigger value="details" className="text-xs">Details</TabsTrigger>
-          <TabsTrigger value="allowances" className="text-xs flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            Allowances
+          <TabsTrigger value="pay" className="text-xs flex items-center gap-1">
+            <DollarSign className="h-3 w-3" />
+            Pay &amp; Allowances
           </TabsTrigger>
-          {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
-            <TabsTrigger value="callbacks" className="text-xs flex items-center gap-1">
-              <PhoneCall className="h-3 w-3" />
-              Callbacks
-              {shiftCallbackEvents.length > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftCallbackEvents.length}</Badge>
-              )}
-            </TabsTrigger>
-          )}
-          {editedShift.shiftType === 'sleepover' && (
-            <TabsTrigger value="sleepovers" className="text-xs flex items-center gap-1">
-              <Moon className="h-3 w-3" />
-              Sleepovers
-              {shiftSleepoverEvents.length > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftSleepoverEvents.length}</Badge>
-              )}
-            </TabsTrigger>
-          )}
-          {shiftSplitShiftEvents.length > 0 && (
-            <TabsTrigger value="splitshifts" className="text-xs flex items-center gap-1">
-              <Zap className="h-3 w-3" />
-              Split Shifts
-              <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{shiftSplitShiftEvents.length}</Badge>
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="demand" className="text-xs flex items-center gap-1">
-            <BarChart3 className="h-3 w-3" />
-            Demand
+          <TabsTrigger value="events" className="text-xs flex items-center gap-1">
+            <PhoneCall className="h-3 w-3" />
+            Events
+            {totalEventCount > 0 && (
+              <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{totalEventCount}</Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -533,37 +515,37 @@ export function ShiftDetailPanel({
             {/* Staff Assignment */}
             <FormSection title="Staff Assignment">
               <FormField label="Assigned Staff" required>
-              <Select 
-                value={editedShift.staffId} 
-                onValueChange={(value) => setEditedShift(prev => ({ ...prev, staffId: value }))}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select staff member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {staff.map(member => (
-                    <SelectItem key={member.id} value={member.id} textValue={member.name}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: member.color }}
-                        />
-                        <span>{member.name}</span>
-                        <span className="text-muted-foreground text-xs">
-                          ({member.currentWeeklyHours}/{member.maxHoursPerWeek}h)
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select
+                  value={editedShift.staffId}
+                  onValueChange={(value) => setEditedShift(prev => ({ ...prev, staffId: value }))}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select staff member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staff.map(member => (
+                      <SelectItem key={member.id} value={member.id} textValue={member.name}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: member.color }}
+                          />
+                          <span>{member.name}</span>
+                          <span className="text-muted-foreground text-xs">
+                            ({member.currentWeeklyHours}/{member.maxHoursPerWeek}h)
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormField>
 
               {assignedStaff && (
                 <div className="bg-background rounded-lg border p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div 
+                      <div
                         className="h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-medium"
                         style={{ backgroundColor: assignedStaff.color }}
                       >
@@ -576,10 +558,14 @@ export function ShiftDetailPanel({
                         </p>
                       </div>
                     </div>
-                    {/* Mark Absent Button - Always visible */}
-                    {!isAbsent && (
-                      <Button 
-                        size="sm" 
+                    {isAbsent ? (
+                      <Badge variant="outline" className="text-amber-600 border-amber-500/50">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Absent
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="h-7 text-xs border-destructive/50 text-destructive hover:bg-destructive/10"
                         onClick={handleMarkAbsent}
@@ -588,14 +574,8 @@ export function ShiftDetailPanel({
                         Mark Absent
                       </Button>
                     )}
-                    {isAbsent && (
-                      <Badge variant="outline" className="text-amber-600 border-amber-500/50">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Absent
-                      </Badge>
-                    )}
                   </div>
-                  
+
                   {/* Overtime warning */}
                   {assignedStaff.currentWeeklyHours + shiftDuration > assignedStaff.maxHoursPerWeek && (
                     <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 p-2 rounded">
@@ -614,13 +594,12 @@ export function ShiftDetailPanel({
               )}
             </FormSection>
 
-
             {/* Leave/Absence Alert */}
-            {(staffApprovedLeave || staffPendingLeave) && (
+            {relevantLeave && (
               <div className={cn(
                 "p-3 rounded-lg border",
-                staffApprovedLeave 
-                  ? "border-amber-500/50 bg-amber-500/10" 
+                staffApprovedLeave
+                  ? "border-amber-500/50 bg-amber-500/10"
                   : "border-blue-500/50 bg-blue-500/10"
               )}>
                 <div className="flex items-start gap-2">
@@ -630,29 +609,21 @@ export function ShiftDetailPanel({
                   )} />
                   <div className="flex-1">
                     <p className="text-sm font-medium">
-                      {staffApprovedLeave 
-                        ? `Approved ${leaveTypeLabels[staffApprovedLeave.type]}`
-                        : `Pending ${leaveTypeLabels[staffPendingLeave!.type]}`
-                      }
+                      {staffApprovedLeave ? 'Approved' : 'Pending'} {leaveTypeLabels[relevantLeave.type]}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {staffApprovedLeave 
-                        ? `${format(parseISO(staffApprovedLeave.startDate), 'MMM d')} - ${format(parseISO(staffApprovedLeave.endDate), 'MMM d')}`
-                        : `${format(parseISO(staffPendingLeave!.startDate), 'MMM d')} - ${format(parseISO(staffPendingLeave!.endDate), 'MMM d')}`
-                      }
+                      {format(parseISO(relevantLeave.startDate), 'MMM d')} - {format(parseISO(relevantLeave.endDate), 'MMM d')}
                     </p>
                     {staffApprovedLeave && !isAbsent && (
-                      <div className="flex gap-2 mt-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="h-7 text-xs border-amber-500/50 text-amber-700 hover:bg-amber-500/20"
-                          onClick={handleMarkAbsent}
-                        >
-                          <UserPlus className="h-3 w-3 mr-1" />
-                          Mark Absent & Find Coverage
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs mt-2 border-amber-500/50 text-amber-700 hover:bg-amber-500/20"
+                        onClick={handleMarkAbsent}
+                      >
+                        <UserPlus className="h-3 w-3 mr-1" />
+                        Mark Absent &amp; Find Coverage
+                      </Button>
                     )}
                     {isAbsent && (
                       <Badge variant="outline" className="mt-2 text-amber-600 border-amber-500/50">
@@ -664,166 +635,6 @@ export function ShiftDetailPanel({
                 </div>
               </div>
             )}
-
-            {/* Unified Templates Section */}
-            <FormSection title="Templates" tooltip="Apply a shift template or set up recurring pattern">
-              
-              {/* Radio Selection */}
-              <RadioGroup 
-                value={templateMode} 
-                onValueChange={(value: 'shift' | 'recurring') => {
-                  setTemplateMode(value);
-                  // Initialize recurring config when switching to recurring mode
-                  if (value === 'recurring' && !editedShift.recurring?.isRecurring) {
-                    setEditedShift(prev => ({
-                      ...prev,
-                      recurring: {
-                        isRecurring: true,
-                        pattern: 'weekly' as RecurrencePattern,
-                        daysOfWeek: [new Date(prev.date).getDay()],
-                        endType: 'after_occurrences' as RecurrenceEndType,
-                        endAfterOccurrences: 4,
-                        recurrenceGroupId: `rg-${prev.id}-${Date.now()}`
-                      }
-                    }));
-                  }
-                  // Clear recurring when switching to shift mode
-                  if (value === 'shift') {
-                    setEditedShift(prev => ({
-                      ...prev,
-                      recurring: { isRecurring: false }
-                    }));
-                  }
-                }}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="shift" id="template-shift" />
-                  <Label htmlFor="template-shift" className="text-sm font-medium cursor-pointer">
-                    Shift Template
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="recurring" id="template-recurring" />
-                  <Label htmlFor="template-recurring" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                    <Repeat className="h-3.5 w-3.5" />
-                    Recurring Pattern
-                  </Label>
-                </div>
-              </RadioGroup>
-
-              {/* Shift Template Section */}
-              {templateMode === 'shift' && (
-                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-border">
-                  <Select 
-                    value=""
-                    onValueChange={(templateId) => {
-                      const template = defaultShiftTemplates.find(t => t.id === templateId);
-                      if (template) {
-                        setEditedShift(prev => ({ 
-                          ...prev, 
-                          startTime: template.startTime,
-                          endTime: template.endTime,
-                          breakMinutes: template.breakMinutes,
-                          shiftType: template.shiftType || 'regular',
-                        }));
-                        toast.success(`Applied "${template.name}" template`);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Select a shift template..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background z-50">
-                      {defaultShiftTemplates.map(template => (
-                        <SelectItem key={template.id} value={template.id} textValue={template.name}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="h-3 w-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: template.color }}
-                            />
-                            <span>{template.name}</span>
-                            <span className="text-muted-foreground text-xs">
-                              ({template.startTime} - {template.endTime})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Sets shift times, break duration, and type
-                  </p>
-                </div>
-              )}
-
-              {/* Recurring Pattern Section */}
-              {templateMode === 'recurring' && (
-                <div className="space-y-2 p-4 bg-muted/30 rounded-lg border border-border">
-                  {activePatterns.length > 0 ? (
-                    <Select 
-                      value=""
-                      onValueChange={(patternId) => {
-                        const pattern = activePatterns.find(p => p.id === patternId);
-                        if (pattern) {
-                          setEditedShift(prev => ({ 
-                            ...prev, 
-                            startTime: pattern.shiftTemplate.startTime,
-                            endTime: pattern.shiftTemplate.endTime,
-                            breakMinutes: pattern.shiftTemplate.breakDuration || 30,
-                            recurring: {
-                              isRecurring: true,
-                              pattern: pattern.pattern as RecurrencePattern,
-                              daysOfWeek: pattern.daysOfWeek || [],
-                              endType: pattern.endDate ? 'on_date' : 'never',
-                              endDate: pattern.endDate,
-                              recurrenceGroupId: `rg-${prev.id}-${Date.now()}`
-                            }
-                          }));
-                          toast.success(`Applied "${pattern.name}" recurring pattern`);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Select a recurring pattern..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        {activePatterns.map(pattern => (
-                          <SelectItem key={pattern.id} value={pattern.id} textValue={pattern.name}>
-                            <div className="flex flex-col gap-0.5">
-                              <div className="flex items-center gap-2">
-                                <RefreshCw className="h-3 w-3 text-emerald-500 flex-shrink-0" />
-                                <span className="font-medium">{pattern.name}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                  {recurrencePatternLabels[pattern.pattern]}
-                                </Badge>
-                                <span>
-                                  {pattern.shiftTemplate.startTime} - {pattern.shiftTemplate.endTime}
-                                </span>
-                                <span>•</span>
-                                <span>{pattern.shiftTemplate.roleName}</span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="p-3 border border-dashed border-muted-foreground/30 rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">No active patterns available</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Create patterns in Recurring Shift Patterns panel
-                      </p>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Sets times and enables recurring schedule automatically
-                  </p>
-                </div>
-              )}
-            </FormSection>
 
             {/* Time Settings */}
             <FormSection title="Schedule">
@@ -845,7 +656,7 @@ export function ShiftDetailPanel({
                   />
                 </FormField>
               </FormRow>
-              
+
               <FormField label="Required Employees">
                 <div className="flex items-center gap-2">
                   <Input
@@ -879,7 +690,6 @@ export function ShiftDetailPanel({
                 }))}
               />
 
-
               {/* Duration & Cost Summary */}
               <div className="bg-background rounded-lg border p-3 grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
@@ -899,195 +709,48 @@ export function ShiftDetailPanel({
               </div>
             </FormSection>
 
-            {/* Recurring Shift Configuration - Only shown when templateMode is 'recurring' */}
-            {templateMode === 'recurring' && (
-              <>
-                <FormSection title="Recurring Settings" tooltip="Configure repeat pattern for this shift">
-                  
-                  <div className="space-y-4 p-4 bg-background rounded-lg border">
-                    {/* Pattern Selection */}
-                    <FormField label="Repeat Pattern">
-                      <Select
-                        value={editedShift.recurring?.pattern || 'weekly'}
-                        onValueChange={(value: RecurrencePattern) => setEditedShift(prev => ({
-                          ...prev,
-                          recurring: { 
-                            ...prev.recurring!, 
-                            isRecurring: true,
-                            pattern: value,
-                            recurrenceGroupId: prev.recurring?.recurrenceGroupId || `rg-${prev.id}-${Date.now()}`
-                          }
-                        }))}
-                      >
-                        <SelectTrigger className="bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-
-                    {/* Days of Week - for weekly/fortnightly patterns */}
-                    {(editedShift.recurring?.pattern === 'weekly' || editedShift.recurring?.pattern === 'fortnightly') && (
-                      <FormField label="Repeat on">
-                        <div className="flex flex-wrap gap-2">
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                            <div key={day} className="flex items-center gap-1">
-                              <Checkbox
-                                id={`day-${index}`}
-                                checked={editedShift.recurring?.daysOfWeek?.includes(index) || false}
-                                onCheckedChange={(checked) => {
-                                  const currentDays = editedShift.recurring?.daysOfWeek || [];
-                                  const newDays = checked
-                                    ? [...currentDays, index]
-                                    : currentDays.filter(d => d !== index);
-                                  setEditedShift(prev => ({
-                                    ...prev,
-                                    recurring: { ...prev.recurring!, isRecurring: true, daysOfWeek: newDays }
-                                  }));
-                                }}
-                              />
-                              <Label htmlFor={`day-${index}`} className="text-xs cursor-pointer">{day}</Label>
-                            </div>
-                          ))}
-                        </div>
-                      </FormField>
-                    )}
-
-                    {/* End Condition */}
-                    <FormField label="Ends">
-                      <Select
-                        value={editedShift.recurring?.endType || 'after_occurrences'}
-                        onValueChange={(value: RecurrenceEndType) => setEditedShift(prev => ({
-                          ...prev,
-                          recurring: { ...prev.recurring!, isRecurring: true, endType: value }
-                        }))}
-                      >
-                        <SelectTrigger className="bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
-                          <SelectItem value="never">Never</SelectItem>
-                          <SelectItem value="after_occurrences">After X occurrences</SelectItem>
-                          <SelectItem value="on_date">On a specific date</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-
-                    {/* Occurrences count */}
-                    {editedShift.recurring?.endType === 'after_occurrences' && (
-                      <FormField label="Number of occurrences">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min={1}
-                            max={52}
-                            value={editedShift.recurring?.endAfterOccurrences || 4}
-                            onChange={(e) => setEditedShift(prev => ({
-                              ...prev,
-                              recurring: { ...prev.recurring!, isRecurring: true, endAfterOccurrences: parseInt(e.target.value) || 4 }
-                            }))}
-                            className="w-24 bg-background"
-                          />
-                          <span className="text-sm text-muted-foreground">occurrences</span>
-                        </div>
-                      </FormField>
-                    )}
-
-                    {/* End date */}
-                    {editedShift.recurring?.endType === 'on_date' && (
-                      <FormField label="End date">
-                        <Input
-                          type="date"
-                          value={editedShift.recurring?.endDate || ''}
-                          min={editedShift.date}
-                          onChange={(e) => setEditedShift(prev => ({
-                            ...prev,
-                            recurring: { ...prev.recurring!, isRecurring: true, endDate: e.target.value }
-                          }))}
-                          className="bg-background"
-                        />
-                      </FormField>
-                    )}
-
-                    {/* Preview info */}
-                    <div className="p-2 bg-primary/5 rounded text-xs text-muted-foreground border border-primary/10">
-                      <p className="font-medium text-foreground">
-                        {editedShift.recurring?.pattern === 'daily' && 'Creates a shift every day'}
-                        {editedShift.recurring?.pattern === 'weekly' && `Creates a shift every week on ${editedShift.recurring?.daysOfWeek?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'selected days'}`}
-                        {editedShift.recurring?.pattern === 'fortnightly' && `Creates a shift every 2 weeks on ${editedShift.recurring?.daysOfWeek?.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'selected days'}`}
-                      </p>
-                      <p className="mt-1">
-                        {editedShift.recurring?.endType === 'never' && 'Until manually stopped'}
-                        {editedShift.recurring?.endType === 'after_occurrences' && `For ${editedShift.recurring?.endAfterOccurrences || 4} occurrences`}
-                        {editedShift.recurring?.endType === 'on_date' && editedShift.recurring?.endDate && `Until ${format(new Date(editedShift.recurring.endDate), 'MMM d, yyyy')}`}
-                      </p>
-                    </div>
-                  </div>
-                </FormSection>
-            </>
-          )}
- 
-          {/* Shift Status */}
+            {/* Shift Status */}
             <FormSection title="Shift Status">
               <FormField label="Current Status">
-              <Select 
-                value={editedShift.status} 
-                onValueChange={(value) => handleStatusChange(value as Shift['status'])}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {shiftStatusOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value} textValue={option.label}>
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          <Badge className={cn("text-xs", option.color)}>
-                            {option.label}
-                          </Badge>
+                <Select
+                  value={editedShift.status}
+                  onValueChange={(value) => handleStatusChange(value as Shift['status'])}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {shiftStatusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value} textValue={option.label}>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <Badge className={cn("text-xs", option.color)}>
+                              {option.label}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{option.description}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormField>
 
               {/* Quick status actions */}
               <div className="flex gap-2">
                 {editedShift.status === 'draft' && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => handleStatusChange('published')}
-                  >
+                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleStatusChange('published')}>
                     Publish Shift
                   </Button>
                 )}
                 {editedShift.status === 'published' && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => handleStatusChange('confirmed')}
-                  >
+                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleStatusChange('confirmed')}>
                     <CheckCircle2 className="h-3 w-3 mr-1" />
                     Mark Confirmed
                   </Button>
                 )}
                 {(editedShift.status === 'confirmed' || editedShift.status === 'published') && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="text-xs h-7"
-                    onClick={() => handleStatusChange('completed')}
-                  >
+                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleStatusChange('completed')}>
                     Mark Completed
                   </Button>
                 )}
@@ -1097,58 +760,79 @@ export function ShiftDetailPanel({
             {/* Room Assignment */}
             <FormSection title="Room">
               <FormField label="Room Assignment" required>
-              <Select 
-                value={editedShift.roomId} 
-                onValueChange={(value) => setEditedShift(prev => ({ ...prev, roomId: value }))}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {centre.rooms.map(r => (
-                    <SelectItem key={r.id} value={r.id} textValue={r.name}>
-                      {r.name} (1:{r.requiredRatio} ratio)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select
+                  value={editedShift.roomId}
+                  onValueChange={(value) => setEditedShift(prev => ({ ...prev, roomId: value }))}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {centre.rooms.map(r => (
+                      <SelectItem key={r.id} value={r.id} textValue={r.name}>
+                        {r.name} (1:{r.requiredRatio} ratio)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormField>
             </FormSection>
 
             {/* Notes */}
             <FormSection title="Notes">
               <FormField label="Shift Notes">
-              <Textarea
-                value={editedShift.notes || ''}
-                onChange={(e) => setEditedShift(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Add notes for this shift..."
-                rows={3}
-                className="bg-background resize-none"
-              />
+                <Textarea
+                  value={editedShift.notes || ''}
+                  onChange={(e) => setEditedShift(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Add notes for this shift..."
+                  rows={3}
+                  className="bg-background resize-none"
+                />
               </FormField>
             </FormSection>
           </div>
         </TabsContent>
 
-        {/* Allowances Tab */}
-        <TabsContent value="allowances" className="flex-1 m-0 mt-4">
+        {/* Pay & Allowances Tab */}
+        <TabsContent value="pay" className="flex-1 m-0 mt-4">
           <div className="space-y-6">
             <FormSection title="Shift Type">
-              <ShiftTypeEditor 
+              <ShiftTypeEditor
                 shift={editedShift}
                 onChange={setEditedShift}
               />
             </FormSection>
 
+            {/* Leave Accrual Tag (RDO / ADO / TOIL) */}
+            <FormSection title="Leave Accrual Tag" tooltip="On save, a ledger entry is posted for the assigned staff member">
+              <Select
+                value={editedShift.leaveTag ?? 'AUTO'}
+                onValueChange={(v) => setEditedShift(prev => ({ ...prev, leaveTag: v as NonNullable<Shift['leaveTag']> }))}
+              >
+                <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AUTO">Auto (derive from award &amp; staff enrolment)</SelectItem>
+                  <SelectItem value="NONE">None — no leave impact</SelectItem>
+                  <SelectItem value="RDO">Accrue RDO</SelectItem>
+                  <SelectItem value="ADO">Accrue ADO</SelectItem>
+                  <SelectItem value="TOIL">Accrue TOIL (bank overtime)</SelectItem>
+                  <SelectItem value="RDO_LEAVE">RDO Leave — consume RDO balance</SelectItem>
+                  <SelectItem value="ADO_LEAVE">ADO Leave — consume ADO balance</SelectItem>
+                  <SelectItem value="TOIL_LEAVE">TOIL Leave — consume TOIL balance</SelectItem>
+                </SelectContent>
+              </Select>
+              <a href="/leave-accruals" target="_blank" rel="noreferrer" className="text-[11px] text-primary hover:underline">
+                Configure RDO/ADO/TOIL rules →
+              </a>
+            </FormSection>
+
             {/* On-Call Pay Breakdown - Show for on-call or recall shifts */}
-            {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
-              <>
-                <OnCallPayBreakdown 
-                  shift={editedShift}
-                  staff={assignedStaff}
-                  awardType="children_services"
-                />
-              </>
+            {isOnCall && (
+              <OnCallPayBreakdown
+                shift={editedShift}
+                staff={assignedStaff}
+                awardType="children_services"
+              />
             )}
 
             {/* Manual Allowances */}
@@ -1158,7 +842,7 @@ export function ShiftDetailPanel({
 
             {/* Allowance Eligibility */}
             <FormSection title="Auto-Eligible Allowances" tooltip="Allowances automatically detected from award rules & shift attributes">
-              <AllowanceEligibilityPanel 
+              <AllowanceEligibilityPanel
                 shift={editedShift}
                 staff={assignedStaff}
               />
@@ -1166,445 +850,167 @@ export function ShiftDetailPanel({
           </div>
         </TabsContent>
 
-        {/* Callbacks Tab - only for on-call/recall shifts */}
-        {(editedShift.shiftType === 'on_call' || editedShift.shiftType === 'recall') && (
-          <TabsContent value="callbacks" className="flex-1 m-0 mt-4">
-            <div className="space-y-6">
-              {/* Summary stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{shiftCallbackEvents.length}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Events</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    {(shiftCallbackEvents.reduce((sum, e) => sum + e.paidMinutes, 0) / 60).toFixed(1)}h
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Paid</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    ${shiftCallbackEvents.reduce((sum, e) => sum + e.calculatedPay, 0).toFixed(0)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Cost</p>
-                </div>
-              </div>
-
-              {/* Log new callback actions */}
-              {onLogCallback && (
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Log New Event</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-auto py-2 flex flex-col items-center gap-1 border-amber-300 hover:bg-amber-500/10"
-                      onClick={() => onLogCallback(editedShift, 'callback')}
-                    >
+        {/* Events Tab — callbacks, sleepovers and split shifts for this shift */}
+        <TabsContent value="events" className="flex-1 m-0 mt-4">
+          <div className="space-y-6">
+            {/* Log new event */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Log New Event</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {isOnCall && onLogCallback && (
+                  <>
+                    <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-amber-300 hover:bg-amber-500/10" onClick={() => onLogCallback(editedShift, 'callback')}>
                       <PhoneCall className="h-4 w-4 text-amber-600" />
                       <span className="text-[10px]">Callback</span>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-auto py-2 flex flex-col items-center gap-1 border-destructive/50 hover:bg-destructive/10"
-                      onClick={() => onLogCallback(editedShift, 'emergency')}
-                    >
+                    <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-destructive/50 hover:bg-destructive/10" onClick={() => onLogCallback(editedShift, 'emergency')}>
                       <Shield className="h-4 w-4 text-destructive" />
                       <span className="text-[10px]">Emergency</span>
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-auto py-2 flex flex-col items-center gap-1 border-orange-300 hover:bg-orange-500/10"
-                      onClick={() => onLogCallback(editedShift, 'recall')}
-                    >
+                    <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-orange-300 hover:bg-orange-500/10" onClick={() => onLogCallback(editedShift, 'recall')}>
                       <Zap className="h-4 w-4 text-orange-600" />
                       <span className="text-[10px]">Recall</span>
                     </Button>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Logged events list */}
-              {shiftCallbackEvents.length === 0 ? (
-                <div className="text-center py-8">
-                  <PhoneCall className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No callback events logged</p>
-                  <p className="text-xs text-muted-foreground/70">Use the buttons above to log an event</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Event History</Label>
-                  {shiftCallbackEvents.map((event) => {
-                    const typeStyles = {
-                      callback: { icon: PhoneCall, color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-300', label: 'Callback' },
-                      recall: { icon: Zap, color: 'text-orange-600', bg: 'bg-orange-500/10', border: 'border-orange-300', label: 'Recall' },
-                      emergency: { icon: Shield, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/40', label: 'Emergency' },
-                    };
-                    const style = typeStyles[event.callbackType] || typeStyles.callback;
-                    const EventIcon = style.icon;
-                    const statusColors: Record<string, string> = {
-                      logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
-                      approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
-                      rejected: 'bg-destructive/15 text-destructive border-destructive/40',
-                      paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
-                    };
-
-                    return (
-                      <div key={event.id} className={cn("rounded-lg border p-3 space-y-2", style.border, style.bg)}>
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <EventIcon className={cn("h-4 w-4", style.color)} />
-                            <span className={cn("text-sm font-semibold", style.color)}>{style.label}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {(event as any).restViolation && (
-                              <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
-                                <Timer className="h-2.5 w-2.5 mr-0.5" />
-                                Rest Violated
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className={cn("text-[9px]", statusColors[event.status])}>
-                              {event.status}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* Time & Pay details */}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              {event.workStartTime ? format(new Date(event.workStartTime), 'HH:mm') : '—'} – {event.workEndTime ? format(new Date(event.workEndTime), 'HH:mm') : '—'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <DollarSign className="h-3 w-3" />
-                            <span className="font-semibold text-foreground">${event.calculatedPay.toFixed(2)}</span>
-                            <span className="text-muted-foreground/70">({event.rateMultiplier}x)</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Timer className="h-3 w-3" />
-                            <span>{(event.paidMinutes / 60).toFixed(1)}h paid</span>
-                            {event.minimumEngagementApplied && (
-                              <Badge variant="outline" className="text-[8px] px-1 py-0 h-3 border-amber-300 text-amber-700">
-                                Min {event.minimumEngagementHours}h
-                              </Badge>
-                            )}
-                          </div>
-                          {event.travelTimeMinutes > 0 && (
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Car className="h-3 w-3" />
-                              <span>{event.travelTimeMinutes} min travel</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Reason */}
-                        {event.reason && (
-                          <p className="text-xs text-muted-foreground border-t border-border/50 pt-1.5 mt-1">
-                            <span className="font-medium text-foreground">Reason:</span> {event.reason}
-                          </p>
-                        )}
-                        {event.notes && (
-                          <p className="text-[11px] text-muted-foreground">{event.notes}</p>
-                        )}
-
-                        {/* Approve / Reject actions */}
-                        {event.status === 'logged' && onCallbackStatusChange && (
-                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10"
-                              onClick={() => onCallbackStatusChange(event.id, 'approved')}
-                            >
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10"
-                              onClick={() => onCallbackStatusChange(event.id, 'rejected')}
-                            >
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                        {event.status === 'approved' && onCallbackStatusChange && (
-                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10"
-                              onClick={() => onCallbackStatusChange(event.id, 'paid')}
-                            >
-                              <DollarSign className="h-3 w-3 mr-1" />
-                              Mark as Paid
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        )}
-
-        {/* Sleepovers Tab */}
-        {editedShift.shiftType === 'sleepover' && (
-          <TabsContent value="sleepovers" className="flex-1 m-0 mt-4">
-            <div className="space-y-6">
-              {/* Summary stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{shiftSleepoverEvents.length}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Journals</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    {shiftSleepoverEvents.reduce((sum, e) => sum + e.disturbances.length, 0)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Disturbances</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    ${shiftSleepoverEvents.reduce((sum, e) => sum + e.totalPay, 0).toFixed(0)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Cost</p>
-                </div>
-              </div>
-
-              {/* Log new sleepover */}
-              {onLogSleepover && (
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Log New Event</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-auto py-2 flex items-center gap-2 border-purple-300 hover:bg-purple-500/10"
-                    onClick={() => onLogSleepover(editedShift)}
-                  >
+                  </>
+                )}
+                {onLogSleepover && (
+                  <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-purple-300 hover:bg-purple-500/10" onClick={() => onLogSleepover(editedShift)}>
                     <Moon className="h-4 w-4 text-purple-600" />
-                    <span className="text-xs">Log Sleepover Journal</span>
+                    <span className="text-[10px]">Sleepover</span>
                   </Button>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Event history */}
-              {shiftSleepoverEvents.length === 0 ? (
-                <div className="text-center py-8">
-                  <Moon className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No sleepover journals logged</p>
-                  <p className="text-xs text-muted-foreground/70">Use the button above to log an event</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Event History</Label>
-                  {shiftSleepoverEvents.map((event) => {
-                    const statusColors: Record<string, string> = {
-                      logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
-                      approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
-                      rejected: 'bg-destructive/15 text-destructive border-destructive/40',
-                      paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
-                    };
-
-                    return (
-                      <div key={event.id} className="rounded-lg border border-purple-300 bg-purple-500/10 p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Moon className="h-4 w-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-purple-600">Sleepover Journal</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {event.overtimeTriggered && (
-                              <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
-                                OT Triggered
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className={cn("text-[9px]", statusColors[event.status])}>
-                              {event.status}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>Check-in: {event.checkInTime ? format(new Date(event.checkInTime), 'HH:mm') : '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>Check-out: {event.checkOutTime ? format(new Date(event.checkOutTime), 'HH:mm') : '—'}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <AlertTriangle className="h-3 w-3" />
-                            <span>{event.disturbances.length} disturbance{event.disturbances.length !== 1 ? 's' : ''} ({event.totalDisturbanceMinutes}min)</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <DollarSign className="h-3 w-3" />
-                            <span className="font-semibold text-foreground">${event.totalPay.toFixed(2)}</span>
-                          </div>
-                        </div>
-
-                        {event.notes && (
-                          <p className="text-[11px] text-muted-foreground border-t border-border/50 pt-1.5">{event.notes}</p>
-                        )}
-
-                        {/* Approve / Reject */}
-                        {event.status === 'logged' && onSleepoverStatusChange && (
-                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-                            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSleepoverStatusChange(event.id, 'approved')}>
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
-                            </Button>
-                            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={() => onSleepoverStatusChange(event.id, 'rejected')}>
-                              <XCircle className="h-3 w-3 mr-1" /> Reject
-                            </Button>
-                          </div>
-                        )}
-                        {event.status === 'approved' && onSleepoverStatusChange && (
-                          <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-                            <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSleepoverStatusChange(event.id, 'paid')}>
-                              <DollarSign className="h-3 w-3 mr-1" /> Mark as Paid
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        )}
-
-        {/* Split Shifts Tab */}
-        {shiftSplitShiftEvents.length > 0 && (
-          <TabsContent value="splitshifts" className="flex-1 m-0 mt-4">
-            <div className="space-y-6">
-              {/* Summary stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">{shiftSplitShiftEvents.length}</p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Split Events</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    {shiftSplitShiftEvents.reduce((sum, e) => sum + e.segments.length, 0)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Segments</p>
-                </div>
-                <div className="rounded-lg border bg-muted/30 p-3 text-center">
-                  <p className="text-2xl font-bold text-foreground">
-                    ${shiftSplitShiftEvents.reduce((sum, e) => sum + e.totalPay, 0).toFixed(0)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">Total Cost</p>
-                </div>
+                )}
+                {onLogSplitShift && (
+                  <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-orange-300 hover:bg-orange-500/10" onClick={() => onLogSplitShift(editedShift)}>
+                    <Zap className="h-4 w-4 text-orange-600" />
+                    <span className="text-[10px]">Split Shift</span>
+                  </Button>
+                )}
               </div>
+            </div>
 
-              <Separator />
+            <Separator />
 
-              {/* Event history */}
-              <div className="space-y-3">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Event History</Label>
-                {shiftSplitShiftEvents.map((event) => {
-                  const statusColors: Record<string, string> = {
-                    logged: 'bg-blue-500/15 text-blue-700 border-blue-300',
-                    approved: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
-                    rejected: 'bg-destructive/15 text-destructive border-destructive/40',
-                    paid: 'bg-emerald-500/15 text-emerald-700 border-emerald-300',
-                  };
-
-                  return (
-                    <div key={event.id} className="rounded-lg border border-orange-300 bg-orange-500/10 p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-4 w-4 text-orange-600" />
-                          <span className="text-sm font-semibold text-orange-600">Split Shift</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {!event.gapCompliant && (
-                            <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4">
-                              Non-compliant
-                            </Badge>
+            {totalEventCount === 0 ? (
+              <EmptyEvents icon={PhoneCall} message="No events logged for this shift" />
+            ) : (
+              <div className="space-y-6">
+                {/* Callbacks */}
+                {shiftCallbackEvents.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Callbacks</Label>
+                    <StatTiles items={[
+                      { value: `${shiftCallbackEvents.length}`, label: 'Events' },
+                      { value: `${(shiftCallbackEvents.reduce((s, e) => s + e.paidMinutes, 0) / 60).toFixed(1)}h`, label: 'Total Paid' },
+                      { value: `$${shiftCallbackEvents.reduce((s, e) => s + e.calculatedPay, 0).toFixed(0)}`, label: 'Total Cost' },
+                    ]} />
+                    {shiftCallbackEvents.map(event => {
+                      const styles = {
+                        callback: { icon: PhoneCall, tone: 'border-amber-300 bg-amber-500/10 text-amber-600', label: 'Callback' },
+                        recall: { icon: Zap, tone: 'border-orange-300 bg-orange-500/10 text-orange-600', label: 'Recall' },
+                        emergency: { icon: Shield, tone: 'border-destructive/40 bg-destructive/10 text-destructive', label: 'Emergency' },
+                      };
+                      const style = styles[event.callbackType] || styles.callback;
+                      return (
+                        <EventCard
+                          key={event.id}
+                          icon={style.icon}
+                          label={style.label}
+                          tone={style.tone}
+                          status={event.status}
+                          flag={(event as any).restViolation ? 'Rest Violated' : undefined}
+                          rows={[
+                            <EventRow key="t" icon={Clock}>{shortTime(event.workStartTime)} – {shortTime(event.workEndTime)}</EventRow>,
+                            <EventRow key="p" icon={DollarSign}>
+                              <span className="font-semibold text-foreground">${event.calculatedPay.toFixed(2)}</span> ({event.rateMultiplier}x)
+                            </EventRow>,
+                            <EventRow key="h" icon={Timer}>
+                              {(event.paidMinutes / 60).toFixed(1)}h paid
+                              {event.minimumEngagementApplied && ` • min ${event.minimumEngagementHours}h`}
+                            </EventRow>,
+                            ...(event.travelTimeMinutes > 0
+                              ? [<EventRow key="v" icon={Car}>{event.travelTimeMinutes} min travel</EventRow>]
+                              : []),
+                          ]}
+                          notes={(event.reason || event.notes) && (
+                            <>
+                              {event.reason && <p><span className="font-medium text-foreground">Reason:</span> {event.reason}</p>}
+                              {event.notes && <p>{event.notes}</p>}
+                            </>
                           )}
-                          <Badge variant="outline" className={cn("text-[9px]", statusColors[event.status])}>
-                            {event.status}
-                          </Badge>
-                        </div>
-                      </div>
+                          onStatusChange={onCallbackStatusChange ? (next) => onCallbackStatusChange(event.id, next) : undefined}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
 
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{event.segments.length} segments</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Timer className="h-3 w-3" />
-                          <span>{event.gapMinutes}min gap</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Zap className="h-3 w-3" />
-                          <span>Allowance: ${event.splitShiftAllowance.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <DollarSign className="h-3 w-3" />
-                          <span className="font-semibold text-foreground">${event.totalPay.toFixed(2)}</span>
-                        </div>
-                      </div>
+                {/* Sleepovers */}
+                {shiftSleepoverEvents.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sleepovers</Label>
+                    <StatTiles items={[
+                      { value: `${shiftSleepoverEvents.length}`, label: 'Journals' },
+                      { value: `${shiftSleepoverEvents.reduce((s, e) => s + e.disturbances.length, 0)}`, label: 'Disturbances' },
+                      { value: `$${shiftSleepoverEvents.reduce((s, e) => s + e.totalPay, 0).toFixed(0)}`, label: 'Total Cost' },
+                    ]} />
+                    {shiftSleepoverEvents.map(event => (
+                      <EventCard
+                        key={event.id}
+                        icon={Moon}
+                        label="Sleepover Journal"
+                        tone="border-purple-300 bg-purple-500/10 text-purple-600"
+                        status={event.status}
+                        flag={event.overtimeTriggered ? 'OT Triggered' : undefined}
+                        rows={[
+                          <EventRow key="in" icon={Clock}>Check-in: {shortTime(event.checkInTime)}</EventRow>,
+                          <EventRow key="out" icon={Clock}>Check-out: {shortTime(event.checkOutTime)}</EventRow>,
+                          <EventRow key="d" icon={AlertTriangle}>
+                            {event.disturbances.length} disturbance{event.disturbances.length !== 1 ? 's' : ''} ({event.totalDisturbanceMinutes}min)
+                          </EventRow>,
+                          <EventRow key="p" icon={DollarSign}>
+                            <span className="font-semibold text-foreground">${event.totalPay.toFixed(2)}</span>
+                          </EventRow>,
+                        ]}
+                        notes={event.notes}
+                        onStatusChange={onSleepoverStatusChange ? (next) => onSleepoverStatusChange(event.id, next) : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
 
-                      {event.notes && (
-                        <p className="text-[11px] text-muted-foreground border-t border-border/50 pt-1.5">{event.notes}</p>
-                      )}
-
-                      {/* Approve / Reject */}
-                      {event.status === 'logged' && onSplitShiftStatusChange && (
-                        <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-                          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSplitShiftStatusChange(event.id, 'approved')}>
-                            <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-destructive/50 text-destructive hover:bg-destructive/10" onClick={() => onSplitShiftStatusChange(event.id, 'rejected')}>
-                            <XCircle className="h-3 w-3 mr-1" /> Reject
-                          </Button>
-                        </div>
-                      )}
-                      {event.status === 'approved' && onSplitShiftStatusChange && (
-                        <div className="flex items-center gap-2 pt-1.5 border-t border-border/50">
-                          <Button size="sm" variant="outline" className="h-7 text-[11px] flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10" onClick={() => onSplitShiftStatusChange(event.id, 'paid')}>
-                            <DollarSign className="h-3 w-3 mr-1" /> Mark as Paid
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {/* Split shifts */}
+                {shiftSplitShiftEvents.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Split Shifts</Label>
+                    <StatTiles items={[
+                      { value: `${shiftSplitShiftEvents.length}`, label: 'Split Events' },
+                      { value: `${shiftSplitShiftEvents.reduce((s, e) => s + e.segments.length, 0)}`, label: 'Segments' },
+                      { value: `$${shiftSplitShiftEvents.reduce((s, e) => s + e.totalPay, 0).toFixed(0)}`, label: 'Total Cost' },
+                    ]} />
+                    {shiftSplitShiftEvents.map(event => (
+                      <EventCard
+                        key={event.id}
+                        icon={Zap}
+                        label="Split Shift"
+                        tone="border-orange-300 bg-orange-500/10 text-orange-600"
+                        status={event.status}
+                        flag={!event.gapCompliant ? 'Non-compliant' : undefined}
+                        rows={[
+                          <EventRow key="s" icon={Clock}>{event.segments.length} segments</EventRow>,
+                          <EventRow key="g" icon={Timer}>{event.gapMinutes}min gap</EventRow>,
+                          <EventRow key="a" icon={Zap}>Allowance: ${event.splitShiftAllowance.toFixed(2)}</EventRow>,
+                          <EventRow key="p" icon={DollarSign}>
+                            <span className="font-semibold text-foreground">${event.totalPay.toFixed(2)}</span>
+                          </EventRow>,
+                        ]}
+                        notes={event.notes}
+                        onStatusChange={onSplitShiftStatusChange ? (next) => onSplitShiftStatusChange(event.id, next) : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          </TabsContent>
-        )}
-
-        {/* Demand Tab */}
-        <TabsContent value="demand" className="flex-1 m-0 mt-4">
-          <div className="space-y-6">
-            <FormSection title="Demand Context" tooltip="View demand histogram for this shift">
-            {room && (
-                <DemandHistogram 
-                  demandData={demandData}
-                  room={room}
-                  date={shift.date}
-                />
             )}
-            </FormSection>
           </div>
         </TabsContent>
       </Tabs>
