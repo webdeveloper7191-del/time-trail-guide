@@ -53,6 +53,24 @@ export default function RecognitionPage() {
             <TabsContent value="praise" className="mt-6">
               <PraiseWall posts={posts} staff={mockStaff} currentUserId={CURRENT_USER_ID} onCreatePost={handleCreatePost} onLike={handleLike} onComment={(id, c) => toast.info('Comment added')} />
             </TabsContent>
+            <TabsContent value="celebrations" className="mt-6">
+              <CelebrationsPanel
+                staff={mockStaff}
+                onCelebrate={(staffId, message) =>
+                  handleCreatePost({
+                    fromStaffId: CURRENT_USER_ID,
+                    toStaffId: staffId,
+                    category: 'teamwork',
+                    message,
+                    badges: [],
+                    publishedAs: 'People & Culture',
+                  })
+                }
+              />
+            </TabsContent>
+            <TabsContent value="badges" className="mt-6">
+              <BadgeManagerPanel />
+            </TabsContent>
             <TabsContent value="surveys" className="mt-6">
               <SurveysPanel surveys={surveys} onCreateSurvey={() => toast.info('Survey builder - coming soon')} onViewSurvey={(s) => toast.info(`Viewing: ${s.title}`)} onTakeSurvey={(s) => toast.info(`Taking: ${s.title}`)} />
             </TabsContent>
