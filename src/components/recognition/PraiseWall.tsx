@@ -18,7 +18,7 @@ import { StaffMember } from '@/types/staff';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Heart, MessageCircle, Send, ThumbsUp, Plus, Sparkles, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { praiseWallBadges } from '@/data/mockRecognitionData';
+import { useRecognitionBadges } from '@/lib/recognitionBadgeStore';
 
 interface PraiseWallProps {
   posts: PraisePost[];
@@ -37,6 +37,8 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [publishAs, setPublishAs] = useState('self');
+  const { badges: allBadges, activeBadges: praiseWallBadges, publishers } = useRecognitionBadges();
 
   const getStaff = (id: string) => staff.find(s => s.id === id);
 
@@ -44,7 +46,14 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
     if (!recipient || !message.trim()) return;
     setSending(true);
     try {
-      await onCreatePost({ fromStaffId: currentUserId, toStaffId: recipient, category, message: message.trim(), badges: selectedBadges });
+      await onCreatePost({
+        fromStaffId: currentUserId,
+        toStaffId: recipient,
+        category,
+        message: message.trim(),
+        badges: selectedBadges,
+        publishedAs: publishAs === 'self' ? undefined : publishers.find(p => p.id === publishAs)?.label,
+      });
       setShowCompose(false);
       setRecipient('');
       setMessage('');
@@ -109,6 +118,18 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
             </div>
 
             <Textarea placeholder="What did they do that was awesome?" value={message} onChange={e => setMessage(e.target.value)} rows={3} />
+
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Post as</p>
+              <Select value={publishAs} onValueChange={setPublishAs}>
+                <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {publishers.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Add badges (optional)</p>
@@ -187,7 +208,7 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
                         {post.badges.length > 0 && (
                           <div className="flex gap-1 mt-1.5">
                             {post.badges.map(b => {
-                              const badge = praiseWallBadges.find(pb => pb.id === b);
+                              const badge = allBadges.find(pb => pb.id === b);
                               return badge && (
                                 <Badge key={b} variant="outline" className="text-xs py-0">
                                   {badge.emoji} {badge.label}
@@ -205,7 +226,7 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
                           <AvatarFallback className="text-xs">{from?.firstName?.[0]}{from?.lastName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm">{from?.firstName}</p>
+                          <p className="text-sm">{post.publishedAs ?? from?.firstName}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
                           </p>

@@ -6,7 +6,9 @@ import { SurveysPanel } from '@/components/recognition/SurveysPanel';
 import { recognitionApi } from '@/lib/api/recognitionApi';
 import { mockStaff } from '@/data/mockStaffData';
 import { PraisePost, Survey } from '@/types/recognition';
-import { Sparkles, ClipboardList } from 'lucide-react';
+import { Sparkles, ClipboardList, Cake, Award } from 'lucide-react';
+import { CelebrationsPanel } from '@/components/recognition/CelebrationsPanel';
+import { BadgeManagerPanel } from '@/components/recognition/BadgeManagerPanel';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2';
@@ -35,19 +37,39 @@ export default function RecognitionPage() {
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
       <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <div>
-            <h1 className="text-2xl font-bold">Recognition & Engagement</h1>
+            <h1 className="text-2xl font-bold">Recognition &amp; Engagement</h1>
             <p className="text-muted-foreground">Celebrate achievements and gather feedback</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="praise" className="flex items-center gap-2"><Sparkles className="h-4 w-4" />Praise Wall</TabsTrigger>
+              <TabsTrigger value="celebrations" className="flex items-center gap-2"><Cake className="h-4 w-4" />Celebrations</TabsTrigger>
+              <TabsTrigger value="badges" className="flex items-center gap-2"><Award className="h-4 w-4" />Badges</TabsTrigger>
               <TabsTrigger value="surveys" className="flex items-center gap-2"><ClipboardList className="h-4 w-4" />Surveys</TabsTrigger>
             </TabsList>
             <TabsContent value="praise" className="mt-6">
               <PraiseWall posts={posts} staff={mockStaff} currentUserId={CURRENT_USER_ID} onCreatePost={handleCreatePost} onLike={handleLike} onComment={(id, c) => toast.info('Comment added')} />
+            </TabsContent>
+            <TabsContent value="celebrations" className="mt-6">
+              <CelebrationsPanel
+                staff={mockStaff}
+                onCelebrate={(staffId, message) =>
+                  handleCreatePost({
+                    fromStaffId: CURRENT_USER_ID,
+                    toStaffId: staffId,
+                    category: 'teamwork',
+                    message,
+                    badges: [],
+                    publishedAs: 'People & Culture',
+                  })
+                }
+              />
+            </TabsContent>
+            <TabsContent value="badges" className="mt-6">
+              <BadgeManagerPanel />
             </TabsContent>
             <TabsContent value="surveys" className="mt-6">
               <SurveysPanel surveys={surveys} onCreateSurvey={() => toast.info('Survey builder - coming soon')} onViewSurvey={(s) => toast.info(`Viewing: ${s.title}`)} onTakeSurvey={(s) => toast.info(`Taking: ${s.title}`)} />

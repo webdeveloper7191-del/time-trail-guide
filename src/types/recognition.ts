@@ -11,6 +11,8 @@ export interface PraisePost {
   category: PraiseCategory;
   message: string;
   badges: string[];
+  /** Optional publisher identity, e.g. "Leadership Team". Absent = posted as the author. */
+  publishedAs?: string;
   likes: string[]; // staff IDs who liked
   comments: PraiseComment[];
   createdAt: string;

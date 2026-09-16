@@ -639,6 +639,9 @@ export const SUB_PERMISSIONS: Record<string, SubPermission[]> = {
   ],
   recognition: [
     S('praise', 'Praise wall', 'Give and view praise and shout-outs.', ['view', 'manage']),
+    S('publish', 'Publish as team', 'Post recognition as Leadership Team or People & Culture.', ['view', 'manage']),
+    S('badges', 'Badge management', 'Create, edit and retire recognition badges.', ['view', 'manage', 'configure']),
+    S('celebrations', 'Birthdays & anniversaries', 'Celebration feed, privacy and automation settings.', ['view', 'manage', 'configure']),
     S('awards', 'Awards & rewards', 'Nominate, approve and issue awards.', ['view', 'manage']),
     S('surveys', 'Engagement surveys', 'Create and run surveys.', ['view', 'manage']),
     S('results', 'Survey results', 'Aggregated engagement results and exports.', ['view', 'export']),
