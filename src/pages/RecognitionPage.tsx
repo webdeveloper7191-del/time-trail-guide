@@ -35,15 +35,17 @@ export default function RecognitionPage() {
     <div className="flex min-h-screen bg-background">
       <AdminSidebar />
       <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           <div>
-            <h1 className="text-2xl font-bold">Recognition & Engagement</h1>
+            <h1 className="text-2xl font-bold">Recognition &amp; Engagement</h1>
             <p className="text-muted-foreground">Celebrate achievements and gather feedback</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="praise" className="flex items-center gap-2"><Sparkles className="h-4 w-4" />Praise Wall</TabsTrigger>
+              <TabsTrigger value="celebrations" className="flex items-center gap-2"><Cake className="h-4 w-4" />Celebrations</TabsTrigger>
+              <TabsTrigger value="badges" className="flex items-center gap-2"><Award className="h-4 w-4" />Badges</TabsTrigger>
               <TabsTrigger value="surveys" className="flex items-center gap-2"><ClipboardList className="h-4 w-4" />Surveys</TabsTrigger>
             </TabsList>
             <TabsContent value="praise" className="mt-6">
