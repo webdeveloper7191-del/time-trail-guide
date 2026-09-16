@@ -189,7 +189,7 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
                         {post.badges.length > 0 && (
                           <div className="flex gap-1 mt-1.5">
                             {post.badges.map(b => {
-                              const badge = praiseWallBadges.find(pb => pb.id === b);
+                              const badge = allBadges.find(pb => pb.id === b);
                               return badge && (
                                 <Badge key={b} variant="outline" className="text-xs py-0">
                                   {badge.emoji} {badge.label}
