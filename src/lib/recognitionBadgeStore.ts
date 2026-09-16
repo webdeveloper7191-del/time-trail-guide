@@ -80,7 +80,9 @@ function write(next: BadgeState) {
 export const recognitionBadgeStore = {
   subscribe(l: () => void) {
     listeners.add(l);
-    return () => listeners.delete(l);
+    return () => {
+      listeners.delete(l);
+    };
   },
   getBadges: (): RecognitionBadge[] => read().badges,
   getActiveBadges: (): RecognitionBadge[] => read().badges.filter((b) => b.active),
