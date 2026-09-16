@@ -37,6 +37,8 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [publishAs, setPublishAs] = useState('self');
+  const { badges: allBadges, activeBadges: praiseWallBadges, publishers } = useRecognitionBadges();
 
   const getStaff = (id: string) => staff.find(s => s.id === id);
 
