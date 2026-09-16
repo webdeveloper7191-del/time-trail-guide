@@ -226,7 +226,7 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
                           <AvatarFallback className="text-xs">{from?.firstName?.[0]}{from?.lastName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm">{from?.firstName}</p>
+                          <p className="text-sm">{post.publishedAs ?? from?.firstName}</p>
                           <p className="text-xs text-muted-foreground">
                             {formatDistanceToNow(parseISO(post.createdAt), { addSuffix: true })}
                           </p>
