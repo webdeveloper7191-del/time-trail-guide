@@ -6,7 +6,9 @@ import { SurveysPanel } from '@/components/recognition/SurveysPanel';
 import { recognitionApi } from '@/lib/api/recognitionApi';
 import { mockStaff } from '@/data/mockStaffData';
 import { PraisePost, Survey } from '@/types/recognition';
-import { Sparkles, ClipboardList } from 'lucide-react';
+import { Sparkles, ClipboardList, Cake, Award } from 'lucide-react';
+import { CelebrationsPanel } from '@/components/recognition/CelebrationsPanel';
+import { BadgeManagerPanel } from '@/components/recognition/BadgeManagerPanel';
 import { toast } from 'sonner';
 
 const CURRENT_USER_ID = 'staff-2';
