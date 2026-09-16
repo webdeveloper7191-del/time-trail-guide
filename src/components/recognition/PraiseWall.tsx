@@ -46,7 +46,14 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
     if (!recipient || !message.trim()) return;
     setSending(true);
     try {
-      await onCreatePost({ fromStaffId: currentUserId, toStaffId: recipient, category, message: message.trim(), badges: selectedBadges });
+      await onCreatePost({
+        fromStaffId: currentUserId,
+        toStaffId: recipient,
+        category,
+        message: message.trim(),
+        badges: selectedBadges,
+        publishedAs: publishAs === 'self' ? undefined : publishers.find(p => p.id === publishAs)?.label,
+      });
       setShowCompose(false);
       setRecipient('');
       setMessage('');
