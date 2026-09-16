@@ -120,6 +120,18 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
             <Textarea placeholder="What did they do that was awesome?" value={message} onChange={e => setMessage(e.target.value)} rows={3} />
 
             <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Post as</p>
+              <Select value={publishAs} onValueChange={setPublishAs}>
+                <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {publishers.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Add badges (optional)</p>
               <div className="flex flex-wrap gap-2">
                 {praiseWallBadges.map(badge => (
