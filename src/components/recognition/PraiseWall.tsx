@@ -18,7 +18,7 @@ import { StaffMember } from '@/types/staff';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Heart, MessageCircle, Send, ThumbsUp, Plus, Sparkles, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { praiseWallBadges } from '@/data/mockRecognitionData';
+import { useRecognitionBadges } from '@/lib/recognitionBadgeStore';
 
 interface PraiseWallProps {
   posts: PraisePost[];
