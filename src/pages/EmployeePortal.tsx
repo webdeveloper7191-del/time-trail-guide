@@ -120,7 +120,7 @@ export function EmployeePortal() {
       case 'onboarding':
         return <EmployeeOnboardingPanel />;
       case 'schedule':
-        return <EmployeeShiftsPanel />;
+        return <EmployeeShiftsPanel timesheets={myTimesheets} />;
       case 'current':
         return (
           <MyTimesheetsView
