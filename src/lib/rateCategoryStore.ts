@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DEFAULT_RATE_TABLE, RateProfile, RateReview, RateTable, detectRateReviews } from './rateCategory';
+import { DEFAULT_RATE_TABLE, RateProfile, RateReview, RateTable, ResolvedCategoryRate, detectRateReviews, resolveCategoryRate } from './rateCategory';
 
 const KEY = 'rai.payroll.rateCategories.v1';
 
@@ -91,6 +91,21 @@ export const rateCategoryStore = {
       audit: [...state.audit, { at: now, by: MANAGER, staffId: r.staffId, action: `Declined: ${r.title}` }],
     };
     emit();
+  },
+  /** Apply the approved junior/apprentice/trainee percentage to an adult rate. Used by roster costs, timesheets and payroll. */
+  applyToRate(staffId: string | undefined, adultRate: number, label = 'Adult'): ResolvedCategoryRate {
+    return resolveCategoryRate(adultRate, staffId ? state.profiles[staffId] : undefined, this.getTable(), label);
+  },
+  setCategoryBulkAudited(staffIds: string[], category: RateProfile['category']) {
+    const now = new Date().toISOString();
+    const profiles = { ...state.profiles };
+    staffIds.forEach(id => { profiles[id] = { ...(profiles[id] ?? { staffId: id }), staffId: id, category }; });
+    state = { ...state, profiles, audit: [...state.audit, ...staffIds.map(id => ({ at: now, by: MANAGER, staffId: id, action: `Rate category set to ${category} (bulk)` }))] };
+    emit();
+  },
+  resetTable(awardKey = 'default') {
+    const tables = { ...state.tables }; delete tables[awardKey];
+    state = { ...state, tables }; emit();
   },
   getAudit: (staffId: string) => state.audit.filter(a => a.staffId === staffId),
   reviewsFor(staff: { id: string; dateOfBirth?: string; qualifications?: string[] }, today = new Date()) {
