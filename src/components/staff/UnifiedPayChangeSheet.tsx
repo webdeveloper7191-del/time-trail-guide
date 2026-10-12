@@ -101,6 +101,23 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const [signedDate, setSignedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const signedInputRef = useRef<HTMLInputElement>(null);
 
+  // Rate category (Adult / Junior / Apprentice / Trainee) — shared with the
+  // RateCategoryCard editor via rateCategoryStore.
+  const store = useRateCategories();
+  const [rateDraft, setRateDraft] = useState<RateProfile>({ staffId: staff.id, category: 'adult' });
+  const [overrideOn, setOverrideOn] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      const p = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+      setRateDraft(p);
+      setOverrideOn(!!p.adultOverride);
+      setOverrideReason(p.adultOverride?.reason ?? '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, staff.id]);
+
   const selectedAwardData = getAwardById(selectedAward);
   const selectedClassificationData = selectedAwardData?.classifications.find(
     c => c.level === selectedClassification
@@ -125,6 +142,17 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const currentRate = currentCondition?.hourlyRate || 0;
   const rateDifference = newRate - currentRate;
   const percentageChange = currentRate > 0 ? ((rateDifference / currentRate) * 100).toFixed(1) : '0';
+
+  // Category-adjusted rate preview (adult base × junior/apprentice/trainee %).
+  const rateTable = store.getTable();
+  const resolvedRate = resolveCategoryRate(
+    newRate,
+    rateDraft.category !== 'adult' && overrideOn
+      ? { ...rateDraft, adultOverride: { reason: overrideReason.trim() || 'Adult rate', at: '', by: '' } }
+      : rateDraft,
+    rateTable,
+    selectedClassification || position || 'Classification'
+  );
 
   const handleCalculateBackPay = () => {
     if (!retroStartDate || !retroEndDate) {
