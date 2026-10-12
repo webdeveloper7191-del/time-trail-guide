@@ -47,6 +47,7 @@ import { timesheetApi } from '@/lib/api/timesheetApi';
 import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/rosterColors';
 import { applyShiftLeaveEffect } from '@/lib/leaveAccrualEngine';
 import { StaffAvailabilityWarnings } from './StaffAvailabilityWarnings';
+import { allowedEventsFor, eventBelongsToShift } from '@/lib/roster/shiftEventRules';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
