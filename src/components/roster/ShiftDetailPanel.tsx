@@ -47,6 +47,7 @@ import { timesheetApi } from '@/lib/api/timesheetApi';
 import { shiftStatusColors, getShiftTypeConfig, ShiftStatus } from '@/lib/rosterColors';
 import { applyShiftLeaveEffect } from '@/lib/leaveAccrualEngine';
 import { StaffAvailabilityWarnings } from './StaffAvailabilityWarnings';
+import { allowedEventsFor, eventBelongsToShift } from '@/lib/roster/shiftEventRules';
 
 // Extended shift status to include absent
 export type ExtendedShiftStatus = Shift['status'] | 'absent';
@@ -232,23 +233,31 @@ export function ShiftDetailPanel({
     toil_leave: 'TOIL Leave',
   };
 
-  // Filter events for this specific shift
+  // Filter events for this specific shift (by shift ID; legacy events fall back to staff + date)
+  const allowedEvents = allowedEventsFor(editedShift.shiftType);
   const shiftCallbackEvents = useMemo(() => {
     return callbackEvents.filter(e =>
-      e.staffId === editedShift.staffId &&
-      (e.onCallShiftId === editedShift.id || e.workStartTime?.startsWith(editedShift.date))
+      e.onCallShiftId
+        ? e.onCallShiftId === editedShift.id
+        : e.staffId === editedShift.staffId && !!e.workStartTime?.startsWith(editedShift.date)
     );
   }, [callbackEvents, editedShift.staffId, editedShift.date, editedShift.id]);
 
   const shiftSleepoverEvents = useMemo(() => {
-    return sleepoverEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
-  }, [sleepoverEvents, editedShift.staffId, editedShift.date]);
+    return sleepoverEvents.filter(e => eventBelongsToShift(e, editedShift));
+  }, [sleepoverEvents, editedShift]);
 
   const shiftSplitShiftEvents = useMemo(() => {
-    return splitShiftEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
-  }, [splitShiftEvents, editedShift.staffId, editedShift.date]);
+    return splitShiftEvents.filter(e => eventBelongsToShift(e, editedShift));
+  }, [splitShiftEvents, editedShift]);
 
   const totalEventCount = shiftCallbackEvents.length + shiftSleepoverEvents.length + shiftSplitShiftEvents.length;
+  const mismatchedEventKinds = [
+    shiftCallbackEvents.length > 0 && !allowedEvents.includes('callback') ? 'callback' : null,
+    shiftSleepoverEvents.length > 0 && !allowedEvents.includes('sleepover') ? 'sleepover' : null,
+    shiftSplitShiftEvents.length > 0 && !allowedEvents.includes('split') ? 'split shift' : null,
+  ].filter(Boolean) as string[];
+  const showEventsTab = allowedEvents.length > 0 || totalEventCount > 0;
 
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
@@ -461,13 +470,13 @@ export function ShiftDetailPanel({
             <DollarSign className="h-3 w-3" />
             Pay &amp; Allowances
           </TabsTrigger>
-          <TabsTrigger value="events" className="text-xs flex items-center gap-1">
+          {showEventsTab && <TabsTrigger value="events" className="text-xs flex items-center gap-1">
             <PhoneCall className="h-3 w-3" />
             Events
             {totalEventCount > 0 && (
               <Badge variant="secondary" className="h-4 px-1 text-[9px] ml-0.5">{totalEventCount}</Badge>
             )}
-          </TabsTrigger>
+          </TabsTrigger>}
         </TabsList>
 
         {/* Details Tab */}
@@ -857,7 +866,7 @@ export function ShiftDetailPanel({
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Log New Event</Label>
               <div className="grid grid-cols-3 gap-2">
-                {isOnCall && onLogCallback && (
+                {allowedEvents.includes('callback') && onLogCallback && (
                   <>
                     <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-amber-300 hover:bg-amber-500/10" onClick={() => onLogCallback(editedShift, 'callback')}>
                       <PhoneCall className="h-4 w-4 text-amber-600" />
@@ -873,13 +882,13 @@ export function ShiftDetailPanel({
                     </Button>
                   </>
                 )}
-                {onLogSleepover && (
+                {allowedEvents.includes('sleepover') && onLogSleepover && (
                   <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-purple-300 hover:bg-purple-500/10" onClick={() => onLogSleepover(editedShift)}>
                     <Moon className="h-4 w-4 text-purple-600" />
                     <span className="text-[10px]">Sleepover</span>
                   </Button>
                 )}
-                {onLogSplitShift && (
+                {allowedEvents.includes('split') && onLogSplitShift && (
                   <Button variant="outline" size="sm" className="h-auto py-2 flex flex-col items-center gap-1 border-orange-300 hover:bg-orange-500/10" onClick={() => onLogSplitShift(editedShift)}>
                     <Zap className="h-4 w-4 text-orange-600" />
                     <span className="text-[10px]">Split Shift</span>
@@ -887,6 +896,12 @@ export function ShiftDetailPanel({
                 )}
               </div>
             </div>
+
+            {mismatchedEventKinds.length > 0 && (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-xs text-foreground">
+                This shift has {mismatchedEventKinds.join(', ')} event(s) that don't match its shift type. Check the shift type or review these events before approving.
+              </div>
+            )}
 
             <Separator />
 
