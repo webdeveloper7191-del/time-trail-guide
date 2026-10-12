@@ -76,7 +76,6 @@ import { OvertimeCalculatorTest } from './awards/OvertimeCalculatorTest';
 import { OvertimeRulesConfigPanel } from './OvertimeRulesConfigPanel';
 import { EmploymentTypesPanel } from './awards/EmploymentTypesPanel';
 import { RateCategoryTablesPanel } from './awards/RateCategoryTablesPanel';
-import { Percent } from 'lucide-react';
 import { CalendarClock } from 'lucide-react';
 import { LeaveAccrualsAwardSection } from '@/pages/LeaveAccrualsHub';
 
