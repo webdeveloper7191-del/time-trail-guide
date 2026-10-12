@@ -392,6 +392,22 @@ export default function StaffList() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Select
+                      value=""
+                      onValueChange={(v) => {
+                        const ids = Array.from(selectedStaff);
+                        rateStore.setCategoryBulkAudited(ids, v as RateCategory);
+                        toast.success(`Rate category set to ${v} for ${ids.length} staff`, { description: 'Pay changes use the approved step; juniors start at their current age step until a manager approves changes.' });
+                      }}
+                    >
+                      <SelectTrigger className="h-9 w-[200px]"><SelectValue placeholder="Set rate category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="adult">Adult</SelectItem>
+                        <SelectItem value="junior">Junior</SelectItem>
+                        <SelectItem value="apprentice">Apprentice</SelectItem>
+                        <SelectItem value="trainee">Trainee</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="sm">
