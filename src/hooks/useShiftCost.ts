@@ -1,3 +1,4 @@
+import { rateCategoryStore } from '@/lib/rateCategoryStore';
 /**
  * Hook for context-aware shift cost calculations
  * Automatically applies custom rules and rate overrides from AwardConfigContext
@@ -135,7 +136,7 @@ export function useShiftCost(): UseShiftCostResult {
       const [startH, startM] = shift.startTime.split(':').map(Number);
       const [endH, endM] = shift.endTime.split(':').map(Number);
       const hours = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
-      return Math.round(hours * staff.hourlyRate * 100) / 100;
+      return Math.round(hours * rateCategoryStore.applyToRate(staff.id, staff.hourlyRate).hourlyRate * 100) / 100;
     }
   }, [calculateCost]);
   
@@ -173,7 +174,7 @@ export function useShiftCost(): UseShiftCostResult {
         const [endH, endM] = shift.endTime.split(':').map(Number);
         const hours = ((endH * 60 + endM) - (startH * 60 + startM) - shift.breakMinutes) / 60;
         totalHours += hours;
-        regularCost += hours * staffMember.hourlyRate;
+        regularCost += hours * rateCategoryStore.applyToRate(staffMember.id, staffMember.hourlyRate).hourlyRate;
       }
     });
     

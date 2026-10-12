@@ -15,6 +15,7 @@ import { Employee as TimesheetEmployee } from '@/types/timesheet';
 import { Shift } from '@/types/roster';
 import { PayrollSettings, StpIncomeStream } from '@/types/payroll';
 import { resolveHourlyRate } from '@/lib/payRateResolver';
+import { rateCategoryStore } from '@/lib/rateCategoryStore';
 import { mockStaff } from '@/data/mockStaffData';
 import { generateMockShifts, mockStaff as rosterStaff } from '@/data/mockRosterData';
 
@@ -143,6 +144,13 @@ export function resolveEmployeePayProfile(
     baseRate = employee.hourlyRate ?? 0;
     rateSource = 'timesheet';
     notes.push('No pay condition or award rate on file — using the timesheet rate.');
+  }
+
+  // Junior / apprentice / trainee: approved percentage of the adult rate (award floor applies to the adult rate first)
+  const cat = rateCategoryStore.applyToRate(record.id, baseRate, award?.classification ?? 'Adult');
+  if (cat.percent !== 100) {
+    baseRate = cat.hourlyRate;
+    notes.push(cat.working);
   }
 
   const casualLoadingPct =

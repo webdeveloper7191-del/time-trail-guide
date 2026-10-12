@@ -17,6 +17,7 @@ import {
   getAwardById 
 } from '@/data/australianAwards';
 import { isPublicHoliday, isSchoolHoliday } from '@/data/mockHolidaysEvents';
+import { rateCategoryStore } from '@/lib/rateCategoryStore';
 import { format, parseISO, getDay, differenceInMinutes } from 'date-fns';
 import {
   isBrokenShift,
@@ -271,6 +272,13 @@ export function calculateShiftCost(
     }
   }
   
+  // Junior / apprentice / trainee: apply the approved percentage of the adult rate
+  const categoryRate = rateCategoryStore.applyToRate(staff.id, baseHourlyRate);
+  if (categoryRate.percent !== 100) {
+    baseHourlyRate = categoryRate.hourlyRate;
+    warnings.push(categoryRate.working);
+  }
+
   const casualLoading = isCasual ? award.casualLoading / 100 : 0;
   const effectiveHourlyRate = baseHourlyRate * (1 + casualLoading);
   
