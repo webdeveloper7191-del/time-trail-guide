@@ -746,6 +746,150 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
               </Select>
             </div>
 
+            {/* Rate Category */}
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                    Rate Category
+                  </Label>
+                  <Select
+                    value={rateDraft.category}
+                    onValueChange={(v) => setRateDraft(d => ({ ...d, category: v as RateCategory }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(rateCategoryLabels) as RateCategory[]).map(k => (
+                        <SelectItem key={k} value={k}>{rateCategoryLabels[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Sits beside Employment Type — someone can be a casual junior or a full-time apprentice.
+                  </p>
+                </div>
+
+                {rateDraft.category === 'junior' && (
+                  <div className="space-y-2">
+                    <Label>Approved age step</Label>
+                    <Input
+                      type="number"
+                      min={14}
+                      max={20}
+                      value={rateDraft.approvedJuniorAge ?? ''}
+                      onChange={(e) =>
+                        setRateDraft(d => ({ ...d, approvedJuniorAge: e.target.value === '' ? undefined : Number(e.target.value) }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {staff.dateOfBirth
+                        ? `Currently aged ${ageOn(staff.dateOfBirth, new Date())}. Birthday increases wait for manager approval.`
+                        : 'No date of birth recorded. Birthday increases wait for manager approval.'}
+                    </p>
+                  </div>
+                )}
+
+                {rateDraft.category === 'apprentice' && (
+                  <div className="space-y-2">
+                    <Label>Year of apprenticeship</Label>
+                    <Select
+                      value={String(rateDraft.approvedApprenticeYear ?? 1)}
+                      onValueChange={(v) => setRateDraft(d => ({ ...d, approvedApprenticeYear: Number(v) as 1 | 2 | 3 | 4 }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4].map(y => <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {rateDraft.category === 'trainee' && (
+                  <div className="space-y-2">
+                    <Label>Training wage level</Label>
+                    <Select value={rateDraft.traineeLevel ?? ''} onValueChange={(v) => setRateDraft(d => ({ ...d, traineeLevel: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(rateTable.traineeByLevel).map(l => (
+                          <SelectItem key={l} value={l}>{l} ({rateTable.traineeByLevel[l]}%)</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {rateDraft.category === 'apprentice' && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Start date</Label>
+                    <Input
+                      type="date"
+                      value={rateDraft.apprenticeStartDate ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, apprenticeStartDate: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal">Completed Year 12</Label>
+                    <Switch checked={!!rateDraft.completedYear12} onCheckedChange={c => setRateDraft(d => ({ ...d, completedYear12: c }))} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal">Adult apprentice</Label>
+                    <Switch checked={!!rateDraft.adultApprentice} onCheckedChange={c => setRateDraft(d => ({ ...d, adultApprentice: c }))} />
+                  </div>
+                </div>
+              )}
+
+              {rateDraft.category === 'trainee' && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Progress</Label>
+                    <Input
+                      placeholder="Left school + 1 year"
+                      value={rateDraft.traineeProgress ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, traineeProgress: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Traineeship ends</Label>
+                    <Input
+                      type="date"
+                      value={rateDraft.traineeEndDate ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, traineeEndDate: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Training contract no.</Label>
+                    <Input
+                      value={rateDraft.trainingContractNumber ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, trainingContractNumber: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {rateDraft.category !== 'adult' && (
+                <div className="space-y-2 border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal">Pay adult rate (override)</Label>
+                    <Switch checked={overrideOn} onCheckedChange={setOverrideOn} />
+                  </div>
+                  {overrideOn && (
+                    <Textarea
+                      placeholder="Reason (recorded in the audit trail)"
+                      value={overrideReason}
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-md bg-background/60 p-3 text-sm font-medium">
+                {resolvedRate.working}
+              </div>
+            </div>
+
             {/* Reason */}
             <div className="space-y-2">
               <Label>Reason for Change</Label>
