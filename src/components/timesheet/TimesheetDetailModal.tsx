@@ -1,3 +1,4 @@
+import { rateCategoryStore } from '@/lib/rateCategoryStore';
 import { Timesheet, ClockEntry, BreakEntry } from '@/types/timesheet';
 import { StatusBadge } from './StatusBadge';
 import { CompliancePanel } from './CompliancePanel';
@@ -68,11 +69,18 @@ export function TimesheetDetailModal({
     [timesheet]
   );
 
-  const overtimeCalc = useMemo(() => 
-    timesheet && timesheet.employee.hourlyRate 
-      ? calculateOvertime(timesheet, timesheet.employee.hourlyRate)
+  const categoryRate = useMemo(() =>
+    timesheet?.employee.hourlyRate
+      ? rateCategoryStore.applyToRate(timesheet.employee.id, timesheet.employee.hourlyRate)
       : null,
     [timesheet]
+  );
+
+  const overtimeCalc = useMemo(() => 
+    timesheet && categoryRate
+      ? calculateOvertime(timesheet, categoryRate.hourlyRate)
+      : null,
+    [timesheet, categoryRate]
   );
 
   const approvalChain = useMemo(() => 
@@ -140,9 +148,9 @@ export function TimesheetDetailModal({
                   <Briefcase className="h-3 w-3 mr-1" />
                   {timesheet.employee.position}
                 </Badge>
-                {timesheet.employee.hourlyRate && (
-                  <Badge variant="outline" className="text-xs font-normal">
-                    ${timesheet.employee.hourlyRate}/hr
+                {categoryRate && (
+                  <Badge variant="outline" className="text-xs font-normal" title={categoryRate.working}>
+                    ${categoryRate.hourlyRate.toFixed(2)}/hr{categoryRate.percent !== 100 ? ` (${categoryRate.percent}%)` : ''}
                   </Badge>
                 )}
               </div>
