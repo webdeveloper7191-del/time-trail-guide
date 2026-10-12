@@ -232,23 +232,31 @@ export function ShiftDetailPanel({
     toil_leave: 'TOIL Leave',
   };
 
-  // Filter events for this specific shift
+  // Filter events for this specific shift (by shift ID; legacy events fall back to staff + date)
+  const allowedEvents = allowedEventsFor(editedShift.shiftType);
   const shiftCallbackEvents = useMemo(() => {
     return callbackEvents.filter(e =>
-      e.staffId === editedShift.staffId &&
-      (e.onCallShiftId === editedShift.id || e.workStartTime?.startsWith(editedShift.date))
+      e.onCallShiftId
+        ? e.onCallShiftId === editedShift.id
+        : e.staffId === editedShift.staffId && !!e.workStartTime?.startsWith(editedShift.date)
     );
   }, [callbackEvents, editedShift.staffId, editedShift.date, editedShift.id]);
 
   const shiftSleepoverEvents = useMemo(() => {
-    return sleepoverEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
-  }, [sleepoverEvents, editedShift.staffId, editedShift.date]);
+    return sleepoverEvents.filter(e => eventBelongsToShift(e, editedShift));
+  }, [sleepoverEvents, editedShift]);
 
   const shiftSplitShiftEvents = useMemo(() => {
-    return splitShiftEvents.filter(e => e.staffId === editedShift.staffId && e.date === editedShift.date);
-  }, [splitShiftEvents, editedShift.staffId, editedShift.date]);
+    return splitShiftEvents.filter(e => eventBelongsToShift(e, editedShift));
+  }, [splitShiftEvents, editedShift]);
 
   const totalEventCount = shiftCallbackEvents.length + shiftSleepoverEvents.length + shiftSplitShiftEvents.length;
+  const mismatchedEventKinds = [
+    shiftCallbackEvents.length > 0 && !allowedEvents.includes('callback') ? 'callback' : null,
+    shiftSleepoverEvents.length > 0 && !allowedEvents.includes('sleepover') ? 'sleepover' : null,
+    shiftSplitShiftEvents.length > 0 && !allowedEvents.includes('split') ? 'split shift' : null,
+  ].filter(Boolean) as string[];
+  const showEventsTab = allowedEvents.length > 0 || totalEventCount > 0;
 
   const { getQuickEstimate, calculateCost } = useShiftCost();
 
