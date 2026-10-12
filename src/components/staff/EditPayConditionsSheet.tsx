@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, streamOptions } from '@/types/staff';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,14 @@ import {
   PencilLine,
   Info,
   AlertTriangle,
+  GraduationCap,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { RateCategory, RateProfile, ageOn, rateCategoryLabels, resolveCategoryRate } from '@/lib/rateCategory';
+import { useRateCategories } from '@/lib/rateCategoryStore';
 import { mockPositions } from '@/data/mockPositions';
 import { useSyncExternalStore } from 'react';
 import { LeaveStore, subscribeLeave, getLeaveSnapshot, type LeaveKind } from '@/lib/leaveAccrualEngine';
@@ -289,6 +293,24 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [casualLoading, setCasualLoading] = useState<number>(25);
   const [abn, setAbn] = useState<string>('');
 
+  // Rate category (Adult / Junior / Apprentice / Trainee) — shared with the
+  // RateCategoryCard editor via rateCategoryStore.
+  const store = useRateCategories();
+  const [rateDraft, setRateDraft] = useState<RateProfile>({ staffId: staff.id, category: 'adult' });
+  const [overrideOn, setOverrideOn] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      const p = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+      setRateDraft(p);
+      setOverrideOn(!!p.adultOverride);
+      setOverrideReason(p.adultOverride?.reason ?? '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, staff.id]);
+
+
   const awardDefaults = useMemo(
     () => resolveAwardDefaults(industryAward, classification),
     [industryAward, classification]
@@ -395,6 +417,17 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       : rateSource === 'annualised_salary'
       ? derivedHourlyFromSalary
       : resolvedBaseRate;
+
+  // Category-adjusted rate preview (adult base × junior/apprentice/trainee %).
+  const rateTable = store.getTable();
+  const resolvedRate = resolveCategoryRate(
+    effectiveHourlyRate,
+    rateDraft.category !== 'adult' && overrideOn
+      ? { ...rateDraft, adultOverride: { reason: overrideReason.trim() || 'Adult rate', at: '', by: '' } }
+      : rateDraft,
+    rateTable,
+    classification || position || 'Classification'
+  );
 
   // Rate-source specific validation
   const rateErrors = useMemo(() => {
@@ -518,6 +551,25 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     if (Object.keys(rateErrors).length > 0) {
       toast.error(Object.values(rateErrors)[0] as string);
       return;
+    }
+    // Persist rate category when it changed.
+    if (rateDraft.category !== 'adult' && overrideOn && !overrideReason.trim()) {
+      toast.error('Add a reason for paying the adult rate');
+      return;
+    }
+    const currentProfile = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+    const nextProfile: RateProfile = {
+      ...rateDraft,
+      adultOverride:
+        rateDraft.category !== 'adult' && overrideOn
+          ? { reason: overrideReason.trim(), at: new Date().toISOString(), by: 'Admin' }
+          : undefined,
+    };
+    if (nextProfile.category === 'junior' && nextProfile.approvedJuniorAge === undefined && staff.dateOfBirth) {
+      nextProfile.approvedJuniorAge = ageOn(staff.dateOfBirth, new Date());
+    }
+    if (JSON.stringify(currentProfile) !== JSON.stringify(nextProfile)) {
+      store.saveProfile(nextProfile);
     }
     const updatedCondition: PayCondition = {
       id: payCondition?.id || `pay-${Date.now()}`,
@@ -658,6 +710,146 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
                     Contractors are engaged under a commercial arrangement — no award, overtime, loadings or leave apply.
                   </div>
                 )}
+
+                {/* Rate category */}
+                <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs flex items-center gap-1.5">
+                        <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                        Rate category<FieldInfo text="Adult, Junior, Apprentice or Trainee. Sits beside Employment Type — someone can be a casual junior or a full-time apprentice. Junior birthday increases and adult-rate qualifications wait for manager approval." />
+                      </Label>
+                      <Select
+                        value={rateDraft.category}
+                        onValueChange={(v) => setRateDraft(d => ({ ...d, category: v as RateCategory }))}
+                      >
+                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(rateCategoryLabels) as RateCategory[]).map(k => (
+                            <SelectItem key={k} value={k}>{rateCategoryLabels[k]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {rateDraft.category === 'junior' && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Approved age step<FieldInfo text="The age the pay rate is currently approved at. Birthday increases are flagged for manager approval before pay changes." /></Label>
+                        <Input
+                          type="number" min={14} max={20} className="h-9"
+                          value={rateDraft.approvedJuniorAge ?? ''}
+                          onChange={(e) =>
+                            setRateDraft(d => ({ ...d, approvedJuniorAge: e.target.value === '' ? undefined : Number(e.target.value) }))
+                          }
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          {staff.dateOfBirth
+                            ? `Currently aged ${ageOn(staff.dateOfBirth, new Date())}. Birthday increases wait for manager approval.`
+                            : 'No date of birth recorded. Birthday increases wait for manager approval.'}
+                        </p>
+                      </div>
+                    )}
+
+                    {rateDraft.category === 'apprentice' && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Year of apprenticeship</Label>
+                        <Select
+                          value={String(rateDraft.approvedApprenticeYear ?? 1)}
+                          onValueChange={(v) => setRateDraft(d => ({ ...d, approvedApprenticeYear: Number(v) as 1 | 2 | 3 | 4 }))}
+                        >
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {[1, 2, 3, 4].map(y => <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {rateDraft.category === 'trainee' && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Training wage level</Label>
+                        <Select value={rateDraft.traineeLevel ?? ''} onValueChange={(v) => setRateDraft(d => ({ ...d, traineeLevel: v }))}>
+                          <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {Object.keys(rateTable.traineeByLevel).map(l => (
+                              <SelectItem key={l} value={l}>{l} ({rateTable.traineeByLevel[l]}%)</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {rateDraft.category === 'apprentice' && (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Start date</Label>
+                        <Input
+                          type="date" className="h-9"
+                          value={rateDraft.apprenticeStartDate ?? ''}
+                          onChange={(e) => setRateDraft(d => ({ ...d, apprenticeStartDate: e.target.value }))}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-normal">Completed Year 12</Label>
+                        <Switch checked={!!rateDraft.completedYear12} onCheckedChange={c => setRateDraft(d => ({ ...d, completedYear12: c }))} className="scale-90" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-normal">Adult apprentice</Label>
+                        <Switch checked={!!rateDraft.adultApprentice} onCheckedChange={c => setRateDraft(d => ({ ...d, adultApprentice: c }))} className="scale-90" />
+                      </div>
+                    </div>
+                  )}
+
+                  {rateDraft.category === 'trainee' && (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Progress</Label>
+                        <Input
+                          placeholder="Left school + 1 year" className="h-9"
+                          value={rateDraft.traineeProgress ?? ''}
+                          onChange={(e) => setRateDraft(d => ({ ...d, traineeProgress: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Traineeship ends</Label>
+                        <Input
+                          type="date" className="h-9"
+                          value={rateDraft.traineeEndDate ?? ''}
+                          onChange={(e) => setRateDraft(d => ({ ...d, traineeEndDate: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Training contract no.</Label>
+                        <Input
+                          value={rateDraft.trainingContractNumber ?? ''} className="h-9"
+                          onChange={(e) => setRateDraft(d => ({ ...d, trainingContractNumber: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {rateDraft.category !== 'adult' && (
+                    <div className="space-y-2 border-t pt-2.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-normal">Pay adult rate (override)<FieldInfo text="Pay this person the full adult rate instead of the category percentage. Requires a reason, which is recorded in the audit trail." /></Label>
+                        <Switch checked={overrideOn} onCheckedChange={setOverrideOn} className="scale-90" />
+                      </div>
+                      {overrideOn && (
+                        <Textarea
+                          placeholder="Reason (recorded in the audit trail)"
+                          value={overrideReason}
+                          onChange={(e) => setOverrideReason(e.target.value)}
+                          className="min-h-[60px]"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="rounded-md bg-background/60 px-3 py-2 text-xs font-medium">
+                    {resolvedRate.working}
+                  </div>
+                </div>
 
                 <div className={cn('grid gap-4', employmentType === 'contractor' ? 'grid-cols-2' : 'grid-cols-3')}>
                   {employmentType !== 'contractor' && (

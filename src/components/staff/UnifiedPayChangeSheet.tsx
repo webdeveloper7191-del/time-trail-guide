@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
 import { australianAwards, getAwardById } from '@/data/australianAwards';
 import {
@@ -29,12 +29,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   CalendarIcon, TrendingUp, TrendingDown, AlertCircle, Check, Download, 
   History, Calculator, Clock, DollarSign, ArrowRight, Zap, CalendarPlus,
-  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft, Upload, X, Paperclip
+  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft, Upload, X, Paperclip, GraduationCap
 } from 'lucide-react';
 import { format, isBefore, startOfDay, addDays, subMonths, isAfter } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { calculateRetrospectivePay, BackPayCalculation, formatBackPayReport } from '@/lib/retrospectivePayCalculator';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { RateCategory, RateProfile, ageOn, rateCategoryLabels, resolveCategoryRate } from '@/lib/rateCategory';
+import { useRateCategories } from '@/lib/rateCategoryStore';
 
 interface UnifiedPayChangeSheetProps {
   open: boolean;
@@ -97,6 +101,23 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const [signedDate, setSignedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const signedInputRef = useRef<HTMLInputElement>(null);
 
+  // Rate category (Adult / Junior / Apprentice / Trainee) — shared with the
+  // RateCategoryCard editor via rateCategoryStore.
+  const store = useRateCategories();
+  const [rateDraft, setRateDraft] = useState<RateProfile>({ staffId: staff.id, category: 'adult' });
+  const [overrideOn, setOverrideOn] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      const p = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+      setRateDraft(p);
+      setOverrideOn(!!p.adultOverride);
+      setOverrideReason(p.adultOverride?.reason ?? '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, staff.id]);
+
   const selectedAwardData = getAwardById(selectedAward);
   const selectedClassificationData = selectedAwardData?.classifications.find(
     c => c.level === selectedClassification
@@ -121,6 +142,17 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
   const currentRate = currentCondition?.hourlyRate || 0;
   const rateDifference = newRate - currentRate;
   const percentageChange = currentRate > 0 ? ((rateDifference / currentRate) * 100).toFixed(1) : '0';
+
+  // Category-adjusted rate preview (adult base × junior/apprentice/trainee %).
+  const rateTable = store.getTable();
+  const resolvedRate = resolveCategoryRate(
+    newRate,
+    rateDraft.category !== 'adult' && overrideOn
+      ? { ...rateDraft, adultOverride: { reason: overrideReason.trim() || 'Adult rate', at: '', by: '' } }
+      : rateDraft,
+    rateTable,
+    selectedClassification || position || 'Classification'
+  );
 
   const handleCalculateBackPay = () => {
     if (!retroStartDate || !retroEndDate) {
@@ -178,6 +210,26 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
     if (mode === 'previous' && !backPayCalculation) {
       toast.error('Please calculate back-pay first');
       return;
+    }
+
+    // Persist rate category when it changed.
+    if (rateDraft.category !== 'adult' && overrideOn && !overrideReason.trim()) {
+      toast.error('Add a reason for paying the adult rate');
+      return;
+    }
+    const currentProfile = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+    const nextProfile: RateProfile = {
+      ...rateDraft,
+      adultOverride:
+        rateDraft.category !== 'adult' && overrideOn
+          ? { reason: overrideReason.trim(), at: new Date().toISOString(), by: 'Admin' }
+          : undefined,
+    };
+    if (nextProfile.category === 'junior' && nextProfile.approvedJuniorAge === undefined && staff.dateOfBirth) {
+      nextProfile.approvedJuniorAge = ageOn(staff.dateOfBirth, new Date());
+    }
+    if (JSON.stringify(currentProfile) !== JSON.stringify(nextProfile)) {
+      store.saveProfile(nextProfile);
     }
 
     const messages = {
@@ -692,6 +744,150 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
                   <SelectItem value="monthly">Monthly</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Rate Category */}
+            <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                    Rate Category
+                  </Label>
+                  <Select
+                    value={rateDraft.category}
+                    onValueChange={(v) => setRateDraft(d => ({ ...d, category: v as RateCategory }))}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(rateCategoryLabels) as RateCategory[]).map(k => (
+                        <SelectItem key={k} value={k}>{rateCategoryLabels[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Sits beside Employment Type — someone can be a casual junior or a full-time apprentice.
+                  </p>
+                </div>
+
+                {rateDraft.category === 'junior' && (
+                  <div className="space-y-2">
+                    <Label>Approved age step</Label>
+                    <Input
+                      type="number"
+                      min={14}
+                      max={20}
+                      value={rateDraft.approvedJuniorAge ?? ''}
+                      onChange={(e) =>
+                        setRateDraft(d => ({ ...d, approvedJuniorAge: e.target.value === '' ? undefined : Number(e.target.value) }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {staff.dateOfBirth
+                        ? `Currently aged ${ageOn(staff.dateOfBirth, new Date())}. Birthday increases wait for manager approval.`
+                        : 'No date of birth recorded. Birthday increases wait for manager approval.'}
+                    </p>
+                  </div>
+                )}
+
+                {rateDraft.category === 'apprentice' && (
+                  <div className="space-y-2">
+                    <Label>Year of apprenticeship</Label>
+                    <Select
+                      value={String(rateDraft.approvedApprenticeYear ?? 1)}
+                      onValueChange={(v) => setRateDraft(d => ({ ...d, approvedApprenticeYear: Number(v) as 1 | 2 | 3 | 4 }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4].map(y => <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {rateDraft.category === 'trainee' && (
+                  <div className="space-y-2">
+                    <Label>Training wage level</Label>
+                    <Select value={rateDraft.traineeLevel ?? ''} onValueChange={(v) => setRateDraft(d => ({ ...d, traineeLevel: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(rateTable.traineeByLevel).map(l => (
+                          <SelectItem key={l} value={l}>{l} ({rateTable.traineeByLevel[l]}%)</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {rateDraft.category === 'apprentice' && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Start date</Label>
+                    <Input
+                      type="date"
+                      value={rateDraft.apprenticeStartDate ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, apprenticeStartDate: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal">Completed Year 12</Label>
+                    <Switch checked={!!rateDraft.completedYear12} onCheckedChange={c => setRateDraft(d => ({ ...d, completedYear12: c }))} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal">Adult apprentice</Label>
+                    <Switch checked={!!rateDraft.adultApprentice} onCheckedChange={c => setRateDraft(d => ({ ...d, adultApprentice: c }))} />
+                  </div>
+                </div>
+              )}
+
+              {rateDraft.category === 'trainee' && (
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Progress</Label>
+                    <Input
+                      placeholder="Left school + 1 year"
+                      value={rateDraft.traineeProgress ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, traineeProgress: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Traineeship ends</Label>
+                    <Input
+                      type="date"
+                      value={rateDraft.traineeEndDate ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, traineeEndDate: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Training contract no.</Label>
+                    <Input
+                      value={rateDraft.trainingContractNumber ?? ''}
+                      onChange={(e) => setRateDraft(d => ({ ...d, trainingContractNumber: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {rateDraft.category !== 'adult' && (
+                <div className="space-y-2 border-t pt-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-normal">Pay adult rate (override)</Label>
+                    <Switch checked={overrideOn} onCheckedChange={setOverrideOn} />
+                  </div>
+                  {overrideOn && (
+                    <Textarea
+                      placeholder="Reason (recorded in the audit trail)"
+                      value={overrideReason}
+                      onChange={(e) => setOverrideReason(e.target.value)}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="rounded-md bg-background/60 p-3 text-sm font-medium">
+                {resolvedRate.working}
+              </div>
             </div>
 
             {/* Reason */}
