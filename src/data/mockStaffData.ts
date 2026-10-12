@@ -216,7 +216,7 @@ export const mockStaff: StaffMember[] = [
     email: 'james.chen@example.com',
     mobilePhone: '+61 434 567 890',
     gender: 'male',
-    dateOfBirth: '1988-09-22',
+    dateOfBirth: '2008-09-30',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     employeeId: 'EMP003',
     taxFileNumber: '458 271 903',
