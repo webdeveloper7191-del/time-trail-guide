@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, streamOptions } from '@/types/staff';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,14 @@ import {
   PencilLine,
   Info,
   AlertTriangle,
+  GraduationCap,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { RateCategory, RateProfile, ageOn, rateCategoryLabels, resolveCategoryRate } from '@/lib/rateCategory';
+import { useRateCategories } from '@/lib/rateCategoryStore';
 import { mockPositions } from '@/data/mockPositions';
 import { useSyncExternalStore } from 'react';
 import { LeaveStore, subscribeLeave, getLeaveSnapshot, type LeaveKind } from '@/lib/leaveAccrualEngine';
@@ -289,6 +293,24 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
   const [casualLoading, setCasualLoading] = useState<number>(25);
   const [abn, setAbn] = useState<string>('');
 
+  // Rate category (Adult / Junior / Apprentice / Trainee) — shared with the
+  // RateCategoryCard editor via rateCategoryStore.
+  const store = useRateCategories();
+  const [rateDraft, setRateDraft] = useState<RateProfile>({ staffId: staff.id, category: 'adult' });
+  const [overrideOn, setOverrideOn] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      const p = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+      setRateDraft(p);
+      setOverrideOn(!!p.adultOverride);
+      setOverrideReason(p.adultOverride?.reason ?? '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, staff.id]);
+
+
   const awardDefaults = useMemo(
     () => resolveAwardDefaults(industryAward, classification),
     [industryAward, classification]
@@ -395,6 +417,17 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
       : rateSource === 'annualised_salary'
       ? derivedHourlyFromSalary
       : resolvedBaseRate;
+
+  // Category-adjusted rate preview (adult base × junior/apprentice/trainee %).
+  const rateTable = store.getTable();
+  const resolvedRate = resolveCategoryRate(
+    effectiveHourlyRate,
+    rateDraft.category !== 'adult' && overrideOn
+      ? { ...rateDraft, adultOverride: { reason: overrideReason.trim() || 'Adult rate', at: '', by: '' } }
+      : rateDraft,
+    rateTable,
+    classification || position || 'Classification'
+  );
 
   // Rate-source specific validation
   const rateErrors = useMemo(() => {
@@ -518,6 +551,25 @@ export function EditPayConditionsSheet({ open, onOpenChange, staff, onSave }: Ed
     if (Object.keys(rateErrors).length > 0) {
       toast.error(Object.values(rateErrors)[0] as string);
       return;
+    }
+    // Persist rate category when it changed.
+    if (rateDraft.category !== 'adult' && overrideOn && !overrideReason.trim()) {
+      toast.error('Add a reason for paying the adult rate');
+      return;
+    }
+    const currentProfile = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+    const nextProfile: RateProfile = {
+      ...rateDraft,
+      adultOverride:
+        rateDraft.category !== 'adult' && overrideOn
+          ? { reason: overrideReason.trim(), at: new Date().toISOString(), by: 'Admin' }
+          : undefined,
+    };
+    if (nextProfile.category === 'junior' && nextProfile.approvedJuniorAge === undefined && staff.dateOfBirth) {
+      nextProfile.approvedJuniorAge = ageOn(staff.dateOfBirth, new Date());
+    }
+    if (JSON.stringify(currentProfile) !== JSON.stringify(nextProfile)) {
+      store.saveProfile(nextProfile);
     }
     const updatedCondition: PayCondition = {
       id: payCondition?.id || `pay-${Date.now()}`,
