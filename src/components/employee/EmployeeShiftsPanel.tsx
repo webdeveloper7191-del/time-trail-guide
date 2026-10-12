@@ -30,6 +30,9 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ShiftSwapRequestDialog } from './ShiftSwapRequestDialog';
 import { SwapInboxDialog, SwapRequest } from './SwapInboxDialog';
+import type { Timesheet } from '@/types/timesheet';
+import { unscheduledClockRecords, type ScheduleClockRecord } from '@/lib/employeeSchedule';
+import { UnscheduledClockRecords } from './UnscheduledClockRecords';
 
 // ───────────────────────── Types ─────────────────────────
 interface BreakEntry {
@@ -101,6 +104,11 @@ const mockOpenShifts: OpenShift[] = [
   { id: 'o2', date: addDays(today, 3), startTime: '06:00', endTime: '14:00', location: 'North Branch', area: 'Operations', role: 'Coordinator', rate: 28, applicants: 0 },
   { id: 'o3', date: addDays(today, 5), startTime: '10:00', endTime: '18:00', location: 'East Centre', area: 'Floor', role: 'Coordinator', rate: 30, premium: true, applicants: 4, reason: 'High demand' },
   { id: 'o4', date: addDays(today, 6), startTime: '08:00', endTime: '12:00', location: 'Main Centre', area: 'Reception', role: 'Coordinator', rate: 28, applicants: 1 },
+];
+
+const sampleClockRecords: ScheduleClockRecord[] = [
+  { id: 'sample-unrostered-1', date: format(addDays(today, -2), 'yyyy-MM-dd'), location: 'Main Centre', clockIn: '09:00', clockOut: '13:00', breaks: [], totalBreakMinutes: 0, grossHours: 4, netHours: 4, overtime: 0, status: 'pending', sample: true, notes: 'Extra cover requested by manager.' },
+  { id: 'sample-unrostered-2', date: format(today, 'yyyy-MM-dd'), location: 'North Branch', clockIn: '14:00', clockOut: null, breaks: [], totalBreakMinutes: 0, grossHours: 0, netHours: 0, overtime: 0, status: 'pending', sample: true },
 ];
 
 const mockSwapRequests: SwapRequest[] = [
@@ -196,7 +204,7 @@ const fmt12 = (t: string) => {
 const PAST_PAGE_SIZE = 8;
 type CalRange = 'week' | 'fortnight' | 'month';
 
-export function EmployeeShiftsPanel() {
+export function EmployeeShiftsPanel({ timesheets = [] }: { timesheets?: Timesheet[] }) {
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const [tab, setTab] = useState<'mine' | 'open' | 'swaps'>('mine');
   const [calRange, setCalRange] = useState<CalRange>('week');
@@ -219,7 +227,11 @@ export function EmployeeShiftsPanel() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveSeed, setLeaveSeed] = useState<{ date?: Date; type?: 'annual' | 'sick' } | null>(null);
 
-  const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts].map(s => s.location))), []);
+  const clockRecords = useMemo(() => timesheets.length > 0
+    ? timesheets.flatMap(sheet => sheet.entries.map(entry => ({ ...entry, id: `${sheet.id}:${entry.id}`, location: sheet.location.name, status: sheet.status })))
+    : sampleClockRecords, [timesheets]);
+  const unrosteredRecords = useMemo(() => unscheduledClockRecords(clockRecords, mockMyShifts), [clockRecords]);
+  const locations = useMemo(() => Array.from(new Set([...mockMyShifts, ...mockOpenShifts, ...unrosteredRecords].map(s => s.location))), [unrosteredRecords]);
   const areas = useMemo(() => {
     const pool = locFilter === 'all' ? mockMyShifts : mockMyShifts.filter(s => s.location === locFilter);
     return Array.from(new Set(pool.map(s => s.area)));
@@ -287,6 +299,22 @@ export function EmployeeShiftsPanel() {
     mockOpenShifts.filter(s => locFilter === 'all' || s.location === locFilter)
       .sort((a, b) => a.date.getTime() - b.date.getTime()),
   [locFilter]);
+
+  const visibleClockRecords = useMemo(() => unrosteredRecords.filter(record => {
+    const date = parseISO(record.date);
+    if (locFilter !== 'all' && record.location !== locFilter) return false;
+    if (areaFilter !== 'all') return false; // Clock records do not carry an area.
+    if (statusFilter !== 'all' && record.status !== statusFilter) return false;
+    if (search && !`${record.location} unscheduled ${record.notes ?? ''}`.toLowerCase().includes(search.toLowerCase())) return false;
+    if (dateRange === 'upcoming' && date < startOfToday) return false;
+    if (dateRange === 'past' && date >= startOfToday) return false;
+    if (view === 'calendar' && !isWithinInterval(date, { start: rangeStart, end: rangeEnd })) return false;
+    return true;
+  }).sort((a, b) => {
+    const first = sortBy === 'location' ? a.location : sortBy === 'startTime' ? a.clockIn : a.date;
+    const second = sortBy === 'location' ? b.location : sortBy === 'startTime' ? b.clockIn : b.date;
+    return (first.localeCompare(second) || a.date.localeCompare(b.date)) * (sortDir === 'asc' ? 1 : -1);
+  }), [unrosteredRecords, locFilter, areaFilter, statusFilter, search, dateRange, startOfToday, view, rangeStart, rangeEnd, sortBy, sortDir]);
 
   const pendingIncoming = swapRequests.filter(r => r.direction === 'incoming' && r.status === 'pending').length;
 
@@ -514,6 +542,7 @@ export function EmployeeShiftsPanel() {
                 : `Showing ${filteredMyShifts.length} upcoming shift${filteredMyShifts.length === 1 ? '' : 's'}`}
             </p>
           </div>
+          <UnscheduledClockRecords records={visibleClockRecords} />
           {view === 'list' ? (
             <>
               <ShiftList
