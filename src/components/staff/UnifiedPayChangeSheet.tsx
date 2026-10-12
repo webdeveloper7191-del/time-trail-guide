@@ -212,6 +212,26 @@ export function UnifiedPayChangeSheet({ open, onOpenChange, staff, initialMode =
       return;
     }
 
+    // Persist rate category when it changed.
+    if (rateDraft.category !== 'adult' && overrideOn && !overrideReason.trim()) {
+      toast.error('Add a reason for paying the adult rate');
+      return;
+    }
+    const currentProfile = store.getProfile(staff.id) ?? { staffId: staff.id, category: 'adult' as RateCategory };
+    const nextProfile: RateProfile = {
+      ...rateDraft,
+      adultOverride:
+        rateDraft.category !== 'adult' && overrideOn
+          ? { reason: overrideReason.trim(), at: new Date().toISOString(), by: 'Admin' }
+          : undefined,
+    };
+    if (nextProfile.category === 'junior' && nextProfile.approvedJuniorAge === undefined && staff.dateOfBirth) {
+      nextProfile.approvedJuniorAge = ageOn(staff.dateOfBirth, new Date());
+    }
+    if (JSON.stringify(currentProfile) !== JSON.stringify(nextProfile)) {
+      store.saveProfile(nextProfile);
+    }
+
     const messages = {
       previous: `Retrospective pay adjustment submitted: $${backPayCalculation?.totalAdjustment.toFixed(2)} queued for payroll`,
       current: 'Pay conditions updated immediately',
