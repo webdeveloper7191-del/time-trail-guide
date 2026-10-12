@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { StaffMember, PayCondition, employmentTypeLabels, payRateTypeLabels } from '@/types/staff';
 import { australianAwards, getAwardById } from '@/data/australianAwards';
 import {
@@ -29,12 +29,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   CalendarIcon, TrendingUp, TrendingDown, AlertCircle, Check, Download, 
   History, Calculator, Clock, DollarSign, ArrowRight, Zap, CalendarPlus,
-  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft, Upload, X, Paperclip
+  ArrowLeftCircle, Save, FileText, PenTool, Send, ArrowLeft, Upload, X, Paperclip, GraduationCap
 } from 'lucide-react';
 import { format, isBefore, startOfDay, addDays, subMonths, isAfter } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { calculateRetrospectivePay, BackPayCalculation, formatBackPayReport } from '@/lib/retrospectivePayCalculator';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { RateCategory, RateProfile, ageOn, rateCategoryLabels, resolveCategoryRate } from '@/lib/rateCategory';
+import { useRateCategories } from '@/lib/rateCategoryStore';
 
 interface UnifiedPayChangeSheetProps {
   open: boolean;
