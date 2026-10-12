@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { StaffAwardRuleSection } from './StaffAwardRuleSection';
+import { RateCategoryCard } from './RateCategoryCard';
 import { PayConditionsHistorySheet } from './PayConditionsHistorySheet';
 import { PayRateComparisonSheet } from './PayRateComparisonSheet';
 import { UnifiedPayChangeSheet } from './UnifiedPayChangeSheet';
@@ -212,6 +213,8 @@ export function StaffPayConditionsSection({ staff }: StaffPayConditionsSectionPr
           </CollapsibleContent>
         </div>
       </Collapsible>
+
+      <RateCategoryCard staff={staff} />
 
       {/* Section 2: Award Rules */}
       <Collapsible 

@@ -64,6 +64,9 @@ import { StaffImportResult } from '@/lib/etl/staffETL';
 import { AddStaffOptionsDialog } from '@/components/workforce/AddStaffOptionsDialog';
 import { BulkActionsPanel, bulkActionConfig, BulkActionKey } from '@/components/workforce/BulkActionsPanel';
 import { ChevronDown } from 'lucide-react';
+import { PayRateReviewsBanner } from '@/components/workforce/PayRateReviewsBanner';
+import { useRateCategories } from '@/lib/rateCategoryStore';
+import { RateCategory, rateCategoryLabels } from '@/lib/rateCategory';
 
 export default function StaffList() {
   const navigate = useNavigate();
@@ -72,6 +75,8 @@ export default function StaffList() {
   const [employmentTypeFilter, setEmploymentTypeFilter] = useState<EmploymentType | 'all'>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [rateCategoryFilter, setRateCategoryFilter] = useState<RateCategory | 'all'>('all');
+  const rateStore = useRateCategories();
   const [selectedStaff, setSelectedStaff] = useState<Set<string>>(new Set());
   const [showImportModal, setShowImportModal] = useState(false);
   const [showAddOptions, setShowAddOptions] = useState(false);
@@ -153,9 +158,13 @@ export default function StaffList() {
       const matchesDepartment =
         departmentFilter === 'all' || staff.department === departmentFilter;
 
-      return matchesSearch && matchesStatus && matchesEmploymentType && matchesLocation && matchesDepartment;
+      const matchesRateCategory =
+        rateCategoryFilter === 'all' ||
+        (rateStore.getProfile(staff.id)?.category ?? 'adult') === rateCategoryFilter;
+
+      return matchesSearch && matchesStatus && matchesEmploymentType && matchesLocation && matchesDepartment && matchesRateCategory;
     });
-  }, [searchQuery, statusFilter, employmentTypeFilter, locationFilter, departmentFilter]);
+  }, [searchQuery, statusFilter, employmentTypeFilter, locationFilter, departmentFilter, rateCategoryFilter, rateStore]);
 
   const stats = useMemo(() => {
     return {
@@ -236,6 +245,7 @@ export default function StaffList() {
 
             <TabsContent value="directory">
               <div className="space-y-6">
+          <PayRateReviewsBanner staff={mockStaff} />
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="border-l-4 border-l-primary">
@@ -329,6 +339,17 @@ export default function StaffList() {
                     <SelectItem value="part_time">Part Time</SelectItem>
                     <SelectItem value="casual">Casual</SelectItem>
                     <SelectItem value="contractor">Contractor</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={rateCategoryFilter} onValueChange={(v) => setRateCategoryFilter(v as RateCategory | 'all')}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Rate category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Rate Categories</SelectItem>
+                    {(Object.keys(rateCategoryLabels) as RateCategory[]).map((k) => (
+                      <SelectItem key={k} value={k}>{rateCategoryLabels[k]}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={locationFilter} onValueChange={setLocationFilter}>
