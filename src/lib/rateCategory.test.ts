@@ -40,3 +40,15 @@ describe('rate category', () => {
     expect(r).toMatchObject({ kind: 'apprentice_year', fromPercent: 55, toPercent: 65 });
   });
 });
+
+import { rateCategoryStore } from './rateCategoryStore';
+describe('rate category flows into costs', () => {
+  it('applies 70% for an approved junior age 18', () => {
+    rateCategoryStore.saveProfile({ staffId: 'cost-test', category: 'junior', approvedJuniorAge: 18 });
+    expect(rateCategoryStore.applyToRate('cost-test', 28.12).hourlyRate).toBeCloseTo(19.68, 2);
+  });
+  it('bulk-set to adult pays 100%', () => {
+    rateCategoryStore.setCategoryBulkAudited(['cost-test'], 'adult');
+    expect(rateCategoryStore.applyToRate('cost-test', 28.12).hourlyRate).toBe(28.12);
+  });
+});
