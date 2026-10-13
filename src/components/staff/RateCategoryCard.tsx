@@ -66,6 +66,11 @@ export function RateCategoryCard({ staff }: { staff: StaffMember }) {
       </div>
       <div className="rounded-md bg-muted/40 p-3 text-sm font-medium">{resolved.working}</div>
       {reviews.length > 0 && <RateReviewList reviews={reviews} />}
+      {store.getBackPay(staff.id).filter(b => b.status === 'pending_pay_run').map(b => (
+        <div key={b.id} className="rounded-lg border bg-muted/40 p-3 text-sm">
+          <span className="font-medium">Back-pay owed:</span> {b.fromPercent}% → {b.toPercent}% for shifts from {b.from} to {b.to}. Added to the next pay run.
+        </div>
+      ))}
 
       <PrimaryOffCanvas
         title="Rate category"
