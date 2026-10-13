@@ -6,9 +6,7 @@ import type { RateReview } from '@/lib/rateCategory';
 import { rateCategoryStore } from '@/lib/rateCategoryStore';
 import { useState } from 'react';
 import { daysLate } from '@/lib/rateBackPay';
-import {
-  AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const fmt = (d: string) => new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -25,26 +23,26 @@ export function RateReviewList({ reviews, staffName }: { reviews: RateReview[]; 
   const late = pending ? daysLate(pending.effectiveFrom, new Date()) : 0;
   return (
     <>
-    <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Backdate this pay increase?</AlertDialogTitle>
-          <AlertDialogDescription>
+    <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Backdate this pay increase?</DialogTitle>
+          <DialogDescription>
             {pending?.effectiveFrom && <>This change was due on {fmt(pending.effectiveFrom)} — {late} day{late === 1 ? '' : 's'} ago. </>}
             Backdating adds the difference ({pending?.fromPercent}% → {pending?.toPercent}%) for shifts worked since then to the next pay run.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setPending(null)}>Cancel</Button>
           <Button variant="outline" onClick={() => { if (pending) rateCategoryStore.approveReview(pending, 'from_approval'); setPending(null); toast.success('Approved — new rate starts today'); }}>
             Start from today
           </Button>
           <Button onClick={() => { if (pending) rateCategoryStore.approveReview(pending, 'backdate'); setPending(null); toast.success('Approved and backdated — back-pay added for the next pay run'); }}>
             Backdate to {pending?.effectiveFrom ? fmt(pending.effectiveFrom) : 'due date'}
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <ul className="divide-y rounded-lg border bg-card">
       {reviews.map(r => {
         const Icon = iconFor(r);
