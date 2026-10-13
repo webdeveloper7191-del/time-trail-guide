@@ -132,7 +132,14 @@ export const rateCategoryStore = {
   },
   /** Apply the approved junior/apprentice/trainee percentage to an adult rate. Used by roster costs, timesheets and payroll. */
   applyToRate(staffId: string | undefined, adultRate: number, label = 'Adult'): ResolvedCategoryRate {
-    return resolveCategoryRate(adultRate, staffId ? state.profiles[staffId] : undefined, this.getTable(), label);
+    const profile = staffId ? state.profiles[staffId] : undefined;
+    const r = resolveCategoryRate(adultRate, profile, this.getTable(), label);
+    if (!profile || r.percent === 100) return r;
+    const o = this.getOverrides();
+    const key = profile.category === 'junior' ? `juniorByAge.${profile.approvedJuniorAge}`
+      : profile.category === 'apprentice' ? `${profile.adultApprentice ? 'adultApprenticeByYear' : profile.completedYear12 ? 'apprenticeYear12ByYear' : 'apprenticeByYear'}.${profile.approvedApprenticeYear ?? 1}`
+      : `traineeByLevel.${profile.traineeLevel}`;
+    return { ...r, working: `${r.working} · ${o.cells[key] ? 'override' : 'award rate'}` };
   },
   setCategoryBulkAudited(staffIds: string[], category: RateProfile['category']) {
     const now = new Date().toISOString();
