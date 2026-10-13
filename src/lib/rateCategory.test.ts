@@ -52,3 +52,32 @@ describe('rate category flows into costs', () => {
     expect(rateCategoryStore.applyToRate('cost-test', 28.12).hourlyRate).toBe(28.12);
   });
 });
+
+import { mergeRateTable, overridesFromDraft, staleOverrides, PUBLISHED_RATE_TABLE } from './rateTableOverrides';
+import { backPayAmount, daysLate } from './rateBackPay';
+
+describe('award tables and overrides', () => {
+  it('uses the award figure when nothing is overridden', () => {
+    expect(mergeRateTable(PUBLISHED_RATE_TABLE.table, { cells: {} }).juniorByAge[18]).toBe(70);
+  });
+  it('stores only edited cells as overrides', () => {
+    const draft = structuredClone(PUBLISHED_RATE_TABLE.table); draft.juniorByAge[18] = 75;
+    const o = overridesFromDraft(PUBLISHED_RATE_TABLE, draft, { cells: {} });
+    expect(Object.keys(o.cells)).toEqual(['juniorByAge.18']);
+    expect(mergeRateTable(PUBLISHED_RATE_TABLE.table, o).juniorByAge[18]).toBe(75);
+  });
+  it('keeps overrides but flags them when the award version changes', () => {
+    const o = { cells: { 'juniorByAge.18': { value: 75, pinnedVersion: 'FWC 2024-25', awardValueAtPin: 68 } } };
+    expect(staleOverrides(o, 'FWC 2025-26')).toEqual(['juniorByAge.18']);
+    expect(mergeRateTable(PUBLISHED_RATE_TABLE.table, o).juniorByAge[18]).toBe(75);
+  });
+});
+
+describe('back-pay on late approval', () => {
+  it('counts days late from the due date', () => {
+    expect(daysLate('2026-10-06', new Date(2026, 9, 13))).toBe(7);
+  });
+  it('owes the percentage difference for hours worked', () => {
+    expect(backPayAmount(28.12, 20, 60, 70)).toBe(56.24);
+  });
+});

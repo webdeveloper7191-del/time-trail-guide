@@ -172,6 +172,8 @@ export interface RateReview {
   title: string;
   detail: string;
   dueDate?: string;
+  /** Date the change was due — used for back-pay when approval is late. */
+  effectiveFrom?: string;
   fromPercent?: number;
   toPercent?: number;
   /** Payload used when approving */
@@ -205,6 +207,7 @@ export function detectRateReviews(
           title: `Turned ${actual} — pay increase awaiting approval`,
           detail: `Junior rate moves from ${from}% (age ${approved}) to ${to}% (age ${actual}).`,
           fromPercent: from, toPercent: to, approve: { approvedJuniorAge: actual },
+          effectiveFrom: (() => { const d = new Date(staff.dateOfBirth!); return iso(new Date(d.getFullYear() + actual, d.getMonth(), d.getDate())); })(),
         });
       } else {
         const nb = nextBirthday(staff.dateOfBirth, today);
@@ -246,6 +249,7 @@ export function detectRateReviews(
         detail: `Moves from ${apprenticePercent(profile, approved, table)}% to ${apprenticePercent(profile, actual, table)}%.`,
         fromPercent: apprenticePercent(profile, approved, table), toPercent: apprenticePercent(profile, actual, table),
         approve: { approvedApprenticeYear: actual },
+        effectiveFrom: (() => { const d = new Date(profile.apprenticeStartDate!); return iso(new Date(d.getFullYear() + actual - 1, d.getMonth(), d.getDate())); })(),
       });
     } else if (actual < 4) {
       const s = new Date(profile.apprenticeStartDate);
