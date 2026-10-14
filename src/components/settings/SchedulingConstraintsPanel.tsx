@@ -493,7 +493,7 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
                 </div>
               </div>
             )}
-          </div></>}
+          </div>
         </div>
       )}
     </div>
@@ -1171,7 +1171,22 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
             <ContractTemplatesSection contracts={contractConfig.employeeConstraints.contracts.contracts} onChange={contracts => setContractConfig(prev => ({ ...prev, employeeConstraints: { ...prev.employeeConstraints, contracts: { ...prev.employeeConstraints.contracts, contracts } } }))} />
           </> : <>
             <ConstraintCategoryGuide category={activeTab as ConstraintCategory} onContracts={() => setActiveTab('contracts')} />
-            <div className="flex flex-wrap gap-3 items-center">
+            <p className="text-xs text-muted-foreground border-l-2 border-primary pl-3">Policy configuration preview · These category settings are not currently connected to Auto-Schedule.</p>
+            {activeTab === 'work_limits' ? <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Contract work & rest limits</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-muted"><tr><th className="p-3">Contract</th><th className="p-3">Maximum hours</th><th className="p-3">Minimum rest</th><th className="p-3">Consecutive days</th></tr></thead>
+                  <tbody>{contractConfig.employeeConstraints.contracts.contracts.map(contract => <tr key={contract.id} className="border-b border-border">
+                    <td className="p-3 font-medium">{contract.name}</td>
+                    <td className="p-3">{contract.workLimits.enabled && contract.workLimits.minutesPerPeriod.enabled && contract.workLimits.minutesPerPeriod.maxMinutes !== undefined ? `${contract.workLimits.minutesPerPeriod.maxMinutes / 60} hours / ${contract.workLimits.minutesPerPeriod.period.toLowerCase()}` : 'Not set'}</td>
+                    <td className="p-3">{contract.timeOffRules.enabled ? `${contract.timeOffRules.minTimeBetweenShiftsMinutes / 60} hours` : 'Not set'}</td>
+                    <td className="p-3">{contract.workLimits.enabled && contract.workLimits.consecutiveDaysWorked.enabled ? `${contract.workLimits.consecutiveDaysWorked.maxConsecutiveDays} days` : 'Not set'}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div>
+              <p className="text-xs text-muted-foreground">Edit these values in Contract templates. Duplicate roster-wide hour, rest and consecutive-day inputs have been removed from this screen.</p>
+            </div> : <><div className="flex flex-wrap gap-3 items-center">
               <div className="relative flex-1 min-w-0 flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input aria-label="Search rules in this category" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Search this category…" className="pl-9 h-9" />
@@ -1182,6 +1197,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
               </Select>
             </div>
             <CategorySection key={activeTab} category={activeTab as ConstraintCategory} config={constraintConfig} isLocationScope={isLocationScope} onUpdate={handleUpdate} searchQuery={searchQuery} ruleFilter={ruleFilter} />
+            </>}
           </>}
         </div>
       </div>

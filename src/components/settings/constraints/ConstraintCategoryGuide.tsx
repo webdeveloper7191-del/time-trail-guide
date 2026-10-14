@@ -17,9 +17,9 @@ const guides: Record<ConstraintCategory, { title: string; summary: string; sourc
   },
   work_limits: {
     title: 'How much work and rest is allowed?',
-    summary: 'Contract templates contain employment-specific work and rest limits. The rules below are separate roster-wide checks, not a second contract editor.',
+    summary: 'Work and rest limits are maintained in Contract templates. This overview shows those same values without asking you to enter them again.',
     sources: ['Contract limits by employment type', 'Roster-wide checks', 'Hours + rest validation'],
-    example: 'Overlapping values are shown as roster-wide checks. They are not automatically inherited from contract templates in this screen; keep them consistent with the applicable contract.',
+    example: 'Example only: different contracts can have different maximum hours and minimum rest. Review the applicable template rather than setting another global limit here.',
   },
   shift_rules: {
     title: 'What makes an assignment valid?',
