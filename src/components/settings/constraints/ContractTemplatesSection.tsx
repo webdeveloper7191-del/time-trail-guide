@@ -491,7 +491,7 @@ const ContractCard = ({ contract, onUpdate, onDelete, onDuplicate }: {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Priority (1=highest)</Label>
+              <Label className="text-xs text-muted-foreground">Priority (Critical = highest)</Label>
               <Select value={contract.priority}
                 onValueChange={v => onUpdate({ ...contract, priority: v as any })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
