@@ -798,6 +798,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
               Timefold docs
             </a>
           )}
+          </>}
         </div>
       )}
     </div>
