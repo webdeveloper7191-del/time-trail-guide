@@ -42,6 +42,7 @@ import {
   defaultConstraintConfig,
 } from '@/types/timefoldConstraintConfig';
 import { ContractTemplatesSection } from './constraints/ContractTemplatesSection';
+import { ConstraintCategoryGuide } from './constraints/ConstraintCategoryGuide';
 
 const categoryIconMap: Record<string, React.ElementType> = {
   Users, UserCheck, Clock, Calendar, Shield, DollarSign, Scale, Target,
@@ -211,21 +212,21 @@ const EnforcementSelector = ({ value, onChange }: {
     {(['HARD', 'SOFT', 'OFF'] as const).map(opt => (
       <Tooltip key={opt}>
         <TooltipTrigger asChild>
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => onChange(opt)}
             className={cn(
               "px-2.5 py-1 text-[10px] font-medium rounded transition-all",
               value === opt
                 ? opt === 'HARD'
-                  ? "bg-red-500 text-white shadow-sm"
+                  ? "bg-destructive text-destructive-foreground shadow-sm"
                   : opt === 'SOFT'
-                    ? "bg-amber-500 text-white shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-background text-muted-foreground shadow-sm border"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {opt === 'HARD' ? '🔴 Hard' : opt === 'SOFT' ? '🟡 Soft' : '⚪ Off'}
-          </button>
+            {opt === 'HARD' ? 'Required' : opt === 'SOFT' ? 'Preferred' : 'Off'}
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-[250px]">
           <p className="text-[11px]">{HELP_TEXT.enforcement.options[opt]}</p>
@@ -245,19 +246,19 @@ const SatisfiabilitySelector = ({ value, onChange }: {
     {(['REQUIRED', 'PREFERRED'] as const).map(opt => (
       <Tooltip key={opt}>
         <TooltipTrigger asChild>
-          <button
+          <Button variant="ghost" size="sm"
             onClick={() => onChange(opt)}
             className={cn(
               "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
               value === opt
                 ? opt === 'REQUIRED'
-                  ? "bg-red-500 text-white shadow-sm"
-                  : "bg-amber-500 text-white shadow-sm"
+                  ? "bg-destructive text-destructive-foreground shadow-sm"
+                  : "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             {opt === 'REQUIRED' ? 'Required' : 'Preferred'}
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-[250px]">
           <p className="text-[11px]">{HELP_TEXT.satisfiability.options[opt]}</p>
@@ -431,7 +432,7 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+              <div className="flex items-center gap-2 flex-1 min-w-0 flex-1">
                 <Label className="text-xs text-muted-foreground">Weight:</Label>
                 <Slider value={[rule.weight ?? 50]} onValueChange={([v]) => onUpdate({ ...rule, weight: v })} min={1} max={100} step={1} className="flex-1" />
                 <span className="text-xs font-mono w-6 text-right">{rule.weight ?? 50}</span>
@@ -442,30 +443,31 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
             {definition.parameters.length > 0 && (
               <div className="space-y-1.5 mt-2">
                 <Label className="text-[10px] text-muted-foreground">Parameter Overrides (leave empty to use default):</Label>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-3">
                   {definition.parameters.map(param => (
                     <div key={param.key} className="flex items-center gap-2">
-                      <Label className="text-[11px] text-muted-foreground min-w-[120px] whitespace-nowrap">{param.label}</Label>
+                      <Label className="text-[11px] text-muted-foreground min-w-[120px] ">{param.label}</Label>
                       {param.type === 'number' && (
                         <div className="flex items-center gap-1">
                           <Input
                             type="number"
-                            value={rule.parameterOverrides[param.key] ?? ''}
+                            value={rule.parameterOverrides[param.key] === undefined ? '' : param.unit === 'min' ? rule.parameterOverrides[param.key] / 60 : rule.parameterOverrides[param.key]}
                             onChange={e => onUpdate({
                               ...rule,
-                              parameterOverrides: { ...rule.parameterOverrides, [param.key]: e.target.value ? Number(e.target.value) : undefined },
+                              parameterOverrides: { ...rule.parameterOverrides, [param.key]: e.target.value ? (param.unit === 'min' ? Math.round(Number(e.target.value) * 60) : Number(e.target.value)) : undefined },
                             })}
-                            placeholder={String(param.defaultValue)}
+                            placeholder={String(param.unit === 'min' ? param.defaultValue / 60 : param.defaultValue)}
                             className="h-6 w-20 text-[11px]"
-                            min={param.min}
-                            max={param.max}
+                            min={param.unit === 'min' && param.min !== undefined ? param.min / 60 : param.min}
+                            max={param.unit === 'min' && param.max !== undefined ? param.max / 60 : param.max}
+                            step={param.unit === 'min' || param.unit === 'hrs' ? 0.25 : param.step ?? 1}
                           />
-                          {param.unit && <span className="text-[9px] text-muted-foreground">{param.unit}</span>}
+                          {param.unit && <span className="text-[9px] text-muted-foreground">{param.unit === 'min' || param.unit === 'hrs' ? 'hours' : param.unit}</span>}
                         </div>
                       )}
                       {param.type === 'select' && (
                         <Select
-                          value={rule.parameterOverrides[param.key] ?? ''}
+                          value={rule.parameterOverrides[param.key] === undefined ? '' : param.unit === 'min' ? rule.parameterOverrides[param.key] / 60 : rule.parameterOverrides[param.key]}
                           onValueChange={v => onUpdate({
                             ...rule,
                             parameterOverrides: { ...rule.parameterOverrides, [param.key]: v || undefined },
@@ -491,7 +493,7 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
                 </div>
               </div>
             )}
-          </div>
+          </div></>}
         </div>
       )}
     </div>
@@ -521,7 +523,8 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
   const [showPresetMenu, setShowPresetMenu] = useState(false);
   const isActive = enforcement !== 'OFF';
   const hasParams = definition.parameters.length > 0;
-  const canExpand = isActive && (hasParams || enforcement === 'SOFT');
+  const canExpand = isActive;
+  const [advanced, setAdvanced] = useState(false);
 
   return (
     <div className={cn(
@@ -530,33 +533,31 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
       expanded && "ring-1 ring-primary/20",
     )}>
       {/* Main Row */}
-      <div className="flex items-center gap-3 px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-3 px-4 py-4">
         {/* Code */}
         <Badge variant="outline" className={cn(
           "text-[10px] font-mono px-1.5 shrink-0 min-w-[32px] justify-center",
-          definition.code.startsWith('H') ? "border-red-300 text-red-600" : "border-amber-300 text-amber-600"
+          definition.code.startsWith('H') ? "border-destructive/30 text-destructive" : "border-primary/30 text-primary"
         )}>
           {definition.code}
         </Badge>
 
         {/* Name + Description */}
-        <button
-          className="flex-1 min-w-0 text-left"
-          onClick={() => canExpand && setExpanded(!expanded)}
-        >
+        <Button variant="ghost" className="flex-1 min-w-[180px] h-auto p-0 text-left justify-start hover:bg-transparent whitespace-normal" onClick={() => canExpand && setExpanded(!expanded)} aria-expanded={expanded}>
+          <div className="w-full">
           <div className="flex items-center gap-1.5">
             <span className={cn("text-sm font-medium", !isActive && "text-muted-foreground")}>
               {definition.name}
             </span>
             {hasOverride && isLocationScope && (
-              <Badge variant="secondary" className="text-[9px] px-1 bg-blue-100 text-blue-700 border-blue-200">
+              <Badge variant="secondary" className="text-[9px] px-1 bg-primary/10 text-primary border-primary/20">
                 Override
               </Badge>
             )}
             {isActive && (
               <Badge variant="outline" className={cn(
                 "text-[9px] px-1",
-                satisfiability === 'REQUIRED' ? "border-red-200 text-red-600" : "border-amber-200 text-amber-600"
+                satisfiability === 'REQUIRED' ? "border-destructive/30 text-destructive" : "border-primary/30 text-primary"
               )}>
                 {satisfiability}
               </Badge>
@@ -568,19 +569,20 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
               </Badge>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
             {definition.description}
           </p>
-        </button>
+          </div>
+        </Button>
 
         {/* Enforcement */}
         <EnforcementSelector value={enforcement} onChange={onEnforcementChange} />
 
         {/* Expand */}
         {canExpand && (
-          <button onClick={() => setExpanded(!expanded)} className="p-1 hover:bg-muted rounded">
-            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform text-muted-foreground", expanded && "rotate-180")} />
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => setExpanded(!expanded)} aria-label={`Configure ${definition.name}`} aria-expanded={expanded}>
+            <ChevronDown className={cn("h-4 w-4 transition-transform text-muted-foreground", expanded && "rotate-180")} />
+          </Button>
         )}
       </div>
 
@@ -593,11 +595,12 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             <span><strong>Why:</strong> {definition.businessReason}</span>
           </div>
 
+          <Button variant="ghost" size="sm" className="text-primary" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>Advanced scoring & conditional rules <ChevronDown className={cn("ml-2 h-3.5 w-3.5", advanced && "rotate-180")} /></Button>
           {/* Satisfiability + Priority + Weight Row */}
-          <div className="flex items-center gap-4 flex-wrap">
+          {advanced && <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
-                <Label className="text-xs text-muted-foreground">Satisfiability:</Label>
+                <Label className="text-xs text-muted-foreground">Advanced enforcement:</Label>
                 <HelpTooltip title={HELP_TEXT.satisfiability.title} description={HELP_TEXT.satisfiability.description} />
               </div>
               <SatisfiabilitySelector value={satisfiability} onChange={onSatisfiabilityChange} />
@@ -631,17 +634,18 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             </div>
           </div>
 
+          }
           {/* Parameters */}
           {hasParams && (
             <>
               <Separator />
               <div className="space-y-2.5">
                 <Label className="text-xs font-semibold text-foreground">Configuration Values</Label>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-5 gap-y-4">
                   {definition.parameters.map(param => (
                     <div key={param.key} className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 min-w-[160px]">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap">{param.label}</Label>
+                      <div className="flex items-center gap-1 min-w-0 flex-1">
+                        <Label className="text-xs text-muted-foreground ">{param.label}</Label>
                         {param.tooltip && (
                           <Tooltip>
                             <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
@@ -651,10 +655,10 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                       </div>
                       {param.type === 'number' && (
                         <div className="flex items-center gap-1.5">
-                          <Input type="number" value={parameters[param.key] ?? param.defaultValue}
-                            onChange={e => onParameterChange(param.key, Number(e.target.value))}
-                            className="h-7 w-20 text-xs" min={param.min} max={param.max} step={param.step ?? 1} />
-                          {param.unit && <span className="text-[10px] text-muted-foreground">{param.unit}</span>}
+                          <Input type="number" aria-label={param.label} value={param.unit === 'min' ? (parameters[param.key] ?? param.defaultValue) / 60 : parameters[param.key] ?? param.defaultValue}
+                            onChange={e => onParameterChange(param.key, param.unit === 'min' ? Math.round(Number(e.target.value) * 60) : Number(e.target.value))}
+                            className="h-7 w-20 text-xs" min={param.unit === 'min' && param.min !== undefined ? param.min / 60 : param.min} max={param.unit === 'min' && param.max !== undefined ? param.max / 60 : param.max} step={param.unit === 'min' || param.unit === 'hrs' ? 0.25 : param.step ?? 1} />
+                          {param.unit && <span className="text-[10px] text-muted-foreground">{param.unit === 'min' || param.unit === 'hrs' ? 'hours' : param.unit}</span>}
                         </div>
                       )}
                       {param.type === 'select' && (
@@ -686,7 +690,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
           )}
 
           {/* Conditional Rules */}
-          <Separator />
+          {advanced && <><Separator />
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -802,14 +806,22 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
 
 // ============= Category Section =============
 
-const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
+const CategorySection = ({ category, config, isLocationScope, onUpdate, searchQuery, ruleFilter }: {
+  searchQuery: string;
+  ruleFilter: string;
   category: ConstraintCategory;
   config: SchedulingConstraintsConfig;
   isLocationScope: boolean;
   onUpdate: (id: string, field: string, value: any) => void;
 }) => {
   const meta = constraintCategories[category];
-  const definitions = getConstraintsByCategory(category);
+  const definitions = getConstraintsByCategory(category).filter(definition => {
+    const setting = config.constraints[definition.id];
+    if (!setting) return false;
+    const effective = getEffectiveSetting(setting, config.activeLocationId);
+    const query = searchQuery.trim().toLowerCase();
+    return (ruleFilter === 'all' || effective.enforcement === ruleFilter) && (!query || `${definition.name} ${definition.description} ${definition.code}`.toLowerCase().includes(query));
+  });
   const Icon = categoryIconMap[meta.icon] || Target;
 
   const activeCount = definitions.filter(d => {
@@ -843,14 +855,15 @@ const CategorySection = ({ category, config, isLocationScope, onUpdate }: {
             <Badge variant={activeCount > 0 ? "default" : "secondary"} className="text-[10px] px-1.5">
               {activeCount}/{definitions.length}
             </Badge>
-            {hardCount > 0 && <Badge className="bg-red-100 text-red-700 border-red-200 text-[9px] px-1">{hardCount} Hard</Badge>}
-            {softCount > 0 && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[9px] px-1">{softCount} Soft</Badge>}
+            {hardCount > 0 && <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-[9px] px-1">{hardCount} Required</Badge>}
+            {softCount > 0 && <Badge className="bg-primary/10 text-primary border-primary/20 text-[9px] px-1">{softCount} Preferred</Badge>}
           </div>
           <p className="text-[11px] text-muted-foreground">{meta.description}</p>
         </div>
       </div>
 
-      <div className="space-y-1.5 pl-1">
+      {definitions.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No rules match your search.</p>}
+      <div className="space-y-3">
         {definitions.map(def => {
           const setting = config.constraints[def.id];
           if (!setting) return null;
@@ -903,8 +916,9 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
   const [contractConfig, setContractConfig] = useState<TimefoldConstraintConfiguration>(() => ({
     ...defaultConstraintConfig,
   }));
-  const [activeTab, setActiveTab] = useState<string>('contracts');
+  const [activeTab, setActiveTab] = useState<string>('coverage_staffing');
   const [searchQuery, setSearchQuery] = useState('');
+  const [ruleFilter, setRuleFilter] = useState('all');
   const [filterCategory, setFilterCategory] = useState<ConstraintCategory | 'all'>('all');
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
@@ -1023,7 +1037,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
               <HelpCircle className="h-4 w-4 text-primary" />
               Understanding Constraint Configuration
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <p className="text-xs font-medium">🔴 Hard / 🟡 Soft / ⚪ Off — Enforcement</p>
                 <p className="text-[11px] text-muted-foreground">
@@ -1061,19 +1075,19 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
       )}
 
       {/* Stats Bar */}
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border text-xs">
+      <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-muted/50 border text-xs">
         <div className="flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5 text-primary" />
           <span className="font-medium">{contractCount} Contracts</span>
         </div>
         <Separator orientation="vertical" className="h-4" />
         <div className="flex items-center gap-1.5">
-          <CircleDot className="h-3.5 w-3.5 text-red-500" />
-          <span className="font-medium">{stats.hard} Hard</span>
+          <CircleDot className="h-3.5 w-3.5 text-destructive" />
+          <span className="font-medium">{stats.hard} Required</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <CircleDot className="h-3.5 w-3.5 text-amber-500" />
-          <span className="font-medium">{stats.soft} Soft</span>
+          <CircleDot className="h-3.5 w-3.5 text-primary" />
+          <span className="font-medium">{stats.soft} Preferred</span>
         </div>
         <div className="flex items-center gap-1.5">
           <CircleOff className="h-3.5 w-3.5 text-muted-foreground" />
@@ -1128,205 +1142,48 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
         </CardContent>
       </Card>
 
-      {/* Industry Presets */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">Quick Presets</span>
-        </div>
-        <div className="grid grid-cols-5 gap-2">
-          {industryPresets.map(preset => (
-            <button
-              key={preset.id}
-              onClick={() => applyPreset(preset.id)}
-              className={cn(
-                "relative flex flex-col items-center gap-1 p-2.5 rounded-lg border text-center transition-all hover:border-primary/50 hover:bg-primary/5",
-                activePreset === preset.id
-                  ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                  : "border-border bg-card"
-              )}
-            >
-              {activePreset === preset.id && (
-                <div className="absolute top-1 right-1"><Check className="h-3 w-3 text-primary" /></div>
-              )}
-              <span className="text-lg">{preset.icon}</span>
-              <span className="text-[10px] font-medium">{preset.name}</span>
-            </button>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-[190px_minmax(0,1fr)] gap-5">
+        <nav aria-label="Scheduling categories" className="md:border-r border-border md:pr-3">
+          <div className="flex md:flex-col gap-1 overflow-x-auto pb-2">
+            <Button variant={activeTab === 'contracts' ? 'secondary' : 'ghost'} className="justify-start shrink-0 text-xs" onClick={() => { setActiveTab('contracts'); setSearchQuery(''); }}>
+              <FileText className="h-4 w-4 mr-2" /> Contract templates
+            </Button>
+            {categoryOrder.map(category => {
+              const meta = constraintCategories[category];
+              const Icon = categoryIconMap[meta.icon] || Target;
+              return <Button key={category} variant={activeTab === category ? 'secondary' : 'ghost'} className={cn("justify-start shrink-0 text-xs h-auto py-3 whitespace-normal text-left", activeTab === category && "text-primary")} onClick={() => { setActiveTab(category); setSearchQuery(''); }}>
+                <Icon className="h-4 w-4 mr-2 shrink-0" />{meta.label}
+              </Button>;
+            })}
+          </div>
+        </nav>
+        <div className="min-w-0 space-y-4">
+          {activeTab === 'contracts' ? <>
+            <div className="border-b border-border pb-4">
+              <h2 className="text-lg font-semibold">Contract templates</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Employment-specific hours, rest and shift patterns.</p>
+              <details className="mt-3 text-xs">
+                <summary className="cursor-pointer text-primary">Industry starting points</summary>
+                <div className="flex flex-wrap gap-2 mt-3">{industryPresets.map(preset => <Button key={preset.id} variant={activePreset === preset.id ? 'secondary' : 'outline'} size="sm" onClick={() => applyPreset(preset.id)}>{preset.name}</Button>)}</div>
+              </details>
+            </div>
+            <ContractTemplatesSection contracts={contractConfig.employeeConstraints.contracts.contracts} onChange={contracts => setContractConfig(prev => ({ ...prev, employeeConstraints: { ...prev.employeeConstraints, contracts: { ...prev.employeeConstraints.contracts, contracts } } }))} />
+          </> : <>
+            <ConstraintCategoryGuide category={activeTab as ConstraintCategory} onContracts={() => setActiveTab('contracts')} />
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative flex-1 min-w-0 flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input aria-label="Search rules in this category" value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Search this category…" className="pl-9 h-9" />
+              </div>
+              <Select value={ruleFilter} onValueChange={setRuleFilter}>
+                <SelectTrigger className="w-36 h-9" aria-label="Filter rule status"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">All rules</SelectItem><SelectItem value="HARD">Required</SelectItem><SelectItem value="SOFT">Preferred</SelectItem><SelectItem value="OFF">Off</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <CategorySection key={activeTab} category={activeTab as ConstraintCategory} config={constraintConfig} isLocationScope={isLocationScope} onUpdate={handleUpdate} searchQuery={searchQuery} ruleFilter={ruleFilter} />
+          </>}
         </div>
       </div>
-
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start h-auto p-1 bg-muted/50 flex-wrap">
-          <TabsTrigger value="contracts" className="flex items-center gap-1.5 text-xs px-3 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <FileText className="h-3.5 w-3.5" />
-            Contracts ({contractCount})
-          </TabsTrigger>
-          <TabsTrigger value="constraints" className="flex items-center gap-1.5 text-xs px-3 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <Shield className="h-3.5 w-3.5" />
-            All Constraints ({stats.total})
-          </TabsTrigger>
-          <TabsTrigger value="hard" className="flex items-center gap-1.5 text-xs px-3 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <CircleDot className="h-3.5 w-3.5 text-red-500" />
-            Hard ({stats.hard})
-          </TabsTrigger>
-          <TabsTrigger value="soft" className="flex items-center gap-1.5 text-xs px-3 py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            <CircleDot className="h-3.5 w-3.5 text-amber-500" />
-            Soft ({stats.soft})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Search + Category Filter (shown for constraint tabs) */}
-        {activeTab !== 'contracts' && (
-          <div className="flex items-center gap-2 mt-3">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search constraints..." className="h-8 pl-8 text-xs" />
-            </div>
-            <Select value={filterCategory} onValueChange={v => setFilterCategory(v as any)}>
-              <SelectTrigger className="h-8 w-48 text-xs">
-                <Filter className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-xs">All Categories</SelectItem>
-                {categoryOrder.map(cat => (
-                  <SelectItem key={cat} value={cat} className="text-xs">{constraintCategories[cat].label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <ScrollArea className="h-[calc(100vh-520px)] min-h-[400px] mt-3">
-          <div className="pr-4">
-            {/* Contracts Tab */}
-            <TabsContent value="contracts" className="mt-0">
-              <ContractTemplatesSection
-                contracts={contractConfig.employeeConstraints.contracts.contracts}
-                onChange={contracts => setContractConfig(prev => ({
-                  ...prev,
-                  employeeConstraints: {
-                    ...prev.employeeConstraints,
-                    contracts: { ...prev.employeeConstraints.contracts, contracts },
-                  },
-                }))}
-              />
-            </TabsContent>
-
-            {/* All Constraints Tab */}
-            <TabsContent value="constraints" className="mt-0">
-              <div className="space-y-6">
-                {filteredCategories.map(cat => (
-                  <CategorySection key={cat} category={cat} config={constraintConfig} isLocationScope={isLocationScope} onUpdate={handleUpdate} />
-                ))}
-                {filteredCategories.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Search className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">No constraints match your filters</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Hard Only Tab */}
-            <TabsContent value="hard" className="mt-0">
-              <div className="space-y-6">
-                {filteredCategories.map(cat => {
-                  const defs = getConstraintsByCategory(cat).filter(d => {
-                    const s = constraintConfig.constraints[d.id];
-                    if (!s) return false;
-                    return getEffectiveSetting(s, constraintConfig.activeLocationId).enforcement === 'HARD';
-                  });
-                  if (defs.length === 0) return null;
-                  const meta = constraintCategories[cat];
-                  const Icon = categoryIconMap[meta.icon] || Target;
-                  return (
-                    <div key={cat} className="space-y-2">
-                      <div className="flex items-center gap-2 px-1">
-                        <div className="p-1.5 rounded-md bg-red-100 text-red-600"><Icon className="h-4 w-4" /></div>
-                        <span className="text-sm font-semibold">{meta.label}</span>
-                        <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px] px-1.5">{defs.length}</Badge>
-                      </div>
-                      <div className="space-y-1.5 pl-1">
-                        {defs.map(def => {
-                          const setting = constraintConfig.constraints[def.id];
-                          if (!setting) return null;
-                          const effective = getEffectiveSetting(setting, constraintConfig.activeLocationId);
-                          const hasOverride = isLocationScope && constraintConfig.activeLocationId
-                            ? !!setting.locationOverrides[constraintConfig.activeLocationId] : false;
-                          return (
-                            <ConstraintRow key={def.id} definition={def} enforcement={effective.enforcement}
-                              satisfiability={effective.satisfiability} weight={effective.weight} priority={effective.priority}
-                              parameters={effective.parameters} conditionalRules={setting.conditionalRules || []}
-                              isLocationScope={isLocationScope} hasOverride={hasOverride}
-                              onEnforcementChange={v => handleUpdate(def.id, 'enforcement', v)}
-                              onSatisfiabilityChange={v => handleUpdate(def.id, 'satisfiability', v)}
-                              onWeightChange={v => handleUpdate(def.id, 'weight', v)}
-                              onPriorityChange={v => handleUpdate(def.id, 'priority', v)}
-                              onParameterChange={(k, val) => handleUpdate(def.id, `param.${k}`, val)}
-                              onConditionalRulesChange={rules => handleUpdate(def.id, 'conditionalRules', rules)}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </TabsContent>
-
-            {/* Soft Only Tab */}
-            <TabsContent value="soft" className="mt-0">
-              <div className="space-y-6">
-                {filteredCategories.map(cat => {
-                  const defs = getConstraintsByCategory(cat).filter(d => {
-                    const s = constraintConfig.constraints[d.id];
-                    if (!s) return false;
-                    return getEffectiveSetting(s, constraintConfig.activeLocationId).enforcement === 'SOFT';
-                  });
-                  if (defs.length === 0) return null;
-                  const meta = constraintCategories[cat];
-                  const Icon = categoryIconMap[meta.icon] || Target;
-                  return (
-                    <div key={cat} className="space-y-2">
-                      <div className="flex items-center gap-2 px-1">
-                        <div className="p-1.5 rounded-md bg-amber-100 text-amber-600"><Icon className="h-4 w-4" /></div>
-                        <span className="text-sm font-semibold">{meta.label}</span>
-                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] px-1.5">{defs.length}</Badge>
-                      </div>
-                      <div className="space-y-1.5 pl-1">
-                        {defs.map(def => {
-                          const setting = constraintConfig.constraints[def.id];
-                          if (!setting) return null;
-                          const effective = getEffectiveSetting(setting, constraintConfig.activeLocationId);
-                          const hasOverride = isLocationScope && constraintConfig.activeLocationId
-                            ? !!setting.locationOverrides[constraintConfig.activeLocationId] : false;
-                          return (
-                            <ConstraintRow key={def.id} definition={def} enforcement={effective.enforcement}
-                              satisfiability={effective.satisfiability} weight={effective.weight} priority={effective.priority}
-                              parameters={effective.parameters} conditionalRules={setting.conditionalRules || []}
-                              isLocationScope={isLocationScope} hasOverride={hasOverride}
-                              onEnforcementChange={v => handleUpdate(def.id, 'enforcement', v)}
-                              onSatisfiabilityChange={v => handleUpdate(def.id, 'satisfiability', v)}
-                              onWeightChange={v => handleUpdate(def.id, 'weight', v)}
-                              onPriorityChange={v => handleUpdate(def.id, 'priority', v)}
-                              onParameterChange={(k, val) => handleUpdate(def.id, `param.${k}`, val)}
-                              onConditionalRulesChange={rules => handleUpdate(def.id, 'conditionalRules', rules)}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </TabsContent>
-          </div>
-        </ScrollArea>
-      </Tabs>
     </div>
   );
 }
