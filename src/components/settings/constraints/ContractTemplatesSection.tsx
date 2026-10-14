@@ -115,7 +115,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
 
       {/* Minutes per period */}
       <RuleRow
-        label="Hours per Period"
+        label="Working Time per Period"
         tooltip="Max/min working minutes in a day, week, or month"
         enabled={config.minutesPerPeriod.enabled}
         onToggle={v => update('minutesPerPeriod', { ...config.minutesPerPeriod, enabled: v })}
@@ -126,6 +126,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
           <Input type="number" value={config.minutesPerPeriod.minMinutes ?? 0}
             onChange={e => update('minutesPerPeriod', { ...config.minutesPerPeriod, minMinutes: Number(e.target.value) })}
             className="h-7 w-16 text-xs" min={0} />
+          <span className="text-[10px] text-muted-foreground">minutes</span>
           <MinutesToHours minutes={config.minutesPerPeriod.minMinutes} />
         </div>
         <div className="flex items-center gap-1">
@@ -133,6 +134,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
           <Input type="number" value={config.minutesPerPeriod.maxMinutes ?? 2400}
             onChange={e => update('minutesPerPeriod', { ...config.minutesPerPeriod, maxMinutes: Number(e.target.value) })}
             className="h-7 w-16 text-xs" min={0} />
+          <span className="text-[10px] text-muted-foreground">minutes</span>
           <MinutesToHours minutes={config.minutesPerPeriod.maxMinutes} />
         </div>
         <SatisfiabilityToggle value={config.minutesPerPeriod.satisfiability}
@@ -229,7 +231,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
 
       {/* Rolling window - minutes */}
       <RuleRow
-        label="Rolling Window (Hours)"
+        label="Rolling Window (Minutes)"
         tooltip="Max minutes in a rolling N-day window"
         enabled={config.minutesRollingWindow.enabled}
         onToggle={v => update('minutesRollingWindow', { ...config.minutesRollingWindow, enabled: v })}
@@ -246,6 +248,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
           <Input type="number" value={config.minutesRollingWindow.maxMinutes ?? 2400}
             onChange={e => update('minutesRollingWindow', { ...config.minutesRollingWindow, maxMinutes: Number(e.target.value) })}
             className="h-7 w-16 text-xs" min={0} />
+          <span className="text-[10px] text-muted-foreground">minutes</span>
           <MinutesToHours minutes={config.minutesRollingWindow.maxMinutes} />
         </div>
         <SatisfiabilityToggle value={config.minutesRollingWindow.satisfiability}
@@ -365,14 +368,16 @@ const ShiftPatternsEditor = ({ config, onChange }: {
         <Input type="number" value={config.splitShifts.minGapBetweenPartsMinutes}
           onChange={e => onChange({ ...config, splitShifts: { ...config.splitShifts, minGapBetweenPartsMinutes: Number(e.target.value) } })}
           className="h-7 w-16 text-xs" min={0} />
-        <span className="text-[10px] text-muted-foreground">min</span>
+        <span className="text-[10px] text-muted-foreground">minutes</span>
+        <MinutesToHours minutes={config.splitShifts.minGapBetweenPartsMinutes} />
       </div>
       <div className="flex items-center gap-1">
         <Label className="text-[10px] text-muted-foreground">Max gap</Label>
         <Input type="number" value={config.splitShifts.maxGapBetweenPartsMinutes}
           onChange={e => onChange({ ...config, splitShifts: { ...config.splitShifts, maxGapBetweenPartsMinutes: Number(e.target.value) } })}
           className="h-7 w-16 text-xs" min={0} />
-        <span className="text-[10px] text-muted-foreground">min</span>
+        <span className="text-[10px] text-muted-foreground">minutes</span>
+        <MinutesToHours minutes={config.splitShifts.maxGapBetweenPartsMinutes} />
       </div>
     </RuleRow>
 
