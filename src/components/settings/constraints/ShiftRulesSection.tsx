@@ -164,14 +164,14 @@ export function ShiftRulesSection({
           <Switch checked={breaks.deductBreaksFromWorkedTime}
             onCheckedChange={v => onUpdate('breaks', { ...breaks, deductBreaksFromWorkedTime: v })} />
         </InlineField>
-        <InlineField label="Min shift for break">
-          <Input type="number" value={breaks.defaultBreakRules.minShiftDurationForBreakMinutes}
+        <InlineField label="Min shift for break" tooltip="Shifts shorter than this don't get a break">
+          <Input type="number" value={breaks.defaultBreakRules.minShiftDurationForBreakMinutes / 60}
             onChange={e => onUpdate('breaks', {
               ...breaks,
-              defaultBreakRules: { ...breaks.defaultBreakRules, minShiftDurationForBreakMinutes: Number(e.target.value) },
+              defaultBreakRules: { ...breaks.defaultBreakRules, minShiftDurationForBreakMinutes: Math.round(Number(e.target.value) * 60) },
             })}
-            className="h-7 w-16 text-xs" min={0} />
-          <span className="text-[10px] text-muted-foreground">min ({Math.round(breaks.defaultBreakRules.minShiftDurationForBreakMinutes / 60)}h)</span>
+            className="h-7 w-16 text-xs" min={0} step={0.25} />
+          <span className="text-[10px] text-muted-foreground">hours</span>
         </InlineField>
         <InlineField label="Break duration">
           <Input type="number" value={breaks.defaultBreakRules.breakDurationMinutes}

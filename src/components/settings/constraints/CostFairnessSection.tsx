@@ -210,10 +210,10 @@ export function CostFairnessSection({
           </Select>
         </InlineField>
         <InlineField label="Include travel in rest calc" tooltip="Min gap between shifts includes travel time">
-          <Input type="number" value={travel.minTimeBetweenShiftsIncludingTravelMinutes}
-            onChange={e => onUpdate('travel', { ...travel, minTimeBetweenShiftsIncludingTravelMinutes: Number(e.target.value) })}
-            className="h-7 w-16 text-xs" min={0} />
-          <span className="text-[10px] text-muted-foreground">min</span>
+          <Input type="number" value={travel.minTimeBetweenShiftsIncludingTravelMinutes / 60}
+            onChange={e => onUpdate('travel', { ...travel, minTimeBetweenShiftsIncludingTravelMinutes: Math.round(Number(e.target.value) * 60) })}
+            className="h-7 w-16 text-xs" min={0} step={0.25} />
+          <span className="text-[10px] text-muted-foreground">hours</span>
         </InlineField>
         <InlineField label="Minimise travel distance">
           <Switch checked={travel.minimizeTravelDistance}
