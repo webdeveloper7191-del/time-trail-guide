@@ -466,6 +466,7 @@ export function UnscheduledStaffPanel({
             <TooltipTrigger asChild>
               <Button 
                 onClick={onConfigureConstraints}
+                aria-label="Scheduling Constraints"
                 variant="outline"
                 size="sm"
                 className="px-2"
