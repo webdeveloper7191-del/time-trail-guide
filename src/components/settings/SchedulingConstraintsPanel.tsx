@@ -444,7 +444,7 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
               <div className="space-y-1.5 mt-2">
                 <Label className="text-[10px] text-muted-foreground">Parameter Overrides (leave empty to use default):</Label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-3">
-                  {definition.parameters.map(param => (
+                  {definition.parameters.filter(param => advanced || !/penalty|bonus|reward|weight/i.test(param.key)).map(param => (
                     <div key={param.key} className="flex items-center gap-2">
                       <Label className="text-[11px] text-muted-foreground min-w-[120px] ">{param.label}</Label>
                       {param.type === 'number' && (
@@ -1171,7 +1171,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
             <ContractTemplatesSection contracts={contractConfig.employeeConstraints.contracts.contracts} onChange={contracts => setContractConfig(prev => ({ ...prev, employeeConstraints: { ...prev.employeeConstraints, contracts: { ...prev.employeeConstraints.contracts, contracts } } }))} />
           </> : <>
             <ConstraintCategoryGuide category={activeTab as ConstraintCategory} onContracts={() => setActiveTab('contracts')} />
-            <p className="text-xs text-muted-foreground border-l-2 border-primary pl-3">Policy configuration preview · These category settings are not currently connected to Auto-Schedule.</p>
+            {activeTab !== 'work_limits' && <p className="text-xs text-muted-foreground border-l-2 border-primary pl-3">Policy configuration preview · These category settings are not currently connected to Auto-Schedule.</p>}
             {activeTab === 'work_limits' ? <div className="space-y-3">
               <h3 className="text-sm font-semibold">Contract work & rest limits</h3>
               <div className="overflow-x-auto">
@@ -1179,8 +1179,8 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
                   <thead className="bg-muted"><tr><th className="p-3">Contract</th><th className="p-3">Maximum hours</th><th className="p-3">Minimum rest</th><th className="p-3">Consecutive days</th></tr></thead>
                   <tbody>{contractConfig.employeeConstraints.contracts.contracts.map(contract => <tr key={contract.id} className="border-b border-border">
                     <td className="p-3 font-medium">{contract.name}</td>
-                    <td className="p-3">{contract.workLimits.enabled && contract.workLimits.minutesPerPeriod.enabled && contract.workLimits.minutesPerPeriod.maxMinutes !== undefined ? `${contract.workLimits.minutesPerPeriod.maxMinutes / 60} hours / ${contract.workLimits.minutesPerPeriod.period.toLowerCase()}` : 'Not set'}</td>
-                    <td className="p-3">{contract.timeOffRules.enabled ? `${contract.timeOffRules.minTimeBetweenShiftsMinutes / 60} hours` : 'Not set'}</td>
+                    <td className="p-3">{contract.workLimits.enabled && contract.workLimits.minutesPerPeriod.enabled && contract.workLimits.minutesPerPeriod.maxMinutes !== undefined ? `${Number((contract.workLimits.minutesPerPeriod.maxMinutes / 60).toFixed(2))} hours / ${contract.workLimits.minutesPerPeriod.period.toLowerCase()}` : 'Not set'}</td>
+                    <td className="p-3">{contract.timeOffRules.enabled ? `${Number((contract.timeOffRules.minTimeBetweenShiftsMinutes / 60).toFixed(2))} hours` : 'Not set'}</td>
                     <td className="p-3">{contract.workLimits.enabled && contract.workLimits.consecutiveDaysWorked.enabled ? `${contract.workLimits.consecutiveDaysWorked.maxConsecutiveDays} days` : 'Not set'}</td>
                   </tr>)}</tbody>
                 </table>
