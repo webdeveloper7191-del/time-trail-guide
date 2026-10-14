@@ -444,7 +444,7 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
               <div className="space-y-1.5 mt-2">
                 <Label className="text-[10px] text-muted-foreground">Parameter Overrides (leave empty to use default):</Label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-3">
-                  {definition.parameters.filter(param => advanced || !/penalty|bonus|reward|weight/i.test(param.key)).map(param => (
+                  {definition.parameters.map(param => (
                     <div key={param.key} className="flex items-center gap-2">
                       <Label className="text-[11px] text-muted-foreground min-w-[120px] ">{param.label}</Label>
                       {param.type === 'number' && (
@@ -642,7 +642,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
               <div className="space-y-2.5">
                 <Label className="text-xs font-semibold text-foreground">Configuration Values</Label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-5 gap-y-4">
-                  {definition.parameters.map(param => (
+                  {definition.parameters.filter(param => advanced || !/penalty|bonus|reward|weight/i.test(param.key)).map(param => (
                     <div key={param.key} className="flex items-center gap-2">
                       <div className="flex items-center gap-1 min-w-0 flex-1">
                         <Label className="text-xs text-muted-foreground ">{param.label}</Label>
