@@ -39,6 +39,8 @@ import {
 import { mockCourses, mockEnrollments, mockLearnerAnalytics, mockCertificates, mockLearningPaths } from '@/data/mockLmsData';
 import { mockLearningStreak } from '@/data/mockLmsEngagementData';
 import { MobileCoursePlayer } from '@/components/performance/MobileCoursePlayer';
+import { isCourseLocked } from "@/lib/lmsLogic";
+import { mockStaff } from "@/data/mockStaffData";
 import { CoursePlayer } from '@/components/performance/CoursePlayer';
 import { CourseDetailSheet } from '@/components/performance/CourseDetailSheet';
 import { CourseCompletionCelebration } from '@/components/performance/CourseCompletionCelebration';
@@ -63,6 +65,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
   const [completedCourse, setCompletedCourse] = useState<Course | null>(null);
   const [completedEnrollment, setCompletedEnrollment] = useState<Enrollment | null>(null);
+  const staffMember = mockStaff.find(s => s.id === currentUserId);
   const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
   const isMobile = useIsMobile();
 

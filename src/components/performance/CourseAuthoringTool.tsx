@@ -528,8 +528,8 @@ export function CourseAuthoringTool({
                   <div className="space-y-2">
                     <Label>Prerequisites</Label>
                     <Select onValueChange={(v) => {
-                      if (v && !course.prerequisites.includes(v)) {
-                        updateCourse({ prerequisites: [...course.prerequisites, v] });
+                      if (v && !(course.prerequisites ?? []).includes(v)) {
+                        updateCourse({ prerequisites: [...(course.prerequisites ?? []), v] });
                       }
                     }}>
                       <SelectTrigger>
@@ -542,12 +542,12 @@ export function CourseAuthoringTool({
                       </SelectContent>
                     </Select>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {course.prerequisites.map((id) => {
+                      {(course.prerequisites ?? []).map((id) => {
                         const c = mockCourses.find(mc => mc.id === id);
                         return (
                           <Badge key={id} variant="secondary" className="gap-1">
                             {c?.title || id}
-                            <button onClick={() => updateCourse({ prerequisites: course.prerequisites.filter(pid => pid !== id) })} className="ml-1 hover:text-destructive">
+                            <button onClick={() => updateCourse({ prerequisites: (course.prerequisites ?? []).filter(pid => pid !== id) })} className="ml-1 hover:text-destructive">
                               <X className="h-3 w-3" />
                             </button>
                           </Badge>

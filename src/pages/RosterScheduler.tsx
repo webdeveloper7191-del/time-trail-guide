@@ -26,6 +26,9 @@ import { RosterPrintView } from '@/components/roster/RosterPrintView';
 import { ShiftConflictPanel } from '@/components/roster/ShiftConflictPanel';
 import { SchedulingPreferencesModal } from '@/components/roster/SchedulingPreferencesModal';
 import { ShiftNotificationsModal } from '@/components/roster/ShiftNotificationsModal';
+import { RosterIssuesPanel } from '@/components/roster/RosterIssuesPanel';
+import { computeConflicts, hasBlockingConflicts } from '@/lib/roster/rosterIssueEngine';
+import { emitRosterPublished } from '@/lib/roster/rosterNotificationsStore';
 import { StaffProfileModal } from '@/components/roster/StaffProfileModal';
 import { WeeklySummaryDashboard } from '@/components/roster/WeeklySummaryDashboard';
 import { WeeklyOptimizationReport } from '@/components/roster/WeeklyOptimizationReport';
@@ -253,6 +256,7 @@ export default function RosterScheduler() {
   const [showConflicts, setShowConflicts] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showIssuesPanel, setShowIssuesPanel] = useState(false);
   const [showStaffProfile, setShowStaffProfile] = useState(false);
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
   const [showOptimizationReport, setShowOptimizationReport] = useState(false);
@@ -785,7 +789,19 @@ export default function RosterScheduler() {
       });
       
       // Open the conflict panel to help resolve
-      setShowConflicts(true);
+      setShowIssuesPanel(true);
+      return;
+    }
+
+    // Engine-based blocking conflicts (rest, consecutive days, weekly hours, ratio, leave, overlap)
+    const engineConflicts = computeConflicts({ shifts: shifts.filter(s => s.centreId === selectedCentreId), staff: allStaff, rooms: selectedCentre.rooms });
+    if (hasBlockingConflicts(engineConflicts)) {
+      const blocking = engineConflicts.filter(c => c.severity === 'blocking');
+      toast.error(`Cannot publish: ${blocking.length} blocking conflict(s) found`, {
+        description: blocking[0]?.reason,
+        duration: 6000,
+      });
+      setShowIssuesPanel(true);
       return;
     }
     
@@ -794,6 +810,7 @@ export default function RosterScheduler() {
         ? { ...s, status: 'published' } 
         : s
     ), `Published ${draftShifts.length} shifts`, 'bulk');
+    emitRosterPublished(draftShifts.length, selectedCentreId);
     toast.success(`Published ${draftShifts.length} shifts`);
   };
 
@@ -1688,9 +1705,9 @@ export default function RosterScheduler() {
         onPrint={handlePrint}
         onShowSummary={() => setShowWeeklySummary(true)}
         onShowOptimize={() => setShowOptimizationReport(true)}
-        onShowAlerts={() => setShowAlerts(true)}
-        onShowConflicts={() => setShowConflicts(true)}
-        onShowNotifications={() => setShowNotifications(true)}
+        onShowAlerts={() => setShowIssuesPanel(true)}
+        onShowConflicts={() => setShowIssuesPanel(true)}
+        onShowNotifications={() => setShowIssuesPanel(true)}
         onShowBudgetSettings={() => setShowBudgetSettings(true)}
         onShowHistory={() => setShowHistoryPanel(true)}
         onSaveTemplate={() => setShowSaveTemplateModal(true)}
@@ -2388,7 +2405,7 @@ export default function RosterScheduler() {
               <Tooltip content="View Conflicts">
                 <IconButton 
                   size="small"
-                  onClick={() => setShowConflicts(true)}
+                  onClick={() => setShowIssuesPanel(true)}
                   sx={{ position: 'relative', borderRadius: 1, color: conflictCount > 0 ? 'error.main' : 'text.secondary' }}
                 >
                   <Shield size={18} />
@@ -2420,7 +2437,7 @@ export default function RosterScheduler() {
               <Tooltip content="Alerts">
                 <IconButton 
                   size="small"
-                  onClick={() => setShowAlerts(true)}
+                  onClick={() => setShowIssuesPanel(true)}
                   sx={{ position: 'relative', borderRadius: 1, color: alertCount > 0 ? 'warning.main' : 'text.secondary' }}
                 >
                   <Bell size={18} />
@@ -2450,7 +2467,7 @@ export default function RosterScheduler() {
               </Tooltip>
 
               <Tooltip content="Notifications">
-                <IconButton size="small" onClick={() => setShowNotifications(true)} sx={{ borderRadius: 1, color: 'text.secondary' }}>
+                <IconButton size="small" onClick={() => setShowIssuesPanel(true)} sx={{ borderRadius: 1, color: 'text.secondary' }}>
                   <Mail size={18} />
                 </IconButton>
               </Tooltip>
@@ -2977,6 +2994,20 @@ export default function RosterScheduler() {
         staff={allStaff}
         centreId={selectedCentreId}
         centres={mockCentres}
+      />
+
+      <RosterIssuesPanel
+        open={showIssuesPanel}
+        onClose={() => setShowIssuesPanel(false)}
+        shifts={shifts.filter(s => s.centreId === selectedCentreId)}
+        staff={allStaff}
+        rooms={selectedCentre.rooms}
+        demandData={demandData}
+        onNavigateToShift={(shiftId) => {
+          setShowIssuesPanel(false);
+          const shift = shifts.find(s => s.id === shiftId);
+          if (shift) setSelectedShift(shift);
+        }}
       />
 
       {/* Bulk Series Edit Modal */}

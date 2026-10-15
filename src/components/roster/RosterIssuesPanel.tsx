@@ -43,7 +43,7 @@ export function RosterIssuesPanel({
   const [overrideTarget, setOverrideTarget] = useState<RosterConflict | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
 
-  useEffect(() => rosterNotificationsStore.subscribe(() => setNotifications(rosterNotificationsStore.all())), []);
+  useEffect(() => { const off = rosterNotificationsStore.subscribe(() => setNotifications(rosterNotificationsStore.all())); return () => { off(); }; }, []);
 
   const conflicts = useMemo(() => computeConflicts({ shifts, staff, rooms }), [shifts, staff, rooms]);
   const alerts = useMemo(() => computeAlerts({ shifts, staff, rooms, demandData }), [shifts, staff, rooms, demandData]);
