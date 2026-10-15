@@ -6,6 +6,6 @@
 - [x] Check the settings screen and interactions in the preview.
 
 ## Rule clarity review
-- [ ] Review rule names, options and explanations against their actual purpose.
-- [ ] Clarify policy-only settings, scoring and exceptions without changing scheduling behaviour.
-- [ ] Verify rule editing and category navigation in the preview.
+- [x] Review rule names, options and explanations against their actual purpose.
+- [x] Clarify policy-only settings, scoring and exceptions without changing scheduling behaviour.
+- [x] Verify rule editing and category navigation in the preview.
