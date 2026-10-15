@@ -1,3 +1,4 @@
+import { useReportRates } from '@/lib/reports/reportRates';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', '#F59E0B', '#10B981', '#8B5CF6'];
 
 export function MultiLocationDashboard() {
+  const rates = useReportRates();
   const [drill, setDrill] = useState<DrillFilter | null>(null);
 
   const visibleLocations = useMemo(() => {
@@ -45,8 +47,8 @@ export function MultiLocationDashboard() {
   const staffingRate = totalHeadcount > 0 ? Math.round((totalStaff / totalHeadcount) * 100) : 0;
 
   const complianceTrend = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((m, i) => ({
-    month: m, compliance: 85 + i * 1.8 + Math.round(Math.random() * 3),
-    utilisation: 75 + i * 2 + Math.round(Math.random() * 4), target: 95,
+    month: m, compliance: 85 + i * 1.8 + ((i * 7) % 3),
+    utilisation: 75 + i * 2 + ((i * 5) % 4), target: 95,
   }));
 
   const radarData = visibleLocations.map(loc => ({
@@ -57,7 +59,7 @@ export function MultiLocationDashboard() {
 
   const costByLocation = visibleLocations.map(loc => ({
     name: loc.locationName.split(' ')[0], fullName: loc.locationName,
-    labour: loc.labourCost, variance: loc.budgetVariance, openShiftCost: loc.openShifts * 280,
+    labour: loc.labourCost, variance: loc.budgetVariance, openShiftCost: loc.openShifts * rates.openShiftExposureRate,
   }));
 
   const allAreas = visibleLocations.flatMap(loc => loc.areas.map(a => ({ ...a, location: loc.locationName })));
@@ -131,7 +133,7 @@ export function MultiLocationDashboard() {
         {worstLocation && worstLocation.complianceScore < 90 && (
           <InsightCard type="negative" title={`${worstLocation.locationName} Below Threshold`} description={`Compliance at ${worstLocation.complianceScore}%. ${gapAreas.filter(a => a.location === worstLocation.locationName).length} area(s) have gaps.`} action="Review area staffing and deploy cross-site staff" />
         )}
-        {totalOpenShifts > 5 && <InsightCard type="action" title="High Open Shift Count" description={`${totalOpenShifts} open shifts. Est. cost: $${(totalOpenShifts * 280).toLocaleString()}`} action="Trigger agency broadcast or auto-fill" />}
+        {totalOpenShifts > 5 && <InsightCard type="action" title="High Open Shift Count" description={`${totalOpenShifts} open shifts. Est. cost: $${(totalOpenShifts * rates.openShiftExposureRate).toLocaleString()}`} action="Trigger agency broadcast or auto-fill" />}
         {bestLocation && bestLocation.complianceScore >= 95 && <InsightCard type="positive" title={`${bestLocation.locationName} Leading`} description={`Top performer with ${bestLocation.complianceScore}% compliance.`} />}
       </div>
 

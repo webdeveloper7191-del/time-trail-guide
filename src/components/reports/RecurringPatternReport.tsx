@@ -16,6 +16,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates } from '@/lib/reports/reportRates';
+import { aggregateTrendSeries, trendFromSeries, classifyBand, buildContiguousBands } from '@/lib/reports/metrics';
 
 
 const exportColumns: ExportColumn[] = [
@@ -27,10 +29,16 @@ const exportColumns: ExportColumn[] = [
 
 const locations = [...new Set(mockRecurringPatterns.map(r => r.location))];
 
+const adherenceBands = buildContiguousBands([
+  { upTo: 74, label: '<75%', variant: 'danger' },
+  { upTo: 89, label: '75-89%', variant: 'warning' },
+  { upTo: Infinity, label: '90-100%', variant: 'success' },
+]);
+
 const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
   { key: 'patternName', header: 'Pattern', type: 'text', accessor: (r) => (
     <div className="flex items-center gap-2">
-      <div className={cn('w-2 h-2 rounded-full', r.adherencePercent >= 90 ? 'bg-emerald-500' : r.adherencePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} />
+      <div className={cn('w-2 h-2 rounded-full', classifyBand(r.adherencePercent, adherenceBands).variant === 'success' ? 'bg-emerald-500' : classifyBand(r.adherencePercent, adherenceBands).variant === 'warning' ? 'bg-amber-500' : 'bg-red-500')} />
 
       <span className="font-medium">{r.patternName}</span>
     </div>
@@ -44,9 +52,9 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
     accessor: (r) => (
       <div className="flex items-center gap-2">
         <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-          <div className={cn('h-full rounded-full', r.adherencePercent >= 90 ? 'bg-emerald-500' : r.adherencePercent >= 75 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.adherencePercent}%` }} />
+          <div className={cn('h-full rounded-full', classifyBand(r.adherencePercent, adherenceBands).variant === 'success' ? 'bg-emerald-500' : classifyBand(r.adherencePercent, adherenceBands).variant === 'warning' ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${r.adherencePercent}%` }} />
         </div>
-        <span className={cn('text-xs font-mono w-10 text-right', r.adherencePercent < 75 ? 'text-destructive font-bold' : '')}>{r.adherencePercent}%</span>
+        <span className={cn('text-xs font-mono w-10 text-right', classifyBand(r.adherencePercent, adherenceBands).variant === 'danger' ? 'text-destructive font-bold' : '')}>{r.adherencePercent}%</span>
       </div>
     ) },
   { key: 'deviations', header: 'Deviations', type: 'text', align: 'right', sortValue: (r) => r.deviations,
@@ -69,6 +77,7 @@ const tableColumns: DataTableColumn<RecurringPatternRecord>[] = [
 ];
 
 export function RecurringPatternReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -93,10 +102,21 @@ export function RecurringPatternReport() {
       if (d.type === 'adjustmentType' && 'adjustmentType' in item) return item.adjustmentType === d.value;
       if (d.type === 'areaName' && 'areaName' in item) return item.areaName === d.value;
       if (d.type === 'sourceLocation' && 'sourceLocation' in item) return item.sourceLocation === d.value;
+      if (d.type === 'reason' && Array.isArray(item.deviationReasons)) return item.deviationReasons.includes(d.value);
+      if (d.type === 'patternName' && 'patternName' in item) return item.patternName === d.value;
       return String((item as any)[d.type]) === d.value;
     }
   );
 
+
+  const adherenceBands = buildContiguousBands([
+    { upTo: 74, label: '<75%', variant: 'danger' },
+    { upTo: 89, label: '75-89%', variant: 'warning' },
+    { upTo: Infinity, label: '90-100%', variant: 'success' },
+  ]);
+
+  const adherenceAgg = aggregateTrendSeries(filtered, (r: any) => r.adherenceTrend);
+  const adherenceTrendResult = trendFromSeries(adherenceAgg);
 
   const avgAdherence = Math.round(filtered.reduce((s, r) => s + r.adherencePercent, 0) / (filtered.length || 1));
   const totalDeviations = filtered.reduce((s, r) => s + r.deviations, 0);
@@ -118,6 +138,7 @@ export function RecurringPatternReport() {
 
   const chartData = filtered.map(r => ({
     name: r.patternName.length > 12 ? r.patternName.substring(0, 12) + '…' : r.patternName,
+    fullName: r.patternName,
     expected: r.totalExpectedShifts,
     actual: r.actualShifts,
     adherence: r.adherencePercent,
@@ -136,7 +157,7 @@ export function RecurringPatternReport() {
     if (perfectPatterns > 0) result.push({ type: 'positive' as const, title: `${perfectPatterns} patterns with 100% adherence`, description: `${Math.round(perfectPatterns / filtered.length * 100)}% of recurring patterns were followed exactly as configured. These represent stable, well-managed scheduling templates.`, metric: `${perfectPatterns} of ${filtered.length} patterns` });
     if (poorPatterns > 0) result.push({ type: 'negative' as const, title: `${poorPatterns} patterns below 75% adherence`, description: `These patterns are being significantly deviated from. Possible causes: outdated templates, frequent absences in pattern roles, or operational changes not reflected in templates.`, metric: `${missedShifts} shifts missed vs expected`, action: 'Review and update underperforming templates' });
     if (reasonBreakdown.length > 0) result.push({ type: 'neutral' as const, title: `Top deviation reason: ${reasonBreakdown[0].reason}`, description: `"${reasonBreakdown[0].reason}" accounts for ${reasonBreakdown[0].count} deviations (${Math.round(reasonBreakdown[0].count / totalDeviations * 100)}% of all). Addressing this root cause would have the greatest impact on adherence.`, action: `Implement mitigation strategies for ${reasonBreakdown[0].reason.toLowerCase()}` });
-    if (missedShifts > 0) result.push({ type: 'action' as const, title: `${missedShifts} shifts below pattern expectations`, description: `Actual shifts fell short of recurring pattern expectations by ${missedShifts} shifts. Estimated cost impact: $${(missedShifts * 180).toLocaleString()} based on average shift value.`, metric: `${totalActual} actual vs ${totalExpected} expected` });
+    if (missedShifts > 0) result.push({ type: 'action' as const, title: `${missedShifts} shifts below pattern expectations`, description: `Actual shifts fell short of recurring pattern expectations by ${missedShifts} shifts. Estimated cost impact: $${(missedShifts * rates.missedPatternShiftCost).toLocaleString()} based on average shift value.`, metric: `${totalActual} actual vs ${totalExpected} expected` });
     return result;
   }, [filtered, perfectPatterns, poorPatterns, reasonBreakdown, totalDeviations, missedShifts, totalExpected, totalActual]);
 
@@ -182,16 +203,16 @@ export function RecurringPatternReport() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Avg Adherence" value={`${avgAdherence}%`} icon={Target}
-          variant={avgAdherence < 75 ? 'danger' : avgAdherence < 85 ? 'warning' : 'success'} sparklineData={[82, 85, 88, 84, 87, avgAdherence]} />
+          variant={classifyBand(avgAdherence, adherenceBands).variant} sparklineData={adherenceAgg}
+          trend={{ value: adherenceTrendResult.deltaPct, label: 'vs first half of period' }} />
         <StatCard label="Perfect Patterns" value={perfectPatterns} icon={CheckCircle2}
           variant="success" subtitle={`of ${filtered.length} total`} />
         <StatCard label="Poor Patterns (<75%)" value={poorPatterns} icon={AlertTriangle}
           variant={poorPatterns > 0 ? 'danger' : 'success'} />
-        <StatCard label="Total Deviations" value={totalDeviations} icon={RefreshCw}
-          trend={{ value: -3, label: 'vs last period', isPositiveGood: false }} />
+        <StatCard label="Total Deviations" value={totalDeviations} icon={RefreshCw} />
         <StatCard label="Active Patterns" value={filtered.length} icon={Layers} />
         <StatCard label="Missed Shifts" value={missedShifts} icon={BarChart3}
-          variant={missedShifts > 5 ? 'warning' : 'default'} subtitle={`$${(missedShifts * 180).toLocaleString()} est. impact`} />
+          variant={missedShifts > 5 ? 'warning' : 'default'} subtitle={`$${(missedShifts * rates.missedPatternShiftCost).toLocaleString()} est. impact`} />
       </div>
 
       <SummaryRow items={[
@@ -212,7 +233,7 @@ export function RecurringPatternReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Expected vs Actual Shifts</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={chartData} onClick={(e: any) => { const name = e?.activePayload?.[0]?.payload?.fullName; if (name) applyDrill('patternName', name); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -230,7 +251,7 @@ export function RecurringPatternReport() {
             {reasonPie.length > 0 ? (
               <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <Pie data={reasonPie} cursor="pointer" onClick={(_, index) => { const d = reasonPie[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name.length > 10 ? name.substring(0, 10) + '…' : name} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={reasonPie} cursor="pointer" onClick={(_, index) => { const d = reasonPie[index]; if (d) applyDrill('reason', d.name, 'Deviation Reason'); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name.length > 10 ? name.substring(0, 10) + '…' : name} ${(percent * 100).toFixed(0)}%`}>
                     {reasonPie.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />

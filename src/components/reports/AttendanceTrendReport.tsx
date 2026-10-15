@@ -1,3 +1,4 @@
+import { useReportRates } from '@/lib/reports/reportRates';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,7 @@ const tableColumns: DataTableColumn<AttendanceTrendRecord>[] = [
 ];
 
 export function AttendanceTrendReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -94,7 +96,7 @@ export function AttendanceTrendReport() {
   const totalScheduled = filtered.reduce((s, r) => s + r.totalScheduled, 0);
   const noShows = filtered.reduce((s, r) => s + r.absenceType.noShow, 0);
   const sickDays = filtered.reduce((s, r) => s + r.absenceType.sick, 0);
-  const estAbsentCost = totalAbsent * 280; // avg daily cost per absent employee
+  const estAbsentCost = totalAbsent * rates.absenceDailyCost;
 
   const trendData = useMemo(() => {
     const byDate: Record<string, { date: string; rate: number; count: number; absent: number }> = {};
@@ -167,7 +169,7 @@ export function AttendanceTrendReport() {
         <StatCard label="Late Arrivals" value={totalLate} icon={AlertTriangle} />
         <StatCard label="No Shows" value={noShows} icon={TrendingDown} variant={noShows > 0 ? 'danger' : 'success'} />
         <StatCard label="Sick Days" value={sickDays} icon={Heart} />
-        <StatCard label="Est. Absence Cost" value={`$${(estAbsentCost / 1000).toFixed(1)}k`} icon={Calendar} subtitle={`${totalAbsent} × $280 avg`} />
+        <StatCard label="Est. Absence Cost" value={`$${(estAbsentCost / 1000).toFixed(1)}k`} icon={Calendar} subtitle={`${totalAbsent} × $${rates.absenceDailyCost} avg`} />
       </div>
 
       <SummaryRow items={[

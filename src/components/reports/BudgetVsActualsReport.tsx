@@ -93,8 +93,8 @@ export function BudgetVsActualsReport() {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
   const trendData = months.map((m, i) => ({
     name: m,
-    budget: Math.round(totalBudget / 6 * (0.85 + Math.random() * 0.3)),
-    actual: Math.round(totalActual / 6 * (0.8 + Math.random() * 0.4)),
+    budget: Math.round(totalBudget / 6 * (0.85 + ((i * 3) % 4) * 0.1)),
+    actual: Math.round(totalActual / 6 * (0.8 + ((i * 3) % 5) * 0.1)),
   }));
 
   const chartData = locations.map(loc => {
