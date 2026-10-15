@@ -8,15 +8,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
-  JobPosting, Applicant, Interview, pipelineStages, jobStatusLabels, applicationStatusLabels, ApplicationStatus,
+  JobPosting, Applicant, Interview, jobStatusLabels, stageLabel, terminalStatuses,
   employmentTypeLabels, interviewTypeLabels,
 } from '@/types/recruitment';
 import { StaffMember } from '@/types/staff';
 import { format, parseISO, isAfter } from 'date-fns';
-import { Briefcase, Users, Calendar, MapPin, DollarSign, Plus, Star, MoreHorizontal, UserPlus, Search } from 'lucide-react';
+import { Briefcase, Users, Calendar, MapPin, DollarSign, Plus, Star, MoreHorizontal, UserPlus, Search, Settings2, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { recruitmentStore, applicantCountFor } from '@/lib/recruitmentStore';
+import { recruitmentStore, applicantCountFor, useRecruitment } from '@/lib/recruitmentStore';
 
 interface RecruitmentDashboardProps {
   jobs: JobPosting[];
