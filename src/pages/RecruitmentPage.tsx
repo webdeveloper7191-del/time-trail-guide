@@ -1,20 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { RecruitmentDashboard } from '@/components/recruitment/RecruitmentDashboard';
-import { recruitmentApi } from '@/lib/api/recruitmentApi';
+import { JobSheet, AddApplicantSheet, ApplicantDetailSheet } from '@/components/recruitment/RecruitmentSheets';
+import { recruitmentStore, useRecruitment } from '@/lib/recruitmentStore';
 import { mockStaff } from '@/data/mockStaffData';
-import { JobPosting, Applicant, ApplicationStatus } from '@/types/recruitment';
+import { JobPosting, Applicant } from '@/types/recruitment';
 import { toast } from 'sonner';
 
 export default function RecruitmentPage() {
-  const [jobs, setJobs] = useState<JobPosting[]>([]);
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const { jobs, applicants, interviews } = useRecruitment();
+  const navigate = useNavigate();
+  const [jobSheet, setJobSheet] = useState<{ open: boolean; job: JobPosting | null }>({ open: false, job: null });
+  const [addApp, setAddApp] = useState<{ open: boolean; jobId: string | null }>({ open: false, jobId: null });
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const selectedApp = applicants.find(a => a.id === selectedAppId) ?? null;
 
-  useEffect(() => {
-    recruitmentApi.fetchJobs().then(r => r.data && setJobs(r.data));
-    recruitmentApi.fetchApplicants().then(r => r.data && setApplicants(r.data));
-  }, []);
+  const hire = (a: Applicant) => {
+    recruitmentStore.moveApplicant(a.id, 'hired', 'Hired — onboarding invite started');
+    const job = jobs.find(j => j.id === a.jobId);
+    setSelectedAppId(null);
+    toast.success(`${a.firstName} hired`, {
+      description: job && job.status === 'open' ? 'Mark the job as filled if no more positions remain.' : undefined,
+      action: job && job.status === 'open' ? { label: 'Mark filled', onClick: () => recruitmentStore.setJobStatus(job.id, 'filled') } : undefined,
+    });
+    const params = new URLSearchParams({ firstName: a.firstName, lastName: a.lastName, email: a.email, phone: a.phone ?? '', position: job?.title ?? '' });
+    navigate(`/workforce/onboarding?${params.toString()}`);
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -24,14 +36,19 @@ export default function RecruitmentPage() {
           <RecruitmentDashboard
             jobs={jobs}
             applicants={applicants}
+            interviews={interviews}
             staff={mockStaff}
-            onCreateJob={() => toast.info('Job creation modal - coming soon')}
-            onViewJob={(job) => toast.info(`Viewing: ${job.title}`)}
-            onViewApplicant={(app) => toast.info(`Viewing: ${app.firstName} ${app.lastName}`)}
-            onMoveApplicant={(id, status) => toast.success(`Moved to ${status}`)}
+            onCreateJob={() => setJobSheet({ open: true, job: null })}
+            onEditJob={(job) => setJobSheet({ open: true, job })}
+            onAddApplicant={(jobId) => setAddApp({ open: true, jobId })}
+            onViewApplicant={(app) => setSelectedAppId(app.id)}
           />
         </div>
       </main>
+      <JobSheet open={jobSheet.open} job={jobSheet.job} staff={mockStaff} onOpenChange={o => setJobSheet(s => ({ ...s, open: o }))} />
+      <AddApplicantSheet open={addApp.open} defaultJobId={addApp.jobId} jobs={jobs} onOpenChange={o => setAddApp(s => ({ ...s, open: o }))} />
+      <ApplicantDetailSheet applicant={selectedApp} job={jobs.find(j => j.id === selectedApp?.jobId)} interviews={interviews}
+        staff={mockStaff} onOpenChange={o => !o && setSelectedAppId(null)} onHire={hire} />
     </div>
   );
 }
