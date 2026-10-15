@@ -45,8 +45,8 @@ export function MultiLocationDashboard() {
   const staffingRate = totalHeadcount > 0 ? Math.round((totalStaff / totalHeadcount) * 100) : 0;
 
   const complianceTrend = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((m, i) => ({
-    month: m, compliance: 85 + i * 1.8 + Math.round(Math.random() * 3),
-    utilisation: 75 + i * 2 + Math.round(Math.random() * 4), target: 95,
+    month: m, compliance: 85 + i * 1.8 + ((i * 7) % 3),
+    utilisation: 75 + i * 2 + ((i * 5) % 4), target: 95,
   }));
 
   const radarData = visibleLocations.map(loc => ({

@@ -58,7 +58,7 @@ const tableColumns: DataTableColumn<HeadcountRecord>[] = [
 
 // Simulated trend data
 const monthlyTrend = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map((m, i) => ({
-  month: m, headcount: 110 + i * 2 + Math.round(Math.random() * 3), fte: 95 + i * 1.5, target: 125,
+  month: m, headcount: 110 + i * 2 + ((i * 7) % 3), fte: 95 + i * 1.5, target: 125,
 }));
 
 export function HeadcountFTEReport() {

@@ -120,7 +120,7 @@ export function AreaUtilReport() {
 
   // Weekly trend
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const weeklyTrend = weekDays.map((d, i) => ({ day: d, util: Math.round(avgUtil * (0.7 + Math.sin(i * 0.8) * 0.2 + Math.random() * 0.15)) }));
+  const weeklyTrend = weekDays.map((d, i) => ({ day: d, util: Math.round(avgUtil * (0.7 + Math.sin(i * 0.8) * 0.2 + ((i % 3) * 0.05))) }));
 
   const sparkline6 = [avgUtil - 8, avgUtil - 3, avgUtil - 5, avgUtil + 2, avgUtil - 1, avgUtil];
 

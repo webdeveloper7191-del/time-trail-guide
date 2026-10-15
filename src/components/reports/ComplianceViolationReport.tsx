@@ -110,8 +110,8 @@ export function ComplianceViolationReport() {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
   const trendData = months.map((m, i) => ({
     name: m,
-    violations: Math.max(1, Math.round(filtered.length / 6 * (0.8 + Math.random() * 0.4))),
-    resolved: Math.max(0, Math.round(resolvedCount / 6 * (0.7 + Math.random() * 0.5))),
+    violations: Math.max(1, Math.round(filtered.length / 6 * (0.8 + ((i * 3) % 5) * 0.1))),
+    resolved: Math.max(0, Math.round(resolvedCount / 6 * (0.7 + ((i * 2) % 6) * 0.1))),
   }));
 
   const sparkline = [12, 15, 11, 9, 13, openViolations.length];
