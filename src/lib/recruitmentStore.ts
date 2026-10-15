@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { JobPosting, Applicant, Interview, ApplicationStatus } from '@/types/recruitment';
+import { JobPosting, Applicant, Interview, ApplicationStatus, PipelineStageConfig, defaultPipelineStages } from '@/types/recruitment';
 import { mockJobs, mockApplicants, mockInterviews } from '@/data/mockRecruitmentData';
 
 const KEY = 'rai.recruitment.v1';
 
-interface State { jobs: JobPosting[]; applicants: Applicant[]; interviews: Interview[] }
+interface State { jobs: JobPosting[]; applicants: Applicant[]; interviews: Interview[]; pipeline: PipelineStageConfig[] }
 
 const now = () => new Date().toISOString();
 const uid = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
