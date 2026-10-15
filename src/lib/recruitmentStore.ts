@@ -80,6 +80,7 @@ export const recruitmentStore = {
   deleteJob(id: string) {
     const s = load();
     save({
+      ...s,
       jobs: s.jobs.filter(j => j.id !== id),
       applicants: s.applicants.filter(a => a.jobId !== id),
       interviews: s.interviews.filter(i => i.jobId !== id),
