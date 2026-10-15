@@ -242,6 +242,11 @@ export interface CourseAuthoringState {
   maxAttempts?: number;
   tags: string[];
   modules: ModuleAuthoringState[];
+  prerequisites: string[];
+  availableFrom?: string;
+  availableUntil?: string;
+  assignedRoles?: string[];
+  assignedLocations?: string[];
   status: 'draft' | 'review' | 'published';
   isDirty: boolean;
   lastSavedAt?: string;
