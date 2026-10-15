@@ -34,11 +34,14 @@ function load(): State {
         }
         return j;
       });
+      if (!Array.isArray(parsed.pipeline) || parsed.pipeline.length === 0) {
+        parsed.pipeline = [...defaultPipelineStages];
+      }
       cache = parsed;
       return cache!;
     }
   } catch { /* ignore */ }
-  cache = { jobs: [...mockJobs], applicants: [...mockApplicants], interviews: [...mockInterviews] };
+  cache = { jobs: [...mockJobs], applicants: [...mockApplicants], interviews: [...mockInterviews], pipeline: [...defaultPipelineStages] };
   return cache;
 }
 
@@ -95,7 +98,7 @@ export const recruitmentStore = {
     save({ ...s, applicants: s.applicants.map(a => a.id === id ? { ...a, ...updates, updatedAt: now() } : a) });
   },
 
-  moveApplicant(id: string, status: ApplicationStatus, note?: string) {
+  moveApplicant(id: string, status: string, note?: string) {
     const s = load();
     const app = s.applicants.find(a => a.id === id);
     if (!app) return;
