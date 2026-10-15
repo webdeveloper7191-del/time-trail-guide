@@ -223,10 +223,6 @@ export function ReviewExecutionSheet({
   const renderSummaryForm = () => (
     <Stack spacing={3}>
       {renderRecognitionSection()}
-    <Stack spacing={3}>
-      {renderRecognitionSection()}
-      {/* ... existing summary form ... */}
-    <Stack spacing={3}>
       <Box>
         <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
           {isSelfReview ? 'Self-Assessment Summary' : 'Manager Assessment Summary'}

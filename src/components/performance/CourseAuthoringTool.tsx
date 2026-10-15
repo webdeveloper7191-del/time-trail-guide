@@ -621,7 +621,6 @@ export function CourseAuthoringTool({
                   </div>
                 </div>
               </div>
-              )}
             </TabsContent>
 
             {/* Content Builder Tab */}
