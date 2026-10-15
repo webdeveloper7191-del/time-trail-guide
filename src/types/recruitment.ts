@@ -5,6 +5,31 @@ export type ApplicationStatus = 'new' | 'screening' | 'interview' | 'offer' | 'h
 export type InterviewType = 'phone' | 'video' | 'onsite' | 'technical' | 'panel';
 export type EmploymentType = 'full_time' | 'part_time' | 'casual' | 'contract' | 'internship';
 
+export type WorkplaceOption = 'on_site' | 'hybrid' | 'remote';
+export type PayType = 'hourly' | 'monthly' | 'annual' | 'annual_commission';
+export type AdType = 'classic' | 'standout' | 'premium';
+
+export const seekWorkTypes: { value: EmploymentType; label: string }[] = [
+  { value: 'full_time', label: 'Full time' },
+  { value: 'part_time', label: 'Part time' },
+  { value: 'contract', label: 'Contract/Temp' },
+  { value: 'casual', label: 'Casual/Vacation' },
+];
+export const workplaceOptionLabels: Record<WorkplaceOption, string> = { on_site: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
+export const payTypeLabels: Record<PayType, string> = {
+  hourly: 'Hourly rate', monthly: 'Monthly salary', annual: 'Annual salary', annual_commission: 'Annual plus commission',
+};
+export const adTypeLabels: Record<AdType, string> = { classic: 'Classic', standout: 'StandOut', premium: 'Premium' };
+export const seekCategories = [
+  'Accounting', 'Administration & Office Support', 'Advertising, Arts & Media', 'Banking & Financial Services',
+  'Call Centre & Customer Service', 'CEO & General Management', 'Community Services & Development', 'Construction',
+  'Consulting & Strategy', 'Design & Architecture', 'Education & Training', 'Engineering', 'Farming, Animals & Conservation',
+  'Government & Defence', 'Healthcare & Medical', 'Hospitality & Tourism', 'Human Resources & Recruitment',
+  'Information & Communication Technology', 'Insurance & Superannuation', 'Legal', 'Manufacturing, Transport & Logistics',
+  'Marketing & Communications', 'Mining, Resources & Energy', 'Real Estate & Property', 'Retail & Consumer Products',
+  'Sales', 'Science & Technology', 'Self Employment', 'Sport & Recreation', 'Trades & Services',
+];
+
 export interface JobPosting {
   id: string;
   title: string;
@@ -22,6 +47,23 @@ export interface JobPosting {
   postedAt?: string;
   closingDate?: string;
   applicantCount: number;
+  // SEEK-aligned ad fields
+  category?: string;
+  subCategory?: string;
+  workplaceOption?: WorkplaceOption;
+  payType?: PayType;
+  currency?: string;
+  showSalary?: boolean;
+  payDetails?: string;
+  jobSummary?: string;
+  keySellingPoints?: string[];
+  screeningQuestions?: string[];
+  internalReference?: string;
+  videoUrl?: string;
+  applicationMethod?: 'internal' | 'external';
+  externalApplyUrl?: string;
+  contactEmail?: string;
+  adType?: AdType;
   createdAt: string;
   updatedAt: string;
 }
@@ -104,10 +146,10 @@ export const interviewTypeLabels: Record<InterviewType, string> = {
 };
 
 export const employmentTypeLabels: Record<EmploymentType, string> = {
-  full_time: 'Full Time',
-  part_time: 'Part Time',
-  casual: 'Casual',
-  contract: 'Contract',
+  full_time: 'Full time',
+  part_time: 'Part time',
+  casual: 'Casual/Vacation',
+  contract: 'Contract/Temp',
   internship: 'Internship',
 };
 

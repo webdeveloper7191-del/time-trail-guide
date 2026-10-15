@@ -10,9 +10,11 @@ import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle } from 'lucid
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 import {
   JobPosting, Applicant, Interview, EmploymentType, InterviewType, ApplicationStatus,
-  employmentTypeLabels, interviewTypeLabels, applicationStatusLabels, jobStatusLabels,
+  interviewTypeLabels, applicationStatusLabels, jobStatusLabels,
+  WorkplaceOption, PayType, AdType, seekWorkTypes, seekCategories, workplaceOptionLabels, payTypeLabels, adTypeLabels,
 } from '@/types/recruitment';
 import { StaffMember } from '@/types/staff';
 import { recruitmentStore } from '@/lib/recruitmentStore';
@@ -24,35 +26,67 @@ function Field({ label, children, className }: { label: string; children: React.
   return <div className={cn('space-y-1.5', className)}><Label className="text-xs">{label}</Label>{children}</div>;
 }
 
-/* ---------------- Job create / edit ---------------- */
+/* ---------------- Job create / edit (fields follow SEEK's job ad form) ---------------- */
+function Section({ step, title, hint, children }: { step: number; title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3 border-b pb-5 last:border-0">
+      <div><h4 className="text-sm font-semibold">{step}. {title}</h4>{hint && <p className="text-xs text-muted-foreground">{hint}</p>}</div>
+      {children}
+    </section>
+  );
+}
+
 export function JobSheet({ open, onOpenChange, job, staff }: {
   open: boolean; onOpenChange: (o: boolean) => void; job?: JobPosting | null; staff: StaffMember[];
 }) {
-  const blank = { title: '', department: '', location: '', employmentType: 'full_time' as EmploymentType, salaryMin: '', salaryMax: '',
-    description: '', requirements: '', responsibilities: '', benefits: '', closingDate: '', hiringManagerId: '' };
-  const [f, setF] = useState(blank);
+  const blank = {
+    title: '', location: '', workplaceOption: 'on_site' as WorkplaceOption, category: '', subCategory: '',
+    employmentType: 'full_time' as EmploymentType, payType: 'annual' as PayType, currency: 'AUD', salaryMin: '', salaryMax: '',
+    showSalary: true, payDetails: '', jobSummary: '', ksp1: '', ksp2: '', ksp3: '', description: '', videoUrl: '',
+    screeningQuestions: '', applicationMethod: 'internal' as 'internal' | 'external', externalApplyUrl: '', contactEmail: '',
+    internalReference: '', adType: 'classic' as AdType, closingDate: '', hiringManagerId: '', department: '',
+  };
+  const [rawF, setF] = useState(blank);
+  const f = { ...blank, ...rawF };
   useEffect(() => {
     if (!open) return;
-    setF(job ? {
-      title: job.title, department: job.department, location: job.location, employmentType: job.employmentType,
-      salaryMin: job.salaryMin?.toString() ?? '', salaryMax: job.salaryMax?.toString() ?? '', description: job.description,
-      requirements: job.requirements.join('\n'), responsibilities: job.responsibilities.join('\n'), benefits: job.benefits.join('\n'),
-      closingDate: job.closingDate ?? '', hiringManagerId: job.hiringManagerId,
-    } : blank);
+    if (!job) { setF(blank); return; }
+    const ksp = job.keySellingPoints ?? job.benefits.slice(0, 3);
+    setF({
+      ...blank, title: job.title, location: job.location, workplaceOption: job.workplaceOption ?? 'on_site',
+      category: job.category ?? '', subCategory: job.subCategory ?? '',
+      employmentType: (['full_time', 'part_time', 'contract', 'casual'].includes(job.employmentType) ? job.employmentType : 'contract') as EmploymentType,
+      payType: job.payType ?? ((job.salaryMax ?? 0) < 500 && job.salaryMax ? 'hourly' : 'annual'), currency: job.currency ?? 'AUD',
+      salaryMin: job.salaryMin?.toString() ?? '', salaryMax: job.salaryMax?.toString() ?? '', showSalary: job.showSalary ?? true,
+      payDetails: job.payDetails ?? '', jobSummary: job.jobSummary ?? '', ksp1: ksp[0] ?? '', ksp2: ksp[1] ?? '', ksp3: ksp[2] ?? '',
+      description: job.description, videoUrl: job.videoUrl ?? '', screeningQuestions: (job.screeningQuestions ?? []).join('\n'),
+      applicationMethod: job.applicationMethod ?? 'internal', externalApplyUrl: job.externalApplyUrl ?? '', contactEmail: job.contactEmail ?? '',
+      internalReference: job.internalReference ?? '', adType: job.adType ?? 'classic', closingDate: job.closingDate ?? '',
+      hiringManagerId: job.hiringManagerId, department: job.department,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, job]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
+  const sel = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 
   const submit = (status?: JobPosting['status']) => {
-    if (!f.title.trim() || !f.location.trim()) { toast.error('Job title and location are required'); return; }
-    const min = f.salaryMin ? Number(f.salaryMin) : undefined;
-    const max = f.salaryMax ? Number(f.salaryMax) : undefined;
-    if (min && max && min > max) { toast.error('Minimum pay cannot be higher than maximum'); return; }
+    const missing = [!f.title.trim() && 'job title', !f.location.trim() && 'location', !f.category && 'category',
+      !f.salaryMin && 'pay range from', !f.salaryMax && 'pay range to', !f.description.trim() && 'job description'].filter(Boolean);
+    if (missing.length) { toast.error(`Required: ${missing.join(', ')}`); return; }
+    const min = Number(f.salaryMin), max = Number(f.salaryMax);
+    if (min > max) { toast.error('Pay range "from" cannot be higher than "to"'); return; }
+    if (f.applicationMethod === 'external' && !/^https?:\/\//.test(f.externalApplyUrl)) { toast.error('Enter a valid application website (https://…)'); return; }
+    const ksp = [f.ksp1, f.ksp2, f.ksp3].map(s => s.trim()).filter(Boolean);
     recruitmentStore.saveJob({
-      ...(job ?? {}), title: f.title.trim(), department: f.department, location: f.location, employmentType: f.employmentType,
-      salaryMin: min, salaryMax: max, description: f.description, requirements: lines(f.requirements),
-      responsibilities: lines(f.responsibilities), benefits: lines(f.benefits), closingDate: f.closingDate || undefined,
-      hiringManagerId: f.hiringManagerId, status: status ?? job?.status ?? 'draft',
+      ...(job ?? {}), title: f.title.trim(), location: f.location.trim(), workplaceOption: f.workplaceOption, category: f.category,
+      subCategory: f.subCategory || undefined, employmentType: f.employmentType, payType: f.payType, currency: f.currency,
+      salaryMin: min, salaryMax: max, showSalary: f.showSalary, payDetails: f.payDetails || undefined,
+      jobSummary: f.jobSummary || undefined, keySellingPoints: ksp, benefits: ksp, description: f.description,
+      videoUrl: f.videoUrl || undefined, screeningQuestions: lines(f.screeningQuestions), applicationMethod: f.applicationMethod,
+      externalApplyUrl: f.applicationMethod === 'external' ? f.externalApplyUrl : undefined, contactEmail: f.contactEmail || undefined,
+      internalReference: f.internalReference || undefined, adType: f.adType, closingDate: f.closingDate || undefined,
+      hiringManagerId: f.hiringManagerId, department: f.department || f.category,
+      requirements: job?.requirements ?? [], responsibilities: job?.responsibilities ?? [], status: status ?? job?.status ?? 'draft',
     });
     toast.success(status === 'open' ? 'Job published' : 'Job saved');
     onOpenChange(false);
@@ -60,38 +94,108 @@ export function JobSheet({ open, onOpenChange, job, staff }: {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-xl overflow-y-auto">
-        <SheetHeader><SheetTitle>{job ? 'Edit job' : 'Post a job'}</SheetTitle>
-          <SheetDescription>Save as a draft, or publish to start accepting applicants.</SheetDescription></SheetHeader>
-        <div className="space-y-4 py-4">
-          <Field label="Job title *"><Input value={f.title} onChange={set('title')} /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Department"><Input value={f.department} onChange={set('department')} /></Field>
-            <Field label="Location *"><Input value={f.location} onChange={set('location')} /></Field>
-            <Field label="Employment type">
-              <Select value={f.employmentType} onValueChange={v => setF({ ...f, employmentType: v as EmploymentType })}>
+      <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto">
+        <SheetHeader><SheetTitle>{job ? 'Edit job ad' : 'Create a job ad'}</SheetTitle>
+          <SheetDescription>Same fields as a SEEK job ad. Save as a draft, or publish to start accepting applicants.</SheetDescription></SheetHeader>
+        <div className="space-y-5 py-4">
+          <Section step={1} title="Classify your job">
+            <Field label="Job title *"><Input value={f.title} onChange={set('title')} placeholder="e.g. Customer Service Officer" /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Location *"><Input value={f.location} onChange={set('location')} placeholder="Suburb, city or region" /></Field>
+              <Field label="Workplace option">
+                <Select value={f.workplaceOption} onValueChange={sel('workplaceOption')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(workplaceOptionLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Category *">
+                <Select value={f.category || undefined} onValueChange={sel('category')}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>{seekCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Sub-category"><Input value={f.subCategory} onChange={set('subCategory')} placeholder="e.g. Customer Service - Call Centre" /></Field>
+            </div>
+            <Field label="Work type">
+              <div className="flex flex-wrap gap-2">
+                {seekWorkTypes.map(w => (
+                  <Button key={w.value} type="button" size="sm" variant={f.employmentType === w.value ? 'default' : 'outline'} onClick={() => setF({ ...f, employmentType: w.value })}>{w.label}</Button>
+                ))}
+              </div>
+            </Field>
+          </Section>
+
+          <Section step={2} title="Pay" hint="Pay range is required. You can choose whether candidates see it.">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Pay type">
+                <Select value={f.payType} onValueChange={sel('payType')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(payTypeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Currency">
+                <Select value={f.currency} onValueChange={sel('currency')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{['AUD', 'NZD'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Pay range from *"><Input type="number" min={0} value={f.salaryMin} onChange={set('salaryMin')} /></Field>
+              <Field label="Pay range to *"><Input type="number" min={0} value={f.salaryMax} onChange={set('salaryMax')} /></Field>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={f.showSalary} onCheckedChange={v => setF({ ...f, showSalary: v })} />Show pay on your job ad
+            </label>
+            <Field label="Pay shown on your job ad (optional)"><Input value={f.payDetails} onChange={set('payDetails')} placeholder="e.g. $70k + super + bonus" maxLength={50} /></Field>
+          </Section>
+
+          <Section step={3} title="Write your job ad">
+            <Field label={`Job summary (${(f.jobSummary ?? "").length}/150)`}><Textarea rows={2} maxLength={150} value={f.jobSummary} onChange={set('jobSummary')} placeholder="Shown in search results" /></Field>
+            <Field label="Key selling points (up to 3)">
+              <div className="space-y-2">
+                {(['ksp1', 'ksp2', 'ksp3'] as const).map((k, i) => <Input key={k} maxLength={80} value={f[k]} onChange={set(k)} placeholder={`Selling point ${i + 1}`} />)}
+              </div>
+            </Field>
+            <Field label="Job description *"><Textarea rows={8} value={f.description} onChange={set('description')} placeholder="About the role, responsibilities, skills and experience, benefits…" /></Field>
+            <Field label="Video link (YouTube, optional)"><Input value={f.videoUrl} onChange={set('videoUrl')} placeholder="https://www.youtube.com/watch?v=…" /></Field>
+          </Section>
+
+          <Section step={4} title="Manage candidate applications">
+            <Field label="Screening questions (one per line)"><Textarea rows={3} value={f.screeningQuestions} onChange={set('screeningQuestions')} placeholder={"Do you have the right to work in Australia?\nHow many years' experience do you have?"} /></Field>
+            <Field label="How should candidates apply?">
+              <Select value={f.applicationMethod} onValueChange={sel('applicationMethod')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{Object.entries(employmentTypeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="internal">Apply through this system</SelectItem><SelectItem value="external">Apply on my company website</SelectItem></SelectContent>
               </Select>
             </Field>
-            <Field label="Hiring manager">
-              <Select value={f.hiringManagerId || undefined} onValueChange={v => setF({ ...f, hiringManagerId: v })}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{staff.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <Field label="Pay from ($)"><Input type="number" min={0} value={f.salaryMin} onChange={set('salaryMin')} /></Field>
-            <Field label="Pay to ($)"><Input type="number" min={0} value={f.salaryMax} onChange={set('salaryMax')} /></Field>
-            <Field label="Closing date"><Input type="date" value={f.closingDate} onChange={set('closingDate')} /></Field>
-          </div>
-          <Field label="Description"><Textarea rows={4} value={f.description} onChange={set('description')} /></Field>
-          <Field label="Requirements (one per line)"><Textarea rows={3} value={f.requirements} onChange={set('requirements')} /></Field>
-          <Field label="Responsibilities (one per line)"><Textarea rows={3} value={f.responsibilities} onChange={set('responsibilities')} /></Field>
-          <Field label="Benefits (one per line)"><Textarea rows={3} value={f.benefits} onChange={set('benefits')} /></Field>
+            {f.applicationMethod === 'external' && <Field label="Application website *"><Input value={f.externalApplyUrl} onChange={set('externalApplyUrl')} placeholder="https://" /></Field>}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Contact email (optional)"><Input type="email" value={f.contactEmail} onChange={set('contactEmail')} /></Field>
+              <Field label="Your reference (optional)"><Input value={f.internalReference} onChange={set('internalReference')} /></Field>
+            </div>
+          </Section>
+
+          <Section step={5} title="Ad type & internal details">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Ad type">
+                <Select value={f.adType} onValueChange={sel('adType')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(adTypeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Closing date"><Input type="date" value={f.closingDate} onChange={set('closingDate')} /></Field>
+              <Field label="Hiring manager">
+                <Select value={f.hiringManagerId || undefined} onValueChange={sel('hiringManagerId')}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{staff.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Department"><Input value={f.department} onChange={set('department')} /></Field>
+            </div>
+          </Section>
         </div>
         <div className="flex justify-end gap-2 border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant="secondary" onClick={() => submit()}>Save</Button>
+          <Button variant="secondary" onClick={() => submit()}>Save draft</Button>
           {job?.status !== 'open' && <Button onClick={() => submit('open')}>Save & publish</Button>}
         </div>
       </SheetContent>
