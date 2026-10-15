@@ -16,6 +16,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates } from '@/lib/reports/reportRates';
+import { aggregateTrendSeries, trendFromSeries } from '@/lib/reports/metrics';
 
 
 const exportColumns: ExportColumn[] = [
@@ -59,8 +61,8 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
     accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge> : <span className="text-muted-foreground text-xs">—</span> },
   { key: 'leaveHours', header: 'Leave', type: 'number', align: 'right', sortValue: (r) => r.leaveHours,
     accessor: (r) => r.leaveHours > 0 ? <span className="text-xs text-blue-600">{r.leaveHours}h</span> : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'effectiveRate', header: 'Eff. $/hr', type: 'number', align: 'right', sortValue: (r) => r.scheduledHours > 0 ? Math.round(r.utilisationPercent * 0.45) : 0,
-    accessor: (r) => <span className="text-xs font-mono">${(r.utilisationPercent * 0.45).toFixed(2)}</span> },
+  { key: 'effectiveRate', header: 'Eff. $/hr', type: 'number', align: 'right', sortValue: (r) => r.utilisationPercent > 0 ? Math.round((REPORT_RATES.internalHourlyRate / (r.utilisationPercent / 100)) * 100) / 100 : 0,
+    accessor: (r) => <span className="text-xs font-mono">${r.utilisationPercent > 0 ? (REPORT_RATES.internalHourlyRate / (r.utilisationPercent / 100)).toFixed(2) : '0.00'}</span> },
   { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
   { key: 'contractType', header: 'Contract', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{(r.contractType ?? '').replace('_', ' ')}</Badge>, sortValue: (r) => r.contractType ?? '' },
   { key: 'shiftsWorked', header: 'Shifts', type: 'number', accessor: (r) => r.shiftsWorked ?? 0, sortValue: (r) => r.shiftsWorked ?? 0, align: 'right' },
@@ -70,13 +72,6 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
   { key: 'utilisationPercentTrend', header: 'Util Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.utilisationPercentTrend ?? [] },
 ];
 
-// Simulated weekly trend data per staff
-const weeklyTrend = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => ({
-  day: d,
-  avgUtil: Math.round(75 + Math.random() * 20),
-  target: 85,
-  headcount: Math.round(5 + Math.random() * 3),
-}));
 
 export function StaffUtilisationReport() {
   const [search, setSearch] = useState('');
