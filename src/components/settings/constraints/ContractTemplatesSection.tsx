@@ -24,7 +24,7 @@ const SatisfiabilityToggle = ({ value, onChange }: { value: Satisfiability; onCh
       className={cn(
         "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
         value === 'REQUIRED'
-          ? "bg-red-500 text-white shadow-sm"
+          ? "bg-destructive text-destructive-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground"
       )}
     >
@@ -35,7 +35,7 @@ const SatisfiabilityToggle = ({ value, onChange }: { value: Satisfiability; onCh
       className={cn(
         "px-2 py-0.5 text-[10px] font-medium rounded transition-all",
         value === 'PREFERRED'
-          ? "bg-amber-500 text-white shadow-sm"
+          ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground"
       )}
     >
@@ -148,7 +148,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
       {/* Days per period */}
       <RuleRow
         label="Days per Period"
-        tooltip="Min/max working days in a period"
+        tooltip="Minimum and maximum days worked within the selected day, week or month"
         enabled={config.daysPerPeriod.enabled}
         onToggle={v => update('daysPerPeriod', { ...config.daysPerPeriod, enabled: v })}
       >
@@ -190,7 +190,7 @@ const WorkLimitsEditor = ({ config, onChange }: {
       {/* Weekend limits */}
       <RuleRow
         label="Weekend Limits"
-        tooltip="Limit weekends worked per month and consecutive weekends"
+        tooltip="Limit weekends worked within the selected period, and separately limit weekends worked in a row"
         enabled={config.weekendLimits.enabled}
         onToggle={v => update('weekendLimits', { ...config.weekendLimits, enabled: v })}
       >
@@ -235,8 +235,8 @@ const WorkLimitsEditor = ({ config, onChange }: {
 
       {/* Rolling window - hours */}
       <RuleRow
-        label="Rolling Window (Hours)"
-        tooltip="Max working hours in a rolling N-day window"
+        label="Rolling working-hours limit"
+        tooltip="Total working hours across any consecutive group of the selected number of days; not a calendar-week total"
         enabled={config.minutesRollingWindow.enabled}
         onToggle={v => update('minutesRollingWindow', { ...config.minutesRollingWindow, enabled: v })}
       >
@@ -275,7 +275,7 @@ const TimeOffEditor = ({ config, onChange }: {
 
     {/* Min time between shifts */}
     <div className="flex items-center gap-3 p-2.5 rounded-lg border bg-card">
-      <Label className="text-xs font-medium min-w-[200px]">Min Rest Between Shifts</Label>
+      <Label className="text-xs font-medium min-w-[200px]">Minimum rest between shifts</Label>
       <HoursInput minutes={config.minTimeBetweenShiftsMinutes}
         onChange={m => onChange({ ...config, minTimeBetweenShiftsMinutes: m })}
         className="h-7 w-16 text-xs" />
@@ -337,12 +337,14 @@ const ShiftPatternsEditor = ({ config, onChange }: {
     </div>
 
     <div className="flex items-center gap-3 p-2.5 rounded-lg border bg-card">
-      <Label className="text-xs font-medium min-w-[200px]">Min Gap Between Shifts</Label>
+      <Label className="text-xs font-medium min-w-[200px]">Separate shift-pattern gap</Label>
       <HoursInput minutes={config.minTimeBetweenShiftsMinutes}
         onChange={m => onChange({ ...config, minTimeBetweenShiftsMinutes: m })}
         className="h-7 w-16 text-xs" />
       <span className="text-[10px] text-muted-foreground">hours</span>
     </div>
+
+    <p className="text-xs text-muted-foreground">This pattern gap and the Time Off &amp; Rest minimum are separate settings; editing one does not update the other. Check both before changing either.</p>
 
     <RuleRow
       label="Shift Rotations"
@@ -440,14 +442,14 @@ const ContractCard = ({ contract, onUpdate, onDelete, onDuplicate }: {
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {contract.workLimits.minutesPerPeriod.enabled
-              ? `${Math.round((contract.workLimits.minutesPerPeriod.maxMinutes ?? 0) / 60)}h max/${contract.workLimits.minutesPerPeriod.period.toLowerCase()}`
+              ? `${Number(((contract.workLimits.minutesPerPeriod.maxMinutes ?? 0) / 60).toFixed(2))}h max/${contract.workLimits.minutesPerPeriod.period.toLowerCase()}`
               : 'No hour limits'}
             {' · '}
             {contract.timeOffRules.daysOffPerPeriod.enabled
               ? `${contract.timeOffRules.daysOffPerPeriod.minDaysOff} days off/${contract.timeOffRules.daysOffPerPeriod.period.toLowerCase()}`
               : 'No time off rules'}
             {' · '}
-            Rest: {Math.round(contract.timeOffRules.minTimeBetweenShiftsMinutes / 60)}h
+            Rest: {Number((contract.timeOffRules.minTimeBetweenShiftsMinutes / 60).toFixed(2))}h
           </p>
         </div>
 
@@ -475,7 +477,7 @@ const ContractCard = ({ contract, onUpdate, onDelete, onDuplicate }: {
       {expanded && (
         <CardContent className="pt-0 space-y-4 border-t mx-4 px-0 pb-4 mt-0 pt-4">
           {/* Contract identity */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Contract Name</Label>
               <Input value={contract.name}
@@ -500,10 +502,10 @@ const ContractCard = ({ contract, onUpdate, onDelete, onDuplicate }: {
                 onValueChange={v => onUpdate({ ...contract, priority: v as any })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CRITICAL" className="text-xs">Critical (10×)</SelectItem>
-                  <SelectItem value="HIGH" className="text-xs">High (7×)</SelectItem>
-                  <SelectItem value="NORMAL" className="text-xs">Normal (4×)</SelectItem>
-                  <SelectItem value="LOW" className="text-xs">Low (1×)</SelectItem>
+                  <SelectItem value="CRITICAL" className="text-xs">Critical (highest)</SelectItem>
+                  <SelectItem value="HIGH" className="text-xs">High</SelectItem>
+                  <SelectItem value="NORMAL" className="text-xs">Normal</SelectItem>
+                  <SelectItem value="LOW" className="text-xs">Low (lowest)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

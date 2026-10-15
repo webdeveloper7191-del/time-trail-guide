@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { formatTime12h } from '@/lib/timeFormat';
 import {
   type ConstraintCategory,
   type ConstraintDefinition,
@@ -158,16 +159,16 @@ const RULE_PRESETS: { id: string; label: string; emoji: string; description: str
 const HELP_TEXT = {
   enforcement: {
     title: 'Enforcement Level',
-    description: 'Controls how strictly the solver treats this constraint.',
+    description: 'Describes how strictly this proposed policy should apply. These category policies are not connected to Auto-Schedule.',
     options: {
-      HARD: 'The solver will NEVER violate this rule. If it cannot be satisfied, the schedule is considered infeasible. Use for legal/safety requirements.',
-      SOFT: 'The solver will TRY to satisfy this rule but may violate it if needed. Violations incur a penalty based on weight & priority.',
-      OFF: 'This constraint is completely disabled and ignored by the solver.',
+      HARD: 'Proposed mandatory check. This choice does not currently block assignments or enforce legal requirements.',
+      SOFT: 'Proposed preference that may be traded off against other goals. It does not currently change assignment scoring.',
+      OFF: 'Excluded from the proposed policy. Existing scheduling checks elsewhere are unchanged.',
     },
   },
   satisfiability: {
-    title: 'Satisfiability',
-    description: 'Determines whether the solver must satisfy this rule or just prefer it.',
+    title: 'Legacy scoring mode',
+    description: 'Separate legacy scoring metadata, not synchronised with the rule’s Required / Preferred choice.',
     options: {
       REQUIRED: 'Must be satisfied — treated as a hard blocker. The solver will not produce a solution that violates this.',
       PREFERRED: 'Should be satisfied — the solver will try its best but can break this rule, applying a penalty weighted by priority.',
@@ -175,12 +176,12 @@ const HELP_TEXT = {
   },
   priority: {
     title: 'Priority (1–10)',
-    description: 'Sets the relative importance when multiple soft constraints conflict. Lower number = higher priority. The multiplier shows how much the penalty is amplified.',
+    description: 'Proposed relative importance for preferences: 1 is highest and 10 is lowest. This does not currently affect Auto-Schedule.',
     scale: '1–2 = Critical (10× penalty), 3–4 = High (7×), 5–6 = Medium (5×), 7–8 = Low (3×), 9–10 = Minimal (1×)',
   },
   weight: {
     title: 'Weight (1–100)',
-    description: 'Fine-tunes the penalty score within the same priority level. Higher weight = larger penalty for violations. Two constraints at the same priority but different weights will have proportionally different penalties.',
+    description: 'Proposed score importance from 1 to 100. Higher values express a stronger preference, not a dollar amount or pay rate.',
     example: 'E.g., Weight 80 at Priority 3 produces a bigger penalty than Weight 20 at Priority 3.',
   },
 };
@@ -422,12 +423,12 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
                 <EnforcementSelector value={rule.enforcement || 'SOFT'} onChange={v => onUpdate({ ...rule, enforcement: v })} />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs text-muted-foreground">Priority:</Label>
+                <Label className="text-xs text-muted-foreground">Priority (1 = highest):</Label>
                 <Select value={String(rule.priority ?? 5)} onValueChange={v => onUpdate({ ...rule, priority: Number(v) })}>
                   <SelectTrigger className="h-7 w-20 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => (
-                      <SelectItem key={p} value={String(p)} className="text-xs">{p}</SelectItem>
+                      <SelectItem key={p} value={String(p)} className="text-xs">{p}{p === 1 ? ' — Highest' : p === 10 ? ' — Lowest' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -442,7 +443,7 @@ const ConditionalRuleCard = ({ rule, definition, onUpdate, onRemove }: {
             {/* Parameter overrides */}
             {definition.parameters.length > 0 && (
               <div className="space-y-1.5 mt-2">
-                <Label className="text-[10px] text-muted-foreground">Parameter Overrides (leave empty to use default):</Label>
+                <Label className="text-[10px] text-muted-foreground">Exception values (empty numeric fields inherit the base rule):</Label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-3">
                   {definition.parameters.map(param => (
                     <div key={param.key} className="flex items-center gap-2">
@@ -534,14 +535,6 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
     )}>
       {/* Main Row */}
       <div className="flex flex-wrap items-center gap-3 px-4 py-4">
-        {/* Code */}
-        <Badge variant="outline" className={cn(
-          "text-[10px] font-mono px-1.5 shrink-0 min-w-[32px] justify-center",
-          definition.code.startsWith('H') ? "border-destructive/30 text-destructive" : "border-primary/30 text-primary"
-        )}>
-          {definition.code}
-        </Badge>
-
         {/* Name + Description */}
         <Button variant="ghost" className="flex-1 min-w-[180px] h-auto p-0 text-left justify-start hover:bg-transparent whitespace-normal" onClick={() => canExpand && setExpanded(!expanded)} aria-expanded={expanded}>
           <div className="w-full">
@@ -552,14 +545,6 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             {hasOverride && isLocationScope && (
               <Badge variant="secondary" className="text-[9px] px-1 bg-primary/10 text-primary border-primary/20">
                 Override
-              </Badge>
-            )}
-            {isActive && (
-              <Badge variant="outline" className={cn(
-                "text-[9px] px-1",
-                satisfiability === 'REQUIRED' ? "border-destructive/30 text-destructive" : "border-primary/30 text-primary"
-              )}>
-                {satisfiability}
               </Badge>
             )}
             {conditionalRules.length > 0 && (
@@ -592,31 +577,32 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
           {/* Business Reason */}
           <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
             <Info className="h-3 w-3 mt-0.5 shrink-0" />
-            <span><strong>Why:</strong> {definition.businessReason}</span>
+            <span><strong>Policy context:</strong> {definition.businessReason}</span>
           </div>
 
-          <Button variant="ghost" size="sm" className="text-primary" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>Advanced scoring & conditional rules <ChevronDown className={cn("ml-2 h-3.5 w-3.5", advanced && "rotate-180")} /></Button>
+          {definition.example && <p className="text-xs text-muted-foreground border-l-2 border-border pl-3">{definition.example}</p>}
+          <Button variant="ghost" size="sm" className="text-primary" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>Scoring & policy exceptions <ChevronDown className={cn("ml-2 h-3.5 w-3.5", advanced && "rotate-180")} /></Button>
           {/* Satisfiability + Priority + Weight Row */}
           {advanced && <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
-                <Label className="text-xs text-muted-foreground">Advanced enforcement:</Label>
+                <Label className="text-xs text-muted-foreground">Legacy scoring mode:</Label>
                 <HelpTooltip title={HELP_TEXT.satisfiability.title} description={HELP_TEXT.satisfiability.description} />
               </div>
-              <SatisfiabilitySelector value={satisfiability} onChange={onSatisfiabilityChange} />
+              <span className="text-xs text-muted-foreground">{satisfiability === 'REQUIRED' ? 'Required' : 'Preferred'} (legacy metadata)</span>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
-                <Label className="text-xs text-muted-foreground">Priority:</Label>
+                <Label className="text-xs text-muted-foreground">Priority (1 = highest):</Label>
                 <HelpTooltip title={HELP_TEXT.priority.title} description={HELP_TEXT.priority.description} extra={HELP_TEXT.priority.scale} />
               </div>
               <Select value={String(priority)} onValueChange={v => onPriorityChange(Number(v))}>
-                <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => (
                     <SelectItem key={p} value={String(p)} className="text-xs">
-                      {p} ({p <= 2 ? '10×' : p <= 4 ? '7×' : p <= 6 ? '5×' : p <= 8 ? '3×' : '1×'})
+                      {p} — {p <= 2 ? 'Critical' : p <= 4 ? 'High' : p <= 6 ? 'Normal' : p <= 8 ? 'Low' : 'Lowest'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -640,7 +626,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             <>
               <Separator />
               <div className="space-y-2.5">
-                <Label className="text-xs font-semibold text-foreground">Configuration Values</Label>
+                <Label className="text-xs font-semibold text-foreground">Rule settings</Label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-5 gap-y-4">
                   {definition.parameters.filter(param => advanced || !/penalty|bonus|reward|weight/i.test(param.key)).map(param => (
                     <div key={param.key} className="flex items-center gap-2">
@@ -671,10 +657,16 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
                         </Select>
                       )}
                       {param.type === 'boolean' && (
-                        <Switch checked={parameters[param.key] ?? param.defaultValue}
+                        <Switch aria-label={param.label} checked={parameters[param.key] ?? param.defaultValue}
                           onCheckedChange={v => onParameterChange(param.key, v)} />
                       )}
-                      {param.type === 'text' && (
+                      {param.type === 'text' && param.key === 'nightShiftStartAfter' && (
+                        <Select value={parameters[param.key] ?? param.defaultValue} onValueChange={v => onParameterChange(param.key, v)}>
+                          <SelectTrigger className="h-7 w-40 text-xs" aria-label={param.label}><SelectValue /></SelectTrigger>
+                          <SelectContent>{Array.from({ length: 96 }, (_, i) => { const time = `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`; return <SelectItem key={time} value={time}>{formatTime12h(time)}</SelectItem>; })}</SelectContent>
+                        </Select>
+                      )}
+                      {param.type === 'text' && param.key !== 'nightShiftStartAfter' && (
                         <Input value={parameters[param.key] ?? param.defaultValue}
                           onChange={e => onParameterChange(param.key, e.target.value)}
                           className="h-7 w-40 text-xs" />
@@ -689,17 +681,18 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             </>
           )}
 
+          {advanced && isLocationScope && <p className="text-xs text-muted-foreground">Policy exceptions are business-wide and cannot be edited as location overrides.</p>}
           {/* Conditional Rules */}
-          {advanced && <><Separator />
+          {advanced && !isLocationScope && <><Separator />
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <GitBranch className="h-3.5 w-3.5 text-primary" />
-                <Label className="text-xs font-semibold text-foreground">Conditional Rules</Label>
+                <Label className="text-xs font-semibold text-foreground">Policy exceptions</Label>
                 <HelpTooltip
                   title="Conditional Rules"
                   description="Add rules that override this constraint's settings when specific conditions are met (e.g., different max hours on weekends or for casual staff)."
-                  extra="Conditions use AND logic — all conditions in a rule must match. Multiple rules are evaluated top-down; first matching rule wins."
+                  extra="The proposed policy uses all conditions together. Multiple selected values within one condition mean any of those values. First matching exception takes precedence; these settings are not currently enforced."
                 />
                 {conditionalRules.length > 0 && (
                   <Badge variant="secondary" className="text-[9px] px-1.5">
@@ -759,7 +752,7 @@ const ConstraintRow = ({ definition, enforcement, satisfiability, weight, priori
             {conditionalRules.length === 0 && (
               <div className="flex items-center gap-3 pl-5 py-2">
                 <p className="text-[10px] text-muted-foreground italic">
-                  No conditional rules — this constraint applies uniformly.
+                  No exceptions in this proposed policy.
                 </p>
                 <div className="flex gap-1.5 flex-wrap">
                   {RULE_PRESETS.slice(0, 3).map(preset => (
@@ -926,7 +919,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
   const isLocationScope = constraintConfig.scope === 'location';
 
   const locations = [
-    { id: 'loc-1', name: 'Melbourne CBD Centre' },
+    { id: 'loc-1', name: 'Melbourne CBD' },
     { id: 'loc-2', name: 'Sydney North Shore' },
     { id: 'loc-3', name: 'Brisbane Southbank' },
   ];
@@ -966,7 +959,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
     });
   };
 
-  const handleSave = () => { toast.success('Constraint configuration saved successfully'); };
+  const handleSave = () => { toast.info('Preview only — changes are not saved and do not update Auto-Schedule.'); };
 
   const handleReset = () => {
     setConstraintConfig(createDefaultConstraintsConfig());
@@ -1038,38 +1031,11 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
               <HelpCircle className="h-4 w-4 text-primary" />
               Understanding Constraint Configuration
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium">🔴 Hard / 🟡 Soft / ⚪ Off — Enforcement</p>
-                <p className="text-[11px] text-muted-foreground">
-                  <strong>Hard</strong> constraints must never be violated — the solver treats them as absolute rules (e.g., legal requirements).
-                  <strong> Soft</strong> constraints are best-effort — the solver tries to satisfy them but can break them if needed, applying a penalty.
-                  <strong> Off</strong> disables the constraint entirely.
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium">Required vs Preferred — Satisfiability</p>
-                <p className="text-[11px] text-muted-foreground">
-                  <strong>Required</strong> means the rule acts as a hard blocker — it must be satisfied.
-                  <strong> Preferred</strong> means the solver will try but can break it, using priority & weight to determine the penalty cost.
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium">Priority (1–10) — Relative Importance</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Determines which soft constraints the solver prioritises when it can't satisfy all of them. Lower number = higher importance.
-                  Priority 1–2 applies a <strong>10× penalty multiplier</strong>, 3–4 = 7×, 5–6 = 5×, 7–8 = 3×, 9–10 = 1×.
-                  A priority-1 constraint will almost always be satisfied before a priority-10 one.
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium">Weight (1–100) — Fine-Tuning</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Within the same priority level, weight controls how much penalty a violation costs. A constraint with weight 80 costs 4× more than one with weight 20
-                  at the same priority. Use weight to fine-tune between constraints of equal importance.
-                  <br /><strong>Formula:</strong> Penalty = Weight × Priority Multiplier × Violation Count.
-                </p>
-              </div>
+            <div className="space-y-3 text-xs text-muted-foreground">
+              <p><strong>Required</strong> describes a mandatory proposed check. <strong>Preferred</strong> describes a goal that can be balanced with other goals. <strong>Off</strong> excludes the rule from this proposed policy.</p>
+              <p><strong>Priority:</strong> 1 is highest and 10 is lowest. <strong>Weight:</strong> a larger value expresses a stronger preference. Scoring values are not money and do not set pay rates.</p>
+              <p><strong>Policy exceptions:</strong> describe different values for selected days, shift types or employment types. They do not grant legal exemptions or manager approval.</p>
+              <p><strong>Current status:</strong> this editor is a preview. Its changes are not saved or passed to Auto-Schedule. Existing demand, award, availability and assignment checks elsewhere are unchanged.</p>
             </div>
           </CardContent>
         </Card>
@@ -1095,7 +1061,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
           <span className="font-medium">{stats.off} Off</span>
         </div>
         <Separator orientation="vertical" className="h-4" />
-        <span className="text-muted-foreground">{stats.total} total constraints</span>
+        <span className="text-muted-foreground">{stats.total} policy definitions (including contract summaries)</span>
       </div>
 
       {/* Scope Toggle */}
@@ -1162,7 +1128,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
           {activeTab === 'contracts' ? <>
             <div className="border-b border-border pb-4">
               <h2 className="text-lg font-semibold">Contract templates</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Employment-specific hours, rest and shift patterns.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Employment-specific hours, rest and shift patterns. This editor is a preview; changes here are not saved or applied to Auto-Schedule.</p>
               <details className="mt-3 text-xs">
                 <summary className="cursor-pointer text-primary">Industry starting points</summary>
                 <div className="flex flex-wrap gap-2 mt-3">{industryPresets.map(preset => <Button key={preset.id} variant={activePreset === preset.id ? 'secondary' : 'outline'} size="sm" onClick={() => applyPreset(preset.id)}>{preset.name}</Button>)}</div>
@@ -1171,7 +1137,7 @@ export function SchedulingConstraintsPanel({ onReady }: SchedulingConstraintsPan
             <ContractTemplatesSection contracts={contractConfig.employeeConstraints.contracts.contracts} onChange={contracts => setContractConfig(prev => ({ ...prev, employeeConstraints: { ...prev.employeeConstraints, contracts: { ...prev.employeeConstraints.contracts, contracts } } }))} />
           </> : <>
             <ConstraintCategoryGuide category={activeTab as ConstraintCategory} onContracts={() => setActiveTab('contracts')} />
-            {activeTab !== 'work_limits' && <p className="text-xs text-muted-foreground border-l-2 border-primary pl-3">Policy configuration preview · These category settings are not currently connected to Auto-Schedule.</p>}
+            {activeTab !== 'work_limits' && <p className="text-xs text-muted-foreground border-l-2 border-primary pl-3">Policy preview only · Changes here are not saved or applied to Auto-Schedule. Required rules do not currently block assignments; pay, approvals and notifications are unchanged.</p>}
             {activeTab === 'work_limits' ? <div className="space-y-3">
               <h3 className="text-sm font-semibold">Contract work & rest limits</h3>
               <div className="overflow-x-auto">
