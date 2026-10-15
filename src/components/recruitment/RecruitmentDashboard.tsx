@@ -164,12 +164,13 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
               <SelectContent>{jobs.map(j => <SelectItem key={j.id} value={j.id}>{j.title} — {j.location}</SelectItem>)}</SelectContent>
             </Select>
             {selectedJob && <p className="text-sm text-muted-foreground">Drag cards between stages. Rejected/withdrawn: {jobApplicants.filter(a => a.status === 'rejected' || a.status === 'withdrawn').length}</p>}
+            <Button variant="outline" size="sm" onClick={() => setStagesOpen(true)}><Settings2 className="h-4 w-4 mr-2" />Customise stages</Button>
           </div>
           {!selectedJobId ? (
             <Card className="border-dashed"><CardContent className="py-8 text-center"><p className="text-muted-foreground">Select a job to view its pipeline</p></CardContent></Card>
           ) : (
-            <div className="grid grid-cols-5 gap-4 overflow-x-auto pb-4">
-              {pipelineStages.map(stage => {
+            <div className="grid gap-4 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${pipeline.length}, minmax(200px, 1fr))` }}>
+              {pipeline.map(stage => {
                 const stageApplicants = jobApplicants.filter(a => a.status === stage.id);
                 return (
                   <div key={stage.id} className="min-w-[200px]" onDragOver={e => e.preventDefault()} onDrop={() => drop(stage.id)}>
@@ -213,7 +214,8 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="all">All</SelectItem>
-                {Object.entries(applicationStatusLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                {pipeline.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                {terminalStatuses.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -229,7 +231,7 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
                   <tr key={a.id} className="border-b last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onViewApplicant(a)}>
                     <td className="p-3 font-medium">{a.firstName} {a.lastName}<div className="text-xs text-muted-foreground">{a.email}</div></td>
                     <td className="p-3">{jobTitle(a.jobId)}</td>
-                    <td className="p-3"><Badge variant={a.status === 'rejected' ? 'destructive' : 'secondary'}>{applicationStatusLabels[a.status]}</Badge></td>
+                    <td className="p-3"><Badge variant={a.status === 'rejected' ? 'destructive' : 'secondary'}>{stageLabel(a.status, pipeline)}</Badge></td>
                     <td className="p-3">{a.rating ? `${a.rating}/5` : '—'}</td>
                     <td className="p-3">{a.source}</td>
                     <td className="p-3">{format(parseISO(a.appliedAt), 'd MMM yyyy')}</td>
