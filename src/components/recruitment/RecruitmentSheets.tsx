@@ -557,6 +557,11 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
 
           {a.coverLetter && <section className="space-y-1"><h4 className="text-sm font-semibold">Cover letter</h4><div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: a.coverLetter }} /></section>}
 
+          <section className="space-y-2">
+            <h4 className="text-sm font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4" />AI fit summary</h4>
+            <CandidateFitSummary applicant={a} job={job} />
+          </section>
+
           {/* Interviews */}
           <section className="space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2"><Calendar className="h-4 w-4" />Interviews</h4>
