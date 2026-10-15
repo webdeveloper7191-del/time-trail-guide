@@ -8,15 +8,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
-  JobPosting, Applicant, Interview, pipelineStages, jobStatusLabels, applicationStatusLabels, ApplicationStatus,
+  JobPosting, Applicant, Interview, jobStatusLabels, stageLabel, terminalStatuses,
   employmentTypeLabels, interviewTypeLabels,
 } from '@/types/recruitment';
 import { StaffMember } from '@/types/staff';
 import { format, parseISO, isAfter } from 'date-fns';
-import { Briefcase, Users, Calendar, MapPin, DollarSign, Plus, Star, MoreHorizontal, UserPlus, Search } from 'lucide-react';
+import { Briefcase, Users, Calendar, MapPin, DollarSign, Plus, Star, MoreHorizontal, UserPlus, Search, Settings2, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { recruitmentStore, applicantCountFor } from '@/lib/recruitmentStore';
+import { recruitmentStore, applicantCountFor, useRecruitment } from '@/lib/recruitmentStore';
 
 interface RecruitmentDashboardProps {
   jobs: JobPosting[];
@@ -39,6 +40,9 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [dragId, setDragId] = useState<string | null>(null);
+  const [stagesOpen, setStagesOpen] = useState(false);
+  const [newStageName, setNewStageName] = useState('');
+  const { pipeline } = useRecruitment();
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
   const jobApplicants = selectedJobId ? applicants.filter(a => a.jobId === selectedJobId) : [];
@@ -58,14 +62,14 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
     return matches && st;
   }), [applicants, search, statusFilter]);
 
-  const drop = (status: ApplicationStatus) => {
+  const drop = (status: string) => {
     if (!dragId) return;
     const a = applicants.find(x => x.id === dragId);
     setDragId(null);
     if (!a || a.status === status) return;
     if (status === 'hired') { toast.info('Open the applicant to hire and start onboarding'); onViewApplicant(a); return; }
-    recruitmentStore.moveApplicant(a.id, status, `Moved to ${applicationStatusLabels[status]}`);
-    toast.success(`${a.firstName} moved to ${applicationStatusLabels[status]}`);
+    recruitmentStore.moveApplicant(a.id, status, `Moved to ${stageLabel(status, pipeline)}`);
+    toast.success(`${a.firstName} moved to ${stageLabel(status, pipeline)}`);
   };
 
   const stats = [
@@ -160,12 +164,13 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
               <SelectContent>{jobs.map(j => <SelectItem key={j.id} value={j.id}>{j.title} — {j.location}</SelectItem>)}</SelectContent>
             </Select>
             {selectedJob && <p className="text-sm text-muted-foreground">Drag cards between stages. Rejected/withdrawn: {jobApplicants.filter(a => a.status === 'rejected' || a.status === 'withdrawn').length}</p>}
+            <Button variant="outline" size="sm" onClick={() => setStagesOpen(true)}><Settings2 className="h-4 w-4 mr-2" />Customise stages</Button>
           </div>
           {!selectedJobId ? (
             <Card className="border-dashed"><CardContent className="py-8 text-center"><p className="text-muted-foreground">Select a job to view its pipeline</p></CardContent></Card>
           ) : (
-            <div className="grid grid-cols-5 gap-4 overflow-x-auto pb-4">
-              {pipelineStages.map(stage => {
+            <div className="grid gap-4 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${pipeline.length}, minmax(200px, 1fr))` }}>
+              {pipeline.map(stage => {
                 const stageApplicants = jobApplicants.filter(a => a.status === stage.id);
                 return (
                   <div key={stage.id} className="min-w-[200px]" onDragOver={e => e.preventDefault()} onDrop={() => drop(stage.id)}>
@@ -209,7 +214,8 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="all">All</SelectItem>
-                {Object.entries(applicationStatusLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                {pipeline.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                {terminalStatuses.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -225,7 +231,7 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
                   <tr key={a.id} className="border-b last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onViewApplicant(a)}>
                     <td className="p-3 font-medium">{a.firstName} {a.lastName}<div className="text-xs text-muted-foreground">{a.email}</div></td>
                     <td className="p-3">{jobTitle(a.jobId)}</td>
-                    <td className="p-3"><Badge variant={a.status === 'rejected' ? 'destructive' : 'secondary'}>{applicationStatusLabels[a.status]}</Badge></td>
+                    <td className="p-3"><Badge variant={a.status === 'rejected' ? 'destructive' : 'secondary'}>{stageLabel(a.status, pipeline)}</Badge></td>
                     <td className="p-3">{a.rating ? `${a.rating}/5` : '—'}</td>
                     <td className="p-3">{a.source}</td>
                     <td className="p-3">{format(parseISO(a.appliedAt), 'd MMM yyyy')}</td>
@@ -256,6 +262,51 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
           ))}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={stagesOpen} onOpenChange={setStagesOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customise pipeline stages</DialogTitle>
+            <DialogDescription>Rename, reorder, add or remove stages. A stage can only be removed while no applicants are in it.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {pipeline.map((stage, idx) => {
+              const count = applicants.filter(a => a.status === stage.id).length;
+              return (
+                <div key={stage.id} className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <Button variant="ghost" size="icon" className="h-5 w-6" disabled={idx === 0} aria-label="Move up"
+                      onClick={() => recruitmentStore.moveStage(stage.id, -1)}><ArrowUp className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-6" disabled={idx === pipeline.length - 1} aria-label="Move down"
+                      onClick={() => recruitmentStore.moveStage(stage.id, 1)}><ArrowDown className="h-3 w-3" /></Button>
+                  </div>
+                  <Input defaultValue={stage.label} key={`${stage.id}-${stage.label}`} className="flex-1"
+                    onBlur={e => { if (e.target.value.trim() && e.target.value.trim() !== stage.label) recruitmentStore.renameStage(stage.id, e.target.value); }} />
+                  <span className="text-xs text-muted-foreground w-16 text-right">{count} applicant{count === 1 ? '' : 's'}</span>
+                  <Button variant="ghost" size="icon" aria-label={`Remove ${stage.label}`}
+                    disabled={count > 0}
+                    title={count > 0 ? 'Move applicants out of this stage first' : 'Remove stage'}
+                    onClick={() => {
+                      if (!recruitmentStore.removeStage(stage.id)) toast.error('Stage has applicants — move them first');
+                      else toast.success(`Stage "${stage.label}" removed`);
+                    }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-2">
+            <Input placeholder="New stage name" value={newStageName} onChange={e => setNewStageName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newStageName.trim()) { recruitmentStore.addStage(newStageName); setNewStageName(''); } }} />
+            <Button variant="outline" disabled={!newStageName.trim()}
+              onClick={() => { recruitmentStore.addStage(newStageName); setNewStageName(''); }}><Plus className="h-4 w-4 mr-1" />Add</Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setStagesOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

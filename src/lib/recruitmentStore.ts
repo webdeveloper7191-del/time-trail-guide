@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { JobPosting, Applicant, Interview, ApplicationStatus } from '@/types/recruitment';
+import { JobPosting, Applicant, Interview, ApplicationStatus, PipelineStageConfig, defaultPipelineStages } from '@/types/recruitment';
 import { mockJobs, mockApplicants, mockInterviews } from '@/data/mockRecruitmentData';
 
 const KEY = 'rai.recruitment.v1';
 
-interface State { jobs: JobPosting[]; applicants: Applicant[]; interviews: Interview[] }
+interface State { jobs: JobPosting[]; applicants: Applicant[]; interviews: Interview[]; pipeline: PipelineStageConfig[] }
 
 const now = () => new Date().toISOString();
 const uid = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -34,11 +34,14 @@ function load(): State {
         }
         return j;
       });
+      if (!Array.isArray(parsed.pipeline) || parsed.pipeline.length === 0) {
+        parsed.pipeline = [...defaultPipelineStages];
+      }
       cache = parsed;
       return cache!;
     }
   } catch { /* ignore */ }
-  cache = { jobs: [...mockJobs], applicants: [...mockApplicants], interviews: [...mockInterviews] };
+  cache = { jobs: [...mockJobs], applicants: [...mockApplicants], interviews: [...mockInterviews], pipeline: [...defaultPipelineStages] };
   return cache;
 }
 
@@ -77,6 +80,7 @@ export const recruitmentStore = {
   deleteJob(id: string) {
     const s = load();
     save({
+      ...s,
       jobs: s.jobs.filter(j => j.id !== id),
       applicants: s.applicants.filter(a => a.jobId !== id),
       interviews: s.interviews.filter(i => i.jobId !== id),
@@ -95,7 +99,7 @@ export const recruitmentStore = {
     save({ ...s, applicants: s.applicants.map(a => a.id === id ? { ...a, ...updates, updatedAt: now() } : a) });
   },
 
-  moveApplicant(id: string, status: ApplicationStatus, note?: string) {
+  moveApplicant(id: string, status: string, note?: string) {
     const s = load();
     const app = s.applicants.find(a => a.id === id);
     if (!app) return;
@@ -120,6 +124,45 @@ export const recruitmentStore = {
   updateInterview(id: string, updates: Partial<Interview>) {
     const s = load();
     save({ ...s, interviews: s.interviews.map(i => i.id === id ? { ...i, ...updates, updatedAt: now() } : i) });
+  },
+
+  // ----- Editable pipeline stages -----
+  renameStage(id: string, label: string) {
+    const s = load();
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    save({ ...s, pipeline: s.pipeline.map(p => p.id === id ? { ...p, label: trimmed } : p) });
+  },
+
+  addStage(label: string): PipelineStageConfig | null {
+    const s = load();
+    const trimmed = label.trim();
+    if (!trimmed) return null;
+    // Insert before 'hired' so hired stays last
+    const stage: PipelineStageConfig = { id: uid('stage'), label: trimmed, builtIn: false };
+    const idx = s.pipeline.findIndex(p => p.id === 'hired');
+    const pipeline = [...s.pipeline];
+    pipeline.splice(idx === -1 ? pipeline.length : idx, 0, stage);
+    save({ ...s, pipeline });
+    return stage;
+  },
+
+  /** Only stages with no applicants can be removed. Returns false if blocked. */
+  removeStage(id: string): boolean {
+    const s = load();
+    if (s.applicants.some(a => a.status === id)) return false;
+    save({ ...s, pipeline: s.pipeline.filter(p => p.id !== id) });
+    return true;
+  },
+
+  moveStage(id: string, direction: -1 | 1) {
+    const s = load();
+    const idx = s.pipeline.findIndex(p => p.id === id);
+    const target = idx + direction;
+    if (idx === -1 || target < 0 || target >= s.pipeline.length) return;
+    const pipeline = [...s.pipeline];
+    [pipeline[idx], pipeline[target]] = [pipeline[target], pipeline[idx]];
+    save({ ...s, pipeline });
   },
 
   reset() { localStorage.removeItem(KEY); cache = null; load(); listeners.forEach(l => l()); },
