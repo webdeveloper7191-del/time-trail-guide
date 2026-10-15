@@ -262,6 +262,51 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
           ))}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={stagesOpen} onOpenChange={setStagesOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customise pipeline stages</DialogTitle>
+            <DialogDescription>Rename, reorder, add or remove stages. A stage can only be removed while no applicants are in it.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {pipeline.map((stage, idx) => {
+              const count = applicants.filter(a => a.status === stage.id).length;
+              return (
+                <div key={stage.id} className="flex items-center gap-2">
+                  <div className="flex flex-col">
+                    <Button variant="ghost" size="icon" className="h-5 w-6" disabled={idx === 0} aria-label="Move up"
+                      onClick={() => recruitmentStore.moveStage(stage.id, -1)}><ArrowUp className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-5 w-6" disabled={idx === pipeline.length - 1} aria-label="Move down"
+                      onClick={() => recruitmentStore.moveStage(stage.id, 1)}><ArrowDown className="h-3 w-3" /></Button>
+                  </div>
+                  <Input defaultValue={stage.label} key={`${stage.id}-${stage.label}`} className="flex-1"
+                    onBlur={e => { if (e.target.value.trim() && e.target.value.trim() !== stage.label) recruitmentStore.renameStage(stage.id, e.target.value); }} />
+                  <span className="text-xs text-muted-foreground w-16 text-right">{count} applicant{count === 1 ? '' : 's'}</span>
+                  <Button variant="ghost" size="icon" aria-label={`Remove ${stage.label}`}
+                    disabled={count > 0}
+                    title={count > 0 ? 'Move applicants out of this stage first' : 'Remove stage'}
+                    onClick={() => {
+                      if (!recruitmentStore.removeStage(stage.id)) toast.error('Stage has applicants — move them first');
+                      else toast.success(`Stage "${stage.label}" removed`);
+                    }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-2">
+            <Input placeholder="New stage name" value={newStageName} onChange={e => setNewStageName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newStageName.trim()) { recruitmentStore.addStage(newStageName); setNewStageName(''); } }} />
+            <Button variant="outline" disabled={!newStageName.trim()}
+              onClick={() => { recruitmentStore.addStage(newStageName); setNewStageName(''); }}><Plus className="h-4 w-4 mr-1" />Add</Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setStagesOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
