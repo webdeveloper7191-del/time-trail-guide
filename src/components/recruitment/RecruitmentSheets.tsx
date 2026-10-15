@@ -15,12 +15,12 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import {
   JobPosting, Applicant, Interview, EmploymentType, InterviewType, ApplicationStatus,
-  interviewTypeLabels, applicationStatusLabels, jobStatusLabels,
+  interviewTypeLabels, applicationStatusLabels, jobStatusLabels, stageLabel,
   WorkplaceOption, PayType, AdType, seekWorkTypes, workplaceOptionLabels, payTypeLabels, adTypeLabels,
   ScreeningQuestion, QuestionType, ApplicantAnswer
 } from '@/types/recruitment';
 import { StaffMember } from '@/types/staff';
-import { recruitmentStore } from '@/lib/recruitmentStore';
+import { recruitmentStore, useRecruitment } from '@/lib/recruitmentStore';
 import { seekCategories as seekCategoriesData } from '@/lib/seekCategories';
 import { predefinedQuestions } from '@/lib/questionLibrary';
 
