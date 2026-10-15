@@ -97,7 +97,7 @@ export interface Applicant {
   linkedInUrl?: string;
   portfolioUrl?: string;
   coverLetter?: string;
-  status: ApplicationStatus;
+  status: string; // ApplicationStatus or a custom pipeline stage id
   rating: number; // 1-5 stars
   notes: ApplicantNote[];
   screeningAnswers?: ApplicantAnswer[];
@@ -135,6 +135,33 @@ export interface PipelineStage {
   id: ApplicationStatus;
   label: string;
   color: string;
+}
+
+/** Editable pipeline stage. Built-in stages use ApplicationStatus ids; custom stages get `custom-*` ids. */
+export interface PipelineStageConfig {
+  id: string;
+  label: string;
+  builtIn: boolean;
+}
+
+export const defaultPipelineStages: PipelineStageConfig[] = [
+  { id: 'new', label: 'New', builtIn: true },
+  { id: 'screening', label: 'Screening', builtIn: true },
+  { id: 'interview', label: 'Interview', builtIn: true },
+  { id: 'offer', label: 'Offer', builtIn: true },
+  { id: 'hired', label: 'Hired', builtIn: true },
+];
+
+/** Terminal statuses that never appear as pipeline columns. */
+export const terminalStatuses: { id: ApplicationStatus; label: string }[] = [
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'withdrawn', label: 'Withdrawn' },
+];
+
+export function stageLabel(status: string, stages: PipelineStageConfig[]): string {
+  const custom = stages.find(s => s.id === status);
+  if (custom) return custom.label;
+  return applicationStatusLabels[status as ApplicationStatus] ?? status;
 }
 
 // Label mappings
