@@ -39,6 +39,10 @@ export interface Course {
   certificateOnCompletion: boolean;
   validityPeriod?: number; // days, for compliance courses
   passingScore: number; // percentage
+  availableFrom?: string;
+  availableUntil?: string;
+  assignedRoles?: string[];
+  assignedLocations?: string[];
   maxAttempts?: number;
   tags: string[];
   rating: number;
@@ -73,6 +77,7 @@ export interface ModuleContent {
 export interface Assessment {
   id: string;
   title: string;
+  retakeLimit?: number;
   type: AssessmentType;
   questions: AssessmentQuestion[];
   passingScore: number;

@@ -154,7 +154,11 @@ export function CoursePlayer({
   const handleAssessmentSubmit = async () => {
     if (!enrollment || !currentModule?.assessment) return;
     
-    const result = await onAssessmentSubmit(enrollment.id, currentModule.assessment.id, assessmentAnswers);
+    const assessment = currentModule.assessment;
+    const result = await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);
+    const attempts = enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id);
+    const retakeLimit = assessment.retakeLimit ?? assessment.maxAttempts ?? Infinity;
+    const canRetake = attempts.length < retakeLimit;
     setAssessmentResult(result);
     setAssessmentSubmitted(true);
     

@@ -31,6 +31,24 @@ export const seekCategories = [
 ];
 
 export interface JobPosting {
+
+export type QuestionType = "yes_no" | "number" | "single_choice" | "text";
+
+export interface ScreeningQuestion {
+  id: string;
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  preferredAnswer?: string | number | boolean;
+  isRequired: boolean;
+  isCustom?: boolean;
+}
+
+export interface ApplicantAnswer {
+  questionId: string;
+  questionText: string;
+  answer: string | number | boolean;
+}
   id: string;
   title: string;
   department: string;
@@ -57,7 +75,7 @@ export interface JobPosting {
   payDetails?: string;
   jobSummary?: string;
   keySellingPoints?: string[];
-  screeningQuestions?: string[];
+  screeningQuestions?: ScreeningQuestion[];
   internalReference?: string;
   videoUrl?: string;
   applicationMethod?: 'internal' | 'external';
@@ -82,6 +100,7 @@ export interface Applicant {
   status: ApplicationStatus;
   rating: number; // 1-5 stars
   notes: ApplicantNote[];
+  screeningAnswers?: ApplicantAnswer[];
   tags: string[];
   source: string;
   appliedAt: string;

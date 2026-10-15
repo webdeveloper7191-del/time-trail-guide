@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/performance/RichTextEditor';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle, Plus, Trash2, CheckCircle2, ChevronDown, ChevronRight, Settings } from "lucide-react";
 import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -15,8 +16,11 @@ import { Switch } from '@/components/ui/switch';
 import {
   JobPosting, Applicant, Interview, EmploymentType, InterviewType, ApplicationStatus,
   interviewTypeLabels, applicationStatusLabels, jobStatusLabels,
-  WorkplaceOption, PayType, AdType, seekWorkTypes, seekCategories, workplaceOptionLabels, payTypeLabels, adTypeLabels,
+  WorkplaceOption, PayType, AdType, seekWorkTypes,  workplaceOptionLabels, payTypeLabels, adTypeLabels,
 } from '@/types/recruitment';
+import { seekCategories as seekCategoriesData } from "@/lib/seekCategories";
+import { predefinedQuestions } from "@/lib/questionLibrary";
+import { ScreeningQuestion, QuestionType, ApplicantAnswer } from "@/types/recruitment";
 import { StaffMember } from '@/types/staff';
 import { recruitmentStore } from '@/lib/recruitmentStore';
 
