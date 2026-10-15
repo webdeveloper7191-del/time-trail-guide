@@ -389,7 +389,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                                 size="sm" 
                                 variant="outline"
                                 className="flex-1"
-                                onClick={() => handleViewCourseDetail(course)}
+                                onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}
                               >
                                 <Eye className="h-3 w-3 mr-1" />
                                 Details
@@ -441,7 +441,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                           {course.duration} min
                         </div>
                         <div className="flex gap-2 mt-3">
-                          <Button size="sm" variant="outline" className="flex-1" onClick={() => handleViewCourseDetail(course)}>
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}>
                             <Eye className="h-3 w-3 mr-1" />
                             Preview
                           </Button>
@@ -542,14 +542,26 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                 {filteredCourses.map((course) => {
                   const enrollment = getEnrollmentForCourse(course.id);
                   const isEnrolled = !!enrollment;
+                  const lockStatus = isCourseLocked(
+                    course,
+                    enrollments.filter(e => e.staffId === currentUserId),
+                    staffMember?.currentPayCondition?.position ? [staffMember.currentPayCondition.position] : [],
+                    staffMember?.locations?.[0] || ""
+                  );
                   
                   return (
                     <TableRow 
                       key={course.id} 
-                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => handleViewCourseDetail(course)}
+                      className={cn("group cursor-pointer hover:bg-muted/50 transition-colors", lockStatus.locked && "opacity-60 cursor-not-allowed")}
+                      onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}
                     >
                       <TableCell>
+                            {lockStatus.locked && (
+                              <div className="flex items-center gap-1 text-amber-600 mt-1">
+                                <Lock className="h-3 w-3" />
+                                <span className="text-[10px] font-medium">{lockStatus.reason}</span>
+                              </div>
+                            )}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                             <GraduationCap className="h-5 w-5 text-primary" />
@@ -595,7 +607,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                             variant="outline"
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => handleViewCourseDetail(course)}
+                            onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             Preview
@@ -603,7 +615,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                           <Button 
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course)}
+                            onClick={() => !lockStatus.locked && (isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course))}
                           >
                             {isEnrolled ? (
                               <>
