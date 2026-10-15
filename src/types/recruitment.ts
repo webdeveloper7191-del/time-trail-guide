@@ -30,8 +30,6 @@ export const seekCategories = [
   'Sales', 'Science & Technology', 'Self Employment', 'Sport & Recreation', 'Trades & Services',
 ];
 
-export interface JobPosting {
-
 export type QuestionType = "yes_no" | "number" | "single_choice" | "text";
 
 export interface ScreeningQuestion {
@@ -49,6 +47,8 @@ export interface ApplicantAnswer {
   questionText: string;
   answer: string | number | boolean;
 }
+
+export interface JobPosting {
   id: string;
   title: string;
   department: string;
