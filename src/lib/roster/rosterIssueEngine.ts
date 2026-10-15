@@ -458,7 +458,7 @@ export function computeAlerts(inputs: AlertEngineInputs): RosterAlert[] {
     const start = shiftStartDateTime(shift);
     const hoursLeft = differenceInHours(start, now);
     if (hoursLeft < 0) continue;
-    if (hoursLeft < settings.openShiftRedHours) {
+    if (hoursLeft <= settings.openShiftRedHours) {
       alerts.push({
         id: `alert-openshift-red-${shift.id}`,
         code: 'open_shift_unfilled',
@@ -467,7 +467,7 @@ export function computeAlerts(inputs: AlertEngineInputs): RosterAlert[] {
         date: shift.date,
         reason: `Open shift starts in ${hoursLeft}h and is still unfilled`,
       });
-    } else if (hoursLeft < settings.openShiftAmberHours) {
+    } else if (hoursLeft <= settings.openShiftAmberHours) {
       alerts.push({
         id: `alert-openshift-amber-${shift.id}`,
         code: 'open_shift_unfilled',
