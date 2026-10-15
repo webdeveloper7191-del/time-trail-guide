@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/performance/RichTextEditor';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle, Plus, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
