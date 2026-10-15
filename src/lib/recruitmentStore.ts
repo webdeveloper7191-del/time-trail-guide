@@ -41,7 +41,6 @@ function load(): State {
   cache = { jobs: [...mockJobs], applicants: [...mockApplicants], interviews: [...mockInterviews] };
   return cache;
 }
-}
 
 function save(next: State) {
   cache = next;
