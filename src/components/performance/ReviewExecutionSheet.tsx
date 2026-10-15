@@ -365,6 +365,9 @@ export function ReviewExecutionSheet({
           )}
         </Stack>
       </Box>
+    </Stack>
+  );
+
   const renderRecognitionSection = () => {
     const reviewPraise = mockPraisePosts.filter(p => 
       p.toStaffId === review.staffId && 
@@ -401,7 +404,7 @@ export function ReviewExecutionSheet({
               <div className="space-y-2 mt-2">
                 {reviewPraise.map(p => (
                   <Box key={p.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1, border: 1, borderColor: "divider" }}>
-                    <Typography variant="body2" italic>"{p.message}"</Typography>
+                    <Typography variant="body2" sx={{ fontStyle: "italic" }}>"{p.message}"</Typography>
                     <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
                       - {p.fromStaffId === "staff-1" ? "Manager" : "Peer"} • {format(parseISO(p.createdAt), "MMM d, yyyy")}
                     </Typography>
@@ -415,8 +418,6 @@ export function ReviewExecutionSheet({
       </Stack>
     );
   };
-    </Stack>
-  );
 
   const renderStepContent = () => {
     if (isSelfReview) {
@@ -428,8 +429,6 @@ export function ReviewExecutionSheet({
         case 2:
           return renderSubmitStep();
         default:
-        case 2:
-          return renderRecognitionSection();
           return null;
       }
     } else if (isManagerReview) {
