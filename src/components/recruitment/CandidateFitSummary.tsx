@@ -5,7 +5,6 @@ import { Sparkles, Square, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Applicant, JobPosting } from '@/types/recruitment';
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/candidate-fit`;
@@ -99,7 +98,7 @@ export function CandidateFitSummary({ applicant, job }: { applicant: Applicant; 
           <Button size="sm" onClick={run}>{output ? <RotateCcw className="h-4 w-4 mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}{output ? 'Regenerate' : 'Generate fit summary'}</Button>
         )}
       </div>
-      {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+      {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
       {(output || running) && (
         <div className="rounded-lg border bg-muted/30 p-4 prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-table:text-xs">
           {output ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{output}</ReactMarkdown> : <p className="text-muted-foreground">Analysing…</p>}
