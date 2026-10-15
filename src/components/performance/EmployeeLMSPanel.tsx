@@ -26,6 +26,7 @@ import {
   Star,
   Eye,
   StickyNote,
+  Lock,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -401,7 +402,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                                 size="sm" 
                                 variant="outline"
                                 className="flex-1"
-                                onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}
+                                onClick={() => handleViewCourseDetail(course)}
                               >
                                 <Eye className="h-3 w-3 mr-1" />
                                 Details
@@ -453,7 +454,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                           {course.duration} min
                         </div>
                         <div className="flex gap-2 mt-3">
-                          <Button size="sm" variant="outline" className="flex-1" onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}>
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => handleViewCourseDetail(course)}>
                             <Eye className="h-3 w-3 mr-1" />
                             Preview
                           </Button>
@@ -565,7 +566,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                     <TableRow 
                       key={course.id} 
                       className={cn("group cursor-pointer hover:bg-muted/50 transition-colors", lockStatus.locked && "opacity-60 cursor-not-allowed")}
-                      onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}
+                      onClick={() => handleViewCourseDetail(course)}
                     >
                       <TableCell>
                             {lockStatus.locked && (
@@ -619,7 +620,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                             variant="outline"
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => !lockStatus.locked && handleViewCourseDetail(course)}
+                            onClick={() => handleViewCourseDetail(course)}
                           >
                             <Eye className="h-3 w-3 mr-1" />
                             Preview

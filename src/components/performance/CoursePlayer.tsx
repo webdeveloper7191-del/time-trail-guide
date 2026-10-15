@@ -302,7 +302,7 @@ export function CoursePlayer({
           <div className="flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1">
               {showAssessment && currentModule?.assessment ? (
-                <AssessmentView enrollment={enrollment}
+                <AssessmentView
                   assessment={currentModule.assessment}
                   answers={assessmentAnswers}
                   onAnswerChange={setAssessmentAnswers}
