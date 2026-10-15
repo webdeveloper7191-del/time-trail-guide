@@ -170,19 +170,19 @@ const HELP_TEXT = {
     title: 'Legacy scoring mode',
     description: 'Separate legacy scoring metadata, not synchronised with the rule’s Required / Preferred choice.',
     options: {
-      REQUIRED: 'Must be satisfied — treated as a hard blocker. The solver will not produce a solution that violates this.',
-      PREFERRED: 'Should be satisfied — the solver will try its best but can break this rule, applying a penalty weighted by priority.',
+      REQUIRED: 'Legacy metadata for a mandatory check. It does not currently block assignments.',
+      PREFERRED: 'Legacy metadata for a preference. It does not currently affect assignment scoring.',
     },
   },
   priority: {
     title: 'Priority (1–10)',
     description: 'Proposed relative importance for preferences: 1 is highest and 10 is lowest. This does not currently affect Auto-Schedule.',
-    scale: '1–2 = Critical (10× penalty), 3–4 = High (7×), 5–6 = Medium (5×), 7–8 = Low (3×), 9–10 = Minimal (1×)',
+    scale: '1–2 = Critical, 3–4 = High, 5–6 = Normal, 7–8 = Low, 9–10 = Minimal. No scoring multiplier is applied by this preview.',
   },
   weight: {
     title: 'Weight (1–100)',
     description: 'Proposed score importance from 1 to 100. Higher values express a stronger preference, not a dollar amount or pay rate.',
-    example: 'E.g., Weight 80 at Priority 3 produces a bigger penalty than Weight 20 at Priority 3.',
+    example: 'Example only: 80 expresses a stronger preference than 20. Neither value changes scheduling in this preview.',
   },
 };
 
