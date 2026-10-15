@@ -187,6 +187,8 @@ export const mockRecurringPatterns: RecurringPatternRecord[] = [
 
 // Multi-location overview data
 export interface LocationOverviewRecord {
+  complianceTrend?: number[];
+  utilisationTrend?: number[];
   locationId: string;
   locationName: string;
   totalStaff: number;
@@ -531,5 +533,10 @@ mockRecurringPatterns.forEach((r, i) => {
 
 mockOvertimeFatigue.forEach((r, i) => {
   r.fatigueScoreTrend = r.fatigueScoreTrend ?? _seedTrendR(i + 157, r.fatigueScore, 8, 8, r.fatigueScore > 70 ? 0.5 : -0.2);
+});
+
+mockLocationOverview.forEach((r, i) => {
+  r.complianceTrend = r.complianceTrend ?? _seedTrendR(i + 163, r.complianceScore, 4, 6, r.complianceScore >= 90 ? 0.4 : -0.3);
+  r.utilisationTrend = r.utilisationTrend ?? _seedTrendR(i + 167, r.utilisationPercent, 5, 6, 0.3);
 });
 

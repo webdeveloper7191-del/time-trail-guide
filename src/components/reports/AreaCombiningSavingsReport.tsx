@@ -16,6 +16,7 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { aggregateTrendSeries, trendFromSeries } from '@/lib/reports/metrics';
 
 
 const exportColumns: ExportColumn[] = [
@@ -87,26 +88,30 @@ export function AreaCombiningSavingsReport() {
   const avgSavingPerEvent = Math.round(totalSaved / (filtered.length || 1));
   const projectedAnnual = Math.round(totalSaved * 52 / 4); // project quarterly to annual
 
-  // Savings by location
+  // Savings by location — keep the full location name so pie-slice drill-through
+  // filters by the exact value stored on each record (not a truncated display label).
   const savingsByLoc = useMemo(() => {
     const map: Record<string, number> = {};
     filtered.forEach(r => { map[r.location] = (map[r.location] || 0) + r.costSaved; });
-    return Object.entries(map).map(([loc, cost]) => ({ name: loc.split(' ')[0], value: cost }));
+    return Object.entries(map).map(([loc, cost]) => ({ name: loc, value: cost }));
   }, [filtered]);
 
   const COLORS = ['hsl(var(--primary))', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
 
-  // Daily trend
+  // Daily trend — retain the original ISO date so the chart's click handler can
+  // drill through on the exact date field, not a formatted display string.
   const dailyTrend = useMemo(() => {
-    const map: Record<string, { date: string; cost: number; events: number }> = {};
+    const map: Record<string, { date: string; dateISO: string; cost: number; events: number }> = {};
     filtered.forEach(r => {
-      const d = format(parseISO(r.date), 'dd MMM');
-      if (!map[d]) map[d] = { date: d, cost: 0, events: 0 };
-      map[d].cost += r.costSaved;
-      map[d].events++;
+      if (!map[r.date]) map[r.date] = { date: format(parseISO(r.date), 'dd MMM'), dateISO: r.date, cost: 0, events: 0 };
+      map[r.date].cost += r.costSaved;
+      map[r.date].events++;
     });
-    return Object.values(map);
+    return Object.values(map).sort((a, b) => a.dateISO.localeCompare(b.dateISO));
   }, [filtered]);
+
+  const costSavedAgg = aggregateTrendSeries(filtered, (r: any) => r.costSavedTrend);
+  const costSavedTrendResult = trendFromSeries(costSavedAgg);
 
   const insights = useMemo(() => {
     const result = [];
@@ -158,7 +163,7 @@ export function AreaCombiningSavingsReport() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Cost Saved" value={`$${totalSaved.toLocaleString()}`} icon={DollarSign} variant="success"
-          sparklineData={dailyTrend.map(d => d.cost)} trend={{ value: 12, label: 'vs last period' }} />
+          sparklineData={dailyTrend.map(d => d.cost)} trend={{ value: costSavedTrendResult.deltaPct, label: 'vs first half of period' }} />
         <StatCard label="Hours Saved" value={`${totalHours}h`} icon={Clock} subtitle={`${totalStaff} staff redeployed`} />
         <StatCard label="Combining Events" value={filtered.length} icon={Layers} />
         <StatCard label="Avg Per Event" value={`$${avgSavingPerEvent}`} icon={Zap} subtitle="cost saved" />
@@ -186,7 +191,7 @@ export function AreaCombiningSavingsReport() {
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={savingsByLoc} cursor="pointer" onClick={(_, index) => { const d = savingsByLoc[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={savingsByLoc} cursor="pointer" onClick={(_, index) => { const d = savingsByLoc[index]; if (d) applyDrill('location', d.name); }} cx="50%" cy="50%" outerRadius={75} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}>
                   {savingsByLoc.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
@@ -198,7 +203,7 @@ export function AreaCombiningSavingsReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Savings Trend</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
-              <BarChart data={dailyTrend} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={dailyTrend} onClick={(e: any) => { const iso = e?.activePayload?.[0]?.payload?.dateISO; if (iso) applyDrill('date', iso); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="cost" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
