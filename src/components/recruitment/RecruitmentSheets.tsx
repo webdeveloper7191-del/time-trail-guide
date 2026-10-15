@@ -77,7 +77,7 @@ export function JobSheet({ open, onOpenChange, job, staff }: {
             <Field label="Hiring manager">
               <Select value={f.hiringManagerId || undefined} onValueChange={v => setF({ ...f, hiringManagerId: v })}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{staff.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{staff.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
             <Field label="Pay from ($)"><Input type="number" min={0} value={f.salaryMin} onChange={set('salaryMin')} /></Field>
@@ -170,7 +170,7 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
   if (!applicant) return null;
   const a = applicant;
   const mine = interviews.filter(i => i.applicantId === a.id).sort((x, y) => x.scheduledAt.localeCompare(y.scheduledAt));
-  const staffName = (id: string) => staff.find(s => s.id === id)?.name ?? id;
+  const staffName = (id: string) => (() => { const s = staff.find(x => x.id === id); return s ? `${s.firstName} ${s.lastName}` : id; })();
   const closed = a.status === 'hired' || a.status === 'rejected' || a.status === 'withdrawn';
 
   const schedule = () => {
@@ -290,7 +290,7 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
                   </Select>
                   <Select value={iv.interviewer || undefined} onValueChange={v => setIv({ ...iv, interviewer: v })}>
                     <SelectTrigger><SelectValue placeholder="Interviewer" /></SelectTrigger>
-                    <SelectContent>{staff.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                    <SelectContent>{staff.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
                   </Select>
                   <Input type="date" aria-label="Interview date" value={iv.date} onChange={e => setIv({ ...iv, date: e.target.value })} />
                   <Input type="time" aria-label="Interview time" step={900} value={iv.time} onChange={e => setIv({ ...iv, time: e.target.value })} />

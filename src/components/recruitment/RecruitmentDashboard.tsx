@@ -43,7 +43,7 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
   const selectedJob = jobs.find(j => j.id === selectedJobId);
   const jobApplicants = selectedJobId ? applicants.filter(a => a.jobId === selectedJobId) : [];
   const jobTitle = (id: string) => jobs.find(j => j.id === id)?.title ?? '—';
-  const staffName = (id: string) => staff.find(s => s.id === id)?.name ?? id;
+  const staffName = (id: string) => (() => { const s = staff.find(x => x.id === id); return s ? `${s.firstName} ${s.lastName}` : id; })();
   const appName = (id: string) => { const a = applicants.find(x => x.id === id); return a ? `${a.firstName} ${a.lastName}` : '—'; };
 
   const upcoming = interviews.filter(i => i.status === 'scheduled' && isAfter(parseISO(i.scheduledAt), new Date()))
