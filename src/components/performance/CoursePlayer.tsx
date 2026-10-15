@@ -45,8 +45,8 @@ import {
   contentTypeLabels,
   difficultyLabels,
   difficultyColors,
-import { canAttemptAssessment } from "@/lib/lmsLogic";
 } from '@/types/lms';
+import { canAttemptAssessment } from "@/lib/lmsLogic";
 import { toast } from 'sonner';
 
 interface CoursePlayerProps {
@@ -591,7 +591,7 @@ function AssessmentView({
                 </p>
                 <Button className="mt-4" onClick={onRetry}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Try Again
+                  Try Again{(assessment.retakeLimit ?? assessment.maxAttempts) ? ` (${assessment.retakeLimit ?? assessment.maxAttempts} attempts total)` : ""}
                 </Button>
               </>
             )}
@@ -683,7 +683,6 @@ function AssessmentView({
 
 // Question Card Component
 interface QuestionCardProps {
-  enrollment: Enrollment;
   question: AssessmentQuestion;
   index: number;
   answer: string | string[] | undefined;
@@ -696,7 +695,6 @@ function QuestionCard({ question, index, answer, onAnswer }: QuestionCardProps) 
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-  enrollment,
             {index + 1}
           </span>
           {question.question}
@@ -714,18 +712,12 @@ function QuestionCard({ question, index, answer, onAnswer }: QuestionCardProps) 
                     {option}
                   </Label>
                 </div>
-                <p className="text-muted-foreground mt-1">
-                  Required: {assessment.passingScore}%
-                </p>
-                {canAttemptAssessment(assessment, enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id)) ? (
-                  <Button className="mt-4" onClick={onRetry}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Try Again ({assessment.retakeLimit || assessment.maxAttempts || "∞"} attempts total)
-                  </Button>
-                ) : (
-                  <p className="text-red-500 mt-4 text-sm font-medium">Maximum attempts reached.</p>
-                )}
-              </>
+              ))}
+            </div>
+          </RadioGroup>
+        )}
+
+        {question.type === 'multi_select' && (
           <div className="space-y-2">
             {question.options?.map((option) => {
               const selected = Array.isArray(answer) && answer.includes(option);

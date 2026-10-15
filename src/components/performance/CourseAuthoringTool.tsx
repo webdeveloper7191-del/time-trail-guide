@@ -497,6 +497,11 @@ export function CourseAuthoringTool({
                     type="number"
                     min={0}
                     value={course.validityPeriod || ''}
+                    onChange={(e) => updateCourse({ validityPeriod: parseInt(e.target.value) || undefined })}
+                    placeholder="e.g., 365"
+                  />
+                  <p className="text-xs text-muted-foreground">How long before recertification is needed</p>
+                </div>
               <Separator />
 
               <div className="grid gap-6 md:grid-cols-2">
@@ -615,11 +620,6 @@ export function CourseAuthoringTool({
                   </div>
                 </div>
               </div>
-                    onChange={(e) => updateCourse({ validityPeriod: parseInt(e.target.value) || undefined })}
-                    placeholder="e.g., 365"
-                  />
-                  <p className="text-xs text-muted-foreground">How long before recertification is needed</p>
-                </div>
               )}
             </TabsContent>
 
