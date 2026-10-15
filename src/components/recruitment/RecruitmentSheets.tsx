@@ -436,6 +436,7 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
   const [feedback, setFeedback] = useState<Record<string, { text: string; rating: number }>>({});
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const { pipeline } = useRecruitment();
   useEffect(() => { setNote(''); setShowReject(false); setRejectReason(''); }, [applicant?.id]);
 
   if (!applicant) return null;
@@ -473,7 +474,7 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
         <div className="space-y-6 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">{applicationStatusLabels[a.status]}</Badge>
+              <Badge variant="secondary">{stageLabel(a.status, pipeline)}</Badge>
               <div className="flex" aria-label="Rating">
                 {[1, 2, 3, 4, 5].map(n => (
                   <button key={n} aria-label={`Rate ${n}`} onClick={() => recruitmentStore.updateApplicant(a.id, { rating: n })}>
@@ -525,9 +526,9 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
           <section className="space-y-2">
             <h4 className="text-sm font-semibold">Stage</h4>
             <div className="flex flex-wrap gap-2">
-              <Select value={a.status} onValueChange={v => { recruitmentStore.moveApplicant(a.id, v as ApplicationStatus, `Moved to ${applicationStatusLabels[v as ApplicationStatus]}`); }}>
+              <Select value={a.status} onValueChange={v => { recruitmentStore.moveApplicant(a.id, v, `Moved to ${stageLabel(v, pipeline)}`); }}>
                 <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-                <SelectContent>{(['new', 'screening', 'interview', 'offer'] as ApplicationStatus[]).map(s => <SelectItem key={s} value={s}>{applicationStatusLabels[s]}</SelectItem>)}</SelectContent>
+                <SelectContent>{pipeline.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
               </Select>
               {a.status === 'offer' && <Button size="sm" onClick={() => onHire(a)}><UserCheck className="h-4 w-4 mr-1" />Hire & start onboarding</Button>}
               {!closed && <Button size="sm" variant="outline" onClick={() => setShowReject(s => !s)}><XCircle className="h-4 w-4 mr-1" />Reject</Button>}
