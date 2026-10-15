@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/performance/RichTextEditor';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle } from 'lucide-react';
@@ -71,7 +72,7 @@ export function JobSheet({ open, onOpenChange, job, staff }: {
 
   const submit = (status?: JobPosting['status']) => {
     const missing = [!f.title.trim() && 'job title', !f.location.trim() && 'location', !f.category && 'category',
-      !f.salaryMin && 'pay range from', !f.salaryMax && 'pay range to', !f.description.trim() && 'job description'].filter(Boolean);
+      !f.salaryMin && 'pay range from', !f.salaryMax && 'pay range to', !f.description.replace(/<[^>]*>|&nbsp;/g, '').trim() && 'job description'].filter(Boolean);
     if (missing.length) { toast.error(`Required: ${missing.join(', ')}`); return; }
     const min = Number(f.salaryMin), max = Number(f.salaryMax);
     if (min > max) { toast.error('Pay range "from" cannot be higher than "to"'); return; }
@@ -155,7 +156,7 @@ export function JobSheet({ open, onOpenChange, job, staff }: {
                 {(['ksp1', 'ksp2', 'ksp3'] as const).map((k, i) => <Input key={k} maxLength={80} value={f[k]} onChange={set(k)} placeholder={`Selling point ${i + 1}`} />)}
               </div>
             </Field>
-            <Field label="Job description *"><Textarea rows={8} value={f.description} onChange={set('description')} placeholder="About the role, responsibilities, skills and experience, benefits…" /></Field>
+            <Field label="Job description *"><RichTextEditor value={f.description} onChange={v => setF(p => ({ ...p, description: v }))} placeholder="About the role, responsibilities, skills and experience, benefits…" minHeight="200px" showPreviewToggle={false} /></Field>
             <Field label="Video link (YouTube, optional)"><Input value={f.videoUrl} onChange={set('videoUrl')} placeholder="https://www.youtube.com/watch?v=…" /></Field>
           </Section>
 
@@ -247,7 +248,7 @@ export function AddApplicantSheet({ open, onOpenChange, jobs, defaultJobId }: {
           </Field>
           <Field label="LinkedIn URL"><Input value={f.linkedInUrl} onChange={set('linkedInUrl')} /></Field>
           <Field label="Resume link"><Input value={f.resumeUrl} onChange={set('resumeUrl')} /></Field>
-          <Field label="Cover letter"><Textarea rows={4} value={f.coverLetter} onChange={set('coverLetter')} /></Field>
+          <Field label="Cover letter"><RichTextEditor value={f.coverLetter} onChange={v => setF(p => ({ ...p, coverLetter: v }))} minHeight="120px" showPreviewToggle={false} /></Field>
         </div>
         <div className="flex justify-end gap-2 border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
@@ -349,7 +350,7 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
             </div>
           </section>
 
-          {a.coverLetter && <section className="space-y-1"><h4 className="text-sm font-semibold">Cover letter</h4><p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.coverLetter}</p></section>}
+          {a.coverLetter && <section className="space-y-1"><h4 className="text-sm font-semibold">Cover letter</h4><div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: a.coverLetter }} /></section>}
 
           {/* Interviews */}
           <section className="space-y-3">
