@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { CandidateFitSummary } from './CandidateFitSummary';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/performance/RichTextEditor';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { Star, Mail, Phone, Linkedin, Calendar, UserCheck, XCircle, Plus, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -556,6 +557,11 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
           </section>
 
           {a.coverLetter && <section className="space-y-1"><h4 className="text-sm font-semibold">Cover letter</h4><div className="prose prose-sm max-w-none text-sm text-muted-foreground whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: a.coverLetter }} /></section>}
+
+          <section className="space-y-2">
+            <h4 className="text-sm font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4" />AI fit summary</h4>
+            <CandidateFitSummary applicant={a} job={job} />
+          </section>
 
           {/* Interviews */}
           <section className="space-y-3">
