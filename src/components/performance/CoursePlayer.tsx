@@ -45,6 +45,7 @@ import {
   contentTypeLabels,
   difficultyLabels,
   difficultyColors,
+import { canAttemptAssessment } from "@/lib/lmsLogic";
 } from '@/types/lms';
 import { toast } from 'sonner';
 

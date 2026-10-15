@@ -39,6 +39,7 @@ import {
 import { mockCourses, mockEnrollments, mockLearnerAnalytics, mockCertificates, mockLearningPaths } from '@/data/mockLmsData';
 import { mockLearningStreak } from '@/data/mockLmsEngagementData';
 import { MobileCoursePlayer } from '@/components/performance/MobileCoursePlayer';
+import { calculateAssessmentScore, determineEnrollmentStatus } from "@/lib/lmsLogic";
 import { isCourseLocked } from "@/lib/lmsLogic";
 import { mockStaff } from "@/data/mockStaffData";
 import { CoursePlayer } from '@/components/performance/CoursePlayer';
@@ -221,27 +222,39 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     enrollmentId: string, 
     assessmentId: string, 
     answers: Record<string, string | string[]>
-  ): Promise<{ score: number; passed: boolean }> => {
-    const enrollment = enrollments.find(e => e.id === enrollmentId);
-    const course = mockCourses.find(c => c.id === enrollment?.courseId);
-    let assessment: any = null;
-    
-    for (const module of course?.modules || []) {
-      if (module.assessment?.id === assessmentId) {
-        assessment = module.assessment;
-        break;
-      }
-    }
-    
     if (!assessment) return { score: 0, passed: false };
     
-    let correctAnswers = 0;
-    for (const q of assessment.questions) {
-      const userAnswer = answers[q.id];
-      if (JSON.stringify(userAnswer) === JSON.stringify(q.correctAnswer)) {
-        correctAnswers++;
-      }
-    }
+    const score = calculateAssessmentScore(assessment.questions, answers);
+    const passed = score >= assessment.passingScore;
+    
+    setEnrollments(prev => prev.map(e => {
+      if (e.id !== enrollmentId) return e;
+      const attempts = [...e.assessmentAttempts];
+      attempts.push({
+        id: `attempt-${Date.now()}`,
+        assessmentId,
+        attemptNumber: attempts.length + 1,
+        score,
+        passed,
+        answers: Object.entries(answers).map(([qid, ans]) => ({
+          questionId: qid,
+          answer: ans,
+          correct: JSON.stringify(ans) === JSON.stringify(assessment.questions.find((q: any) => q.id === qid)?.correctAnswer)
+        })),
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        timeSpent: 0
+      });
+      
+      return {
+        ...e,
+        assessmentAttempts: attempts,
+        status: passed ? "completed" : "failed",
+        updatedAt: new Date().toISOString()
+      };
+    }));
+    
+    return { score, passed };
     
     const score = Math.round((correctAnswers / assessment.questions.length) * 100);
     const passed = score >= assessment.passingScore;
