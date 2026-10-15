@@ -712,27 +712,18 @@ function QuestionCard({ question, index, answer, onAnswer }: QuestionCardProps) 
                     {option}
                   </Label>
                 </div>
-              ))}
-            </div>
-          </RadioGroup>
-        )}
-
-        {question.type === 'true_false' && (
-          <RadioGroup value={answer as string} onValueChange={onAnswer}>
-            <div className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="true" id={`${question.id}-true`} />
-                <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="false" id={`${question.id}-false`} />
-                <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
-              </div>
-            </div>
-          </RadioGroup>
-        )}
-
-        {question.type === 'multi_select' && (
+                <p className="text-muted-foreground mt-1">
+                  Required: {assessment.passingScore}%
+                </p>
+                {canAttemptAssessment(assessment, enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id)) ? (
+                  <Button className="mt-4" onClick={onRetry}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Try Again ({assessment.retakeLimit || assessment.maxAttempts || "∞"} attempts total)
+                  </Button>
+                ) : (
+                  <p className="text-red-500 mt-4 text-sm font-medium">Maximum attempts reached.</p>
+                )}
+              </>
           <div className="space-y-2">
             {question.options?.map((option) => {
               const selected = Array.isArray(answer) && answer.includes(option);

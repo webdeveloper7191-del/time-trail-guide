@@ -39,6 +39,8 @@ import {
   Send,
   Save,
   ChevronLeft,
+import { mockPraisePosts, praiseWallBadges } from "@/data/mockRecognitionData";
+import { isWithinInterval } from "date-fns";
   ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -220,6 +222,9 @@ export function ReviewExecutionSheet({
 
   const renderSummaryForm = () => (
     <Stack spacing={3}>
+      {renderRecognitionSection()}
+      {/* ... existing summary form ... */}
+    <Stack spacing={3}>
       <Box>
         <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
           {isSelfReview ? 'Self-Assessment Summary' : 'Manager Assessment Summary'}
@@ -362,6 +367,56 @@ export function ReviewExecutionSheet({
           )}
         </Stack>
       </Box>
+  const renderRecognitionSection = () => {
+    const reviewPraise = mockPraisePosts.filter(p => 
+      p.toStaffId === review.staffId && 
+      isWithinInterval(parseISO(p.createdAt), { start: parseISO(review.periodStart), end: parseISO(review.periodEnd) })
+    );
+
+    const badgeCounts: Record<string, number> = {};
+    reviewPraise.forEach(p => {
+      p.badges.forEach(b => {
+        badgeCounts[b] = (badgeCounts[b] || 0) + 1;
+      });
+    });
+
+    return (
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 2 }}>
+            Recognition Received during Period
+          </Typography>
+          {reviewPraise.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No praise received during this period.</Typography>
+          ) : (
+            <Stack spacing={2}>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(badgeCounts).map(([badgeId, count]) => {
+                  const badgeDef = praiseWallBadges.find(b => b.id === badgeId);
+                  return (
+                    <Badge key={badgeId} variant="secondary" className="px-3 py-1 text-sm">
+                      {badgeDef?.emoji} {badgeDef?.label} x{count}
+                    </Badge>
+                  );
+                })}
+              </div>
+              <div className="space-y-2 mt-2">
+                {reviewPraise.map(p => (
+                  <Box key={p.id} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1, border: 1, borderColor: "divider" }}>
+                    <Typography variant="body2" italic>"{p.message}"</Typography>
+                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+                      - {p.fromStaffId === "staff-1" ? "Manager" : "Peer"} • {format(parseISO(p.createdAt), "MMM d, yyyy")}
+                    </Typography>
+                  </Box>
+                ))}
+              </div>
+            </Stack>
+          )}
+        </Box>
+        <Divider />
+      </Stack>
+    );
+  };
     </Stack>
   );
 
@@ -375,6 +430,8 @@ export function ReviewExecutionSheet({
         case 2:
           return renderSubmitStep();
         default:
+        case 2:
+          return renderRecognitionSection();
           return null;
       }
     } else if (isManagerReview) {
