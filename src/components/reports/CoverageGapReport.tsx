@@ -17,6 +17,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates } from '@/lib/reports/reportRates';
+import { aggregateTrendSeries, trendFromSeries } from '@/lib/reports/metrics';
 
 
 const severityColors: Record<string, string> = { minor: 'bg-emerald-100 text-emerald-700', moderate: 'bg-amber-100 text-amber-700', critical: 'bg-red-100 text-red-700' };
@@ -53,6 +55,7 @@ const tableColumns: DataTableColumn<CoverageGapRecord>[] = [
 ];
 
 export function CoverageGapReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
@@ -89,7 +92,9 @@ export function CoverageGapReport() {
   const affectedSlots = filtered.filter(r => r.gap > 0);
   const coverageRate = filtered.length > 0 ? Math.round(((filtered.length - affectedSlots.length) / filtered.length) * 100) : 100;
   const avgGapSize = affectedSlots.length > 0 ? (totalGaps / affectedSlots.length).toFixed(1) : '0';
-  const estCostImpact = totalGaps * 45 * 4; // $45/hr * 4hr avg shift
+  const estCostImpact = totalGaps * rates.coverageGapHourlyRate * rates.coverageGapShiftHours;
+  const gapAgg = aggregateTrendSeries(filtered, (r: any) => r.gapTrend);
+  const gapTrendResult = trendFromSeries(gapAgg);
 
   // Gaps by location
   const gapsByLocation = useMemo(() => {
@@ -98,7 +103,7 @@ export function CoverageGapReport() {
       if (!map[r.location]) map[r.location] = { critical: 0, moderate: 0, minor: 0 };
       if (r.gap > 0) map[r.location][r.gapSeverity as keyof typeof map[string]]++;
     });
-    return Object.entries(map).map(([loc, v]) => ({ name: loc.split(' ')[0], ...v }));
+    return Object.entries(map).map(([loc, v]) => ({ name: loc.split(' ')[0], fullName: loc, ...v }));
   }, [filtered]);
 
   // Severity distribution
@@ -127,7 +132,7 @@ export function CoverageGapReport() {
     if (criticalGaps.length > 0) result.push({ type: 'negative' as const, title: `${criticalGaps.length} critical coverage gaps`, description: `Critical gaps represent situations where staffing falls below mandatory minimums. This may constitute a compliance violation under staffing ratio requirements.`, metric: `${totalGaps} total staff-slots unfilled`, action: 'Escalate to agency broadcast or authorise overtime immediately' });
     if (coverageRate < 90) result.push({ type: 'negative' as const, title: `Coverage rate at ${coverageRate}% — below 90% target`, description: `Only ${coverageRate}% of scheduled time slots have adequate staffing. Persistent low coverage indicates structural understaffing, not just absence-related gaps.`, action: 'Review headcount requirements and recruitment pipeline' });
     if (reasonData.length > 0) result.push({ type: 'neutral' as const, title: `Top gap reason: ${reasonData[0].reason}`, description: `"${reasonData[0].reason}" accounts for ${reasonData[0].count} of ${affectedSlots.length} gaps (${Math.round(reasonData[0].count / affectedSlots.length * 100)}%). Addressing the primary root cause would have the largest impact.`, action: `Focus mitigation efforts on ${reasonData[0].reason.toLowerCase()} management` });
-    if (estCostImpact > 0) result.push({ type: 'action' as const, title: `Estimated gap cost: $${estCostImpact.toLocaleString()}`, description: `Based on ${totalGaps} unfilled staff-slots at an average 4-hour shift at $45/hr. This represents revenue risk from reduced service capacity and potential compliance penalties.`, metric: `${totalGaps} gaps × 4h × $45/hr` });
+    if (estCostImpact > 0) result.push({ type: 'action' as const, title: `Estimated gap cost: $${estCostImpact.toLocaleString()}`, description: `Based on ${totalGaps} unfilled staff-slots at an average ${rates.coverageGapShiftHours}-hour shift at $${rates.coverageGapHourlyRate}/hr. This represents revenue risk from reduced service capacity and potential compliance penalties.`, metric: `${totalGaps} gaps × ${rates.coverageGapShiftHours}h × $${rates.coverageGapHourlyRate}/hr` });
     return result;
   }, [filtered, criticalGaps, coverageRate, reasonData, totalGaps, affectedSlots, estCostImpact]);
 
@@ -187,7 +192,7 @@ export function CoverageGapReport() {
         <StatCard label="Total Staff Gaps" value={totalGaps} icon={Users} variant={totalGaps > 5 ? 'danger' : 'default'} />
         <StatCard label="Critical Gaps" value={criticalGaps.length} icon={AlertTriangle} variant={criticalGaps.length > 0 ? 'danger' : 'success'} subtitle={criticalGaps.length > 0 ? 'Immediate action' : 'No critical gaps'} />
         <StatCard label="Affected Slots" value={affectedSlots.length} icon={Clock} subtitle={`of ${filtered.length} total slots`} />
-        <StatCard label="Coverage Rate" value={`${coverageRate}%`} icon={Shield} variant={coverageRate < 90 ? 'danger' : coverageRate < 95 ? 'warning' : 'success'} sparklineData={[92, 88, 95, 90, 93, coverageRate]} />
+        <StatCard label="Coverage Rate" value={`${coverageRate}%`} icon={Shield} variant={coverageRate < 90 ? 'danger' : coverageRate < 95 ? 'warning' : 'success'} trend={{ value: gapTrendResult.deltaPct, label: 'vs first half of period', isPositiveGood: false }} sparklineData={gapAgg.length > 0 ? gapAgg.slice(-6) : [totalGaps]} />
         <StatCard label="Avg Gap Size" value={avgGapSize} icon={MapPin} subtitle="staff per gap" />
         <StatCard label="Est. Cost Impact" value={`$${(estCostImpact / 1000).toFixed(1)}k`} icon={TrendingUp} variant={estCostImpact > 5000 ? 'warning' : 'default'} />
       </div>
@@ -210,7 +215,7 @@ export function CoverageGapReport() {
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={severityDist} cursor="pointer" onClick={(_, index) => { const d = severityDist[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={severityDist} cursor="pointer" onClick={(_, index) => { const d = severityDist[index]; if (d) applyDrill('severity', d.name.toLowerCase(), d.name); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {severityDist.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -222,7 +227,7 @@ export function CoverageGapReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Gaps by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
-              <BarChart data={gapsByLocation} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={gapsByLocation} onClick={(e: any) => { const full = e?.activePayload?.[0]?.payload?.fullName; if (full) applyDrill('location', full); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -239,7 +244,7 @@ export function CoverageGapReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Peak Gap Time Slots</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
-              <BarChart data={timeSlotData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} layout="vertical">
+              <BarChart data={timeSlotData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('timeSlot', e.activeLabel); }} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis dataKey="slot" type="category" tick={{ fontSize: 9 }} width={70} axisLine={false} tickLine={false} />
