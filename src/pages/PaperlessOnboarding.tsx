@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,15 +64,16 @@ export default function PaperlessOnboarding() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [sending, setSending] = useState(false);
+  const [params] = useSearchParams();
 
   // Step 1 - Employee Details
   const [form, setForm] = useState({
-    firstName: '',
+    firstName: params.get('firstName') ?? '',
     middleName: '',
-    lastName: '',
+    lastName: params.get('lastName') ?? '',
     preferredName: '',
-    email: '',
-    mobilePhone: '',
+    email: params.get('email') ?? '',
+    mobilePhone: params.get('phone') ?? '',
     workPhone: '',
     gender: '',
     dateOfBirth: '',
