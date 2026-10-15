@@ -40,6 +40,9 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [dragId, setDragId] = useState<string | null>(null);
+  const [stagesOpen, setStagesOpen] = useState(false);
+  const [newStageName, setNewStageName] = useState('');
+  const { pipeline } = useRecruitment();
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
   const jobApplicants = selectedJobId ? applicants.filter(a => a.jobId === selectedJobId) : [];
@@ -59,14 +62,14 @@ export function RecruitmentDashboard({ jobs, applicants, interviews, staff, onCr
     return matches && st;
   }), [applicants, search, statusFilter]);
 
-  const drop = (status: ApplicationStatus) => {
+  const drop = (status: string) => {
     if (!dragId) return;
     const a = applicants.find(x => x.id === dragId);
     setDragId(null);
     if (!a || a.status === status) return;
     if (status === 'hired') { toast.info('Open the applicant to hire and start onboarding'); onViewApplicant(a); return; }
-    recruitmentStore.moveApplicant(a.id, status, `Moved to ${applicationStatusLabels[status]}`);
-    toast.success(`${a.firstName} moved to ${applicationStatusLabels[status]}`);
+    recruitmentStore.moveApplicant(a.id, status, `Moved to ${stageLabel(status, pipeline)}`);
+    toast.success(`${a.firstName} moved to ${stageLabel(status, pipeline)}`);
   };
 
   const stats = [
