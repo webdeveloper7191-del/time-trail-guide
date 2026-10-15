@@ -46,7 +46,8 @@ export function JobSheet({ open, onOpenChange, job, staff }: {
     screeningQuestions: '', applicationMethod: 'internal' as 'internal' | 'external', externalApplyUrl: '', contactEmail: '',
     internalReference: '', adType: 'classic' as AdType, closingDate: '', hiringManagerId: '', department: '',
   };
-  const [f, setF] = useState(blank);
+  const [rawF, setF] = useState(blank);
+  const f = { ...blank, ...rawF };
   useEffect(() => {
     if (!open) return;
     if (!job) { setF(blank); return; }
@@ -148,7 +149,7 @@ export function JobSheet({ open, onOpenChange, job, staff }: {
           </Section>
 
           <Section step={3} title="Write your job ad">
-            <Field label={`Job summary (${f.jobSummary.length}/150)`}><Textarea rows={2} maxLength={150} value={f.jobSummary} onChange={set('jobSummary')} placeholder="Shown in search results" /></Field>
+            <Field label={`Job summary (${(f.jobSummary ?? "").length}/150)`}><Textarea rows={2} maxLength={150} value={f.jobSummary} onChange={set('jobSummary')} placeholder="Shown in search results" /></Field>
             <Field label="Key selling points (up to 3)">
               <div className="space-y-2">
                 {(['ksp1', 'ksp2', 'ksp3'] as const).map((k, i) => <Input key={k} maxLength={80} value={f[k]} onChange={set(k)} placeholder={`Selling point ${i + 1}`} />)}
