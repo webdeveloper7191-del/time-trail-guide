@@ -222,6 +222,10 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     enrollmentId: string, 
     assessmentId: string, 
     answers: Record<string, string | string[]>
+  ) => {
+    const enrollment = enrollments.find(e => e.id === enrollmentId);
+    const course = mockCourses.find(c => c.id === enrollment?.courseId);
+    const assessment = course?.modules.map(m => m.assessment).find(a => a?.id === assessmentId);
     if (!assessment) return { score: 0, passed: false };
     
     const score = calculateAssessmentScore(assessment.questions, answers);
@@ -253,11 +257,6 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
         updatedAt: new Date().toISOString()
       };
     }));
-    
-    return { score, passed };
-    
-    const score = Math.round((correctAnswers / assessment.questions.length) * 100);
-    const passed = score >= assessment.passingScore;
     
     return { score, passed };
   }, [enrollments]);

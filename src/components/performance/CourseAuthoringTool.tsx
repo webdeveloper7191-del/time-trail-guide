@@ -502,6 +502,7 @@ export function CourseAuthoringTool({
                   />
                   <p className="text-xs text-muted-foreground">How long before recertification is needed</p>
                 </div>
+              )}
               <Separator />
 
               <div className="grid gap-6 md:grid-cols-2">

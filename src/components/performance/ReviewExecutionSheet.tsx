@@ -39,10 +39,10 @@ import {
   Send,
   Save,
   ChevronLeft,
-import { mockPraisePosts, praiseWallBadges } from "@/data/mockRecognitionData";
-import { isWithinInterval } from "date-fns";
   ChevronRight,
 } from 'lucide-react';
+import { mockPraisePosts, praiseWallBadges } from "@/data/mockRecognitionData";
+import { isWithinInterval } from "date-fns";
 import { toast } from 'sonner';
 import { usePerformanceConfig } from '@/hooks/usePerformanceConfig';
 
