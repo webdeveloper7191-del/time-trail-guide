@@ -223,6 +223,8 @@ export function ReviewExecutionSheet({
   const renderSummaryForm = () => (
     <Stack spacing={3}>
       {renderRecognitionSection()}
+    <Stack spacing={3}>
+      {renderRecognitionSection()}
       {/* ... existing summary form ... */}
     <Stack spacing={3}>
       <Box>

@@ -302,7 +302,7 @@ export function CoursePlayer({
           <div className="flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1">
               {showAssessment && currentModule?.assessment ? (
-                <AssessmentView
+                <AssessmentView enrollment={enrollment}
                   assessment={currentModule.assessment}
                   answers={assessmentAnswers}
                   onAnswerChange={setAssessmentAnswers}
@@ -683,6 +683,7 @@ function AssessmentView({
 
 // Question Card Component
 interface QuestionCardProps {
+  enrollment: Enrollment;
   question: AssessmentQuestion;
   index: number;
   answer: string | string[] | undefined;
@@ -695,6 +696,7 @@ function QuestionCard({ question, index, answer, onAnswer }: QuestionCardProps) 
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+  enrollment,
             {index + 1}
           </span>
           {question.question}
