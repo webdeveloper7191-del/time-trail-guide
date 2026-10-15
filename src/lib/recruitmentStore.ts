@@ -125,6 +125,45 @@ export const recruitmentStore = {
     save({ ...s, interviews: s.interviews.map(i => i.id === id ? { ...i, ...updates, updatedAt: now() } : i) });
   },
 
+  // ----- Editable pipeline stages -----
+  renameStage(id: string, label: string) {
+    const s = load();
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    save({ ...s, pipeline: s.pipeline.map(p => p.id === id ? { ...p, label: trimmed } : p) });
+  },
+
+  addStage(label: string): PipelineStageConfig | null {
+    const s = load();
+    const trimmed = label.trim();
+    if (!trimmed) return null;
+    // Insert before 'hired' so hired stays last
+    const stage: PipelineStageConfig = { id: uid('stage'), label: trimmed, builtIn: false };
+    const idx = s.pipeline.findIndex(p => p.id === 'hired');
+    const pipeline = [...s.pipeline];
+    pipeline.splice(idx === -1 ? pipeline.length : idx, 0, stage);
+    save({ ...s, pipeline });
+    return stage;
+  },
+
+  /** Only stages with no applicants can be removed. Returns false if blocked. */
+  removeStage(id: string): boolean {
+    const s = load();
+    if (s.applicants.some(a => a.status === id)) return false;
+    save({ ...s, pipeline: s.pipeline.filter(p => p.id !== id) });
+    return true;
+  },
+
+  moveStage(id: string, direction: -1 | 1) {
+    const s = load();
+    const idx = s.pipeline.findIndex(p => p.id === id);
+    const target = idx + direction;
+    if (idx === -1 || target < 0 || target >= s.pipeline.length) return;
+    const pipeline = [...s.pipeline];
+    [pipeline[idx], pipeline[target]] = [pipeline[target], pipeline[idx]];
+    save({ ...s, pipeline });
+  },
+
   reset() { localStorage.removeItem(KEY); cache = null; load(); listeners.forEach(l => l()); },
 };
 
