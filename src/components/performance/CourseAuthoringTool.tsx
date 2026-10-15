@@ -39,6 +39,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { lmsCategories, lmsIndustries, difficultyLabels } from '@/types/lms';
+import { mockCourses } from "@/data/mockLmsData";
+import { locations } from "@/data/mockStaffData";
 import { 
   CourseAuthoringState, 
   ModuleAuthoringState, 
@@ -122,6 +124,9 @@ export function CourseAuthoringTool({
       difficulty: 'beginner',
       complianceRequired: false,
       certificateOnCompletion: true,
+      prerequisites: [],
+      assignedRoles: [],
+      assignedLocations: [],
       passingScore: 80,
       tags: [],
       modules: [createEmptyModule(1)],
@@ -472,6 +477,18 @@ export function CourseAuthoringTool({
                 </div>
               </div>
 
+                <div className="p-4 border rounded-lg space-y-2">
+                  <Label htmlFor="maxAttempts">Retake Limit</Label>
+                  <Input
+                    id="maxAttempts"
+                    type="number"
+                    min={1}
+                    value={course.maxAttempts || ""}
+                    onChange={(e) => updateCourse({ maxAttempts: parseInt(e.target.value) || undefined })}
+                    placeholder="Unlimited"
+                  />
+                  <p className="text-xs text-muted-foreground">Maximum number of attempts allowed</p>
+                </div>
               {course.complianceRequired && (
                 <div className="p-4 border rounded-lg space-y-2 max-w-xs">
                   <Label htmlFor="validityPeriod">Validity Period (days)</Label>
@@ -486,6 +503,124 @@ export function CourseAuthoringTool({
                   <p className="text-xs text-muted-foreground">How long before recertification is needed</p>
                 </div>
               )}
+              <Separator />
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Availability Dates</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="availableFrom" className="text-xs">From</Label>
+                        <Input 
+                          id="availableFrom" 
+                          type="date" 
+                          value={course.availableFrom || ""}
+                          onChange={(e) => updateCourse({ availableFrom: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="availableUntil" className="text-xs">Until</Label>
+                        <Input 
+                          id="availableUntil" 
+                          type="date" 
+                          value={course.availableUntil || ""}
+                          onChange={(e) => updateCourse({ availableUntil: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Prerequisites</Label>
+                    <Select onValueChange={(v) => {
+                      if (v && !(course.prerequisites ?? []).includes(v)) {
+                        updateCourse({ prerequisites: [...(course.prerequisites ?? []), v] });
+                      }
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select prerequisite course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockCourses.filter(c => c.id !== course.courseId).map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(course.prerequisites ?? []).map((id) => {
+                        const c = mockCourses.find(mc => mc.id === id);
+                        return (
+                          <Badge key={id} variant="secondary" className="gap-1">
+                            {c?.title || id}
+                            <button onClick={() => updateCourse({ prerequisites: (course.prerequisites ?? []).filter(pid => pid !== id) })} className="ml-1 hover:text-destructive">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Assigned Roles</Label>
+                    <Select onValueChange={(v) => {
+                      if (v && !course.assignedRoles?.includes(v)) {
+                        updateCourse({ assignedRoles: [...(course.assignedRoles || []), v] });
+                      }
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Senior Team Lead", "Team Lead", "Educator", "Assistant Team Member", "Trainee"].map((role) => (
+                          <SelectItem key={role} value={role}>{role}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {course.assignedRoles?.map((role) => (
+                        <Badge key={role} variant="secondary" className="gap-1">
+                          {role}
+                          <button onClick={() => updateCourse({ assignedRoles: course.assignedRoles?.filter(r => r !== role) })} className="ml-1 hover:text-destructive">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Assigned Locations</Label>
+                    <Select onValueChange={(v) => {
+                      if (v && !course.assignedLocations?.includes(v)) {
+                        updateCourse({ assignedLocations: [...(course.assignedLocations || []), v] });
+                      }
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locations.map((loc) => (
+                          <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {course.assignedLocations?.map((loc) => (
+                        <Badge key={loc} variant="secondary" className="gap-1">
+                          {loc}
+                          <button onClick={() => updateCourse({ assignedLocations: course.assignedLocations?.filter(l => l !== loc) })} className="ml-1 hover:text-destructive">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
 
             {/* Content Builder Tab */}

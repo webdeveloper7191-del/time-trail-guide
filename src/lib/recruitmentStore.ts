@@ -16,7 +16,27 @@ function load(): State {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { cache = JSON.parse(raw); return cache!; }
+    if (raw) {
+      const parsed = JSON.parse(raw) as State;
+      // Migration: convert string[] screeningQuestions to ScreeningQuestion[]
+      parsed.jobs = (parsed.jobs || []).map(j => {
+        if (Array.isArray(j.screeningQuestions) && j.screeningQuestions.length > 0 && typeof j.screeningQuestions[0] === "string") {
+          return {
+            ...j,
+            screeningQuestions: (j.screeningQuestions as unknown as string[]).map(q => ({
+              id: uid("q"),
+              text: q,
+              type: "text" as const,
+              isRequired: false,
+              isCustom: true
+            }))
+          };
+        }
+        return j;
+      });
+      cache = parsed;
+      return cache!;
+    }
   } catch { /* ignore */ }
   cache = { jobs: [...mockJobs], applicants: [...mockApplicants], interviews: [...mockInterviews] };
   return cache;

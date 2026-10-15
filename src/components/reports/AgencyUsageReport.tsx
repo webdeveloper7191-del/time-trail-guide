@@ -16,6 +16,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates, getReportRates } from '@/lib/reports/reportRates';
+import { weightedAverage, aggregateTrendSeries, trendFromSeries } from '@/lib/reports/metrics';
 
 
 const exportColumns: ExportColumn[] = [
@@ -38,7 +40,7 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
   { key: 'totalHours', header: 'Hours', type: 'number', accessor: (r) => `${r.totalHours}h`, sortValue: (r) => r.totalHours, align: 'right' },
   { key: 'totalCost', header: 'Total Cost', type: 'number', accessor: (r) => <span className="font-semibold">${r.totalCost.toLocaleString()}</span>, sortValue: (r) => r.totalCost, align: 'right' },
   { key: 'avgHourlyRate', header: 'Avg Rate', type: 'number', accessor: (r) => (
-    <span className={cn('text-xs', r.avgHourlyRate > 55 ? 'text-destructive font-medium' : '')}>${r.avgHourlyRate}/h</span>
+    <span className={cn('text-xs', r.avgHourlyRate > getReportRates().agencyHighRateThreshold ? 'text-destructive font-medium' : '')}>${r.avgHourlyRate}/h</span>
   ), sortValue: (r) => r.avgHourlyRate, align: 'right' },
   { key: 'fillRate', header: 'Fill Rate', type: 'number', className: 'w-[130px]', sortValue: (r) => r.fillRate,
     accessor: (r) => (
@@ -68,6 +70,7 @@ const tableColumns: DataTableColumn<AgencyUsageRecord>[] = [
 ];
 
 export function AgencyUsageReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const baseFiltered = mockAgencyUsage.filter(r => !search || r.agencyName.toLowerCase().includes(search.toLowerCase()));
@@ -94,13 +97,17 @@ export function AgencyUsageReport() {
   const totalCost = filtered.reduce((s, r) => s + r.totalCost, 0);
   const totalShifts = filtered.reduce((s, r) => s + r.shiftsProvided, 0);
   const totalHours = filtered.reduce((s, r) => s + r.totalHours, 0);
-  const avgRate = Math.round(filtered.reduce((s, r) => s + r.avgHourlyRate, 0) / (filtered.length || 1));
-  const avgFillRate = Math.round(filtered.reduce((s, r) => s + r.fillRate, 0) / (filtered.length || 1));
-  const avgQuality = Math.round(filtered.reduce((s, r) => s + r.qualityScore, 0) / (filtered.length || 1));
+  const avgRate = Math.round(weightedAverage(filtered, r => r.avgHourlyRate, r => r.totalHours));
+  const avgFillRate = Math.round(weightedAverage(filtered, r => r.fillRate, r => r.shiftsProvided));
+  const avgQuality = Math.round(weightedAverage(filtered, r => r.qualityScore, r => r.shiftsProvided));
   const avgResponse = (filtered.reduce((s, r) => s + r.avgResponseTimeHours, 0) / (filtered.length || 1)).toFixed(1);
   const highCancelAgencies = filtered.filter(r => r.cancellationRate > 5).length;
-  const internalRate = 35; // estimated internal avg hourly cost
+  const internalRate = rates.agencyBaselineRate;
   const agencyPremium = Math.round(((avgRate - internalRate) / internalRate) * 100);
+  const costAgg = aggregateTrendSeries(filtered, (r: any) => r.costTrend);
+  const costTrendResult = trendFromSeries(costAgg);
+  const fillRateAgg = aggregateTrendSeries(filtered, (r: any) => r.fillRateTrend);
+  const fillRateTrendResult = trendFromSeries(fillRateAgg);
 
   const costShare = filtered.map(r => ({ name: r.agencyName, value: r.totalCost }));
   const COLORS = ['hsl(var(--primary))', '#F59E0B', 'hsl(var(--destructive))', '#10B981', '#8B5CF6', '#EC4899'];
@@ -116,6 +123,7 @@ export function AgencyUsageReport() {
 
   const performanceChart = filtered.map(r => ({
     name: r.agencyName.split(' ')[0],
+    fullName: r.agencyName,
     cost: r.totalCost,
     quality: r.qualityScore,
     fillRate: r.fillRate,
@@ -125,7 +133,7 @@ export function AgencyUsageReport() {
     const result = [];
     const bestValue = filtered.reduce((best, r) => (!best || (r.qualityScore / r.avgHourlyRate) > (best.qualityScore / best.avgHourlyRate)) ? r : best, null as AgencyUsageRecord | null);
     if (bestValue) result.push({ type: 'positive' as const, title: `Best value: ${bestValue.agencyName}`, description: `Highest quality-to-cost ratio with quality score ${bestValue.qualityScore} at $${bestValue.avgHourlyRate}/hr. Consider increasing allocation to this agency.`, metric: `${bestValue.qualityScore} quality / $${bestValue.avgHourlyRate} rate` });
-    if (highCancelAgencies > 0) result.push({ type: 'negative' as const, title: `${highCancelAgencies} agencies with high cancellation rates`, description: `Cancellation rates above 5% disrupt operations and create last-minute staffing gaps. Each cancelled shift costs approximately $150-200 in rebooking and operational disruption.`, metric: `Est. $${(highCancelAgencies * 175 * 4).toLocaleString()} monthly disruption cost`, action: 'Review agency SLAs and consider penalty clauses for cancellations' });
+    if (highCancelAgencies > 0) result.push({ type: 'negative' as const, title: `${highCancelAgencies} agencies with high cancellation rates`, description: `Cancellation rates above 5% disrupt operations and create last-minute staffing gaps. Each cancelled shift costs approximately $150-200 in rebooking and operational disruption.`, metric: `Est. $${(highCancelAgencies * rates.agencyShiftCost).toLocaleString()} monthly disruption cost`, action: 'Review agency SLAs and consider penalty clauses for cancellations' });
     if (agencyPremium > 30) result.push({ type: 'action' as const, title: `Agency premium at ${agencyPremium}% above internal rates`, description: `The average agency rate of $${avgRate}/hr is ${agencyPremium}% higher than the estimated internal cost of $${internalRate}/hr. Converting ${Math.ceil(totalShifts * 0.2)} agency shifts to permanent roles could save ~$${Math.round(totalCost * 0.15).toLocaleString()}/period.`, action: 'Analyse top agency-dependent shifts for permanent hire conversion' });
     const slowAgency = filtered.find(r => r.avgResponseTimeHours > 4);
     if (slowAgency) result.push({ type: 'neutral' as const, title: `Slow response from ${slowAgency.agencyName}`, description: `Average response time of ${slowAgency.avgResponseTimeHours}h is above the 2-hour SLA target. Slow responses reduce fill rates and force reliance on backup agencies at higher rates.`, action: 'Discuss SLA improvements or deprioritise in broadcast order' });
@@ -175,11 +183,12 @@ export function AgencyUsageReport() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Total Agency Spend" value={`$${(totalCost / 1000).toFixed(1)}k`} icon={DollarSign}
-          trend={{ value: 5.2, label: 'vs last period' }} sparklineData={[18, 22, 19, 25, 24, 28]} />
+          trend={{ value: costTrendResult.deltaPct, label: 'vs first half of period', isPositiveGood: false }} sparklineData={costAgg.length > 0 ? costAgg.slice(-6) : [totalCost]} />
         <StatCard label="Total Shifts" value={totalShifts} icon={Building2}
           subtitle={`${totalHours}h total`} />
         <StatCard label="Avg Fill Rate" value={`${avgFillRate}%`} icon={Star}
-          variant={avgFillRate < 80 ? 'warning' : 'success'} sparklineData={[78, 82, 80, 85, 83, avgFillRate]} />
+          trend={{ value: fillRateTrendResult.deltaPct, label: 'vs first half of period' }}
+          variant={avgFillRate < 80 ? 'warning' : 'success'} sparklineData={fillRateAgg.length > 0 ? fillRateAgg.slice(-6) : [avgFillRate]} />
         <StatCard label="Avg Quality" value={`${avgQuality}/100`} icon={Star}
           variant={avgQuality < 70 ? 'danger' : avgQuality < 80 ? 'warning' : 'default'} />
         <StatCard label="Avg Response" value={`${avgResponse}h`} icon={Clock}
@@ -207,7 +216,7 @@ export function AgencyUsageReport() {
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={costShare} cursor="pointer" onClick={(_, index) => { const d = costShare[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={75} innerRadius={40} dataKey="value" label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={costShare} cursor="pointer" onClick={(_, index) => { const d = costShare[index]; if (d) applyDrill('agencyName', d.name); }} cx="50%" cy="50%" outerRadius={75} innerRadius={40} dataKey="value" label={({ name, percent }) => `${name.split(' ')[0]} ${(percent * 100).toFixed(0)}%`}>
                   {costShare.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => `$${v.toLocaleString()}`} />
@@ -219,7 +228,7 @@ export function AgencyUsageReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Performance Comparison</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={240}>
-              <BarChart data={performanceChart} onClick={(e: any) => { if (e?.activeLabel) applyDrill('agencyName', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <BarChart data={performanceChart} onClick={(e: any) => { const full = e?.activePayload?.[0]?.payload?.fullName; if (full) applyDrill('agencyName', full); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis yAxisId="cost" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />

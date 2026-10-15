@@ -26,6 +26,7 @@ import {
   Star,
   Eye,
   StickyNote,
+  Lock,
 } from 'lucide-react';
 import { format, parseISO, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,9 @@ import {
 import { mockCourses, mockEnrollments, mockLearnerAnalytics, mockCertificates, mockLearningPaths } from '@/data/mockLmsData';
 import { mockLearningStreak } from '@/data/mockLmsEngagementData';
 import { MobileCoursePlayer } from '@/components/performance/MobileCoursePlayer';
+import { calculateAssessmentScore, determineEnrollmentStatus } from "@/lib/lmsLogic";
+import { isCourseLocked } from "@/lib/lmsLogic";
+import { mockStaff } from "@/data/mockStaffData";
 import { CoursePlayer } from '@/components/performance/CoursePlayer';
 import { CourseDetailSheet } from '@/components/performance/CourseDetailSheet';
 import { CourseCompletionCelebration } from '@/components/performance/CourseCompletionCelebration';
@@ -63,6 +67,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
   const [completedCourse, setCompletedCourse] = useState<Course | null>(null);
   const [completedEnrollment, setCompletedEnrollment] = useState<Enrollment | null>(null);
+  const staffMember = mockStaff.find(s => s.id === currentUserId);
   const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
   const isMobile = useIsMobile();
 
@@ -218,30 +223,41 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     enrollmentId: string, 
     assessmentId: string, 
     answers: Record<string, string | string[]>
-  ): Promise<{ score: number; passed: boolean }> => {
+  ) => {
     const enrollment = enrollments.find(e => e.id === enrollmentId);
     const course = mockCourses.find(c => c.id === enrollment?.courseId);
-    let assessment: any = null;
-    
-    for (const module of course?.modules || []) {
-      if (module.assessment?.id === assessmentId) {
-        assessment = module.assessment;
-        break;
-      }
-    }
-    
+    const assessment = course?.modules.map(m => m.assessment).find(a => a?.id === assessmentId);
     if (!assessment) return { score: 0, passed: false };
     
-    let correctAnswers = 0;
-    for (const q of assessment.questions) {
-      const userAnswer = answers[q.id];
-      if (JSON.stringify(userAnswer) === JSON.stringify(q.correctAnswer)) {
-        correctAnswers++;
-      }
-    }
-    
-    const score = Math.round((correctAnswers / assessment.questions.length) * 100);
+    const score = calculateAssessmentScore(assessment.questions, answers);
     const passed = score >= assessment.passingScore;
+    
+    setEnrollments(prev => prev.map(e => {
+      if (e.id !== enrollmentId) return e;
+      const attempts = [...e.assessmentAttempts];
+      attempts.push({
+        id: `attempt-${Date.now()}`,
+        assessmentId,
+        attemptNumber: attempts.length + 1,
+        score,
+        passed,
+        answers: Object.entries(answers).map(([qid, ans]) => ({
+          questionId: qid,
+          answer: ans,
+          correct: JSON.stringify(ans) === JSON.stringify(assessment.questions.find((q: any) => q.id === qid)?.correctAnswer)
+        })),
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        timeSpent: 0
+      });
+      
+      return {
+        ...e,
+        assessmentAttempts: attempts,
+        status: passed ? "completed" : "failed",
+        updatedAt: new Date().toISOString()
+      };
+    }));
     
     return { score, passed };
   }, [enrollments]);
@@ -539,14 +555,26 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                 {filteredCourses.map((course) => {
                   const enrollment = getEnrollmentForCourse(course.id);
                   const isEnrolled = !!enrollment;
+                  const lockStatus = isCourseLocked(
+                    course,
+                    enrollments.filter(e => e.staffId === currentUserId),
+                    staffMember?.currentPayCondition?.position ? [staffMember.currentPayCondition.position] : [],
+                    staffMember?.locations?.[0] || ""
+                  );
                   
                   return (
                     <TableRow 
                       key={course.id} 
-                      className="group cursor-pointer hover:bg-muted/50 transition-colors"
+                      className={cn("group cursor-pointer hover:bg-muted/50 transition-colors", lockStatus.locked && "opacity-60 cursor-not-allowed")}
                       onClick={() => handleViewCourseDetail(course)}
                     >
                       <TableCell>
+                            {lockStatus.locked && (
+                              <div className="flex items-center gap-1 text-amber-600 mt-1">
+                                <Lock className="h-3 w-3" />
+                                <span className="text-[10px] font-medium">{lockStatus.reason}</span>
+                              </div>
+                            )}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                             <GraduationCap className="h-5 w-5 text-primary" />
@@ -600,7 +628,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                           <Button 
                             size="sm"
                             className="h-7 text-xs"
-                            onClick={() => isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course)}
+                            onClick={() => !lockStatus.locked && (isEnrolled ? handleContinueLearning(enrollment) : handleEnroll(course))}
                           >
                             {isEnrolled ? (
                               <>

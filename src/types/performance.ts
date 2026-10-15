@@ -45,6 +45,8 @@ export interface PerformanceReview {
   nextReviewDate?: string;
   submittedAt?: string;
   completedAt?: string;
+  recognitionCount?: number;
+  recognitionIds?: string[];
   createdAt: string;
   updatedAt: string;
 }

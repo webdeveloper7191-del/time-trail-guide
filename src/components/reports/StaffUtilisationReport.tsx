@@ -16,6 +16,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates, getReportRates } from '@/lib/reports/reportRates';
+import { aggregateTrendSeries, trendFromSeries } from '@/lib/reports/metrics';
 
 
 const exportColumns: ExportColumn[] = [
@@ -59,8 +61,8 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
     accessor: (r) => r.overtimeHours > 0 ? <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge> : <span className="text-muted-foreground text-xs">—</span> },
   { key: 'leaveHours', header: 'Leave', type: 'number', align: 'right', sortValue: (r) => r.leaveHours,
     accessor: (r) => r.leaveHours > 0 ? <span className="text-xs text-blue-600">{r.leaveHours}h</span> : <span className="text-muted-foreground text-xs">—</span> },
-  { key: 'effectiveRate', header: 'Eff. $/hr', type: 'number', align: 'right', sortValue: (r) => r.scheduledHours > 0 ? Math.round(r.utilisationPercent * 0.45) : 0,
-    accessor: (r) => <span className="text-xs font-mono">${(r.utilisationPercent * 0.45).toFixed(2)}</span> },
+  { key: 'effectiveRate', header: 'Eff. $/hr', type: 'number', align: 'right', sortValue: (r) => r.utilisationPercent > 0 ? Math.round((getReportRates().internalHourlyRate / (r.utilisationPercent / 100)) * 100) / 100 : 0,
+    accessor: (r) => <span className="text-xs font-mono">${r.utilisationPercent > 0 ? (getReportRates().internalHourlyRate / (r.utilisationPercent / 100)).toFixed(2) : '0.00'}</span> },
   { key: 'department', header: 'Dept', type: 'enum', accessor: (r) => r.department ?? '—', sortValue: (r) => r.department ?? '' },
   { key: 'contractType', header: 'Contract', type: 'enum', accessor: (r) => <Badge variant="outline" className="text-[10px]">{(r.contractType ?? '').replace('_', ' ')}</Badge>, sortValue: (r) => r.contractType ?? '' },
   { key: 'shiftsWorked', header: 'Shifts', type: 'number', accessor: (r) => r.shiftsWorked ?? 0, sortValue: (r) => r.shiftsWorked ?? 0, align: 'right' },
@@ -70,15 +72,9 @@ const tableColumns: DataTableColumn<StaffUtilisationRecord>[] = [
   { key: 'utilisationPercentTrend', header: 'Util Trend (8wk)', type: 'sparkline', accessor: () => null, trendValues: (r: any) => r.utilisationPercentTrend ?? [] },
 ];
 
-// Simulated weekly trend data per staff
-const weeklyTrend = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => ({
-  day: d,
-  avgUtil: Math.round(75 + Math.random() * 20),
-  target: 85,
-  headcount: Math.round(5 + Math.random() * 3),
-}));
 
 export function StaffUtilisationReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -114,12 +110,17 @@ export function StaffUtilisationReport() {
   const totalOvertime = filtered.reduce((s, r) => s + r.overtimeHours, 0);
   const totalLeave = filtered.reduce((s, r) => s + r.leaveHours, 0);
   const unusedCapacity = totalCapacity - totalScheduled;
-  const costOfUnused = unusedCapacity * 32; // avg hourly rate
+  const costOfUnused = unusedCapacity * rates.internalHourlyRate;
   const overutilised = filtered.filter(r => r.utilisationPercent >= 95).length;
   const underutilised = filtered.filter(r => r.utilisationPercent < 75).length;
   const optimal = filtered.filter(r => r.utilisationPercent >= 75 && r.utilisationPercent < 95).length;
 
-  const chartData = filtered.map(r => ({ name: r.staffName.split(' ')[1] || r.staffName.split(' ')[0], utilisation: r.utilisationPercent, overtime: r.overtimeHours, leave: r.leaveHours, capacity: r.capacityHours }));
+  const chartData = filtered.map(r => ({ name: r.staffName.split(' ')[1] || r.staffName.split(' ')[0], fullName: r.staffName, utilisation: r.utilisationPercent, overtime: r.overtimeHours, leave: r.leaveHours, capacity: r.capacityHours }));
+  const utilAgg = aggregateTrendSeries(filtered, (r: any) => r.utilisationPercentTrend);
+  const scheduledAgg = aggregateTrendSeries(filtered, (r: any) => r.scheduledHoursTrend);
+  const utilTrend = trendFromSeries(utilAgg);
+  const scheduledTrend = trendFromSeries(scheduledAgg);
+  const weeklyTrend = (utilAgg.length > 0 ? utilAgg.slice(-7) : [avgUtilisation]).map((v, i, arr) => ({ day: `T-${arr.length - i}`, avgUtil: Math.round(v), target: 85, headcount: filtered.length }));
   const distributionData = [
     { name: 'Under-utilised (<75%)', value: underutilised, color: '#F59E0B' },
     { name: 'Optimal (75-94%)', value: optimal, color: 'hsl(142, 76%, 36%)' },
@@ -130,6 +131,7 @@ export function StaffUtilisationReport() {
     const staff = filtered.filter(r => r.location === loc);
     return {
       location: loc.split(' ')[0],
+      fullLocation: loc,
       avgUtil: Math.round(staff.reduce((s, r) => s + r.utilisationPercent, 0) / (staff.length || 1)),
       headcount: staff.length,
       overtime: staff.reduce((s, r) => s + r.overtimeHours, 0),
@@ -192,16 +194,15 @@ export function StaffUtilisationReport() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         <StatCard label="Avg Utilisation" value={`${avgUtilisation}%`} icon={Target}
-          trend={{ value: 2.3, label: 'vs last period', isPositiveGood: true }}
+          trend={{ value: utilTrend.deltaPct, label: 'vs first half of period', isPositiveGood: true }}
           sparklineData={weeklyTrend.map(d => d.avgUtil)}
           variant={avgUtilisation >= 85 ? 'success' : avgUtilisation >= 70 ? 'warning' : 'danger'} />
         <StatCard label="Total Scheduled" value={`${totalScheduled}h`} icon={Clock}
-          trend={{ value: 8, label: 'vs last period' }} subtitle={`of ${totalCapacity}h capacity`} />
+          trend={{ value: scheduledTrend.deltaPct, label: 'vs first half of period' }} subtitle={`of ${totalCapacity}h capacity`} />
         <StatCard label="Unused Capacity" value={`${unusedCapacity}h`} icon={Zap}
-          trend={{ value: -3, label: 'vs last period', isPositiveGood: false }}
           subtitle={`$${costOfUnused.toLocaleString()} labour cost`} variant={unusedCapacity > 20 ? 'warning' : 'default'} />
         <StatCard label="Overtime Accrued" value={`${totalOvertime}h`} icon={AlertTriangle}
-          trend={{ value: -1, label: 'vs last period', isPositiveGood: false }} variant={totalOvertime > 8 ? 'danger' : 'default'} />
+          variant={totalOvertime > 8 ? 'danger' : 'default'} />
         <StatCard label="Staff on Leave" value={`${totalLeave}h`} icon={Users}
           subtitle={`${filtered.filter(r => r.leaveHours > 0).length} staff affected`} />
         <StatCard label="Staff Count" value={filtered.length} icon={Users}
@@ -230,7 +231,7 @@ export function StaffUtilisationReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Staff Member</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <BarChart data={chartData} onClick={(e: any) => { const name = e?.activePayload?.[0]?.payload?.fullName; if (name) applyDrill('staffName', name); }} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 110]} />
@@ -291,7 +292,7 @@ export function StaffUtilisationReport() {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Utilisation by Location</CardTitle></CardHeader>
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={220}>
-              <BarChart data={locationBreakdown} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+              <BarChart data={locationBreakdown} onClick={(e: any) => { const full = e?.activePayload?.[0]?.payload?.fullLocation; if (full) applyDrill('location', full); }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="location" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />

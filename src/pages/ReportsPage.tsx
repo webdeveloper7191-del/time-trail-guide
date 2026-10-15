@@ -9,6 +9,7 @@ import { Search, Download, BarChart3, FileText, TrendingUp, Users, Clock, Shield
 import { cn } from '@/lib/utils';
 import { reportSummaryMetrics } from '@/data/mockReportData';
 import { useReportFavourites } from '@/hooks/useReportFavourites';
+import { CostAssumptionsDialog } from '@/components/reports/CostAssumptionsDialog';
 
 // Roster report components
 import { StaffUtilisationReport } from '@/components/reports/StaffUtilisationReport';
@@ -232,6 +233,8 @@ export default function ReportsPage() {
                 {selectedItem.category === 'dashboard' ? 'Dashboard' : 'Report'}
               </Badge>
               <h1 className="text-lg font-semibold tracking-tight text-foreground">{selectedItem.title}</h1>
+              <div className="ml-auto flex items-center gap-2">
+              <CostAssumptionsDialog />
               <Button
                 variant="ghost"
                 size="sm"
@@ -240,6 +243,7 @@ export default function ReportsPage() {
               >
                 <Star className={cn('h-4 w-4', isFavourite(selectedItem.id) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
               </Button>
+              </div>
             </div>
             <ReportComponent />
           </div>
@@ -258,6 +262,9 @@ export default function ReportsPage() {
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reports & Analytics</h1>
               <p className="text-sm text-muted-foreground mt-1">Roster scheduling dashboards and operational reports</p>
+            </div>
+            <div className="ml-auto">
+              <CostAssumptionsDialog />
             </div>
             <Button variant="outline" size="sm" className="gap-2">
               <Download className="h-4 w-4" />

@@ -16,6 +16,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates, getReportRates } from '@/lib/reports/reportRates';
+import { aggregateTrendSeries, trendFromSeries, periodOverPeriod } from '@/lib/reports/metrics';
 
 
 const COLORS = { internal: 'hsl(142, 76%, 36%)', agency: '#F59E0B', unfilled: 'hsl(var(--destructive))' };
@@ -46,7 +48,7 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
     <span className="text-xs">{r.filledByInternal} <span className="text-muted-foreground">({r.filledShifts > 0 ? Math.round(r.filledByInternal / r.filledShifts * 100) : 0}%)</span></span>
   ), sortValue: (r) => r.filledByInternal, align: 'right' },
   { key: 'filledByAgency', header: 'Agency', type: 'text', accessor: (r) => (
-    r.filledByAgency > 0 ? <span className="text-xs text-amber-600">{r.filledByAgency} <span className="text-muted-foreground">(~${r.filledByAgency * 480})</span></span> : <span className="text-muted-foreground text-xs">—</span>
+    r.filledByAgency > 0 ? <span className="text-xs text-amber-600">{r.filledByAgency} <span className="text-muted-foreground">(~${r.filledByAgency * getReportRates().agencyShiftCost})</span></span> : <span className="text-muted-foreground text-xs">—</span>
   ), sortValue: (r) => r.filledByAgency, align: 'right' },
   { key: 'unfilled', header: 'Unfilled', type: 'text', align: 'right', sortValue: (r) => r.unfilled,
     accessor: (r) => r.unfilled > 0 ? <Badge variant="destructive" className="text-xs">{r.unfilled}</Badge> : <span className="text-emerald-600 text-xs">✓</span> },
@@ -81,6 +83,7 @@ const tableColumns: DataTableColumn<OpenShiftFillRecord>[] = [
 ];
 
 export function OpenShiftFillReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -118,8 +121,15 @@ export function OpenShiftFillReport() {
   const avgFillRate = totalOpen > 0 ? Math.round((totalFilled / totalOpen) * 100) : 0;
   const avgTimeToFill = Math.round(filtered.reduce((s, r) => s + r.avgTimeToFillHours, 0) / (filtered.length || 1));
   const internalRate = totalFilled > 0 ? Math.round(totalInternal / totalFilled * 100) : 0;
-  const estAgencyCost = totalAgency * 480;
+  const estAgencyCost = totalAgency * rates.agencyShiftCost;
   const criticalUnfilled = filtered.filter(r => r.unfilled > 0 && r.urgency === 'critical').length;
+
+  const fillRateAgg = aggregateTrendSeries(filtered, (r: any) => r.fillRateTrend);
+  const fillRateTrendResult = trendFromSeries(fillRateAgg);
+  const unfilledAgg = aggregateTrendSeries(filtered, (r: any) => r.unfilledTrend);
+  const unfilledTrendResult = trendFromSeries(unfilledAgg);
+  const timeToFillTrend = periodOverPeriod(filtered, (r) => r.date, (items) => items.length ? items.reduce((s, r) => s + r.avgTimeToFillHours, 0) / items.length : 0);
+  const totalOpenTrend = periodOverPeriod(filtered, (r) => r.date, (items) => items.reduce((s, r) => s + r.totalOpenShifts, 0));
 
   const trendData = useMemo(() => {
     const byDate: Record<string, { date: string; fillRate: number; total: number; filled: number; internal: number; agency: number; unfilled: number }> = {};
@@ -198,20 +208,21 @@ export function OpenShiftFillReport() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard label="Overall Fill Rate" value={`${avgFillRate}%`} icon={Target}
-          trend={{ value: 5, label: 'vs last period' }}
+          trend={{ value: fillRateTrendResult.deltaPct, label: 'vs first half of period' }}
           sparklineData={trendData.map(d => d.fillRate)}
           variant={avgFillRate >= 85 ? 'success' : avgFillRate >= 70 ? 'warning' : 'danger'} />
         <StatCard label="Avg Time to Fill" value={`${avgTimeToFill}h`} icon={Clock}
-          trend={{ value: -1.5, label: 'vs last period', isPositiveGood: false }}
+          trend={{ value: timeToFillTrend.deltaPct, label: 'vs first half of period', isPositiveGood: false }}
           variant={avgTimeToFill <= 4 ? 'success' : avgTimeToFill <= 12 ? 'warning' : 'danger'} />
         <StatCard label="Internal Fill Rate" value={`${internalRate}%`} icon={Users}
           subtitle={`${totalInternal} of ${totalFilled} fills`} variant={internalRate >= 70 ? 'success' : 'warning'} />
         <StatCard label="Still Unfilled" value={totalUnfilled} icon={AlertTriangle}
+          trend={{ value: unfilledTrendResult.deltaPct, label: 'vs first half of period', isPositiveGood: false }}
           variant={totalUnfilled > 0 ? 'danger' : 'success'} subtitle={criticalUnfilled > 0 ? `${criticalUnfilled} critical` : 'No critical gaps'} />
         <StatCard label="Est. Agency Cost" value={`$${(estAgencyCost / 1000).toFixed(1)}k`} icon={DollarSign}
           subtitle={`${totalAgency} agency shifts`} variant={estAgencyCost > 5000 ? 'warning' : 'default'} />
         <StatCard label="Total Open Shifts" value={totalOpen} icon={TrendingUp}
-          trend={{ value: -3, label: 'vs last period', isPositiveGood: false }} subtitle={`${totalFilled} filled`} />
+          trend={{ value: totalOpenTrend.deltaPct, label: 'vs first half of period', isPositiveGood: false }} subtitle={`${totalFilled} filled`} />
       </div>
 
       <SummaryRow items={[
@@ -257,7 +268,7 @@ export function OpenShiftFillReport() {
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={sourceData} cursor="pointer" onClick={(_, index) => { const d = sourceData[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={65} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={sourceData} cx="50%" cy="50%" outerRadius={65} innerRadius={35} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                   {sourceData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
@@ -280,7 +291,7 @@ export function OpenShiftFillReport() {
         <CardHeader className="pb-2"><CardTitle className="text-sm">Fill Rate by Area</CardTitle></CardHeader>
         <CardContent>
           <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
-            <BarChart data={byArea} onClick={(e: any) => { if (e?.activeLabel) applyDrill('location', e.activeLabel); }}>
+            <BarChart data={byArea} onClick={(e: any) => { if (e?.activeLabel) applyDrill('area', e.activeLabel); }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="area" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />

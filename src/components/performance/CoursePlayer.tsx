@@ -46,6 +46,7 @@ import {
   difficultyLabels,
   difficultyColors,
 } from '@/types/lms';
+import { canAttemptAssessment } from "@/lib/lmsLogic";
 import { toast } from 'sonner';
 
 interface CoursePlayerProps {
@@ -154,7 +155,11 @@ export function CoursePlayer({
   const handleAssessmentSubmit = async () => {
     if (!enrollment || !currentModule?.assessment) return;
     
-    const result = await onAssessmentSubmit(enrollment.id, currentModule.assessment.id, assessmentAnswers);
+    const assessment = currentModule.assessment;
+    const result = await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);
+    const attempts = enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id);
+    const retakeLimit = assessment.retakeLimit ?? assessment.maxAttempts ?? Infinity;
+    const canRetake = attempts.length < retakeLimit;
     setAssessmentResult(result);
     setAssessmentSubmitted(true);
     
@@ -586,7 +591,7 @@ function AssessmentView({
                 </p>
                 <Button className="mt-4" onClick={onRetry}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Try Again
+                  Try Again{(assessment.retakeLimit ?? assessment.maxAttempts) ? ` (${assessment.retakeLimit ?? assessment.maxAttempts} attempts total)` : ""}
                 </Button>
               </>
             )}
@@ -708,21 +713,6 @@ function QuestionCard({ question, index, answer, onAnswer }: QuestionCardProps) 
                   </Label>
                 </div>
               ))}
-            </div>
-          </RadioGroup>
-        )}
-
-        {question.type === 'true_false' && (
-          <RadioGroup value={answer as string} onValueChange={onAnswer}>
-            <div className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="true" id={`${question.id}-true`} />
-                <Label htmlFor={`${question.id}-true`} className="cursor-pointer">True</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="false" id={`${question.id}-false`} />
-                <Label htmlFor={`${question.id}-false`} className="cursor-pointer">False</Label>
-              </div>
             </div>
           </RadioGroup>
         )}

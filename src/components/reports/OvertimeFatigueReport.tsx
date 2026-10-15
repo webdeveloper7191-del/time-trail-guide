@@ -15,6 +15,8 @@ import { DrillFilterBadge, DrillFilter } from './DrillFilterBadge';
 import { useDrillFilter } from './useDrillFilter';
 import { AnimatedChartWrapper } from './AnimatedChartWrapper';
 import { filterByDateRange } from '@/lib/reportDateFilter';
+import { useReportRates, getReportRates } from '@/lib/reports/reportRates';
+import { aggregateTrendSeries, trendFromSeries, weightedAverage } from '@/lib/reports/metrics';
 
 
 const riskColors: Record<string, string> = { low: 'bg-emerald-100 text-emerald-700', medium: 'bg-amber-100 text-amber-700', high: 'bg-orange-100 text-orange-700', critical: 'bg-red-100 text-red-700' };
@@ -30,13 +32,6 @@ const exportColumns: ExportColumn[] = [
 
 const locations = [...new Set(mockOvertimeFatigue.map(r => r.location))];
 
-// Simulate 14-day fatigue trend
-const fatigueTrend = Array.from({ length: 14 }, (_, i) => ({
-  day: `Day ${i + 1}`,
-  avgFatigue: Math.round(25 + i * 3.5 + Math.random() * 10),
-  threshold: 70,
-  critical: 85,
-}));
 
 const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
   { key: 'staffName', header: 'Staff Member', type: 'text', accessor: (r) => (
@@ -54,7 +49,7 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
     accessor: (r) => r.overtimeHours > 0 ? (
       <div>
         <Badge variant="destructive" className="text-xs">{r.overtimeHours}h</Badge>
-        <span className="block text-[10px] text-destructive mt-0.5">${(r.overtimeHours * 48).toLocaleString()} cost</span>
+        <span className="block text-[10px] text-destructive mt-0.5">${(r.overtimeHours * getReportRates().overtimePenaltyRate).toLocaleString()} cost</span>
       </div>
     ) : <span className="text-muted-foreground text-xs">—</span> },
   { key: 'consecutiveDays', header: 'Consec. Days', type: 'number', align: 'right', sortValue: (r) => r.consecutiveDays,
@@ -89,6 +84,7 @@ const tableColumns: DataTableColumn<OvertimeFatigueRecord>[] = [
 ];
 
 export function OvertimeFatigueReport() {
+  const rates = useReportRates();
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -121,8 +117,11 @@ export function OvertimeFatigueReport() {
   const criticalCount = filtered.filter(r => r.riskLevel === 'critical').length;
   const highCount = filtered.filter(r => r.riskLevel === 'high').length;
   const totalOT = filtered.reduce((s, r) => s + r.overtimeHours, 0);
-  const otCost = totalOT * 48;
-  const avgFatigue = Math.round(filtered.reduce((s, r) => s + r.fatigueScore, 0) / (filtered.length || 1));
+  const otCost = totalOT * rates.overtimePenaltyRate;
+  const avgFatigue = Math.round(weightedAverage(filtered, r => r.fatigueScore, r => r.weeklyHours));
+  const fatigueAgg = aggregateTrendSeries(filtered, (r: any) => r.fatigueScoreTrend);
+  const fatigueTrend = (fatigueAgg.length > 0 ? fatigueAgg : [avgFatigue]).map((v, i, arr) => ({ day: `Day ${i + 1}`, avgFatigue: Math.round(v), threshold: 70, critical: 85 }));
+  const fatigueTrendResult = trendFromSeries(fatigueAgg);
   const restViolations = filtered.filter(r => r.restHoursBetweenShifts < 10).length;
   const consecViolations = filtered.filter(r => r.consecutiveDays >= 6).length;
 
@@ -146,7 +145,7 @@ export function OvertimeFatigueReport() {
     if (criticalCount > 0) result.push({ type: 'negative' as const, title: `${criticalCount} staff at CRITICAL fatigue risk`, description: `These staff members have fatigue scores above 80, indicating dangerous levels of accumulated fatigue. Immediate intervention required — continued scheduling increases workplace injury risk by 3x.`, metric: `Avg fatigue: ${avgFatigue}/100`, action: 'Remove from next 48h roster and schedule mandatory recovery break' });
     if (restViolations > 0) result.push({ type: 'negative' as const, title: `${restViolations} minimum rest violations`, description: `Staff are receiving less than 10 hours between shifts, violating minimum rest requirements under most Modern Awards. This is a compliance risk.`, metric: `${restViolations} of ${filtered.length} staff affected`, action: 'Adjust scheduling to ensure 10+ hour gaps between shifts' });
     if (consecViolations > 0) result.push({ type: 'action' as const, title: `${consecViolations} consecutive day violations`, description: `Staff working 6+ consecutive days without a rest day. Most Awards mandate a maximum of 5 consecutive days for full-time employees.`, action: 'Schedule a rest day within next 24 hours' });
-    if (totalOT > 0) result.push({ type: 'neutral' as const, title: `$${otCost.toLocaleString()} overtime cost this period`, description: `${totalOT} hours of overtime at an average penalty rate of $48/hr. ${totalOT > 10 ? 'Consider whether additional permanent headcount would be more cost-effective.' : 'Within acceptable range for operational flexibility.'}`, metric: `${totalOT}h × $48/hr avg penalty rate` });
+    if (totalOT > 0) result.push({ type: 'neutral' as const, title: `$${otCost.toLocaleString()} overtime cost this period`, description: `${totalOT} hours of overtime at an average penalty rate of $${rates.overtimePenaltyRate}/hr. ${totalOT > 10 ? 'Consider whether additional permanent headcount would be more cost-effective.' : 'Within acceptable range for operational flexibility.'}`, metric: `${totalOT}h × $${rates.overtimePenaltyRate}/hr avg penalty rate` });
     return result;
   }, [filtered, criticalCount, restViolations, consecViolations, totalOT, avgFatigue, otCost]);
 
@@ -199,8 +198,9 @@ export function OvertimeFatigueReport() {
         <StatCard label="High Risk" value={highCount} icon={Shield}
           variant={highCount > 0 ? 'warning' : 'default'} subtitle={`${highCount + criticalCount} staff need attention`} />
         <StatCard label="Total Overtime" value={`${totalOT}h`} icon={Clock}
-          trend={{ value: -2, label: 'vs last period', isPositiveGood: false }} subtitle={`$${otCost.toLocaleString()} penalty cost`} />
+          subtitle={`$${otCost.toLocaleString()} penalty cost`} />
         <StatCard label="Avg Fatigue Score" value={`${avgFatigue}/100`} icon={Activity}
+          trend={{ value: fatigueTrendResult.deltaPct, label: 'vs first half of period', isPositiveGood: false }}
           sparklineData={fatigueTrend.slice(-7).map(d => d.avgFatigue)} variant={avgFatigue > 60 ? 'warning' : 'default'} />
         <StatCard label="Rest Violations" value={restViolations} icon={Heart}
           variant={restViolations > 0 ? 'danger' : 'success'} subtitle="Below 10hr minimum" />
@@ -229,7 +229,7 @@ export function OvertimeFatigueReport() {
           <CardContent>
             <AnimatedChartWrapper animKey={animKey}><ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={riskDistribution} cursor="pointer" onClick={(_, index) => { const d = riskDistribution[index]; if (d) applyDrill(d.name ? 'category' : 'type', d.name || String(index), d.name || String(index)); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={riskDistribution} cursor="pointer" onClick={(_, index) => { const d = riskDistribution[index]; if (d) applyDrill('riskLevel', d.name.toLowerCase(), d.name); }} cx="50%" cy="50%" outerRadius={70} innerRadius={35} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                   {riskDistribution.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
