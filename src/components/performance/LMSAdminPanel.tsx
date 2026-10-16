@@ -85,7 +85,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   const [showCourseAuthoring, setShowCourseAuthoring] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseAuthoringState | undefined>();
   const [courses, setCourses] = useLmsState('courses');
-  const [mockEnrollments, setEnrollments] = useLmsState('enrollments');
+  const [mockEnrollments] = useLmsState('enrollments');
   const [certificates] = useLmsState('certificates');
   const mockCourses = courses;
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set());
