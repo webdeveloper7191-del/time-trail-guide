@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { mockTimesheets, locations } from '@/data/mockTimesheets';
+import { useTimesheetsState } from '@/lib/timesheetStore';
 import { Timesheet, TimesheetStatus } from '@/types/timesheet';
 import { validateCompliance } from '@/lib/complianceEngine';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
@@ -65,7 +66,7 @@ export default function TimesheetAdmin() {
   useTimesheetLocks();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialView = (searchParams.get('view') as ViewMode) || 'table';
-  const [timesheets, setTimesheets] = useState<Timesheet[]>(mockTimesheets);
+  const [timesheets, setTimesheets] = useTimesheetsState();
   const [activeTab, setActiveTab] = useState<TabValue>('all');
   const [viewMode, setViewMode] = useState<ViewMode>(initialView);
   const [searchQuery, setSearchQuery] = useState('');

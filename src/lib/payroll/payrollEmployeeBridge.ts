@@ -17,6 +17,8 @@ import { PayrollSettings, StpIncomeStream } from '@/types/payroll';
 import { resolveHourlyRate } from '@/lib/payRateResolver';
 import { rateCategoryStore } from '@/lib/rateCategoryStore';
 import { mockStaff } from '@/data/mockStaffData';
+import { australianAwards } from '@/data/australianAwards';
+import { matchClassification, rateOn } from './awardRateSchedule';
 import { generateMockShifts, mockStaff as rosterStaff } from '@/data/mockRosterData';
 
 export interface EmployeePayProfile {
@@ -95,6 +97,7 @@ export function resolveEmployeePayProfile(
   employee: TimesheetEmployee,
   settings: PayrollSettings,
   staff: StaffMember[] = getPayrollStaffDirectory(),
+  onDate: string = new Date().toISOString().slice(0, 10),
 ): EmployeePayProfile {
   const record = matchStaffRecord(employee, staff);
   const notes: string[] = [];
@@ -129,13 +132,14 @@ export function resolveEmployeePayProfile(
   let rateSource: EmployeePayProfile['rateSource'] =
     resolved.source === 'annual' ? 'pay_condition_salary' : 'pay_condition_hourly';
 
-  if (settings.useAwardRates && award?.baseHourlyRate) {
-    if (award.baseHourlyRate > baseRate || !baseRate) {
-      // The award rate is the legal floor — never pay under it.
-      if (baseRate && award.baseHourlyRate > baseRate) {
-        notes.push(`Pay condition rate $${baseRate.toFixed(2)} is under the ${award.classification} award floor — paid at the award rate.`);
+  const floor = awardFloorOn(award, onDate);
+  if (settings.useAwardRates && floor) {
+    if (floor > baseRate || !baseRate) {
+      // The published award rate in force on the period start is the legal floor — never pay under it.
+      if (baseRate && floor > baseRate) {
+        notes.push(`Pay condition rate $${baseRate.toFixed(2)} is under the ${award?.level ?? award?.classification} award minimum of $${floor.toFixed(2)} on ${onDate} — paid at the award rate.`);
       }
-      baseRate = award.baseHourlyRate;
+      baseRate = floor;
       rateSource = 'award';
     }
   }
@@ -213,4 +217,12 @@ export function rosteredHoursByStaff(periodStart: string, periodEnd: string): Re
   });
   Object.keys(totals).forEach((k) => { totals[k] = Math.round(totals[k] * 100) / 100; });
   return totals;
+}
+
+
+/** Published award minimum hourly rate in force on a date (falls back to the rate stored on the staff record). */
+export function awardFloorOn(award: AwardRule | undefined, onDate: string): number {
+  if (!award) return 0;
+  const m = matchClassification(australianAwards, award);
+  return m ? rateOn(m.classification, onDate) : (award.baseHourlyRate ?? 0);
 }

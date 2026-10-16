@@ -8,3 +8,5 @@
 - [x] Performance: reviews/feedback/1:1s, succession saved; improvement plan upload + exports
 - [ ] Performance: link employee portal goals/reviews with manager screens (large)
 - [ ] Performance: save course progress, enrolments, certificates and authored courses (large)
+- [x] Payroll: AWR 2026 award rates (effective-dated), automatic back pay, shared approved timesheets → pay runs
+- [ ] Payroll: real pay-guide figures for more shift awards (Fast Food, Restaurant, Security, Cleaning, Clerks)

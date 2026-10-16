@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Timesheet } from '@/types/timesheet';
 import { PayCycle } from '@/types/payroll';
 import { payrollStore } from '@/lib/payroll/payrollStore';
-import { buildPayRun } from '@/lib/payroll/payRunEngine';
+import { buildPayRun, recalcRun } from '@/lib/payroll/payRunEngine';
+import { backPayAdjustmentsFor, backPayLedger, detectBackPay, useBackPayLedgerVersion } from '@/lib/payroll/backPayEngine';
+import { usePayroll } from '@/lib/payroll/payrollStore';
 import { getPayrollOperator } from '@/lib/payroll/operator';
 import { payPeriodApprovalStore, usePayPeriodApprovals } from '@/lib/payroll/payPeriodApprovalStore';
 import { cycleLabel, periodAtOffset, periodContaining } from '@/lib/payroll/payCalendar';
@@ -45,7 +47,17 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
     initialPeriod?.paymentDate ?? format(addDays(new Date(), cycleDays[settings.defaultCycle] + 3), 'yyyy-MM-dd'),
   );
   const [name, setName] = useState('');
-  const [approvedOnly, setApprovedOnly] = useState(true);
+  // Only fully approved timesheets are paid; anything else is flagged, not included.
+  const approvedOnly = true;
+  usePayroll();
+  const ledgerVersion = useBackPayLedgerVersion();
+  const [includeBackPay, setIncludeBackPay] = useState(true);
+  const owing = useMemo(
+    () => (open ? detectBackPay({ runs: payrollStore.getRuns(), staff: getPayrollStaffDirectory(), settings, timesheets }).filter((i) => !i.includedInRunId) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [open, timesheets, ledgerVersion],
+  );
+  const owingTotal = owing.reduce((s, i) => s + i.amount, 0);
 
   const applyCalendar = (id: string, offset = 0) => {
     setCalendarId(id);
@@ -186,9 +198,20 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
       toast.error('No eligible timesheets in this period.');
       return;
     }
-    payrollStore.saveRun({ ...run, createdBy: getPayrollOperator() });
+    let finalRun = run;
+    let backPayNote = '';
+    if (includeBackPay && owing.length) {
+      const { adjustments, keys, notInRun } = backPayAdjustmentsFor(run, owing);
+      if (adjustments.length) {
+        finalRun = recalcRun({ ...run, adjustments }, payrollStore.getSettings());
+        backPayLedger.mark(keys, run.id);
+        backPayNote = ` Includes $${adjustments.reduce((s, a) => s + (a.amount ?? 0), 0).toFixed(2)} back pay for ${new Set(adjustments.map((a) => a.staffId)).size} employee(s).`;
+      }
+      if (notInRun.length) backPayNote += ` ${notInRun.length} back-pay item(s) wait for a run that includes those employees.`;
+    }
+    payrollStore.saveRun({ ...finalRun, createdBy: getPayrollOperator() });
     if (gate.approval) payPeriodApprovalStore.markConsumed(gate.approval.id, run.id);
-    toast.success(`Draft pay run created — ${run.lines.length} employees, $${run.totals.grossPay.toFixed(2)} gross.`);
+    toast.success(`Draft pay run created — ${finalRun.lines.length} employees, $${finalRun.totals.grossPay.toFixed(2)} gross.${backPayNote}`);
     onCreated(run.id);
     onClose();
   };
@@ -300,13 +323,27 @@ export function NewPayRunPanel({ open, onClose, timesheets, onCreated }: Props) 
           <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <p className="text-sm font-medium">Approved timesheets only</p>
-            <p className="text-xs text-muted-foreground">Turn off to include pending sheets (they will be flagged).</p>
-          </div>
-          <Switch checked={approvedOnly} onCheckedChange={setApprovedOnly} />
+        <div className="rounded-lg border p-3">
+          <p className="text-sm font-medium">Approved timesheets only</p>
+          <p className="text-xs text-muted-foreground">Only fully approved timesheets in this period are paid. Approve pending sheets on the Timesheets page first.</p>
         </div>
+
+        {owing.length > 0 && (
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Back pay owing · ${owingTotal.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Added automatically for employees in this run.</p>
+              </div>
+              <Switch checked={includeBackPay} onCheckedChange={setIncludeBackPay} aria-label="Include back pay" />
+            </div>
+            <ul className="text-xs text-muted-foreground space-y-0.5 max-h-32 overflow-auto">
+              {owing.map((i) => (
+                <li key={i.key}>{i.staffName} · {i.from} → {i.to} · ${i.paidRate.toFixed(2)} → ${i.dueRate.toFixed(2)}/hr · <span className="text-foreground font-medium">${i.amount.toFixed(2)}</span></li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
           <p><span className="font-medium">{eligibleCount}</span> employee{eligibleCount === 1 ? '' : 's'} will be included in this run.</p>
