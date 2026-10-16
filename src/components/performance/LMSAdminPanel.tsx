@@ -85,7 +85,8 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   const [showCourseAuthoring, setShowCourseAuthoring] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseAuthoringState | undefined>();
   const [courses, setCourses] = useLmsState('courses');
-  const [mockEnrollments] = useLmsState('enrollments');
+  const [mockEnrollments, setEnrollments] = useLmsState('enrollments');
+  const [certificates] = useLmsState('certificates');
   const mockCourses = courses;
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set());
   const [selectedStaffRowIds, setSelectedStaffRowIds] = useState<Set<string>>(new Set());
@@ -872,6 +873,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
                         )}>
                           {isOverdue ? 'Overdue' : enrollmentStatusLabels[enrollment.status]}
                         </Badge>
+                        {(() => { const cert = certificates.find(c => c.enrollmentId === enrollment.id); return cert ? <p className="mt-1 text-xs text-muted-foreground">Certificate {cert.certificateNumber}</p> : null; })()}
                       </TableCell>
                       <TableCell className="py-3">
                         <div className="flex items-center gap-2 justify-center">
