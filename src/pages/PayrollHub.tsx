@@ -34,6 +34,7 @@ const statusVariant: Record<PayRunStatus, 'default' | 'secondary' | 'outline'> =
 export default function PayrollHub() {
   usePayroll();
   usePayPeriodApprovals();
+  const timesheets = useTimesheets();
   const runs = payrollStore.getRuns();
   const pendingApprovals = payPeriodApprovalStore.byStatus('pending').length;
   const settings = payrollStore.getSettings();
