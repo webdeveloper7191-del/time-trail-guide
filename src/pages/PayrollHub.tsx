@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { mockTimesheets } from '@/data/mockTimesheets';
+import { useTimesheets } from '@/lib/timesheetStore';
+import { BackPayPanel } from '@/components/payroll/BackPayPanel';
 import { PayRun, PayRunStatus } from '@/types/payroll';
 import { payrollStore, usePayroll } from '@/lib/payroll/payrollStore';
 import { periodContaining } from '@/lib/payroll/payCalendar';
@@ -69,7 +70,7 @@ export default function PayrollHub() {
               { label: 'Pay runs', value: String(runs.length) },
               { label: 'Awaiting approval', value: String(pending) },
               { label: 'Gross processed', value: currency(ytd) },
-              { label: 'Timesheets available', value: String(mockTimesheets.filter((t) => t.status === 'approved').length) },
+              { label: 'Timesheets available', value: String(timesheets.filter((t) => t.status === 'approved').length) },
             ].map((s) => (
               <Card key={s.label}>
                 <CardContent className="p-4">
@@ -83,12 +84,17 @@ export default function PayrollHub() {
           <Tabs defaultValue="runs">
             <TabsList>
               <TabsTrigger value="runs">Pay runs</TabsTrigger>
+              <TabsTrigger value="backpay">Back pay</TabsTrigger>
               <TabsTrigger value="approvals">Period approvals{pendingApprovals ? ` (${pendingApprovals})` : ''}</TabsTrigger>
               <TabsTrigger value="accounting">Accounting exports</TabsTrigger>
               <TabsTrigger value="reports">Reports</TabsTrigger>
               <TabsTrigger value="stp">STP summaries</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="backpay" className="mt-4">
+              <BackPayPanel timesheets={timesheets} />
+            </TabsContent>
 
             <TabsContent value="runs" className="mt-4">
               <div className="rounded-lg border overflow-hidden bg-card">
@@ -194,7 +200,7 @@ export default function PayrollHub() {
       <NewPayRunPanel
         open={newOpen}
         onClose={() => setNewOpen(false)}
-        timesheets={mockTimesheets}
+        timesheets={timesheets}
         onCreated={(id) => setSelectedId(id)}
       />
       <PayRunDetailPanel run={selected} open={!!selected} onClose={() => setSelectedId(null)} />
