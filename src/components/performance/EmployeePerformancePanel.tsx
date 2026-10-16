@@ -37,8 +37,6 @@ import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import {
   usePerformanceSelfService,
   performanceSelfService,
-  applyGoalOverlay,
-  applyReviewOverlay,
 } from '@/lib/performanceSelfServiceStore';
 import { UpdateGoalProgressDrawer } from './employee/UpdateGoalProgressDrawer';
 import { SelfReviewDrawer } from './employee/SelfReviewDrawer';
