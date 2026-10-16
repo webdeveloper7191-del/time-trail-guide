@@ -1,3 +1,4 @@
+import { useLmsState } from '@/lib/lmsStore';
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -83,7 +84,9 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   const [assignDueDate, setAssignDueDate] = useState<Date | undefined>();
   const [showCourseAuthoring, setShowCourseAuthoring] = useState(false);
   const [editingCourse, setEditingCourse] = useState<CourseAuthoringState | undefined>();
-  const [courses, setCourses] = useState(mockCourses);
+  const [courses, setCourses] = useLmsState('courses');
+  const [mockEnrollments] = useLmsState('enrollments');
+  const mockCourses = courses;
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set());
   const [selectedStaffRowIds, setSelectedStaffRowIds] = useState<Set<string>>(new Set());
 

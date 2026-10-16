@@ -1,3 +1,4 @@
+import { useLmsState } from '@/lib/lmsStore';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +61,7 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [showAuthoringTool, setShowAuthoringTool] = useState(false);
   const [showGettingStarted, setShowGettingStarted] = useState(true);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
+  const [enrollments, setEnrollments] = useLmsState('enrollments');
 
   const stats = useMemo(() => {
     const total = enrollments.length;

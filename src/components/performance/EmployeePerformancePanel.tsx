@@ -33,7 +33,8 @@ import {
 } from '@/types/performance';
 import { planTypeLabels, planStatusLabels } from '@/types/performancePlan';
 import { performanceRecords, usePerformanceRecordsVersion } from '@/lib/api/performanceApi';
-import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
+import { usePerformancePlanStore } from '@/lib/performancePlanStore';
+import { pipStatusLabels } from '@/types/compensation';
 import {
   usePerformanceSelfService,
   performanceSelfService,
@@ -81,7 +82,9 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
   const [conversationDrawer, setConversationDrawer] = useState<Conversation | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [wellbeingOpen, setWellbeingOpen] = useState(false);
-  const { wellbeingCheckIns } = usePerformanceOperations();
+  const { wellbeingCheckIns, pips } = usePerformanceOperations();
+  const { assignedPlans } = usePerformancePlanStore();
+  const myPips = useMemo(() => pips.filter(p => p.staffId === currentUserId && p.status !== 'draft'), [pips, currentUserId]);
   const latestCheckIn = wellbeingCheckIns.find(item => item.staffId === currentUserId);
 
   // My data, with employee self-service edits merged over the source records.
@@ -104,8 +107,8 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
   );
 
   const myPlans = useMemo(
-    () => mockAssignedPlans.filter(p => p.staffId === currentUserId),
-    [currentUserId],
+    () => assignedPlans.filter(p => p.staffId === currentUserId && p.status !== 'draft'),
+    [assignedPlans, currentUserId],
   );
 
   const goalStats = useMemo(
@@ -469,7 +472,52 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
         {/* ---------------------------------------------------------------- Plans */}
         <TabsContent value="plans" className="mt-6">
           <div className="space-y-3">
-            {myPlans.length === 0 ? (
+            {myPips.map(pip => {
+              const done = pip.milestones.filter(m => m.status === 'completed').length;
+              const pct = pip.milestones.length ? Math.round((done / pip.milestones.length) * 100) : 0;
+              const ack = overlay.planAcknowledgements[pip.id];
+              return (
+                <Card key={pip.id}>
+                  <CardContent className="p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium">Performance Improvement Plan</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(parseISO(pip.startDate), 'd MMM yyyy')} – {format(parseISO(pip.currentEndDate), 'd MMM yyyy')}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{pipStatusLabels[pip.status]}</Badge>
+                    </div>
+                    <p className="mt-3 text-sm">{pip.reason}</p>
+                    {pip.expectedOutcomes.length > 0 && (
+                      <ul className="mt-2 list-disc pl-5 text-sm text-muted-foreground">
+                        {pip.expectedOutcomes.map((o, i) => <li key={i}>{o}</li>)}
+                      </ul>
+                    )}
+                    <div className="mt-3 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{done} of {pip.milestones.length} milestones</span>
+                        <span className="font-medium text-foreground">{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">{pip.checkIns.length} check-ins recorded</p>
+                    {ack ? (
+                      <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <ThumbsUp className="h-4 w-4" />
+                        Acknowledged {format(parseISO(ack.acknowledgedAt), 'd MMM yyyy')}
+                      </p>
+                    ) : (
+                      <Button size="sm" className="mt-3" onClick={() => handleAcknowledgePlan(pip.id, 'Performance Improvement Plan')}>
+                        <ThumbsUp className="mr-1.5 h-3.5 w-3.5" />
+                        Acknowledge plan
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {myPlans.length === 0 && myPips.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center">
                   <ClipboardList className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
