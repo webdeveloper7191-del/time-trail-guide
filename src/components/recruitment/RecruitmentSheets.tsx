@@ -530,7 +530,8 @@ export function ApplicantDetailSheet({ applicant, job, interviews, staff, onOpen
                 <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
                 <SelectContent>{pipeline.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}</SelectContent>
               </Select>
-              {a.status === 'offer' && <Button size="sm" onClick={() => onHire(a)}><UserCheck className="h-4 w-4 mr-1" />Hire & start onboarding</Button>}
+              {!closed && !a.staffId && <Button size="sm" onClick={() => onHire(a)}><UserCheck className="h-4 w-4 mr-1" />Convert to staff & start onboarding</Button>}
+              {a.staffId && <Button size="sm" variant="outline" asChild><a href={`/workforce/${a.staffId}`}><UserCheck className="h-4 w-4 mr-1" />View staff profile</a></Button>}
               {!closed && <Button size="sm" variant="outline" onClick={() => setShowReject(s => !s)}><XCircle className="h-4 w-4 mr-1" />Reject</Button>}
               {!closed && <Button size="sm" variant="ghost" onClick={() => { recruitmentStore.moveApplicant(a.id, 'withdrawn', 'Candidate withdrew'); toast('Marked as withdrawn'); }}>Withdrawn</Button>}
             </div>

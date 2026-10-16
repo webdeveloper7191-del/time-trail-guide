@@ -1,3 +1,5 @@
+import { addConvertedStaff } from '@/data/mockStaffData';
+import { recruitmentStore } from '@/lib/recruitmentStore';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
@@ -83,7 +85,7 @@ export default function PaperlessOnboarding() {
     // Step 2
     employmentStartDate: '',
     contractedHours: '',
-    position: '',
+    position: params.get('position') ?? '',
     payRateType: '',
     awardName: '',
     awardClassification: '',
@@ -130,8 +132,25 @@ export default function PaperlessOnboarding() {
     setSending(true);
     await new Promise(r => setTimeout(r, 1500));
     setSending(false);
-    toast.success(`Onboarding invite sent to ${form.email}`);
-    navigate('/workforce');
+    const ts = new Date().toISOString();
+    const staffId = `staff-${Date.now()}`;
+    addConvertedStaff({
+      id: staffId, firstName: form.firstName, middleName: form.middleName || undefined, lastName: form.lastName,
+      preferredName: form.preferredName || undefined, email: form.email, mobilePhone: form.mobilePhone,
+      employeeId: `EMP-${String(Date.now()).slice(-5)}`, employmentStartDate: form.employmentStartDate || ts.slice(0, 10),
+      status: 'onboarding' as any, position: form.position,
+      locations: Array.from(new Set(form.workLocations.map(l => l.split(' › ')[0]))),
+      payConditionHistory: [], customAllowances: [], weeklyAvailability: [],
+      availabilityPattern: 'same_every_week', emergencyContacts: [], qualifications: [],
+      createdAt: ts, updatedAt: ts,
+    } as any);
+    const applicantId = params.get('applicantId');
+    if (applicantId) {
+      recruitmentStore.moveApplicant(applicantId, 'hired', `Converted to staff (${form.firstName} ${form.lastName}) — onboarding invite sent`);
+      recruitmentStore.updateApplicant(applicantId, { staffId } as any);
+    }
+    toast.success(`${form.firstName} added as staff — onboarding invite sent to ${form.email}`);
+    navigate(applicantId ? '/recruitment' : '/workforce');
   };
 
   return (

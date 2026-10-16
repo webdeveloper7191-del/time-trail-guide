@@ -105,6 +105,8 @@ export interface Applicant {
   source: string;
   appliedAt: string;
   updatedAt: string;
+  /** Staff record created when the applicant was converted. */
+  staffId?: string;
 }
 
 export interface ApplicantNote {

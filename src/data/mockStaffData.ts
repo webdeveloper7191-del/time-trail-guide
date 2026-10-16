@@ -360,3 +360,18 @@ export const mockStaff: StaffMember[] = [
 
 export const departments = ['Operations', 'Education', 'Administration', 'Management'];
 export const locations = ['Melbourne CBD', 'South Yarra', 'Prahran', 'Richmond', 'Fitzroy'];
+
+// Staff created from recruitment/onboarding are persisted locally and merged in.
+const CONVERTED_KEY = 'rai.convertedStaff.v1';
+try {
+  const saved = JSON.parse(localStorage.getItem(CONVERTED_KEY) ?? '[]') as StaffMember[];
+  saved.forEach(s => { if (!mockStaff.some(m => m.id === s.id)) mockStaff.push(s); });
+} catch { /* ignore */ }
+
+export function addConvertedStaff(staff: StaffMember) {
+  mockStaff.push(staff);
+  try {
+    const saved = JSON.parse(localStorage.getItem(CONVERTED_KEY) ?? '[]') as StaffMember[];
+    localStorage.setItem(CONVERTED_KEY, JSON.stringify([...saved, staff]));
+  } catch { /* ignore */ }
+}

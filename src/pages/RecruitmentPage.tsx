@@ -17,14 +17,10 @@ export default function RecruitmentPage() {
   const selectedApp = applicants.find(a => a.id === selectedAppId) ?? null;
 
   const hire = (a: Applicant) => {
-    recruitmentStore.moveApplicant(a.id, 'hired', 'Hired — onboarding invite started');
     const job = jobs.find(j => j.id === a.jobId);
     setSelectedAppId(null);
-    toast.success(`${a.firstName} hired`, {
-      description: job && job.status === 'open' ? 'Mark the job as filled if no more positions remain.' : undefined,
-      action: job && job.status === 'open' ? { label: 'Mark filled', onClick: () => recruitmentStore.setJobStatus(job.id, 'filled') } : undefined,
-    });
-    const params = new URLSearchParams({ firstName: a.firstName, lastName: a.lastName, email: a.email, phone: a.phone ?? '', position: job?.title ?? '' });
+    toast(`Converting ${a.firstName} to staff`, { description: 'Finish the onboarding steps to create their staff profile.' });
+    const params = new URLSearchParams({ applicantId: a.id, firstName: a.firstName, lastName: a.lastName, email: a.email, phone: a.phone ?? '', position: job?.title ?? '' });
     navigate(`/workforce/onboarding?${params.toString()}`);
   };
 
