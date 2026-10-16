@@ -25,10 +25,28 @@ const saveGoals = (goals: Goal[]) => {
   try { window.localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals)); } catch { /* retain memory state */ }
 };
 
+function persisted<T>(key: string, seed: T[]) {
+  let items: T[] = [...seed];
+  try { const raw = window.localStorage.getItem(key); if (raw) items = JSON.parse(raw); } catch { /* use seed */ }
+  return {
+    get: () => items,
+    set: (next: T[]) => { items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ } },
+    upsert: (item: T & { id: string }) => {
+      const exists = items.some((i: any) => i.id === item.id);
+      const next = exists ? items.map((i: any) => i.id === item.id ? item : i) : [...items, item];
+      items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ }
+      return item;
+    },
+  };
+}
+const reviewsDb = persisted<PerformanceReview>('rostered.performance.reviews.v1', mockReviews);
+const feedbackDb = persisted<Feedback>('rostered.performance.feedback.v1', mockFeedback);
+const convDb = persisted<Conversation>('rostered.performance.conversations.v1', mockConversations);
+
 export const performanceApi = {
   // Reviews
   async fetchReviews(staffId?: string): Promise<ApiResponse<PerformanceReview[]>> {
-    let reviews = [...mockReviews];
+    let reviews = [...reviewsDb.get()];
     if (staffId) {
       reviews = reviews.filter(r => r.staffId === staffId);
     }
@@ -36,7 +54,7 @@ export const performanceApi = {
   },
 
   async getReviewById(id: string): Promise<ApiResponse<PerformanceReview | null>> {
-    const review = mockReviews.find(r => r.id === id);
+    const review = reviewsDb.get().find(r => r.id === id);
     return mockApiCall(review ?? null);
   },
 
@@ -47,18 +65,20 @@ export const performanceApi = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    reviewsDb.upsert(newReview);
     return mockApiCall(newReview, { delay: 500 });
   },
 
   async updateReview(id: string, updates: Partial<PerformanceReview>): Promise<ApiResponse<PerformanceReview>> {
-    const review = mockReviews.find(r => r.id === id);
+    const review = reviewsDb.get().find(r => r.id === id);
     if (!review) throw new Error('Review not found');
     const updated = { ...review, ...updates, updatedAt: new Date().toISOString() };
+    reviewsDb.upsert(updated);
     return mockApiCall(updated, { delay: 400 });
   },
 
   async submitSelfReview(id: string, ratings: ReviewRating[], summary: string): Promise<ApiResponse<PerformanceReview>> {
-    const review = mockReviews.find(r => r.id === id);
+    const review = reviewsDb.get().find(r => r.id === id);
     if (!review) throw new Error('Review not found');
     
     const selfRatingAvg = ratings.reduce((sum, r) => sum + (r.selfRating || 0), 0) / ratings.length;
@@ -72,6 +92,7 @@ export const performanceApi = {
       submittedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    reviewsDb.upsert(updated);
     return mockApiCall(updated, { delay: 500 });
   },
 
@@ -83,7 +104,7 @@ export const performanceApi = {
     areasForImprovement: string[],
     developmentPlan: string
   ): Promise<ApiResponse<PerformanceReview>> {
-    const review = mockReviews.find(r => r.id === id);
+    const review = reviewsDb.get().find(r => r.id === id);
     if (!review) throw new Error('Review not found');
     
     const managerRatingAvg = ratings.reduce((sum, r) => sum + (r.managerRating || 0), 0) / ratings.filter(r => r.managerRating).length;
@@ -100,6 +121,7 @@ export const performanceApi = {
       completedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    reviewsDb.upsert(updated);
     return mockApiCall(updated, { delay: 500 });
   },
 
@@ -161,7 +183,7 @@ export const performanceApi = {
 
   // Feedback
   async fetchFeedback(staffId?: string, type?: 'given' | 'received'): Promise<ApiResponse<Feedback[]>> {
-    let feedback = [...mockFeedback];
+    let feedback = [...feedbackDb.get()];
     if (staffId && type === 'given') {
       feedback = feedback.filter(f => f.fromStaffId === staffId);
     } else if (staffId && type === 'received') {
@@ -178,12 +200,13 @@ export const performanceApi = {
       id: `feedback-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
+    feedbackDb.upsert(newFeedback);
     return mockApiCall(newFeedback, { delay: 400 });
   },
 
   // Conversations
   async fetchConversations(staffId?: string, managerId?: string): Promise<ApiResponse<Conversation[]>> {
-    let conversations = [...mockConversations];
+    let conversations = [...convDb.get()];
     if (staffId) {
       conversations = conversations.filter(c => c.staffId === staffId);
     }
@@ -194,7 +217,7 @@ export const performanceApi = {
   },
 
   async getConversationById(id: string): Promise<ApiResponse<Conversation | null>> {
-    const conversation = mockConversations.find(c => c.id === id);
+    const conversation = convDb.get().find(c => c.id === id);
     return mockApiCall(conversation ?? null);
   },
 
@@ -205,18 +228,20 @@ export const performanceApi = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    convDb.upsert(newConversation);
     return mockApiCall(newConversation, { delay: 500 });
   },
 
   async updateConversation(id: string, updates: Partial<Conversation>): Promise<ApiResponse<Conversation>> {
-    const conversation = mockConversations.find(c => c.id === id);
+    const conversation = convDb.get().find(c => c.id === id);
     if (!conversation) throw new Error('Conversation not found');
     const updated = { ...conversation, ...updates, updatedAt: new Date().toISOString() };
+    convDb.upsert(updated as Conversation);
     return mockApiCall(updated, { delay: 400 });
   },
 
   async addConversationNote(id: string, content: string, createdBy: string): Promise<ApiResponse<Conversation>> {
-    const conversation = mockConversations.find(c => c.id === id);
+    const conversation = convDb.get().find(c => c.id === id);
     if (!conversation) throw new Error('Conversation not found');
     
     const newNote: ConversationNote = {
@@ -231,11 +256,12 @@ export const performanceApi = {
       notes: [...conversation.notes, newNote],
       updatedAt: new Date().toISOString(),
     };
+    convDb.upsert(updated as Conversation);
     return mockApiCall(updated, { delay: 300 });
   },
 
   async completeConversation(id: string, actionItems: string[], nextMeetingDate?: string): Promise<ApiResponse<Conversation>> {
-    const conversation = mockConversations.find(c => c.id === id);
+    const conversation = convDb.get().find(c => c.id === id);
     if (!conversation) throw new Error('Conversation not found');
     
     const updated = {
@@ -245,6 +271,7 @@ export const performanceApi = {
       nextMeetingDate,
       updatedAt: new Date().toISOString(),
     };
+    convDb.upsert(updated as Conversation);
     return mockApiCall(updated, { delay: 400 });
   },
 };

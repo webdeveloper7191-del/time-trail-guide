@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import { exportToCSV } from '@/lib/reportExport';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -70,9 +71,17 @@ staff: StaffMember[];
   currentUserId: string;
 }
 
+const ROLES_KEY = 'rostered.performance.succession.roles.v1';
+const CANDIDATES_KEY = 'rostered.performance.succession.candidates.v1';
+function loadSaved<T>(key: string, seed: T[]): T[] {
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : seed; } catch { return seed; }
+}
+
 export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false }: SuccessionPlanningPanelProps) {
-  const [keyRoles, setKeyRoles] = useState<KeyRole[]>(initialMockKeyRoles);
-  const [candidates, setCandidates] = useState<SuccessionCandidate[]>(initialMockCandidates);
+  const [keyRoles, setKeyRoles] = useState<KeyRole[]>(() => loadSaved(ROLES_KEY, initialMockKeyRoles));
+  const [candidates, setCandidates] = useState<SuccessionCandidate[]>(() => loadSaved(CANDIDATES_KEY, initialMockCandidates));
+  useEffect(() => { try { localStorage.setItem(ROLES_KEY, JSON.stringify(keyRoles)); } catch { /* ignore */ } }, [keyRoles]);
+  useEffect(() => { try { localStorage.setItem(CANDIDATES_KEY, JSON.stringify(candidates)); } catch { /* ignore */ } }, [candidates]);
   
   const [activeView, setActiveView] = useState<'pipeline' | 'candidates'>('pipeline');
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
@@ -106,7 +115,11 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
   };
 
   const roleBulkActions = [
-    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { toast.success(`Exporting ${selectedRoleIds.size} role(s)...`); handleRoleClearSelection(); } },
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { exportToCSV('Succession key roles', [
+      { header: 'Role', accessor: 'title' }, { header: 'Department', accessor: (r: any) => r.department ?? '' },
+      { header: 'Vacancy risk', accessor: (r: any) => r.vacancyRisk ?? '' },
+      { header: 'Candidates', accessor: (r: any) => candidates.filter(c => c.keyRoleId === r.id).length },
+    ], keyRoles.filter(r => selectedRoleIds.has(r.id)), 'succession-roles'); toast.success(`Exported ${selectedRoleIds.size} role(s)`); handleRoleClearSelection(); } },
     { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedRoleIds.size} role(s) archived`); handleRoleClearSelection(); } },
     { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { setKeyRoles(prev => prev.filter(r => !selectedRoleIds.has(r.id))); toast.success(`${selectedRoleIds.size} role(s) deleted`); handleRoleClearSelection(); }, variant: 'destructive' as const },
   ];
@@ -124,7 +137,11 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
   };
 
   const candidateBulkActions = [
-    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { toast.success(`Exporting ${selectedCandidateIds.size} candidate(s)...`); handleCandidateClearSelection(); } },
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { exportToCSV('Succession candidates', [
+      { header: 'Staff', accessor: (c: any) => { const m = getStaffMember(c.staffId); return m ? `${m.firstName} ${m.lastName}` : c.staffId; } },
+      { header: 'Key role', accessor: (c: any) => keyRoles.find(r => r.id === c.keyRoleId)?.title ?? '' },
+      { header: 'Readiness', accessor: 'readiness' }, { header: 'Overall score', accessor: 'overallScore' },
+    ], candidates.filter(c => selectedCandidateIds.has(c.id)), 'succession-candidates'); toast.success(`Exported ${selectedCandidateIds.size} candidate(s)`); handleCandidateClearSelection(); } },
     { id: 'remove', label: 'Remove', icon: <Trash2 size={14} />, onClick: () => { setCandidates(prev => prev.filter(c => !selectedCandidateIds.has(c.id))); toast.success(`${selectedCandidateIds.size} candidate(s) removed`); handleCandidateClearSelection(); }, variant: 'destructive' as const },
   ];
 
