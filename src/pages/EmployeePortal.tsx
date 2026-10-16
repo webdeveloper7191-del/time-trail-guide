@@ -156,7 +156,7 @@ export function EmployeePortal() {
       case '360':
         return <Employee360Panel currentUserId={currentEmployee.id} />;
       case 'learning':
-        return <EmployeeLMSPanel currentUserId={currentEmployee.id} />;
+        return <EmployeeLMSPanel currentUserId={currentEmployee.staffId} />;
       default:
         return null;
     }
