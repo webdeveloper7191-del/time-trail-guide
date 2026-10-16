@@ -1,3 +1,4 @@
+import { useLmsState } from '@/lib/lmsStore';
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -131,8 +132,10 @@ const mockPathEnrollments: PathEnrollment[] = [
 ];
 
 export function LearningPathsPanel() {
-  const [paths, setPaths] = useState<LearningPath[]>(mockLearningPaths);
-  const [enrollments, setEnrollments] = useState<PathEnrollment[]>(mockPathEnrollments);
+  const [paths, setPaths] = useLmsState('learningPaths');
+  const [storedPathEnrollments, setStoredPathEnrollments] = useLmsState('pathEnrollments');
+  const enrollments: PathEnrollment[] = storedPathEnrollments ?? mockPathEnrollments;
+  const setEnrollments = (u: PathEnrollment[] | ((p: PathEnrollment[]) => PathEnrollment[])) => setStoredPathEnrollments(typeof u === 'function' ? u(enrollments) : u);
   const [searchQuery, setSearchQuery] = useState('');
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingPath, setEditingPath] = useState<LearningPath | undefined>();

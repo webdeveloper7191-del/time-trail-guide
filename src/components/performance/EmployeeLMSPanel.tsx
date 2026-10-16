@@ -1,3 +1,4 @@
+import { useLmsState } from '@/lib/lmsStore';
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +69,10 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   const [completedCourse, setCompletedCourse] = useState<Course | null>(null);
   const [completedEnrollment, setCompletedEnrollment] = useState<Enrollment | null>(null);
   const staffMember = mockStaff.find(s => s.id === currentUserId);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>(mockEnrollments);
+  const [enrollments, setEnrollments] = useLmsState('enrollments');
+  const [mockCourses] = useLmsState('courses');
+  const [allCertificates] = useLmsState('certificates');
+  const mockCertificates = allCertificates.filter(c => c.staffId === currentUserId);
   const isMobile = useIsMobile();
 
   const myEnrollments = useMemo(() => 
