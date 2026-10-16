@@ -8,6 +8,7 @@
  * behaves like a real self-service surface without touching admin state.
  */
 import { useEffect, useState } from 'react';
+import { performanceRecords } from '@/lib/api/performanceApi';
 import type { Goal, PerformanceReview, ReviewRating, Conversation } from '@/types/performance';
 
 const STORAGE_KEY = 'rostered.performance.selfService.v1';
@@ -104,6 +105,8 @@ export const performanceSelfService = {
       },
     };
     emit();
+    const goal = performanceRecords.goals().find(g => g.id === goalId);
+    if (goal) performanceRecords.saveGoal(applyGoalOverlay(goal, state));
   },
 
   submitSelfReview(reviewId: string, submission: Omit<SelfReviewSubmission, 'submittedAt'>) {
@@ -115,6 +118,8 @@ export const performanceSelfService = {
       },
     };
     emit();
+    const review = performanceRecords.reviews().find(r => r.id === reviewId);
+    if (review) performanceRecords.saveReview(applyReviewOverlay(review, state));
   },
 
   saveConversationPrep(conversationId: string, prep: Omit<ConversationPrep, 'updatedAt'>) {
