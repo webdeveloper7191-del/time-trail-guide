@@ -419,6 +419,19 @@ export function PIPDetailSheet({
               </Box>
             </>
           )}
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold">Documents ({pip.documents?.length ?? 0})</h4>
+            {(pip.documents ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No documents uploaded</p> : (
+              <ul className="space-y-1">
+                {pip.documents.map(d => (
+                  <li key={d.id} className="text-sm flex justify-between gap-2">
+                    {d.fileUrl ? <a href={d.fileUrl} download={d.title} className="text-primary underline truncate">{d.title}</a> : <span className="truncate">{d.title}</span>}
+                    <span className="text-muted-foreground shrink-0">{new Date(d.uploadedAt).toLocaleDateString('en-AU')}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
