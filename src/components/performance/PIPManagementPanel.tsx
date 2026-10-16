@@ -1,3 +1,4 @@
+import { exportToCSV } from '@/lib/reportExport';
 import React, { useState, useMemo } from 'react';
 import {
   Box,
@@ -154,7 +155,14 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
   };
 
   const handleBulkExport = () => {
-    toast.success(`Exporting ${selectedIds.size} PIP(s)...`);
+    const name = (id: string) => { const m = staff.find(s => s.id === id); return m ? `${m.firstName} ${m.lastName}` : id; };
+    exportToCSV('Performance improvement plans', [
+      { header: 'Staff', accessor: (p: any) => name(p.staffId) }, { header: 'Manager', accessor: (p: any) => name(p.managerId) },
+      { header: 'Status', accessor: 'status' }, { header: 'Reason', accessor: 'reason' },
+      { header: 'Start', accessor: 'startDate' }, { header: 'End', accessor: 'currentEndDate' },
+      { header: 'Check-ins', accessor: (p: any) => p.checkIns.length },
+    ], pips.filter(p => selectedIds.has(p.id)), 'improvement-plans');
+    toast.success(`Exported ${selectedIds.size} PIP(s)`);
     handleClearSelection();
   };
 
@@ -613,7 +621,25 @@ export function PIPManagementPanel({ staff, currentUserId, embedded = false }: P
               setShowEditDrawer(true);
             }}
             onUploadDocument={() => {
-              toast.info('Document upload coming soon');
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.onchange = () => {
+                const file = input.files?.[0];
+                if (!file || !selectedPIP) return;
+                if (file.size > 2 * 1024 * 1024) { toast.error('Files must be under 2 MB'); return; }
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const updated = { ...selectedPIP, documents: [...(selectedPIP.documents ?? []), {
+                    id: `pip-doc-${Date.now()}`, type: 'supporting_evidence' as const, title: file.name,
+                    uploadedAt: new Date().toISOString(), uploadedBy: currentUserId, fileUrl: String(reader.result),
+                  }], updatedAt: new Date().toISOString() };
+                  performanceOperationsStore.savePip(updated);
+                  setSelectedPIP(updated);
+                  toast.success(`${file.name} uploaded`);
+                };
+                reader.readAsDataURL(file);
+              };
+              input.click();
             }}
           />
 
