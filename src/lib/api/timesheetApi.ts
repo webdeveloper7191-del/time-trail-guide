@@ -1,5 +1,5 @@
 import { Timesheet } from '@/types/timesheet';
-import { mockTimesheets } from '@/data/mockTimesheets';
+import { timesheetStore } from '@/lib/timesheetStore';
 import { mockApiCall, mockSearchCall, mockPaginatedCall, ApiResponse, PaginatedResponse } from './mockApi';
 
 export const timesheetApi = {
@@ -8,7 +8,7 @@ export const timesheetApi = {
     locationId?: string;
     dateRange?: { start: string; end: string };
   }): Promise<ApiResponse<Timesheet[]>> {
-    let timesheets = [...mockTimesheets];
+    let timesheets = [...timesheetStore.getAll()];
     
     if (filters?.status && filters.status !== 'all') {
       timesheets = timesheets.filter(t => t.status === filters.status);
@@ -25,7 +25,7 @@ export const timesheetApi = {
     pageSize: number = 10,
     filters?: { status?: string }
   ): Promise<ApiResponse<PaginatedResponse<Timesheet>>> {
-    let timesheets = [...mockTimesheets];
+    let timesheets = [...timesheetStore.getAll()];
     
     if (filters?.status && filters.status !== 'all') {
       timesheets = timesheets.filter(t => t.status === filters.status);
@@ -37,7 +37,7 @@ export const timesheetApi = {
   async searchTimesheets(query: string): Promise<ApiResponse<Timesheet[]>> {
     // Manual search since Timesheet uses nested employee object
     const lowerQuery = query.toLowerCase();
-    const filtered = mockTimesheets.filter(t =>
+    const filtered = timesheetStore.getAll().filter(t =>
       t.employee.name.toLowerCase().includes(lowerQuery) ||
       t.employee.id.toLowerCase().includes(lowerQuery)
     );
@@ -45,12 +45,12 @@ export const timesheetApi = {
   },
 
   async getTimesheetById(id: string): Promise<ApiResponse<Timesheet | null>> {
-    const timesheet = mockTimesheets.find(t => t.id === id);
+    const timesheet = timesheetStore.getAll().find(t => t.id === id);
     return mockApiCall(timesheet ?? null);
   },
 
   async updateTimesheet(id: string, updates: Partial<Timesheet>): Promise<ApiResponse<Timesheet>> {
-    const timesheet = mockTimesheets.find(t => t.id === id);
+    const timesheet = timesheetStore.getAll().find(t => t.id === id);
     if (!timesheet) throw new Error('Timesheet not found');
     
     const updated = { ...timesheet, ...updates };
@@ -58,7 +58,7 @@ export const timesheetApi = {
   },
 
   async approveTimesheet(id: string, approverId: string): Promise<ApiResponse<Timesheet>> {
-    const timesheet = mockTimesheets.find(t => t.id === id);
+    const timesheet = timesheetStore.getAll().find(t => t.id === id);
     if (!timesheet) throw new Error('Timesheet not found');
     
     const approved: Timesheet = {
@@ -71,7 +71,7 @@ export const timesheetApi = {
   },
 
   async rejectTimesheet(id: string, reason: string): Promise<ApiResponse<Timesheet>> {
-    const timesheet = mockTimesheets.find(t => t.id === id);
+    const timesheet = timesheetStore.getAll().find(t => t.id === id);
     if (!timesheet) throw new Error('Timesheet not found');
     
     const rejected: Timesheet = {
@@ -123,7 +123,7 @@ export const timesheetApi = {
     notes?: string
   ): Promise<ApiResponse<{ updated: boolean; timesheetId?: string; entryDate?: string }>> {
     // Find matching timesheet for this staff where the shift date falls within the week
-    const timesheet = mockTimesheets.find(
+    const timesheet = timesheetStore.getAll().find(
       t => t.employee.id === staffId && 
            shiftDate >= t.weekStartDate && 
            shiftDate <= t.weekEndDate

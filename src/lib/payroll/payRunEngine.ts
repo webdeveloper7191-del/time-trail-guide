@@ -573,7 +573,7 @@ function buildLine(
   periodEnd: string,
 ): PayRunLine {
   const first = timesheets[0];
-  const profile = resolveEmployeePayProfile(first.employee, settings, staff);
+  const profile = resolveEmployeePayProfile(first.employee, settings, staff, periodStart);
   const warnings: string[] = [...profile.notes];
 
   const loadedRate = round2(profile.baseRate * (1 + profile.casualLoadingPct / 100));

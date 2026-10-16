@@ -40,8 +40,17 @@ export function applyRateSchedules(awards: AustralianAward[], today = new Date()
   const iso = today.toISOString().slice(0, 10);
   awards.forEach((a) => {
     a.classifications.forEach((c) => {
-      if (c.rateSchedule?.length) return;
-      c.rateSchedule = scheduleFor(a, c);
+      const isAdult = !c.employeeType || c.employeeType === 'adult';
+      if (c.rateSchedule?.length) {
+        if (!c.rateSchedule.some((s) => s.effectiveFrom >= AWR_2026.effectiveFrom)) {
+          const latest = [...c.rateSchedule].sort((x, y) => y.effectiveFrom.localeCompare(x.effectiveFrom))[0];
+          const next = applyAwr2026(latest.weeklyRate, isAdult);
+          c.rateSchedule = [...c.rateSchedule, { effectiveFrom: AWR_2026.effectiveFrom, weeklyRate: next, hourlyRate: round2(next / 38) }];
+        }
+      } else {
+        c.rateSchedule = scheduleFor(a, c);
+      }
+      c.rateSchedule.sort((x, y) => x.effectiveFrom.localeCompare(y.effectiveFrom));
       const inForce = [...c.rateSchedule].reverse().find((s) => s.effectiveFrom <= iso) ?? c.rateSchedule[0];
       c.baseWeeklyRate = inForce.weeklyRate;
       c.baseHourlyRate = inForce.hourlyRate;

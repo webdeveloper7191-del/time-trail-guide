@@ -1028,3 +1028,7 @@ export const getIndustries = (): string[] => {
 export const getAwardsByIndustry = (industry: string): AustralianAward[] => {
   return australianAwards.filter(a => a.industry === industry);
 };
+
+// Effective-dated minimum rates (FY2025-26 base + Annual Wage Review 2026 from 1 July 2026).
+import { applyRateSchedules } from '@/lib/payroll/awardRateSchedule';
+applyRateSchedules(australianAwards);
