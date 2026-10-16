@@ -8,6 +8,21 @@ import {
 } from '@/types/performance';
 import { mockReviews, mockGoals, mockFeedback, mockConversations } from '@/data/mockPerformanceData';
 import { mockApiCall, ApiResponse } from './mockApi';
+import { useSyncExternalStore } from 'react';
+
+// Shared change channel so manager and staff screens stay in sync.
+const recordListeners = new Set<() => void>();
+let recordVersion = 0;
+const notifyRecords = () => { recordVersion++; recordListeners.forEach(fn => fn()); };
+export function subscribePerformanceRecords(fn: () => void) {
+  recordListeners.add(fn);
+  return () => { recordListeners.delete(fn); };
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', e => {
+    if (e.key?.startsWith('rostered.performance.')) window.location.reload();
+  });
+}
 
 const GOALS_STORAGE_KEY = 'rostered.performance.goals.v1';
 const loadGoals = (): Goal[] => {
@@ -23,6 +38,7 @@ let persistedGoals = loadGoals();
 const saveGoals = (goals: Goal[]) => {
   persistedGoals = goals;
   try { window.localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals)); } catch { /* retain memory state */ }
+  notifyRecords();
 };
 
 function persisted<T>(key: string, seed: T[]) {
@@ -30,11 +46,12 @@ function persisted<T>(key: string, seed: T[]) {
   try { const raw = window.localStorage.getItem(key); if (raw) items = JSON.parse(raw); } catch { /* use seed */ }
   return {
     get: () => items,
-    set: (next: T[]) => { items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ } },
+    set: (next: T[]) => { items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ } notifyRecords(); },
     upsert: (item: T & { id: string }) => {
       const exists = items.some((i: any) => i.id === item.id);
       const next = exists ? items.map((i: any) => i.id === item.id ? item : i) : [...items, item];
       items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ }
+      notifyRecords();
       return item;
     },
   };
@@ -275,3 +292,18 @@ export const performanceApi = {
     return mockApiCall(updated, { delay: 400 });
   },
 };
+
+/** Synchronous access to the shared records (used by staff self-service). */
+export const performanceRecords = {
+  goals: () => persistedGoals,
+  reviews: () => reviewsDb.get(),
+  feedback: () => feedbackDb.get(),
+  conversations: () => convDb.get(),
+  saveGoal: (goal: Goal) => saveGoals(persistedGoals.some(g => g.id === goal.id) ? persistedGoals.map(g => g.id === goal.id ? goal : g) : [...persistedGoals, goal]),
+  saveReview: (review: PerformanceReview) => reviewsDb.upsert(review),
+};
+
+/** Re-renders whenever any shared performance record changes. */
+export function usePerformanceRecordsVersion() {
+  return useSyncExternalStore(subscribePerformanceRecords, () => recordVersion);
+}

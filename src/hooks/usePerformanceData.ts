@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   PerformanceReview, 
   Goal, 
@@ -6,7 +6,7 @@ import {
   Conversation,
   ReviewRating 
 } from '@/types/performance';
-import { performanceApi } from '@/lib/api/performanceApi';
+import { performanceApi, subscribePerformanceRecords } from '@/lib/api/performanceApi';
 import { toast } from 'sonner';
 
 interface UsePerformanceDataReturn {
@@ -58,6 +58,7 @@ export function usePerformanceData(): UsePerformanceDataReturn {
 
   // Reviews
   const fetchReviews = useCallback(async (staffId?: string) => {
+    lastArgs.current.r = [staffId];
     setLoading(true);
     try {
       const response = await performanceApi.fetchReviews(staffId);
@@ -126,6 +127,7 @@ export function usePerformanceData(): UsePerformanceDataReturn {
 
   // Goals
   const fetchGoals = useCallback(async (staffId?: string) => {
+    lastArgs.current.g = [staffId];
     setLoading(true);
     try {
       const response = await performanceApi.fetchGoals(staffId);
@@ -201,6 +203,7 @@ export function usePerformanceData(): UsePerformanceDataReturn {
 
   // Feedback
   const fetchFeedback = useCallback(async (staffId?: string, type?: 'given' | 'received') => {
+    lastArgs.current.f = [staffId, type];
     setLoading(true);
     try {
       const response = await performanceApi.fetchFeedback(staffId, type);
@@ -232,6 +235,7 @@ export function usePerformanceData(): UsePerformanceDataReturn {
 
   // Conversations
   const fetchConversations = useCallback(async (staffId?: string, managerId?: string) => {
+    lastArgs.current.c = [staffId, managerId];
     setLoading(true);
     try {
       const response = await performanceApi.fetchConversations(staffId, managerId);
@@ -290,6 +294,16 @@ export function usePerformanceData(): UsePerformanceDataReturn {
       return null;
     }
   }, []);
+
+  // Refresh loaded lists when staff (or another screen) changes shared records.
+  const lastArgs = useRef<{ r?: [string?]; g?: [string?]; f?: [string?, ('given' | 'received')?]; c?: [string?, string?] }>({});
+  useEffect(() => subscribePerformanceRecords(() => {
+    const a = lastArgs.current;
+    if (a.r) performanceApi.fetchReviews(...a.r).then(res => res.data && setReviews(res.data));
+    if (a.g) performanceApi.fetchGoals(...a.g).then(res => res.data && setGoals(res.data));
+    if (a.f) performanceApi.fetchFeedback(...a.f).then(res => res.data && setFeedback(res.data));
+    if (a.c) performanceApi.fetchConversations(...a.c).then(res => res.data && setConversations(res.data));
+  }), []);
 
   return {
     reviews,

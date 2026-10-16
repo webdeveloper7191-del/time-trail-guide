@@ -32,13 +32,11 @@ import {
   conversationTypeLabels,
 } from '@/types/performance';
 import { planTypeLabels, planStatusLabels } from '@/types/performancePlan';
-import { mockReviews, mockGoals, mockConversations } from '@/data/mockPerformanceData';
+import { performanceRecords, usePerformanceRecordsVersion } from '@/lib/api/performanceApi';
 import { mockAssignedPlans } from '@/data/mockPerformancePlanTemplates';
 import {
   usePerformanceSelfService,
   performanceSelfService,
-  applyGoalOverlay,
-  applyReviewOverlay,
 } from '@/lib/performanceSelfServiceStore';
 import { UpdateGoalProgressDrawer } from './employee/UpdateGoalProgressDrawer';
 import { SelfReviewDrawer } from './employee/SelfReviewDrawer';
@@ -76,6 +74,7 @@ const reviewStatusColors: Record<string, string> = {
 export function EmployeePerformancePanel({ currentUserId }: EmployeePerformancePanelProps) {
   const [activeTab, setActiveTab] = useState('goals');
   const overlay = usePerformanceSelfService();
+  const recordsVersion = usePerformanceRecordsVersion();
 
   const [goalDrawer, setGoalDrawer] = useState<Goal | null>(null);
   const [reviewDrawer, setReviewDrawer] = useState<PerformanceReview | null>(null);
@@ -87,18 +86,21 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
 
   // My data, with employee self-service edits merged over the source records.
   const myGoals = useMemo(
-    () => mockGoals.filter(g => g.staffId === currentUserId).map(g => applyGoalOverlay(g, overlay)),
-    [currentUserId, overlay],
+    () => performanceRecords.goals().filter(g => g.staffId === currentUserId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUserId, overlay, recordsVersion],
   );
 
   const myReviews = useMemo(
-    () => mockReviews.filter(r => r.staffId === currentUserId).map(r => applyReviewOverlay(r, overlay)),
-    [currentUserId, overlay],
+    () => performanceRecords.reviews().filter(r => r.staffId === currentUserId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUserId, overlay, recordsVersion],
   );
 
   const myConversations = useMemo(
-    () => mockConversations.filter(c => c.staffId === currentUserId),
-    [currentUserId],
+    () => performanceRecords.conversations().filter(c => c.staffId === currentUserId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUserId, recordsVersion],
   );
 
   const myPlans = useMemo(
