@@ -9,9 +9,10 @@ interface SurveyJSCreatorProps {
   template: FormTemplate;
   onTemplateChange: (template: FormTemplate) => void;
   onSave?: () => void;
+  questionTypes?: string[];
 }
 
-export function SurveyJSCreator({ template, onTemplateChange, onSave }: SurveyJSCreatorProps) {
+export function SurveyJSCreator({ template, onTemplateChange, onSave, questionTypes }: SurveyJSCreatorProps) {
   const creatorRef = useRef<SurveyCreator | null>(null);
   const templateRef = useRef(template);
   templateRef.current = template;
@@ -25,7 +26,7 @@ export function SurveyJSCreator({ template, onTemplateChange, onSave }: SurveyJS
       showJSONEditorTab: true,
       isAutoSave: true,
       showSidebar: true,
-      questionTypes: [
+      questionTypes: questionTypes ?? [
         'text', 'comment', 'dropdown', 'tagbox', 'radiogroup', 'checkbox',
         'boolean', 'signaturepad', 'file', 'rating', 'ranking',
         'imagepicker', 'image', 'html', 'expression',

@@ -28,6 +28,7 @@ export interface PraiseComment {
 
 export interface Survey {
   id: string;
+  formTemplateId?: string;
   title: string;
   description: string;
   status: SurveyStatus;

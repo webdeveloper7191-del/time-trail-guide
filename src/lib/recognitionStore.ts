@@ -2,6 +2,8 @@ import { useSyncExternalStore } from 'react';
 import { createBrowserState } from '@/lib/browserState';
 import { mockPraisePosts, mockSurveys } from '@/data/mockRecognitionData';
 import type { PraisePost, Survey, SurveyResponse } from '@/types/recognition';
+import { formTemplatesStore } from '@/lib/formTemplatesStore';
+import { surveyToFormTemplate } from '@/lib/surveyForms';
 
 interface RecognitionState { posts: PraisePost[]; surveys: Survey[]; responses: SurveyResponse[]; submitted: string[] }
 const db = createBrowserState<RecognitionState>('rostered.recognition.v1', {
@@ -30,6 +32,8 @@ export const recognitionStore = {
     return updated;
   },
   saveSurvey(survey: Survey) {
+    survey = { ...survey, formTemplateId: survey.formTemplateId ?? `recognition-survey:${survey.id}` };
+    formTemplatesStore.save(surveyToFormTemplate(survey));
     db.set(s => ({ ...s, surveys: s.surveys.some(i => i.id === survey.id) ? s.surveys.map(i => i.id === survey.id ? survey : i) : [survey, ...s.surveys] }));
   },
   submit(survey: Survey, staffId: string, answers: SurveyResponse['answers']) {
