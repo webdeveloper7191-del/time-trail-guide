@@ -112,7 +112,7 @@ export function CelebrationsPanel({ staff, onCelebrate }: Props) {
           {[
             { key: 'birthdaysEnabled' as const, title: 'Show birthdays', hint: 'Uses the date of birth on the staff record.' },
             { key: 'anniversariesEnabled' as const, title: 'Show work anniversaries', hint: 'Counted from the employment start date.' },
-            { key: 'autoPost' as const, title: 'Post automatically on the day', hint: 'Created when the recognition page is opened on the day.' },
+            { key: 'autoPost' as const, title: 'Post public celebrations on the day', hint: 'Created when the recognition page is opened; private celebrations are excluded.' },
           ].map((s) => (
             <div key={s.key} className="flex items-center justify-between rounded-lg border p-3">
               <div>

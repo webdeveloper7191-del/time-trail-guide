@@ -67,7 +67,7 @@ const defaults = (): PerformanceOperationsState => ({
   wellbeingIndicators: mockWellbeingIndicators,
   wellbeingCheckIns: mockWellbeingCheckIns,
   pulseSurveys: mockPulseSurveys,
-  pulseResponses: mockPulseResponses,
+  pulseResponses: [],
   pips: mockPIPs,
   objectives: mockObjectives,
   talentAssessments: mockTalentAssessments,

@@ -470,6 +470,7 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
       </Stack>
 
       {renderSummaryCards()}
+      <Typography variant="caption" color="text.secondary">Workload figures are sample records; saved check-ins update reported energy, stress and workload.</Typography>
       <Button variant="outlined" onClick={()=>setCheckInOpen(true)} sx={{mb:2}}>My wellbeing check-in</Button>
       <WellbeingCheckInModal open={checkInOpen} onClose={()=>setCheckInOpen(false)} staffId={currentUserId} onSubmit={c=>{if(!c.date || c.energyLevel===undefined || c.stressLevel===undefined || c.workLifeBalance===undefined)return; performanceOperationsStore.addWellbeingCheckIn({staffId:currentUserId,date:c.date,energyLevel:c.energyLevel,stressLevel:c.stressLevel,workLifeBalance:c.workLifeBalance,mood:c.mood,workloadRating:c.workloadRating,notes:c.notes});}}/>
 

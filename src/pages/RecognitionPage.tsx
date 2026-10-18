@@ -11,12 +11,23 @@ import { Sparkles, ClipboardList, Cake, Award } from 'lucide-react';
 import { CelebrationsPanel } from '@/components/recognition/CelebrationsPanel';
 import { BadgeManagerPanel } from '@/components/recognition/BadgeManagerPanel';
 import { toast } from 'sonner';
+import { buildCelebrations, useCelebrationSettings } from '@/lib/celebrationsStore';
 
 const CURRENT_USER_ID = 'staff-2';
 
 export default function RecognitionPage() {
   const { posts, surveys, responses, submitted } = useRecognitionState();
   const [activeTab, setActiveTab] = useState('praise');
+  const { settings } = useCelebrationSettings();
+  useEffect(() => {
+    if(!settings.autoPost)return;
+    for(const c of buildCelebrations(mockStaff,settings).filter(c=>c.daysAway===0 && c.visibility==='public')) {
+      const id=`celebration:${c.id}:${c.date}`;
+      if(recognitionStore.get().posts.some(p=>p.id===id))continue;
+      const post:PraisePost={id,fromStaffId:'people-culture',toStaffId:c.staffId,category:'teamwork',message:c.type==='birthday'?`Happy birthday, ${c.staffName}!`:`Congratulations on ${c.years} years, ${c.staffName}!`,badges:[],likes:[],comments:[],publishedAs:'People & Culture',createdAt:new Date().toISOString()};
+      recognitionStore.set(s=>({...s,posts:[post,...s.posts]}));
+    }
+  },[settings]);
   const handleCreatePost = async (data: Omit<PraisePost, 'id' | 'createdAt' | 'likes' | 'comments'>) => {
     try { recognitionStore.createPost(data); toast.success('Praise posted'); }
     catch(e) { toast.error(e instanceof Error ? e.message : 'Unable to save praise'); throw e; }
