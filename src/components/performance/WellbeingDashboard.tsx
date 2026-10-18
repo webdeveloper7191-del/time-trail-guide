@@ -37,7 +37,9 @@ import {
   WellbeingRiskLevel,
 } from '@/types/advancedPerformance';
 import { mockStaff } from '@/data/mockStaffData';
-import { usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
+import { WellbeingCheckInModal } from './WellbeingCheckInModal';
+import { toast } from 'sonner';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { 
   RadarChart, 
@@ -83,6 +85,7 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
   const { wellbeingIndicators, wellbeingCheckIns } = usePerformanceOperations();
   const [selectedIndicator, setSelectedIndicator] = useState<WellbeingIndicator | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
@@ -461,12 +464,14 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
             Monitor workload patterns and identify burnout risks
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<Activity size={16} />}>
+        <Button variant="outlined" onClick={() => {performanceOperationsStore.analyseWellbeing(); toast.success('Wellbeing indicators updated from saved check-ins');}} startIcon={<Activity size={16} />}>
           Run Analysis
         </Button>
       </Stack>
 
       {renderSummaryCards()}
+      <Button variant="outlined" onClick={()=>setCheckInOpen(true)} sx={{mb:2}}>My wellbeing check-in</Button>
+      <WellbeingCheckInModal open={checkInOpen} onClose={()=>setCheckInOpen(false)} staffId={currentUserId} onSubmit={c=>{if(!c.date || c.energyLevel===undefined || c.stressLevel===undefined || c.workLifeBalance===undefined)return; performanceOperationsStore.addWellbeingCheckIn({staffId:currentUserId,date:c.date,energyLevel:c.energyLevel,stressLevel:c.stressLevel,workLifeBalance:c.workLifeBalance,mood:c.mood,workloadRating:c.workloadRating,notes:c.notes});}}/>
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-4">

@@ -205,6 +205,8 @@ export interface WellbeingIndicator {
 }
 
 export interface WellbeingCheckIn {
+  mood?: number;
+  workloadRating?: number;
   id: string;
   staffId: string;
   date: string;

@@ -26,6 +26,8 @@ import {
 } from '@/data/mockAdvancedPerformanceData';
 import { mockPIPs } from '@/data/mockCompensationData';
 import { mockObjectives } from '@/data/mockOKRData';
+import { analyseWellbeing } from '@/lib/engagementLogic';
+import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 
 export interface HappinessEntry {
   id: string;
@@ -39,6 +41,8 @@ interface PerformanceOperationsState {
   feedback360Requests: Feedback360Request[];
   feedback360Responses: Feedback360Response[];
   happinessEntries: HappinessEntry[];
+  happinessReceipts: string[];
+  pulseReceipts: string[];
   wellbeingIndicators: WellbeingIndicator[];
   wellbeingCheckIns: WellbeingCheckIn[];
   pulseSurveys: PulseSurvey[];
@@ -58,6 +62,8 @@ const defaults = (): PerformanceOperationsState => ({
   feedback360Requests: mock360Requests,
   feedback360Responses: mock360Responses,
   happinessEntries: [],
+  happinessReceipts: [],
+  pulseReceipts: [],
   wellbeingIndicators: mockWellbeingIndicators,
   wellbeingCheckIns: mockWellbeingCheckIns,
   pulseSurveys: mockPulseSurveys,
@@ -81,6 +87,7 @@ function load(): PerformanceOperationsState {
 
 let state = load();
 const listeners = new Set<() => void>();
+if (typeof window !== 'undefined') window.addEventListener('storage', e => { if(e.key === STORAGE_KEY || e.key === null) {state=load(); listeners.forEach(fn=>fn());} });
 function commit(next: PerformanceOperationsState) {
   state = next;
   try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* retain memory state */ }
@@ -122,8 +129,11 @@ export const performanceOperationsStore = {
     return true;
   },
   submitHappiness(data: Omit<HappinessEntry, 'id' | 'date'>) {
-    const entry: HappinessEntry = { ...data, id: uid('happiness'), date: now() };
-    commit({ ...state, happinessEntries: [entry, ...state.happinessEntries] });
+    const key=`${data.staffId}:${now().slice(0,7)}`;
+    if(state.happinessReceipts.includes(key) || state.happinessEntries.some(e=>e.staffId===data.staffId && e.date.slice(0,7)===now().slice(0,7))) throw new Error('Already submitted this month');
+    if(!Number.isInteger(data.score) || data.score<1 || data.score>performanceTaxonomyStore.get().rules.happiness.scaleMax) throw new Error('Choose a valid score');
+    const entry: HappinessEntry = { ...data, staffId: performanceTaxonomyStore.get().rules.happiness.anonymous ? '' : data.staffId, id: uid('happiness'), date: now() };
+    commit({ ...state, happinessEntries: [entry, ...state.happinessEntries], happinessReceipts:[...state.happinessReceipts,key] });
     return entry;
   },
   saveWellbeingIndicator(indicator: WellbeingIndicator) {
@@ -132,7 +142,7 @@ export const performanceOperationsStore = {
   },
   addWellbeingCheckIn(data: Omit<WellbeingCheckIn, 'id' | 'createdAt'>) {
     const item: WellbeingCheckIn = { ...data, id: uid('wellbeing-checkin'), createdAt: now() };
-    commit({ ...state, wellbeingCheckIns: [item, ...state.wellbeingCheckIns] });
+    commit({ ...state, wellbeingCheckIns: [item, ...state.wellbeingCheckIns], wellbeingIndicators: state.wellbeingIndicators.map(i=>i.staffId===item.staffId?analyseWellbeing(i,item,performanceTaxonomyStore.get().rules.wellbeing):i) });
     return item;
   },
   savePulseSurvey(survey: PulseSurvey) {
@@ -140,9 +150,18 @@ export const performanceOperationsStore = {
     commit({ ...state, pulseSurveys: exists ? state.pulseSurveys.map(item => item.id === survey.id ? survey : item) : [survey, ...state.pulseSurveys] });
   },
   addPulseResponse(data: Omit<PulseResponse, 'id' | 'submittedAt'>) {
-    const item: PulseResponse = { ...data, id: uid('pulse-response'), submittedAt: now() };
-    commit({ ...state, pulseResponses: [item, ...state.pulseResponses] });
+    const survey=state.pulseSurveys.find(s=>s.id===data.surveyId);
+    if(!survey || survey.status!=='active') throw new Error('Survey is not accepting responses');
+    if(survey.endDate && new Date(survey.endDate)<new Date()) throw new Error('Survey has ended');
+    const receipt=`${data.surveyId}:${data.responderId}`;
+    if(state.pulseReceipts.includes(receipt) || state.pulseResponses.some(r=>r.surveyId===data.surveyId && r.responderId===data.responderId)) throw new Error('Already answered this survey');
+    if(survey.questions.some(q=>q.required && !data.responses.some(r=>r.questionId===q.id && r.value!==undefined && String(r.value).trim()!==''))) throw new Error('Answer every required question');
+    const item: PulseResponse = { ...data, responderId:survey.anonymousResponses?undefined:data.responderId, responses:data.responses.filter(r=>r.value!==undefined && r.value!==''), id: uid('pulse-response'), submittedAt: now() };
+    commit({ ...state, pulseResponses: [item, ...state.pulseResponses],pulseReceipts:[...state.pulseReceipts,receipt] });
     return item;
+  },
+  analyseWellbeing() {
+    commit({...state,wellbeingIndicators:state.wellbeingIndicators.map(i=>analyseWellbeing(i,state.wellbeingCheckIns.filter(c=>c.staffId===i.staffId).sort((a,b)=>b.date.localeCompare(a.date))[0],performanceTaxonomyStore.get().rules.wellbeing))});
   },
   savePip(pip: PerformanceImprovementPlan) {
     const exists = state.pips.some(item => item.id === pip.id);
