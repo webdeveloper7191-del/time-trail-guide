@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { formTemplatesStore, useFormTemplates } from '@/lib/formTemplatesStore';
+import { recognitionStore, useRecognitionState } from '@/lib/recognitionStore';
+import { formTemplateToSurveyQuestions } from '@/lib/surveyForms';
 import { 
   Box, 
   Stack, 
@@ -64,18 +67,14 @@ import { cn } from '@/lib/utils';
 type ViewMode = 'system' | 'tenant' | 'builder' | 'preview' | 'assign' | 'assignments' | 'submissions' | 'analytics' | 'tasks';
 
 export default function FormBuilder() {
+  const navigate = useNavigate();
+  const { surveys } = useRecognitionState();
   const [viewMode, setViewMode] = useState<ViewMode>('tenant');
   const [searchParams, setSearchParams] = useSearchParams();
   const [templateSearch, setTemplateSearch] = useState('');
   const [showInstallPanel, setShowInstallPanel] = useState(false);
-  const [templates, setTemplates] = useState<FormTemplate[]>(
-    mockFormTemplates.map(t => ({
-      ...t,
-      scope: t.scope || 'tenant',
-      isEnabled: t.isEnabled ?? true,
-      isIndustryTemplate: t.isIndustryTemplate ?? (t.scope === 'system'),
-    }))
-  );
+  const templates = useFormTemplates();
+  const setTemplates = formTemplatesStore.set;
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null);
   const [showPublishPanel, setShowPublishPanel] = useState(false);
@@ -123,6 +122,26 @@ export default function FormBuilder() {
     canUndo,
     canRedo,
   } = useFormBuilderUndoRedo<FormTemplate>(mockFormTemplates[0]);
+
+  const linkedSurvey = surveys.find(s => (s.formTemplateId ?? `recognition-survey:${s.id}`) === template.id);
+  useEffect(() => {
+    const id = searchParams.get('templateId');
+    const found = formTemplatesStore.get().find(t => t.id === id);
+    if (found) { setTemplate(found); setViewMode('builder'); }
+  }, [searchParams]);
+
+  const persistTemplate = (next: FormTemplate) => {
+    const survey = recognitionStore.get().surveys.find(s => (s.formTemplateId ?? `recognition-survey:${s.id}`) === next.id);
+    if (survey) {
+      const questions = formTemplateToSurveyQuestions(next);
+      if (!next.name.trim() || !questions.length || questions.some(q => !q.text.trim() || (q.type === 'multiple_choice' && (q.options?.filter(o => o.trim()).length ?? 0) < 2))) {
+        throw new Error('Enter a title, questions and at least two options for choice questions.');
+      }
+      recognitionStore.saveSurvey({ ...survey, formTemplateId: next.id, title: next.name, description: next.description ?? '', questions,
+        status: next.status === 'archived' ? 'closed' : next.status === 'published' ? 'active' : 'draft', updatedAt: next.updatedAt });
+    }
+    formTemplatesStore.save(next);
+  };
 
   const selectedField = useMemo(() => {
     if (!selectedFieldId || !template?.fields) return null;
@@ -259,6 +278,8 @@ export default function FormBuilder() {
 
   const handleSaveTemplate = () => {
     const updatedTemplate = { ...template, updatedAt: new Date().toISOString() };
+    try { persistTemplate(updatedTemplate); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to save.'); return; }
     setTemplate(updatedTemplate);
     setTemplates(prev => {
       const exists = prev.find(t => t.id === updatedTemplate.id);
@@ -277,6 +298,8 @@ export default function FormBuilder() {
       publishedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    try { persistTemplate(publishedTemplate); }
+    catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to publish.'); return; }
     setTemplate(publishedTemplate);
     setTemplates(prev => prev.map(t => t.id === publishedTemplate.id ? publishedTemplate : t));
     setShowPublishPanel(false);
@@ -541,12 +564,20 @@ export default function FormBuilder() {
       )}
 
       {viewMode === 'builder' && template && (
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {linkedSurvey && <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
+            <span className="text-sm text-muted-foreground">Recognition survey · {linkedSurvey.responseCount} responses</span>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/recognition?surveyId=${encodeURIComponent(linkedSurvey.id)}`)}>Survey results</Button>
+          </div>}
+          <div className="flex-1 min-h-0">
           <SurveyJSCreator
+            key={template.id}
             template={template}
-            onTemplateChange={setTemplate}
+            questionTypes={linkedSurvey ? ['text', 'comment', 'radiogroup', 'dropdown', 'rating'] : undefined}
+            onTemplateChange={next => { persistTemplate(next); setTemplate(next); }}
             onSave={handleSaveTemplate}
           />
+          </div>
         </Box>
       )}
 

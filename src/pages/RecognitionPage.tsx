@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { PraiseWall } from '@/components/recognition/PraiseWall';
@@ -17,7 +18,8 @@ const CURRENT_USER_ID = 'staff-2';
 
 export default function RecognitionPage() {
   const { posts, surveys, responses, submitted } = useRecognitionState();
-  const [activeTab, setActiveTab] = useState('praise');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.has('surveyId') ? 'surveys' : 'praise');
   const { settings } = useCelebrationSettings();
   useEffect(() => {
     if(!settings.autoPost)return;
