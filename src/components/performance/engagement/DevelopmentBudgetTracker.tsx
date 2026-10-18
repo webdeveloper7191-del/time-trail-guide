@@ -100,8 +100,10 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
   }, [budgets, requests]);
 
   const handleApprove = (request: BudgetRequest, notes: string) => {
+    const budget=budgets.find(b=>b.staffId===request.staffId);
+    if(!budget || request.amount>budget.totalBudget-budget.usedBudget){toast.error('Insufficient remaining budget');return;}
     if (requests.find(r => r.id === request.id)?.status !== 'pending_approval') return;
-    setRequests(requests.map(r => 
+    setRequests(prev=>prev.map(r => 
       r.id === request.id 
         ? { 
             ...r, 
@@ -114,7 +116,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
     ));
     
     // Update pending budget to used budget
-    setBudgets(budgets.map(b => 
+    setBudgets(prev=>prev.map(b => 
       b.staffId === request.staffId
         ? { ...b, pendingBudget: Math.max(0, b.pendingBudget - request.amount), usedBudget: b.usedBudget + request.amount }
         : b
@@ -126,7 +128,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
 
   const handleReject = (request: BudgetRequest, reason: string) => {
     if (requests.find(r => r.id === request.id)?.status !== 'pending_approval') return;
-    setRequests(requests.map(r => 
+    setRequests(prev=>prev.map(r => 
       r.id === request.id 
         ? { 
             ...r, 
@@ -139,7 +141,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
     ));
     
     // Remove from pending budget
-    setBudgets(budgets.map(b => 
+    setBudgets(prev=>prev.map(b => 
       b.staffId === request.staffId
         ? { ...b, pendingBudget: Math.max(0, b.pendingBudget - request.amount) }
         : b
@@ -439,9 +441,9 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
         currentUserId={currentUserId}
         myBudget={myBudget}
         onSave={(request) => {
-          setRequests([...requests, request]);
+          setRequests(prev=>[...prev, request]);
           if (myBudget) {
-            setBudgets(budgets.map(b => 
+            setBudgets(prev=>prev.map(b => 
               b.staffId === currentUserId 
                 ? { ...b, pendingBudget: b.pendingBudget + request.amount }
                 : b
