@@ -128,7 +128,7 @@ export default function FormBuilder() {
     const id = searchParams.get('templateId');
     const found = formTemplatesStore.get().find(t => t.id === id);
     if (found) { setTemplate(found); setViewMode('builder'); }
-  }, [searchParams, setTemplate]);
+  }, [searchParams]);
 
   const persistTemplate = (next: FormTemplate) => {
     const survey = recognitionStore.get().surveys.find(s => (s.formTemplateId ?? `recognition-survey:${s.id}`) === next.id);
