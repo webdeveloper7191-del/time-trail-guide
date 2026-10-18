@@ -1,3 +1,7 @@
+import { recognitionStore, useRecognitionState } from '@/lib/recognitionStore';
+import { useRecognitionBadges } from '@/lib/recognitionBadgeStore';
+import { pointsThisMonth } from '@/lib/rewardsStore';
+import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import React, { useState, useSyncExternalStore } from 'react';
 import { rewardsStore, pointsBalance } from '@/lib/rewardsStore';
 
@@ -102,7 +106,11 @@ const mockRewardPoints: RewardPoints[] = [
 ];
 
 export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecognitionPanelProps) {
-  const [posts, setPosts] = useState<PraisePost[]>(initialPosts);
+  const { posts } = useRecognitionState();
+  const { activeBadges, badges } = useRecognitionBadges();
+  const [threadId,setThreadId]=useState<string|null>(null);
+  const [comment,setComment]=useState('');
+  const thread=posts.find(p=>p.id===threadId);
   const [showCompose, setShowCompose] = useState(false);
   const [recipient, setRecipient] = useState('');
   const [category, setCategory] = useState<PraiseCategory>('teamwork');
@@ -116,7 +124,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
   const [awardAmount, setAwardAmount] = useState('50');
 
   const getStaff = (id: string) => staff.find(s => s.id === id);
-  const currentUserPoints = mockRewardPoints.find(p => p.staffId === currentUserId);
+
 
   const rewardsState = useSyncExternalStore(
     cb => rewardsStore.subscribe(cb),
@@ -125,12 +133,13 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
   );
   const activeRewards = rewardsState.catalogue.filter(r => r.isActive);
   const ledgerBalance = pointsBalance(rewardsState, currentUserId);
-  const redeemableBalance = ledgerBalance || currentUserPoints?.totalPoints || 0;
+  const redeemableBalance = ledgerBalance;
+  const currentUserPoints={totalPoints:ledgerBalance,earnedThisMonth:pointsThisMonth(rewardsState,currentUserId).earned};
 
   const handleRedeem = (rewardId: string) => {
     try {
       rewardsStore.requestRedemption(currentUserId, rewardId);
-      toast.success('Redemption requested — you will be notified once it is approved.');
+      toast.success('Redemption requested — saved for approval in this browser.');
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -152,7 +161,8 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
         comments: [],
         createdAt: new Date().toISOString(),
       };
-      setPosts(prev => [newPost, ...prev]);
+      recognitionStore.createPost({...newPost,pointsAwarded:Number(pointsToAward)});
+      rewardsStore.addLedgerEntry({staffId:recipient,type:'awarded',points:Number(pointsToAward),reason:`Praise from ${currentUserId}`});
       toast.success(`Praise sent to ${getStaff(recipient)?.firstName}! 🎉 They earned ${pointsToAward} points.`);
       setShowCompose(false);
       setRecipient('');
@@ -164,24 +174,14 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
     }
   };
 
-  const handleLike = (postId: string) => {
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const hasLiked = p.likes.includes(currentUserId);
-        return {
-          ...p,
-          likes: hasLiked 
-            ? p.likes.filter(id => id !== currentUserId)
-            : [...p.likes, currentUserId],
-        };
-      }
-      return p;
-    }));
-  };
+  const handleLike = (postId: string) => recognitionStore.like(postId,currentUserId);
 
   const handleAwardPoints = () => {
     if (!awardRecipient || !awardReason.trim() || !awardAmount) return;
     
+    const amount=Number(awardAmount);
+    if(!Number.isInteger(amount)||amount<=0){toast.error('Enter a positive whole number of points');return;}
+    rewardsStore.addLedgerEntry({staffId:awardRecipient,type:'awarded',points:amount,reason:awardReason.trim()});
     toast.success(`Awarded ${awardAmount} points to ${getStaff(awardRecipient)?.firstName}!`);
     setShowAwardPoints(false);
     setAwardRecipient('');
@@ -193,12 +193,15 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
     setSelectedBadges(prev => prev.includes(badgeId) ? prev.filter(b => b !== badgeId) : [...prev, badgeId]);
   };
 
-  const topEarners = [...mockRewardPoints]
+  const topEarners = staff.map(s=>({staffId:s.id,earnedThisMonth:pointsThisMonth(rewardsState,s.id).earned,totalPoints:pointsBalance(rewardsState,s.id)}))
     .sort((a, b) => b.earnedThisMonth - a.earnedThisMonth)
     .slice(0, 5);
 
   return (
     <div className="space-y-6">
+      <PrimaryOffCanvas open={!!threadId} onClose={()=>setThreadId(null)} title="Praise discussion" icon={MessageCircle}>
+        <div className="space-y-4"><p>{thread?.message}</p>{thread?.comments.map(c=><div key={c.id}><p className="text-sm font-medium">{getStaff(c.staffId)?.firstName}</p><p>{c.content}</p></div>)}<Textarea aria-label="Comment" value={comment} onChange={e=>setComment(e.target.value)}/><Button disabled={!comment.trim()} onClick={()=>{if(!thread)return;recognitionStore.comment(thread.id,currentUserId,comment);setComment('');}}>Post comment</Button></div>
+      </PrimaryOffCanvas>
       {/* Header with Quick Stats */}
       <Stack 
         direction={{ xs: 'column', sm: 'row' }} 
@@ -346,7 +349,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                     Add badges (optional)
                   </Typography>
                   <div className="flex flex-wrap gap-2">
-                    {praiseWallBadges.map(badge => (
+                    {activeBadges.filter(b=>b.awardableBy==='everyone').map(badge => (
                       <Badge
                         key={badge.id}
                         variant={selectedBadges.includes(badge.id) ? 'default' : 'outline'}
@@ -424,7 +427,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                           />
                           <Chip
                             icon={<Coins className="h-3 w-3" />}
-                            label="+25 pts"
+                            label={`+${post.pointsAwarded ?? 0} pts`}
                             size="small"
                             sx={{ 
                               height: 22, 
@@ -438,7 +441,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                         {post.badges.length > 0 && (
                           <div className="flex gap-1 mb-2">
                             {post.badges.map(b => {
-                              const badge = praiseWallBadges.find(pb => pb.id === b);
+                              const badge = badges.find(pb => pb.id === b);
                               return badge && (
                                 <Badge key={b} variant="outline" className="text-xs">
                                   {badge.emoji} {badge.label}
@@ -465,7 +468,7 @@ export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecogni
                           >
                             {post.likes.length}
                           </Button>
-                          <Button variant="text" size="small" startIcon={<MessageCircle className="h-4 w-4" />}>
+                          <Button variant="text" size="small" onClick={()=>setThreadId(post.id)} startIcon={<MessageCircle className="h-4 w-4" />}>
                             {post.comments.length}
                           </Button>
                         </Stack>
