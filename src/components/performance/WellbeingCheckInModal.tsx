@@ -42,8 +42,10 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
       staffId,
       date: new Date().toISOString(),
       energyLevel,
+      mood,
+      workloadRating,
       stressLevel,
-      workLifeBalance: Math.round((10 - stressLevel + (10 - workloadRating)) / 4), // Calculate from 1-5
+      workLifeBalance: Math.max(1, Math.min(5, Math.round((10 - stressLevel + (10 - workloadRating)) / 4))),
       notes: notes.trim() || undefined,
       createdAt: new Date().toISOString(),
     };

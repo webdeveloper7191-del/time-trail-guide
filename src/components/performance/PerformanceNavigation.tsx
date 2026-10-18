@@ -69,7 +69,7 @@ const tabGroups: TabGroup[] = [
     items: [
       { value: 'tasks', label: 'Tasks', icon: ListTodo },
       { value: 'conversations', label: '1:1 Conversations', icon: MessageSquare },
-      { value: 'calendar', label: 'Calendar Sync', icon: Calendar },
+      { value: 'calendar', label: 'Calendar meetings', icon: Calendar },
     ],
   },
   {

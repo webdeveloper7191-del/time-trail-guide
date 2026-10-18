@@ -1,3 +1,5 @@
+import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
+import { useBrowserState } from '@/lib/browserState';
 import React, { useState, useMemo } from 'react';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import {
@@ -55,15 +57,25 @@ interface MentorshipMatchingProps {
 }
 
 export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false }: MentorshipMatchingProps) {
-  const [mentors, setMentors] = useState<MentorProfile[]>(initialMentors);
-  const [mentees, setMentees] = useState<MenteeProfile[]>(initialMentees);
-  const [matches, setMatches] = useState<MentorshipMatch[]>(initialMatches);
+  const [mentors, setMentors] = useBrowserState<MentorProfile[]>('rostered.engagement.mentors.v1', initialMentors);
+  const [mentees, setMentees] = useBrowserState<MenteeProfile[]>('rostered.engagement.mentees.v1', initialMentees);
+  const [matches, setMatches] = useBrowserState<MentorshipMatch[]>('rostered.engagement.matches.v1', initialMatches);
   const [activeView, setActiveView] = useState<'matches' | 'mentors' | 'mentees' | 'find_match'>('matches');
   const [showMentorDrawer, setShowMentorDrawer] = useState(false);
   const [showMenteeDrawer, setShowMenteeDrawer] = useState(false);
   const [showMatchDrawer, setShowMatchDrawer] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MentorshipMatch | null>(null);
 
+  const [profile,setProfile]=useState({staffId:currentUserId,skills:'',interests:'',goals:'',bio:'',years:1,maxMentees:1,frequency:'monthly' as 'weekly'|'biweekly'|'monthly'});
+  const split=(v:string)=>v.split(',').map(x=>x.trim()).filter(Boolean);
+  const saveProfile=(mentor:boolean)=>{
+    if(!profile.staffId || !profile.skills.trim() || !profile.goals.trim()){toast.error('Select staff, skills and goals');return;}
+    const common={staffId:profile.staffId,interests:split(profile.interests),careerGoals:split(profile.goals),bio:profile.bio,preferredMeetingFrequency:profile.frequency,isActive:true};
+    if(mentor){const existing=mentors.find(m=>m.staffId===profile.staffId);const item:MentorProfile={...common,id:existing?.id??crypto.randomUUID(),skills:split(profile.skills),yearsExperience:Math.max(0,profile.years),maxMentees:Math.max(1,profile.maxMentees),currentMentees:existing?.currentMentees??0,availability:'high'};setMentors(prev=>existing?prev.map(m=>m.id===existing.id?item:m):[...prev,item]);setShowMentorDrawer(false);}
+    else {const existing=mentees.find(m=>m.staffId===profile.staffId);const item:MenteeProfile={...common,id:existing?.id??crypto.randomUUID(),desiredSkills:split(profile.skills),developmentAreas:split(profile.skills)};setMentees(prev=>existing?prev.map(m=>m.id===existing.id?item:m):[...prev,item]);setShowMenteeDrawer(false);}
+    toast.success('Profile saved');
+  };
+  const finishMatch=(status:'completed'|'cancelled')=>{if(!selectedMatch)return;setMatches(prev=>prev.map(m=>m.id===selectedMatch.id?{...selectedMatch,status,endDate:new Date().toISOString()}:m));setMentors(prev=>prev.map(m=>m.id===selectedMatch.mentorId?{...m,currentMentees:Math.max(0,m.currentMentees-1)}:m));setShowMatchDrawer(false);};
   const matchRules = usePerformanceRules().mentorship;
 
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
@@ -140,12 +152,14 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
   }), [mentors, mentees, matches]);
 
   const handleCreateMatch = (mentorId: string, menteeId: string, reasons: string[]) => {
+    const mentor=mentors.find(m=>m.id===mentorId);const mentee=mentees.find(m=>m.id===menteeId);
+    if(!mentor||!mentee||mentor.staffId===mentee.staffId||mentor.currentMentees>=Math.min(mentor.maxMentees,matchRules.maxMenteesPerMentor)||matches.some(m=>m.menteeId===menteeId&&(m.status==='pending'||m.status==='active')))return;
     const newMatch: MentorshipMatch = {
       id: `match-${Date.now()}`,
       mentorId,
       menteeId,
       status: 'pending',
-      matchScore: 0,
+      matchScore: calculateMatchScore(mentor,mentee).score,
       matchReasons: reasons,
       goals: [],
       meetingCount: 0,
@@ -593,7 +607,12 @@ export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false
       {activeView === 'mentees' && renderMenteesView()}
       {activeView === 'find_match' && renderFindMatchView()}
 
-      {/* Drawers would go here for mentor/mentee registration and match details */}
+      <PrimaryOffCanvas open={showMentorDrawer||showMenteeDrawer} onClose={()=>{setShowMentorDrawer(false);setShowMenteeDrawer(false);}} title={showMentorDrawer?'Mentor registration':'Mentee registration'} icon={UserPlus} actions={[{label:'Save profile',onClick:()=>saveProfile(showMentorDrawer)}]}>
+        <Stack spacing={3}><FormControl fullWidth><InputLabel>Staff member</InputLabel><Select label="Staff member" value={profile.staffId} onChange={e=>setProfile({...profile,staffId:e.target.value})}>{staff.filter(s=>s.status==='active').map(s=><MenuItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</MenuItem>)}</Select></FormControl><TextField label={showMentorDrawer?'Skills (comma separated)':'Desired skills (comma separated)'} value={profile.skills} onChange={e=>setProfile({...profile,skills:e.target.value})}/><TextField label="Interests (comma separated)" value={profile.interests} onChange={e=>setProfile({...profile,interests:e.target.value})}/><TextField label="Career goals (comma separated)" value={profile.goals} onChange={e=>setProfile({...profile,goals:e.target.value})}/><TextField multiline label="Biography" value={profile.bio} onChange={e=>setProfile({...profile,bio:e.target.value})}/><FormControl><InputLabel>Meeting frequency</InputLabel><Select label="Meeting frequency" value={profile.frequency} onChange={e=>setProfile({...profile,frequency:e.target.value as typeof profile.frequency})}>{['weekly','biweekly','monthly'].map(v=><MenuItem key={v} value={v}>{v}</MenuItem>)}</Select></FormControl>{showMentorDrawer&&<><TextField type="number" label="Years of experience" value={profile.years} onChange={e=>setProfile({...profile,years:Number(e.target.value)})}/><TextField type="number" label="Maximum mentees" value={profile.maxMentees} onChange={e=>setProfile({...profile,maxMentees:Number(e.target.value)})}/></>}</Stack>
+      </PrimaryOffCanvas>
+      <PrimaryOffCanvas open={showMatchDrawer} onClose={()=>setShowMatchDrawer(false)} title="Mentorship details" icon={Users} actions={[{label:'Save changes',onClick:()=>{if(selectedMatch)setMatches(prev=>prev.map(m=>m.id===selectedMatch.id?selectedMatch:m));setShowMatchDrawer(false);}}]}>
+        {selectedMatch&&<Stack spacing={3}><Typography>{selectedMatch.status} · {selectedMatch.matchScore}% match</Typography><TextField label="Goals (one per line)" multiline value={selectedMatch.goals.join('\n')} onChange={e=>setSelectedMatch({...selectedMatch,goals:e.target.value.split('\n')})}/><TextField label="Notes" multiline value={selectedMatch.notes??''} onChange={e=>setSelectedMatch({...selectedMatch,notes:e.target.value})}/><Typography>Meetings completed: {selectedMatch.meetingCount}</Typography><Button variant="outlined" onClick={()=>setSelectedMatch({...selectedMatch,meetingCount:selectedMatch.meetingCount+1,lastMeetingDate:new Date().toISOString()})}>Record completed meeting</Button>{selectedMatch.status==='active'&&<Button onClick={()=>finishMatch('completed')}>Complete mentorship</Button>}{(selectedMatch.status==='pending'||selectedMatch.status==='active')&&<Button variant="outlined" onClick={()=>finishMatch('cancelled')}>Cancel mentorship</Button>}</Stack>}
+      </PrimaryOffCanvas>
     </Box>
   );
 }

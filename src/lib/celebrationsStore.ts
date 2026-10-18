@@ -57,7 +57,7 @@ function read(): CelebrationSettings {
   } catch {
     cache = DEFAULTS;
   }
-  return cache!;
+  return cache ?? DEFAULTS;
 }
 
 export const celebrationsStore = {
@@ -118,13 +118,13 @@ export function buildCelebrations(
           department: s.department,
           type: 'birthday',
           date: date.toISOString().slice(0, 10),
-          visibility,
+          visibility:settings.audience==='team'?'team':visibility,
           daysAway,
         });
       }
     }
 
-    if (settings.anniversariesEnabled && s.employmentStartDate) {
+    if (settings.anniversariesEnabled && s.employmentStartDate && settings.overrides[s.id]!=='hidden') {
       const date = nextOccurrence(s.employmentStartDate, today);
       const years = date.getFullYear() - new Date(s.employmentStartDate).getFullYear();
       const isMilestone = settings.milestoneYears.length === 0 || settings.milestoneYears.includes(years);
@@ -138,7 +138,7 @@ export function buildCelebrations(
           type: 'anniversary',
           date: date.toISOString().slice(0, 10),
           years,
-          visibility: 'public',
+          visibility:settings.overrides[s.id]??(settings.audience==='team'?'team':'public'),
           daysAway,
         });
       }

@@ -362,8 +362,8 @@ export function getWorkspaceMeta(tab: string, ctx: WorkspaceContext): WorkspaceM
     case 'calendar':
       return {
         icon: CalendarDays,
-        title: 'Calendar Sync',
-        description: 'Push reviews and check-ins into Outlook or Google Calendar so they show up where people already look.',
+        title: 'Calendar meetings',
+        description: 'Saved meetings and downloadable calendar invitations.',
       };
 
     case 'summary':

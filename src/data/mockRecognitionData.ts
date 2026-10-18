@@ -6,7 +6,7 @@ export const mockPraisePosts: PraisePost[] = [
     fromStaffId: 'staff-2',
     toStaffId: 'staff-1',
     category: 'going_above',
-    message: 'Mark stayed late last Friday to help set up for the parent orientation event. The decorations looked amazing and parents were so impressed! Thank you for always going above and beyond! 🌟',
+    message: 'Mark stayed late last Friday to help set up for the team orientation event. The decorations looked amazing and everyone was so impressed! Thank you for always going above and beyond! 🌟',
     badges: ['star-performer', 'team-player'],
     likes: ['staff-3', 'staff-4'],
     comments: [
@@ -30,7 +30,7 @@ export const mockPraisePosts: PraisePost[] = [
     fromStaffId: 'staff-3',
     toStaffId: 'staff-4',
     category: 'teamwork',
-    message: 'Emily jumped in to cover when I had an emergency last week. She handled everything perfectly and the children didn\'t even notice the change. True team spirit! 🤝',
+    message: 'Emily jumped in to cover when I had an emergency last week. She handled everything perfectly and the team didn\'t even notice the change. True team spirit! 🤝',
     badges: ['reliable'],
     likes: ['staff-1', 'staff-2'],
     comments: [
@@ -43,7 +43,7 @@ export const mockPraisePosts: PraisePost[] = [
     fromStaffId: 'staff-2',
     toStaffId: 'staff-3',
     category: 'innovation',
-    message: 'James came up with a brilliant idea for our outdoor play area. The new sensory garden is loved by all the children! 💡',
+    message: 'James came up with a brilliant idea for our shared outdoor area. The new garden is loved by the whole team! 💡',
     badges: ['creative-thinker'],
     likes: ['staff-1'],
     comments: [],
@@ -80,7 +80,7 @@ export const mockSurveys: Survey[] = [
     status: 'draft',
     anonymous: false,
     questions: [
-      { id: 'q-6', type: 'multiple_choice', text: 'Which area would you like more training in?', required: true, options: ['Leadership', 'Technical skills', 'Communication', 'Child development', 'Safety & compliance'] },
+      { id: 'q-6', type: 'multiple_choice', text: 'Which area would you like more training in?', required: true, options: ['Leadership', 'Technical skills', 'Communication', 'Professional development', 'Safety & compliance'] },
       { id: 'q-7', type: 'yes_no', text: 'Would you be interested in mentoring opportunities?', required: true },
       { id: 'q-8', type: 'text', text: 'Any specific courses or certifications you\'d like to pursue?', required: false },
     ],
@@ -98,7 +98,7 @@ export const mockMilestones: Milestone[] = [
   { id: 'ms-1', staffId: 'staff-1', type: 'anniversary', title: '1 Year Anniversary', date: '2025-01-18', celebrated: false },
   { id: 'ms-2', staffId: 'staff-2', type: 'birthday', title: 'Birthday', date: '2025-01-25', celebrated: false },
   { id: 'ms-3', staffId: 'staff-3', type: 'certification', title: 'First Aid Certification', date: '2025-02-10', celebrated: false },
-  { id: 'ms-4', staffId: 'staff-4', type: 'promotion', title: 'Promoted to Educator', date: '2025-02-01', celebrated: false },
+  { id: 'ms-4', staffId: 'staff-4', type: 'promotion', title: 'Promoted to Team Member', date: '2025-02-01', celebrated: false },
 ];
 
 export const praiseWallBadges = [

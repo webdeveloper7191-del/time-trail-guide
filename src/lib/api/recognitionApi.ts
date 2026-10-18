@@ -1,45 +1,33 @@
 import { PraisePost, Survey } from '@/types/recognition';
 import { mockPraisePosts, mockSurveys, mockMilestones } from '@/data/mockRecognitionData';
 import { mockApiCall, ApiResponse } from './mockApi';
+import { recognitionStore } from '@/lib/recognitionStore';
 
 export const recognitionApi = {
   // Praise
   async fetchPraisePosts(): Promise<ApiResponse<PraisePost[]>> {
-    return mockApiCall([...mockPraisePosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    return mockApiCall([...recognitionStore.get().posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   },
 
   async createPraisePost(data: Omit<PraisePost, 'id' | 'createdAt' | 'likes' | 'comments'>): Promise<ApiResponse<PraisePost>> {
-    const newPost: PraisePost = {
-      ...data,
-      id: `praise-${Date.now()}`,
-      likes: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
-    };
-    return mockApiCall(newPost, { delay: 400 });
+    return mockApiCall(recognitionStore.createPost(data));
   },
 
   async likePraisePost(postId: string, staffId: string): Promise<ApiResponse<PraisePost>> {
-    const post = mockPraisePosts.find(p => p.id === postId);
-    if (!post) throw new Error('Post not found');
-    const likes = post.likes.includes(staffId) ? post.likes.filter(id => id !== staffId) : [...post.likes, staffId];
-    return mockApiCall({ ...post, likes }, { delay: 200 });
+    return mockApiCall(recognitionStore.like(postId, staffId));
   },
 
   async addComment(postId: string, staffId: string, content: string): Promise<ApiResponse<PraisePost>> {
-    const post = mockPraisePosts.find(p => p.id === postId);
-    if (!post) throw new Error('Post not found');
-    const newComment = { id: `c-${Date.now()}`, staffId, content, createdAt: new Date().toISOString() };
-    return mockApiCall({ ...post, comments: [...post.comments, newComment] }, { delay: 300 });
+    return mockApiCall(recognitionStore.comment(postId, staffId, content));
   },
 
   // Surveys
   async fetchSurveys(): Promise<ApiResponse<Survey[]>> {
-    return mockApiCall([...mockSurveys]);
+    return mockApiCall([...recognitionStore.get().surveys]);
   },
 
   async getSurveyById(id: string): Promise<ApiResponse<Survey | null>> {
-    return mockApiCall(mockSurveys.find(s => s.id === id) ?? null);
+    return mockApiCall(recognitionStore.get().surveys.find(s => s.id === id) ?? null);
   },
 
   async createSurvey(data: Omit<Survey, 'id' | 'createdAt' | 'updatedAt' | 'responseCount'>): Promise<ApiResponse<Survey>> {
@@ -50,6 +38,7 @@ export const recognitionApi = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    recognitionStore.saveSurvey(newSurvey);
     return mockApiCall(newSurvey, { delay: 500 });
   },
 

@@ -205,11 +205,13 @@ export interface WellbeingIndicator {
 }
 
 export interface WellbeingCheckIn {
+  mood?: number;
+  workloadRating?: number;
   id: string;
   staffId: string;
   date: string;
-  energyLevel: number; // 1-5
-  stressLevel: number; // 1-5
+  energyLevel: number; // 1-10
+  stressLevel: number; // 1-10
   workLifeBalance: number; // 1-5
   notes?: string;
   createdAt: string;

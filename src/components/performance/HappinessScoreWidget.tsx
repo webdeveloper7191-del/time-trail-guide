@@ -1,3 +1,5 @@
+import { happinessHistory } from '@/lib/engagementLogic';
+import { mockStaff } from '@/data/mockStaffData';
 import React, { useState } from 'react';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { 
@@ -78,13 +80,16 @@ const mockDistribution = [
 
 export function HappinessScoreWidget({ currentUserId, isManager = false }: HappinessScoreWidgetProps) {
   const rules = usePerformanceRules();
-  const { happinessEntries } = usePerformanceOperations();
+  const { happinessEntries, happinessReceipts } = usePerformanceOperations();
   const [showSubmitSheet, setShowSubmitSheet] = useState(false);
   const [score, setScore] = useState<number>(7);
   const [comment, setComment] = useState('');
-  const [hasSubmittedThisMonth, setHasSubmittedThisMonth] = useState(false);
+  const hasSubmittedThisMonth = happinessReceipts.includes(`${currentUserId}:${new Date().toISOString().slice(0,7)}`) || happinessEntries.some(e=>e.staffId===currentUserId && e.date.slice(0,7)===new Date().toISOString().slice(0,7));
 
-  const persistedHistory = happinessEntries.length ? happinessEntries.slice().reverse().map(entry => ({ period: format(new Date(entry.date), 'MMM yyyy'), score: entry.score, responseCount: 1 })) : mockHappinessHistory;
+  const persistedHistory = happinessHistory(happinessEntries).slice(-6);
+  const currentEntries=happinessEntries.filter(e=>e.date.slice(0,7)===new Date().toISOString().slice(0,7));
+  const distribution=mockDistribution.map(b=>({...b,count:currentEntries.filter(e=>{const [min,max]=b.range.split('-').map(Number);return e.score>=min && e.score<=max;}).length}));
+  const teamScores=mockStaff.flatMap(staff=>{const entry=currentEntries.find(e=>e.staffId===staff.id);return entry?[{staffId:staff.id,name:`${staff.firstName} ${staff.lastName}`,score:entry.score,trend:'stable'}]:[];});
   const currentScore = persistedHistory[persistedHistory.length - 1]?.score || 0;
   const previousScore = persistedHistory[persistedHistory.length - 2]?.score || currentScore;
   const trend = currentScore > previousScore ? 'up' : currentScore < previousScore ? 'down' : 'stable';
@@ -110,11 +115,11 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
   };
 
   const handleSubmitScore = () => {
-    if (score < 1 || score > 10) return;
+    if (hasSubmittedThisMonth || score < 1 || score > rules.happiness.scaleMax) return;
     performanceOperationsStore.submitHappiness({ staffId: currentUserId, score, comment: comment || undefined });
-    toast.success('Thanks for sharing how you feel! Your response is anonymous.');
+    toast.success(rules.happiness.anonymous ? 'Score saved without your name.' : 'Score saved.');
     setShowSubmitSheet(false);
-    setHasSubmittedThisMonth(true);
+
     setComment('');
   };
 
@@ -163,7 +168,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
                 >
                   {currentScore.toFixed(1)}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">/10</Typography>
+                <Typography variant="body2" color="text.secondary">/{rules.happiness.scaleMax}</Typography>
               </Stack>
               <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1 }}>
                 {getTrendIcon(trend)}
@@ -201,7 +206,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
           </Typography>
           <Box sx={{ height: 180 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mockDistribution} layout="vertical">
+              <BarChart data={distribution} layout="vertical">
                 <XAxis type="number" hide />
                 <YAxis 
                   type="category" 
@@ -213,7 +218,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
                   formatter={(value: number) => [`${value} responses`, 'Count']}
                 />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {mockDistribution.map((entry, index) => (
+                  {distribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
@@ -276,7 +281,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
       </Card>
 
       {/* Team Breakdown (Manager View) */}
-      {isManager && (
+      {isManager && !rules.happiness.anonymous && (
         <Card sx={{ p: 3 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Team Member Scores
@@ -285,7 +290,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
             Individual scores are kept anonymous unless team members choose to share
           </Typography>
           <Stack spacing={2}>
-            {mockTeamScores.map((member) => (
+            {teamScores.map((member) => (
               <Stack 
                 key={member.staffId} 
                 direction="row" 
@@ -340,7 +345,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
           <Box sx={{ mt: 4 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
               {rules.happiness.anonymous
-                ? 'Your response is completely anonymous. We use these scores to understand team wellbeing and identify areas for improvement.'
+                ? 'Answers are saved without your name. Participation is tracked separately in this browser.'
                 : 'Your response is shared with your manager to support your wellbeing.'}
             </Typography>
 
@@ -400,7 +405,7 @@ export function HappinessScoreWidget({ currentUserId, isManager = false }: Happi
                 rows={3}
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Your comment will remain anonymous
+                {rules.happiness.anonymous ? 'Comment saved without your name' : 'Comment shared with your manager'}
               </Typography>
             </Box>
           </Box>

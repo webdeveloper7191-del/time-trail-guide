@@ -1,3 +1,7 @@
+import { pulseResults } from '@/lib/engagementLogic';
+import { mockStaff } from '@/data/mockStaffData';
+import { EmployeeSurveyPanel } from './EmployeeSurveyPanel';
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import React, { useState } from 'react';
 import { 
   Box, 
@@ -100,7 +104,11 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   const [showResultsSheet, setShowResultsSheet] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
-  const latestENPS = mockENPSResults[0];
+  const rules=usePerformanceRules();
+  const enpsAnswers=pulseResponses.flatMap(r=>r.responses.filter(a=>{const survey=surveys.find(s=>s.id===r.surveyId);return survey?.questions.some(q=>q.id===a.questionId && q.type==='enps') && (!survey.anonymousResponses || pulseResponses.filter(v=>v.surveyId===survey.id).length>=rules.surveys.minResponsesToPublish);}).map(a=>a.value)).filter((v):v is number=>typeof v==='number');
+  const promoters=enpsAnswers.filter(n=>n>=9).length;
+  const detractors=enpsAnswers.filter(n=>n<=6).length;
+  const latestENPS={score:enpsAnswers.length?Math.round(100*(promoters-detractors)/enpsAnswers.length):0,promoters,detractors,passives:enpsAnswers.length-promoters-detractors,responseRate:Math.min(100,Math.round(enpsAnswers.length/Math.max(1,mockStaff.filter(s=>s.status==='active').length)*100)),trend:'stable'};
   const activeSurveys = surveys.filter(s => s.status === 'active');
   const completedSurveys = surveys.filter(s => s.status === 'completed');
 
@@ -117,25 +125,24 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
 
   const handleSendSurvey = (survey: PulseSurvey) => {
     performanceOperationsStore.savePulseSurvey({ ...survey, status: 'active', updatedAt: new Date().toISOString() });
-    toast.success(`Survey "${survey.title}" sent to recipients`);
+    toast.success(`Survey "${survey.title}" published to staff surveys`);
     setShowDetailSheet(false);
   };
 
   const getSurveyResults = (surveyId: string): SurveyResultSummary | undefined => {
-    return mockSurveyResults.find(r => r.surveyId === surveyId);
+    const survey=surveys.find(s=>s.id===surveyId);
+    if(!survey)return undefined;
+    const rows=pulseResponses.filter(r=>r.surveyId===surveyId);
+    if(survey.anonymousResponses && rows.length<rules.surveys.minResponsesToPublish)return undefined;
+    return pulseResults(survey,rows,mockStaff.filter(s=>s.status==='active').length);
   };
 
   const getSurveyResponses = (surveyId: string): PulseResponse[] => {
     return pulseResponses.filter(r => r.surveyId === surveyId);
   };
 
-  const enpsChartData = mockENPSResults.slice().reverse().map(r => ({
-    period: r.period,
-    score: r.score,
-    promoters: r.promoters,
-    passives: r.passives,
-    detractors: r.detractors,
-  }));
+  const periods=[...new Set(pulseResponses.map(r=>r.submittedAt.slice(0,7)))].sort();
+  const enpsChartData=periods.map(period=>{const nums=pulseResponses.filter(r=>r.submittedAt.startsWith(period)).flatMap(r=>r.responses.filter(a=>{const survey=surveys.find(s=>s.id===r.surveyId);return survey?.questions.some(q=>q.id===a.questionId && q.type==='enps') && (!survey.anonymousResponses || pulseResponses.filter(v=>v.surveyId===survey.id).length>=rules.surveys.minResponsesToPublish);}).map(a=>a.value)).filter((v):v is number=>typeof v==='number');return {period,score:nums.length?Math.round(100*(nums.filter(n=>n>=9).length-nums.filter(n=>n<=6).length)/nums.length):0};});
 
   const renderENPSCard = () => (
     <Card sx={{ p: 3 }}>
@@ -149,9 +156,9 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
               {latestENPS.score > 0 ? '+' : ''}{latestENPS.score}
             </Typography>
             {getTrendIcon(latestENPS.trend)}
-            {latestENPS.previousScore !== undefined && (
+            {false && (
               <Typography variant="body2" color="text.secondary">
-                vs {latestENPS.previousScore > 0 ? '+' : ''}{latestENPS.previousScore}
+                vs {latestENPS.score > 0 ? '+' : ''}{latestENPS.score}
               </Typography>
             )}
           </Stack>
@@ -382,7 +389,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                 startIcon={<Send size={16} />}
                 onClick={() => handleSendSurvey(selectedSurvey)}
               >
-                Send Survey Now
+                Publish survey
               </Button>
             </Box>
           </Box>
@@ -418,7 +425,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
               </Card>
               <Card sx={{ flex: 1, p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" fontWeight={700} color="success.main">
-                  {results?.responseRate || Math.round((responses.length / 10) * 100)}%
+                  {results?.responseRate || Math.min(100,Math.round(responses.length/Math.max(1,mockStaff.filter(s=>s.status==='active').length)*100))}%
                 </Typography>
                 <Typography variant="caption" color="text.secondary">Response Rate</Typography>
               </Card>
@@ -442,6 +449,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
             </Typography>
 
             <Stack spacing={3}>
+              {!results && <Typography color="text.secondary">{selectedSurvey.anonymousResponses ? `Results withheld until ${rules.surveys.minResponsesToPublish} responses are received.` : 'No answers yet.'}</Typography>}
               {results?.questionResults.map((qr, index) => (
                 <Card key={qr.questionId} sx={{ p: 3 }}>
                   <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ mb: 2 }}>
@@ -538,7 +546,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
               {!results && responses.length > 0 && (
                 <Card sx={{ p: 3, textAlign: 'center' }}>
                   <Typography variant="body2" color="text.secondary">
-                    {responses.length} responses collected. Results being processed...
+                    {responses.length} responses collected. Results are withheld until the configured privacy threshold is reached.
                   </Typography>
                 </Card>
               )}
@@ -623,6 +631,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
         </TabsContent>
       </Tabs>
 
+      <EmployeeSurveyPanel currentUserId={currentUserId}/>
       {renderSurveyDetailSheet()}
       {renderResultsSheet()}
       

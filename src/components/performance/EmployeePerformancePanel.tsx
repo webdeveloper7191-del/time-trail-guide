@@ -782,6 +782,8 @@ export function EmployeePerformancePanel({ currentUserId }: EmployeePerformanceP
             stressLevel: checkIn.stressLevel,
             workLifeBalance: checkIn.workLifeBalance,
             notes: checkIn.notes,
+            mood: checkIn.mood,
+            workloadRating: checkIn.workloadRating,
           });
         }}
       />
