@@ -35,7 +35,10 @@ export const recognitionStore = {
   submit(survey: Survey, staffId: string, answers: SurveyResponse['answers']) {
     const key = `${survey.id}:${staffId}`;
     if (db.get().submitted.includes(key)) throw new Error('You have already answered this survey.');
-    validateSurveyAnswers(survey, answers);
+    const current=db.get().surveys.find(s=>s.id===survey.id);
+    if(!current)throw new Error('Survey no longer exists');
+    validateSurveyAnswers(current, answers);
+    survey=current;
     const response: SurveyResponse = { id: crypto.randomUUID(), surveyId: survey.id, ...(survey.anonymous ? {} : { staffId }), answers, submittedAt: new Date().toISOString() };
     db.set(s => ({ ...s, responses: [...s.responses, response], submitted: [...s.submitted, key], surveys: s.surveys.map(i => i.id === survey.id ? { ...i, responseCount: i.responseCount + 1 } : i) }));
     return response;

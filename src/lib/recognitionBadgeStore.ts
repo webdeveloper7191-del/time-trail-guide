@@ -54,6 +54,7 @@ const DEFAULTS: BadgeState = {
 
 let cache: BadgeState | null = null;
 const listeners = new Set<() => void>();
+if(typeof window!=='undefined')window.addEventListener('storage',e=>{if(e.key===KEY){cache=null;listeners.forEach(l=>l());}});
 const emit = () => listeners.forEach((l) => l());
 
 function read(): BadgeState {
@@ -64,7 +65,7 @@ function read(): BadgeState {
   } catch {
     cache = DEFAULTS;
   }
-  return cache!;
+  return cache ?? DEFAULTS;
 }
 
 function write(next: BadgeState) {
@@ -98,6 +99,8 @@ export const recognitionBadgeStore = {
   },
   save(badge: RecognitionBadge) {
     const state = read();
+    const previouslyActive=state.badges.find(b=>b.id===badge.id)?.active;
+    if(badge.active && !previouslyActive && !recognitionBadgeStore.canActivateMore())throw new Error(`Your plan allows ${BADGE_CAP} active badges`);
     const exists = state.badges.some((b) => b.id === badge.id);
     write({
       ...state,
@@ -112,6 +115,7 @@ export const recognitionBadgeStore = {
   },
   toggleActive(id: string) {
     const state = read();
+    if(!state.badges.find(b=>b.id===id)?.active && !recognitionBadgeStore.canActivateMore())throw new Error(`Your plan allows ${BADGE_CAP} active badges`);
     write({
       ...state,
       badges: state.badges.map((b) => (b.id === id ? { ...b, active: !b.active } : b)),

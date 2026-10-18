@@ -56,7 +56,7 @@ export function BadgeManagerPanel() {
       return;
     }
     const isNew = !badges.some((b) => b.id === editing.id);
-    if (isNew && editing.active && atCap) {
+    if (editing.active && !badges.find(b=>b.id===editing.id)?.active && atCap) {
       toast.error(`Your plan allows ${limit} active badges.`);
       return;
     }

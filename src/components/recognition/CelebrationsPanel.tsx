@@ -33,12 +33,12 @@ export function CelebrationsPanel({ staff, onCelebrate }: Props) {
   const today = celebrations.filter((c) => c.daysAway === 0);
   const upcoming = celebrations.filter((c) => c.daysAway > 0);
 
-  const send = (staffId: string, staffName: string, type: string) => {
+  const send = async (staffId: string, staffName: string, type: string) => {
     const message = type === 'birthday'
       ? `Happy birthday, ${staffName}! 🎂`
       : `Congratulations on your work anniversary, ${staffName}! 🎉`;
-    onCelebrate?.(staffId, message);
-    toast.success('Celebration posted to the praise wall');
+    if(!onCelebrate)return;
+    try {await onCelebrate(staffId,message);toast.success('Celebration posted to the praise wall');} catch(e){toast.error(e instanceof Error?e.message:'Unable to save celebration');}
   };
 
   const initials = (name: string) => name.split(' ').map((n) => n[0]).join('').slice(0, 2);
@@ -112,7 +112,7 @@ export function CelebrationsPanel({ staff, onCelebrate }: Props) {
           {[
             { key: 'birthdaysEnabled' as const, title: 'Show birthdays', hint: 'Uses the date of birth on the staff record.' },
             { key: 'anniversariesEnabled' as const, title: 'Show work anniversaries', hint: 'Counted from the employment start date.' },
-            { key: 'autoPost' as const, title: 'Post automatically on the day', hint: 'A celebration post is created each morning.' },
+            { key: 'autoPost' as const, title: 'Post automatically on the day', hint: 'Created when the recognition page is opened on the day.' },
           ].map((s) => (
             <div key={s.key} className="flex items-center justify-between rounded-lg border p-3">
               <div>
