@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Connect recognition surveys to Forms templates, editing and response completion (browser-only)
+- [x] Connect recognition surveys to Forms templates, editing and response completion (browser-only)
 
 - [x] Recognition & engagement: complete praise, comments, surveys, rewards, nominations, mentorship, budgets, wellbeing and calendar downloads entirely in the frontend
 
