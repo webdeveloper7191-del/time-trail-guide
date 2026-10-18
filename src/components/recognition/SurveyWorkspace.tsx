@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useFormTemplates, formTemplatesStore } from '@/lib/formTemplatesStore';
+import { surveyToFormTemplate, formTemplateToSurveyQuestions, formAnswersToSurvey } from '@/lib/surveyForms';
+import { SurveyJSRenderer } from '@/components/forms/SurveyJSRenderer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,11 +27,18 @@ function blank(user: string): Survey {
   return { id: crypto.randomUUID(), title: '', description: '', status: 'draft', anonymous: true, questions: [question()], startDate: today, endDate: new Date(Date.now()+14*86400000).toISOString().slice(0,10), targetAudience: 'all', responseCount: 0, createdBy: user, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
 }
 export function SurveyWorkspace({ surveys, responses, currentUserId, save, submit, hasSubmitted }: Props) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const templates = useFormTemplates();
+  const reusableTemplates = templates.filter(t => t.scope !== 'system' && t.status !== 'archived' && t.fields.length > 0).filter(t => { try { formTemplateToSurveyQuestions(t); return true; } catch { return false; } });
   const [selected, setSelected] = useState<Survey | null>(null);
   const [mode, setMode] = useState<'edit'|'view'|'take'>('view');
-  const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [error, setError] = useState('');
-  const open = (s: Survey, m: typeof mode) => { setSelected(structuredClone(s)); setMode(m); setAnswers({}); setError(''); };
+  const open = (s: Survey, m: typeof mode) => { setSelected(structuredClone(s)); setMode(m); setError(''); };
+  useEffect(() => {
+    const survey = surveys.find(s => s.id === searchParams.get('surveyId'));
+    if (survey) { setSelected(structuredClone(survey)); setMode('view'); }
+  }, [searchParams]);
   const rows = responses.filter(r => r.surveyId === selected?.id);
   const update = (patch: Partial<Survey>) => { if (selected) setSelected({ ...selected, ...patch }); };
   const act = (fn: () => void) => { try { fn(); setError(''); } catch(e) { setError(e instanceof Error ? e.message : 'Unable to save.'); } };
@@ -49,6 +60,8 @@ export function SurveyWorkspace({ surveys, responses, currentUserId, save, submi
       {selected && <div className="space-y-5 mt-6">
         {error && <p role="alert" className="text-destructive">{error}</p>}
         {mode === 'edit' ? <>
+          <Label>Start from a Forms template</Label>
+          <Select onValueChange={id => { const template = templates.find(t => t.id === id); if (template) update({title:template.name,description:template.description ?? '',questions:formTemplateToSurveyQuestions(template)}); }}><SelectTrigger aria-label="Forms template"><SelectValue placeholder="Choose template"/></SelectTrigger><SelectContent>{reusableTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select>
           <Label htmlFor="survey-title">Title</Label><Input id="survey-title" value={selected.title} onChange={e => update({title:e.target.value})}/>
           <Label htmlFor="survey-description">Description</Label><Textarea id="survey-description" value={selected.description} onChange={e => update({description:e.target.value})}/>
           <div className="grid grid-cols-2 gap-4">{(['startDate','endDate'] as const).map(k => <div key={k}><Label htmlFor={k}>{k === 'startDate' ? 'Start date' : 'End date'}</Label><Input id={k} type="date" value={selected[k]} onChange={e => update({[k]:e.target.value})}/></div>)}</div>
@@ -64,12 +77,13 @@ export function SurveyWorkspace({ surveys, responses, currentUserId, save, submi
         </> : mode==='take' ? <>
           <p className="text-muted-foreground">{selected.description}</p>
           {hasSubmitted(selected.id) ? <p>Response already submitted.</p> : <>
-            {selected.questions.map(q => <div key={q.id} className="space-y-2"><Label>{q.text}{q.required ? ' *' : ''}</Label>{q.type==='text' ? <Textarea aria-label={q.text} value={answers[q.id]??''} onChange={e => setAnswers({...answers,[q.id]:e.target.value})}/> : <Select value={answers[q.id]===undefined?'':String(answers[q.id])} onValueChange={v => setAnswers({...answers,[q.id]:q.type==='rating'||q.type==='enps'?Number(v):v})}><SelectTrigger aria-label={q.text}><SelectValue placeholder="Choose answer"/></SelectTrigger><SelectContent>{(q.type==='yes_no'?['Yes','No']:q.type==='multiple_choice'?(q.options??[]):Array.from({length:q.type==='enps'?11:5},(_,i)=>String(i+(q.type==='enps'?0:1)))).filter(Boolean).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select>}</div>)}
-            <Button onClick={() => act(() => { const values=Object.entries(answers).map(([questionId,value]) => ({questionId,value})); validateSurveyAnswers(selected,values); submit(selected,values); setSelected(null); toast.success('Response saved'); })}>Submit response</Button>
+            <SurveyJSRenderer template={surveyToFormTemplate(selected)}
+              onValidate={data => { const current = surveys.find(s => s.id === selected.id); if (!current) throw new Error('Survey no longer exists.'); if (hasSubmitted(current.id)) throw new Error('Response already submitted.'); validateSurveyAnswers(current, formAnswersToSurvey(current, data)); }}
+              onComplete={data => act(() => { submit(selected, formAnswersToSurvey(selected, data)); setSelected(null); toast.success('Response saved'); })}/>
           </>}
         </> : <>
           <p className="text-muted-foreground">{selected.description}</p><p>{selected.status} · {rows.length} responses</p>
-          <div className="flex gap-2 flex-wrap"><Button variant="outline" onClick={() => setMode('edit')}>Edit survey</Button><Button onClick={() => act(() => { const next={...selected,status:(selected.status==='active'?'closed':'active') as Survey['status']}; if(next.status==='active' && (!next.title.trim() || next.questions.some(q=>!q.text.trim()))) throw new Error('Complete the survey first.'); save(next); setSelected(next); })}>{selected.status==='active'?<Square className="h-4 w-4 mr-2"/>:<Play className="h-4 w-4 mr-2"/>}{selected.status==='active'?'Close survey':'Publish survey'}</Button><Button variant="outline" onClick={download}><Download className="h-4 w-4 mr-2"/>Export answers</Button>{selected.status==='active' && <Button variant="outline" onClick={()=>setMode('take')}>Take survey</Button>}</div>
+          <div className="flex gap-2 flex-wrap"><Button variant="outline" onClick={() => { const template=surveyToFormTemplate(selected); formTemplatesStore.save(template); navigate(`/forms?templateId=${encodeURIComponent(template.id)}`); }}>Edit in Forms</Button><Button variant="outline" onClick={() => setMode('edit')}>Edit survey</Button><Button onClick={() => act(() => { const next={...selected,status:(selected.status==='active'?'closed':'active') as Survey['status']}; if(next.status==='active' && (!next.title.trim() || next.questions.some(q=>!q.text.trim()))) throw new Error('Complete the survey first.'); save(next); setSelected(next); })}>{selected.status==='active'?<Square className="h-4 w-4 mr-2"/>:<Play className="h-4 w-4 mr-2"/>}{selected.status==='active'?'Close survey':'Publish survey'}</Button><Button variant="outline" onClick={download}><Download className="h-4 w-4 mr-2"/>Export answers</Button>{selected.status==='active' && <Button variant="outline" onClick={()=>setMode('take')}>Take survey</Button>}</div>
           {selected.questions.map(q => { const vals=rows.flatMap(r=>r.answers.filter(a=>a.questionId===q.id).map(a=>a.value)); const nums=vals.filter((v):v is number=>typeof v==='number'); return <section key={q.id} className="border-t border-border pt-4"><h3 className="font-medium">{q.text}</h3><p className="text-sm text-muted-foreground">{vals.length} answers{nums.length ? ` · Average ${(nums.reduce((s,v)=>s+v,0)/nums.length).toFixed(1)}`:''}</p>{q.type==='enps' && nums.length>0 && <p>eNPS {Math.round(100*(nums.filter(n=>n>=9).length-nums.filter(n=>n<=6).length)/nums.length)}</p>}{q.type==='text'?vals.map((v,i)=><p className="text-sm mt-2" key={i}>{v}</p>):[...new Set(vals)].map(v=><p className="text-sm" key={v}>{v}: {vals.filter(x=>x===v).length}</p>)}</section>; })}
         </>}
       </div>}
