@@ -62,3 +62,9 @@ export function validateSurveyAnswers(survey: Survey, answers: SurveyResponse['a
   }
 }
 export function useRecognitionState() { return useSyncExternalStore(db.subscribe, db.get, db.get); }
+
+// Make existing browser surveys available in Forms without replacing saved edits.
+for (const survey of db.get().surveys) {
+  const template = surveyToFormTemplate(survey);
+  if (!formTemplatesStore.get().some(t => t.id === template.id)) formTemplatesStore.save(template);
+}

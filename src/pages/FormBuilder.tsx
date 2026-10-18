@@ -573,7 +573,7 @@ export default function FormBuilder() {
           <SurveyJSCreator
             key={template.id}
             template={template}
-            questionTypes={linkedSurvey ? ['text', 'comment', 'radiogroup', 'dropdown'] : undefined}
+            questionTypes={linkedSurvey ? ['text', 'comment', 'radiogroup', 'dropdown', 'rating'] : undefined}
             onTemplateChange={next => { persistTemplate(next); setTemplate(next); }}
             onSave={handleSaveTemplate}
           />

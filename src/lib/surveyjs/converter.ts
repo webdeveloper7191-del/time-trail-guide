@@ -333,14 +333,16 @@ function surveyElementToField(
 
   // Number settings
   if (fieldType === 'number') {
-    if (el.min !== undefined) field.settings!.min = el.min as number;
-    if (el.max !== undefined) field.settings!.max = el.max as number;
-    if (el.step !== undefined) field.settings!.step = el.step as number;
+    field.settings = {
+      min: surveyType === 'rating' ? Number(el.rateMin ?? 1) : el.min as number | undefined,
+      max: surveyType === 'rating' ? Number(el.rateMax ?? 5) : el.max as number | undefined,
+      step: surveyType === 'rating' ? Number(el.rateStep ?? 1) : el.step as number | undefined,
+    };
   }
 
   // Text settings
   if (el.maxLength !== undefined) {
-    field.settings!.maxLength = el.maxLength as number;
+    field.settings = { ...field.settings, maxLength: el.maxLength as number };
   }
 
   return field;
