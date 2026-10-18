@@ -4,6 +4,7 @@ import { mockPraisePosts, mockSurveys } from '@/data/mockRecognitionData';
 import type { PraisePost, Survey, SurveyResponse } from '@/types/recognition';
 import { formTemplatesStore } from '@/lib/formTemplatesStore';
 import { surveyToFormTemplate } from '@/lib/surveyForms';
+import { rewardsStore } from '@/lib/rewardsStore';
 
 interface RecognitionState { posts: PraisePost[]; surveys: Survey[]; responses: SurveyResponse[]; submitted: string[] }
 const db = createBrowserState<RecognitionState>('rostered.recognition.v1', {
@@ -15,6 +16,8 @@ export const recognitionStore = {
     if (!data.message.trim() || !data.toStaffId || data.fromStaffId === data.toStaffId) throw new Error('Choose a colleague and enter a message.');
     const post = { ...data, message: data.message.trim(), id: crypto.randomUUID(), createdAt: new Date().toISOString(), likes: [], comments: [] };
     db.set(s => ({ ...s, posts: [post, ...s.posts] }));
+    rewardsStore.awardForTrigger(data.toStaffId, 'praise_received', undefined, `praise-received:${post.id}`);
+    rewardsStore.awardForTrigger(data.fromStaffId, 'praise_given', undefined, `praise-given:${post.id}`);
     return post;
   },
   like(id: string, staffId: string) {

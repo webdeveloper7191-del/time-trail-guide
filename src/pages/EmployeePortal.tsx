@@ -144,7 +144,7 @@ export function EmployeePortal() {
 
 
       case 'recognition':
-        return <EmployeeRecognitionPanel currentUserId={currentEmployee.id} />;
+        return <EmployeeRecognitionPanel currentUserId={currentEmployee.staffId} />;
       case 'performance':
         return <EmployeePerformancePanel currentUserId={currentEmployee.staffId} />;
       case 'okrs':

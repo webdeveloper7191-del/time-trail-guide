@@ -78,7 +78,7 @@ export function RewardsAdminPanel() {
       </div>
 
       <Tabs defaultValue="catalogue">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto justify-start">
           <TabsTrigger value="catalogue" className="gap-1.5"><Gift className="h-3.5 w-3.5" /> Reward catalogue</TabsTrigger>
           <TabsTrigger value="earning" className="gap-1.5"><Coins className="h-3.5 w-3.5" /> Points rules</TabsTrigger>
           <TabsTrigger value="redemptions" className="gap-1.5"><Inbox className="h-3.5 w-3.5" /> Redemptions{pending.length > 0 && <Badge variant="secondary" className="ml-1">{pending.length}</Badge>}</TabsTrigger>
@@ -132,7 +132,7 @@ export function RewardsAdminPanel() {
         {/* Earning rules */}
         <TabsContent value="earning" className="mt-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            How staff earn points automatically. A monthly cap of 0 means unlimited.
+            A monthly cap of 0 means unlimited. Birthday and work anniversary points are checked when a recognition screen opens, once per date; no background awards or emails are sent.
           </p>
           <Card className="p-0 overflow-hidden">
             <Table>
