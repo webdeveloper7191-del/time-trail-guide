@@ -22,7 +22,7 @@ export function RewardsWallet({ currentUserId, staff }: { currentUserId: string;
   const requests = state.redemptions.filter(r => r.staffId === currentUserId);
   const act = (fn: () => void) => { try { fn(); } catch (e) { toast.error(e instanceof Error ? e.message : 'Unable to save'); } };
   const exportHistory = () => {
-    const csv = ['Date,Type,Points,Reason', ...history.map(l => [l.date, l.type, l.points, l.reason].map(v => `"${String(v).replaceAll('"', '""')}"`).join(','))].join('\r\n');
+    const csv = ['Date,Type,Points,Reason', ...history.map(l => [l.date, l.type, l.points, l.reason].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a'); a.href = url; a.download = 'my-reward-points.csv'; a.click(); URL.revokeObjectURL(url);
   };
