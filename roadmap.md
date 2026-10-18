@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Recognition & engagement: complete praise, comments, surveys, rewards, nominations, mentorship, budgets, wellbeing and calendar downloads entirely in the frontend
+
 - [x] Roster conflicts, alerts & notifications engine + panel (default timings: rest 10h, open shift 72/24h, unack 24/48h, qual expiry 30d)
 - [x] Recruitment: SEEK sub-category list, screening question library
 - [x] Reports: editable cost figures, data-based trends, correct chart drill-through, weighted averages
