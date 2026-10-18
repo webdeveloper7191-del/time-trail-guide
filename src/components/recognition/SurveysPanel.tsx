@@ -181,7 +181,7 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           {survey.status === 'active' ? (
                             <span className={isEnding ? 'text-amber-600 font-medium' : ''}>
-                              {daysLeft > 0 ? `${daysLeft} days left` : 'Ending today'}
+                              {daysLeft > 0 ? `${daysLeft} days left` : daysLeft === 0 ? 'Ending today' : 'Response period ended'}
                             </span>
                           ) : survey.status === 'draft' ? (
                             `Starts ${format(parseISO(survey.startDate), 'MMM d')}`
@@ -199,7 +199,7 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                     </TableCell>
                     <TableCell className="py-3">
                       <div 
-                        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="flex items-center gap-1 opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {survey.status === 'active' && (
@@ -210,9 +210,7 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                         <Button size="sm" variant="ghost" onClick={() => onViewSurvey(survey)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        
                       </div>
                     </TableCell>
                   </TableRow>

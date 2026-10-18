@@ -18,6 +18,8 @@ import { StaffMember } from '@/types/staff';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Heart, MessageCircle, Send, ThumbsUp, Plus, Sparkles, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { toast } from 'sonner';
 import { useRecognitionBadges } from '@/lib/recognitionBadgeStore';
 
 interface PraiseWallProps {
@@ -26,7 +28,7 @@ interface PraiseWallProps {
   currentUserId: string;
   onCreatePost: (data: Omit<PraisePost, 'id' | 'createdAt' | 'likes' | 'comments'>) => Promise<void>;
   onLike: (postId: string) => void;
-  onComment: (postId: string, content: string) => void;
+  onComment: (postId: string, content: string) => void | Promise<void>;
 }
 
 export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, onComment }: PraiseWallProps) {
@@ -37,9 +39,12 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [commentText, setCommentText] = useState<Record<string, string>>({});
+  const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const commentPost = posts.find(p => p.id === commentPostId);
   const [publishAs, setPublishAs] = useState('self');
-  const { badges: allBadges, activeBadges: praiseWallBadges, publishers } = useRecognitionBadges();
+  const { badges: allBadges, activeBadges, publishers } = useRecognitionBadges();
 
+  const praiseWallBadges = activeBadges.filter(b => b.awardableBy === 'everyone');
   const getStaff = (id: string) => staff.find(s => s.id === id);
 
   const handleSubmit = async () => {
@@ -51,7 +56,7 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
         toStaffId: recipient,
         category,
         message: message.trim(),
-        badges: selectedBadges,
+        badges: selectedBadges.filter(id => praiseWallBadges.some(b => b.id === id)),
         publishedAs: publishAs === 'self' ? undefined : publishers.find(p => p.id === publishAs)?.label,
       });
       setShowCompose(false);
@@ -235,7 +240,7 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
                     </TableCell>
                     <TableCell className="py-3 text-center">
                       <div className="flex items-center justify-center gap-3">
-                        <button 
+                        <Button variant="ghost" size="sm" aria-label="Like praise"
                           className={cn(
                             "flex items-center gap-1 text-sm transition-colors",
                             hasLiked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"
@@ -244,17 +249,15 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
                         >
                           <ThumbsUp className={cn("h-4 w-4", hasLiked && "fill-current")} />
                           {post.likes.length}
-                        </button>
-                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                        </Button>
+                        <Button variant="ghost" size="sm" aria-label="View comments" onClick={() => setCommentPostId(post.id)} className="flex items-center gap-1 text-sm text-muted-foreground">
                           <MessageCircle className="h-4 w-4" />
                           {post.comments.length}
-                        </span>
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell className="py-3">
-                      <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-muted rounded">
-                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                      </button>
+                      <Button variant="ghost" size="icon" aria-label="Open praise discussion" onClick={() => setCommentPostId(post.id)}><MessageCircle className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -263,6 +266,10 @@ export function PraiseWall({ posts, staff, currentUserId, onCreatePost, onLike, 
           </Table>
         </Card>
       )}
+      <Sheet open={!!commentPostId} onOpenChange={v => { if (!v) setCommentPostId(null); }}><SheetContent className="w-full sm:max-w-lg overflow-y-auto"><SheetHeader><SheetTitle>Praise discussion</SheetTitle></SheetHeader>
+        {commentPost && <div className="space-y-4 mt-6"><p>{commentPost.message}</p>{commentPost.comments.map(c => <div key={c.id} className="border-t border-border pt-3"><p className="text-sm font-medium">{getStaff(c.staffId)?.firstName ?? 'Staff'} · {formatDistanceToNow(parseISO(c.createdAt), {addSuffix:true})}</p><p className="text-sm mt-1">{c.content}</p></div>)}
+        <Textarea aria-label="Comment" placeholder="Add a comment" value={commentText[commentPost.id] ?? ''} onChange={e => setCommentText({...commentText,[commentPost.id]:e.target.value})}/><Button disabled={!commentText[commentPost.id]?.trim()} onClick={async () => { try { await onComment(commentPost.id,commentText[commentPost.id]); setCommentText({...commentText,[commentPost.id]:''}); } catch(e) { toast.error(e instanceof Error ? e.message : 'Unable to save comment'); } }}><Send className="h-4 w-4 mr-2"/>Post comment</Button></div>}
+      </SheetContent></Sheet>
     </div>
   );
 }

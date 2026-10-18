@@ -1,3 +1,4 @@
+import { useBrowserState } from '@/lib/browserState';
 import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 import React, { useState, useMemo } from 'react';
 import {
@@ -57,8 +58,8 @@ interface DevelopmentBudgetTrackerProps {
 }
 
 export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = false }: DevelopmentBudgetTrackerProps) {
-  const [budgets, setBudgets] = useState<DevelopmentBudget[]>(initialBudgets);
-  const [requests, setRequests] = useState<BudgetRequest[]>(initialRequests);
+  const [budgets, setBudgets] = useBrowserState<DevelopmentBudget[]>('rostered.engagement.budgets.v1', initialBudgets);
+  const [requests, setRequests] = useBrowserState<BudgetRequest[]>('rostered.engagement.requests.v1', initialRequests);
   const [showRequestDrawer, setShowRequestDrawer] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<BudgetRequest | null>(null);
@@ -87,7 +88,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
     if (filterStatus !== 'all') {
       result = result.filter(r => r.status === filterStatus);
     }
-    return result.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+    return [...result].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
   }, [requests, viewMode, filterCategory, filterStatus, currentUserId]);
 
   const stats = useMemo(() => {
@@ -99,6 +100,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
   }, [budgets, requests]);
 
   const handleApprove = (request: BudgetRequest, notes: string) => {
+    if (requests.find(r => r.id === request.id)?.status !== 'pending_approval') return;
     setRequests(requests.map(r => 
       r.id === request.id 
         ? { 
@@ -114,7 +116,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
     // Update pending budget to used budget
     setBudgets(budgets.map(b => 
       b.staffId === request.staffId
-        ? { ...b, pendingBudget: b.pendingBudget - request.amount, usedBudget: b.usedBudget + request.amount }
+        ? { ...b, pendingBudget: Math.max(0, b.pendingBudget - request.amount), usedBudget: b.usedBudget + request.amount }
         : b
     ));
     
@@ -123,6 +125,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
   };
 
   const handleReject = (request: BudgetRequest, reason: string) => {
+    if (requests.find(r => r.id === request.id)?.status !== 'pending_approval') return;
     setRequests(requests.map(r => 
       r.id === request.id 
         ? { 
@@ -138,7 +141,7 @@ export function DevelopmentBudgetTracker({ staff, currentUserId, embedded = fals
     // Remove from pending budget
     setBudgets(budgets.map(b => 
       b.staffId === request.staffId
-        ? { ...b, pendingBudget: b.pendingBudget - request.amount }
+        ? { ...b, pendingBudget: Math.max(0, b.pendingBudget - request.amount) }
         : b
     ));
     

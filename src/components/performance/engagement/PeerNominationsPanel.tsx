@@ -1,3 +1,4 @@
+import { useBrowserState } from '@/lib/browserState';
 import React, { useState, useMemo } from 'react';
 import {
   Box,
@@ -47,7 +48,7 @@ interface PeerNominationsProps {
 }
 
 export function PeerNominationsPanel({ staff, currentUserId, embedded = false }: PeerNominationsProps) {
-  const [nominations, setNominations] = useState<PeerNomination[]>(initialNominations);
+  const [nominations, setNominations] = useBrowserState<PeerNomination[]>('rostered.engagement.nominations.v1', initialNominations);
   const [showNominateDrawer, setShowNominateDrawer] = useState(false);
   const [showApprovalDrawer, setShowApprovalDrawer] = useState(false);
   const [selectedNomination, setSelectedNomination] = useState<PeerNomination | null>(null);

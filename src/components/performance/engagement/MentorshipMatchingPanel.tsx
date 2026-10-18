@@ -1,3 +1,4 @@
+import { useBrowserState } from '@/lib/browserState';
 import React, { useState, useMemo } from 'react';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import {
@@ -55,9 +56,9 @@ interface MentorshipMatchingProps {
 }
 
 export function MentorshipMatchingPanel({ staff, currentUserId, embedded = false }: MentorshipMatchingProps) {
-  const [mentors, setMentors] = useState<MentorProfile[]>(initialMentors);
-  const [mentees, setMentees] = useState<MenteeProfile[]>(initialMentees);
-  const [matches, setMatches] = useState<MentorshipMatch[]>(initialMatches);
+  const [mentors, setMentors] = useBrowserState<MentorProfile[]>('rostered.engagement.mentors.v1', initialMentors);
+  const [mentees, setMentees] = useBrowserState<MenteeProfile[]>('rostered.engagement.mentees.v1', initialMentees);
+  const [matches, setMatches] = useBrowserState<MentorshipMatch[]>('rostered.engagement.matches.v1', initialMatches);
   const [activeView, setActiveView] = useState<'matches' | 'mentors' | 'mentees' | 'find_match'>('matches');
   const [showMentorDrawer, setShowMentorDrawer] = useState(false);
   const [showMenteeDrawer, setShowMenteeDrawer] = useState(false);
