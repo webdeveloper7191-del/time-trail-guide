@@ -37,13 +37,13 @@ const pastelColors = {
 };
 
 export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps) {
-  const { pulseSurveys, pulseResponses } = usePerformanceOperations();
+  const { pulseSurveys, pulseResponses, pulseReceipts } = usePerformanceOperations();
   const [selectedSurvey, setSelectedSurvey] = useState<PulseSurvey | null>(null);
   const [showSurveySheet, setShowSurveySheet] = useState(false);
   const [responses, setResponses] = useState<Record<string, string | number>>({});
-  const completedSurveys = pulseResponses.filter(response => response.responderId === currentUserId).map(response => response.surveyId);
+  const completedSurveys = pulseSurveys.filter(s=>pulseReceipts.includes(`${s.id}:${currentUserId}`) || pulseResponses.some(r=>r.surveyId===s.id && r.responderId===currentUserId)).map(s=>s.id);
 
-  const activeSurveys = pulseSurveys.filter(s => s.status === 'active');
+  const activeSurveys = pulseSurveys.filter(s => s.status === 'active' && (!s.endDate || new Date(s.endDate)>=new Date()));
   const pendingSurveys = activeSurveys.filter(s => !completedSurveys.includes(s.id));
   const myCompletedSurveys = pulseSurveys.filter(s => completedSurveys.includes(s.id));
 
@@ -65,7 +65,7 @@ export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps)
       return;
     }
 
-    performanceOperationsStore.addPulseResponse({ surveyId: selectedSurvey.id, responderId: currentUserId, responses: selectedSurvey.questions.map(question => ({ questionId: question.id, value: responses[question.id] })) });
+    try { performanceOperationsStore.addPulseResponse({ surveyId: selectedSurvey.id, responderId: currentUserId, responses: selectedSurvey.questions.filter(q=>responses[q.id]!==undefined).map(question => ({ questionId: question.id, value: responses[question.id] })) }); } catch(e) { toast.error(e instanceof Error ? e.message : 'Unable to save response'); return; }
     toast.success('Survey submitted successfully! Thank you for your feedback.');
     setShowSurveySheet(false);
     setSelectedSurvey(null);
@@ -374,7 +374,7 @@ export function EmployeeSurveyPanel({ currentUserId }: EmployeeSurveyPanelProps)
 
           <SheetFooter className="mt-8">
             <Button variant="outline" onClick={() => setShowSurveySheet(false)}>
-              Save for Later
+              Close
             </Button>
             <Button onClick={handleSubmitSurvey} className="gap-2">
               <Send className="h-4 w-4" />

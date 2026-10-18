@@ -59,7 +59,7 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
     setQuestions([
       ...questions,
       { 
-        id: String(questions.length + 1), 
+        id: crypto.randomUUID(), 
         text: '', 
         type: 'rating', 
         category: 'engagement', 
@@ -81,6 +81,7 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
   };
 
   const handleSave = () => {
+    if (!title.trim() || questions.some(q=>!q.text.trim())) {toast.error('Complete the title and every question');return;}
     const survey: Partial<PulseSurvey> = {
       id: `survey-new-${Date.now()}`,
       title,
@@ -115,7 +116,7 @@ export function CreateSurveyDrawer({ open, onClose, onSave }: CreateSurveyDrawer
     setQuestions([{ id: '1', text: '', type: 'rating', category: 'engagement', required: true }]);
   };
 
-  const isValid = title.trim() && questions.some(q => q.text.trim());
+  const isValid = title.trim() && questions.every(q => q.text.trim());
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
