@@ -39,6 +39,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { praiseWallBadges, mockPraisePosts as initialPosts } from '@/data/mockRecognitionData';
 import { toast } from 'sonner';
+import { StaffRecognitionWorkspace } from '@/components/recognition/StaffRecognitionWorkspace';
 
 interface UnifiedRecognitionPanelProps {
   staff: StaffMember[];
@@ -106,6 +107,10 @@ const mockRewardPoints: RewardPoints[] = [
 ];
 
 export function UnifiedRecognitionPanel({ staff, currentUserId }: UnifiedRecognitionPanelProps) {
+  return <StaffRecognitionWorkspace currentUserId={currentUserId} />;
+}
+
+function LegacyRecognitionPanel({ staff, currentUserId }: UnifiedRecognitionPanelProps) {
   const { posts } = useRecognitionState();
   const { activeBadges, badges } = useRecognitionBadges();
   const [threadId,setThreadId]=useState<string|null>(null);
