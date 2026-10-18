@@ -13,6 +13,10 @@ import { CelebrationsPanel } from '@/components/recognition/CelebrationsPanel';
 import { BadgeManagerPanel } from '@/components/recognition/BadgeManagerPanel';
 import { toast } from 'sonner';
 import { buildCelebrations, useCelebrationSettings } from '@/lib/celebrationsStore';
+import { RecognitionManagement } from '@/components/recognition/RecognitionManagement';
+import { RewardsWallet } from '@/components/recognition/RewardsWallet';
+import { RewardsAdminPanel } from '@/components/performance/admin/RewardsAdminPanel';
+import { processMilestoneRewards } from '@/lib/recognitionWorkflowStore';
 
 const CURRENT_USER_ID = 'staff-2';
 
@@ -21,6 +25,7 @@ export default function RecognitionPage() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.has('surveyId') ? 'surveys' : 'praise');
   const { settings } = useCelebrationSettings();
+  useEffect(() => { try { processMilestoneRewards(mockStaff); } catch { toast.error('Unable to save milestone points in this browser'); } }, []);
   useEffect(() => {
     if(!settings.autoPost)return;
     for(const c of buildCelebrations(mockStaff,settings).filter(c=>c.daysAway===0 && c.visibility==='public')) {
@@ -48,11 +53,14 @@ export default function RecognitionPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
+            <TabsList className="flex flex-wrap h-auto justify-start">
               <TabsTrigger value="praise" className="flex items-center gap-2"><Sparkles className="h-4 w-4" />Praise Wall</TabsTrigger>
               <TabsTrigger value="celebrations" className="flex items-center gap-2"><Cake className="h-4 w-4" />Celebrations</TabsTrigger>
               <TabsTrigger value="badges" className="flex items-center gap-2"><Award className="h-4 w-4" />Badges</TabsTrigger>
               <TabsTrigger value="surveys" className="flex items-center gap-2"><ClipboardList className="h-4 w-4" />Surveys</TabsTrigger>
+              <TabsTrigger value="recognition"><Award className="h-4 w-4 mr-2" />Recognition</TabsTrigger>
+              <TabsTrigger value="rewards">My rewards</TabsTrigger>
+              <TabsTrigger value="reward-settings">Rewards management</TabsTrigger>
             </TabsList>
             <TabsContent value="praise" className="mt-6">
               <PraiseWall posts={posts} staff={mockStaff} currentUserId={CURRENT_USER_ID} onCreatePost={handleCreatePost} onLike={handleLike} onComment={handleComment} />
@@ -78,6 +86,9 @@ export default function RecognitionPage() {
             <TabsContent value="surveys" className="mt-6">
               <SurveyWorkspace surveys={surveys} responses={responses} currentUserId={CURRENT_USER_ID} save={recognitionStore.saveSurvey} submit={(survey, answers) => { recognitionStore.submit(survey, CURRENT_USER_ID, answers); }} hasSubmitted={id => submitted.includes(`${id}:${CURRENT_USER_ID}`)} />
             </TabsContent>
+            <TabsContent value="recognition" className="mt-6"><RecognitionManagement currentUserId={CURRENT_USER_ID} staff={mockStaff} manage /></TabsContent>
+            <TabsContent value="rewards" className="mt-6"><RewardsWallet currentUserId={CURRENT_USER_ID} staff={mockStaff} /></TabsContent>
+            <TabsContent value="reward-settings" className="mt-6"><RewardsAdminPanel /></TabsContent>
           </Tabs>
         </div>
       </main>
