@@ -2,7 +2,7 @@
 
 export type PraiseCategory = 'teamwork' | 'innovation' | 'leadership' | 'customer_focus' | 'going_above' | 'mentoring';
 export type SurveyStatus = 'draft' | 'active' | 'closed';
-export type QuestionType = 'rating' | 'text' | 'multiple_choice' | 'yes_no';
+export type QuestionType = 'rating' | 'text' | 'multiple_choice' | 'yes_no' | 'enps';
 
 export interface PraisePost {
   id: string;
@@ -13,6 +13,7 @@ export interface PraisePost {
   badges: string[];
   /** Optional publisher identity, e.g. "Leadership Team". Absent = posted as the author. */
   publishedAs?: string;
+  pointsAwarded?: number;
   likes: string[]; // staff IDs who liked
   comments: PraiseComment[];
   createdAt: string;
@@ -101,6 +102,7 @@ export const surveyStatusLabels: Record<SurveyStatus, string> = {
 };
 
 export const questionTypeLabels: Record<QuestionType, string> = {
+  enps: 'eNPS (0-10)',
   rating: 'Rating (1-5)',
   text: 'Open Text',
   multiple_choice: 'Multiple Choice',
