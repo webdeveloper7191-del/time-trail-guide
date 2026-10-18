@@ -38,6 +38,7 @@ export type EarningTrigger =
   | 'goal_completed'
   | 'review_completed'
   | 'peer_nomination'
+  | 'birthday'
   | 'work_anniversary';
 
 export interface EarningRule {
@@ -71,6 +72,8 @@ export interface PointsLedgerEntry {
   points: number; // negative for spent/expired
   reason: string;
   date: string; // ISO
+  sourceId?: string;
+  awardedBy?: string;
 }
 
 export type RedemptionStatus = 'pending' | 'approved' | 'fulfilled' | 'declined' | 'cancelled';
@@ -113,6 +116,7 @@ export const earningTriggerLabels: Record<EarningTrigger, string> = {
   goal_completed: 'Completed a goal',
   review_completed: 'Completed a review on time',
   peer_nomination: 'Peer nomination accepted',
+  birthday: 'Birthday',
   work_anniversary: 'Work anniversary',
 };
 
@@ -156,6 +160,7 @@ const defaultState = (): RewardsState => ({
     { id: 'er-review', trigger: 'review_completed', points: 30, monthlyCap: 0, isActive: true },
     { id: 'er-nomination', trigger: 'peer_nomination', points: 20, monthlyCap: 0, isActive: false },
     { id: 'er-anniversary', trigger: 'work_anniversary', points: 100, monthlyCap: 0, isActive: true },
+    { id: 'er-birthday', trigger: 'birthday', points: 100, monthlyCap: 0, isActive: false },
   ],
   ledger: [
     { id: 'pl-1', staffId: 'staff-1', type: 'earned', points: 50, reason: 'Received praise', date: iso(4) },
@@ -185,7 +190,9 @@ function read(): RewardsState {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    cache = raw ? { ...defaultState(), ...JSON.parse(raw) } : defaultState();
+    const defaults = defaultState();
+    const saved = raw ? JSON.parse(raw) : defaults;
+    cache = { ...defaults, ...saved, settings: { ...defaults.settings, ...saved.settings }, earningRules: [...(saved.earningRules ?? []), ...defaults.earningRules.filter(r => !(saved.earningRules ?? []).some((old: EarningRule) => old.trigger === r.trigger))] };
   } catch {
     cache = defaultState();
   }
@@ -193,12 +200,8 @@ function read(): RewardsState {
 }
 
 function write(next: RewardsState) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   cache = next;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* storage unavailable — keep in memory */
-  }
   listeners.forEach(l => l());
 }
 
@@ -263,33 +266,49 @@ export const rewardsStore = {
   // ---- Points ----
   addLedgerEntry(entry: Omit<PointsLedgerEntry, 'id' | 'date'> & { date?: string }) {
     const s = read();
+    const existing = entry.sourceId ? s.ledger.find(l => l.sourceId === entry.sourceId) : undefined;
+    if (existing) return existing;
+    if (!Number.isFinite(entry.points)) throw new Error('Enter a valid points amount.');
     const next: PointsLedgerEntry = { ...entry, id: uid('pl'), date: entry.date ?? new Date().toISOString() };
     write({ ...s, ledger: [next, ...s.ledger] });
     return next;
   },
   /** Points automatically granted for a trigger, respecting the monthly cap. */
-  awardForTrigger(staffId: string, trigger: EarningTrigger, reason?: string) {
+  awardForTrigger(staffId: string, trigger: EarningTrigger, reason?: string, sourceId?: string) {
     const s = read();
+    if (sourceId && s.ledger.some(l => l.sourceId === sourceId)) return 0;
     const rule = s.earningRules.find(r => r.trigger === trigger && r.isActive);
     if (!s.settings.programEnabled || !rule) return 0;
+    let points = rule.points;
     if (rule.monthlyCap > 0) {
       const earnedThisMonth = s.ledger
         .filter(l => l.staffId === staffId && l.points > 0 && sameMonth(l.date) && l.reason.startsWith(earningTriggerLabels[trigger]))
         .reduce((sum, l) => sum + l.points, 0);
       if (earnedThisMonth >= rule.monthlyCap) return 0;
+      points = Math.min(points, rule.monthlyCap - earnedThisMonth);
     }
     rewardsStore.addLedgerEntry({
       staffId,
       type: 'earned',
-      points: rule.points,
+      points,
+      sourceId,
       reason: reason ? `${earningTriggerLabels[trigger]} — ${reason}` : earningTriggerLabels[trigger],
     });
-    return rule.points;
+    return points;
+  },
+  awardPoints(staffId: string, awardedBy: string, points: number, reason: string) {
+    const s = read();
+    if (!s.settings.programEnabled) throw new Error('The rewards program is disabled.');
+    if (!staffId || staffId === awardedBy || !reason.trim() || !Number.isInteger(points) || points <= 0) throw new Error('Choose a colleague, enter a reason and positive whole points.');
+    const used = s.ledger.filter(l => l.awardedBy === awardedBy && l.type === 'awarded' && sameMonth(l.date)).reduce((sum, l) => sum + l.points, 0);
+    if (used + points > s.settings.peerMonthlyAllowance) throw new Error(`Monthly allowance remaining: ${Math.max(0, s.settings.peerMonthlyAllowance - used)} points.`);
+    return rewardsStore.addLedgerEntry({ staffId, awardedBy, type: 'awarded', points, reason: reason.trim() });
   },
 
   // ---- Redemptions ----
   requestRedemption(staffId: string, rewardId: string) {
     const s = read();
+    if (!s.settings.programEnabled) throw new Error('The rewards program is disabled.');
     const reward = s.catalogue.find(r => r.id === rewardId);
     if (!reward || !reward.isActive) throw new Error('This reward is no longer available.');
     if (balanceFor(s, staffId) < reward.pointsCost) throw new Error('Not enough points for this reward.');
@@ -336,6 +355,8 @@ export const rewardsStore = {
     const s = read();
     const req = s.redemptions.find(r => r.id === id);
     if (!req) return;
+    const allowed: Record<RedemptionStatus, RedemptionStatus[]> = { pending: ['approved', 'declined', 'cancelled'], approved: ['fulfilled', 'cancelled'], fulfilled: [], declined: [], cancelled: [] };
+    if (!allowed[req.status].includes(status)) throw new Error('This redemption can no longer be changed to that status.');
     const refund = (status === 'declined' || status === 'cancelled') && req.status !== 'declined' && req.status !== 'cancelled';
     write({
       ...s,
