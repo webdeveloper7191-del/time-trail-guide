@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Compare Employment Hero guide and complete frontend value-based recognition approvals, milestone points and reward history
+
 - [x] Connect recognition surveys to Forms templates, editing and response completion (browser-only)
 
 - [x] Recognition & engagement: complete praise, comments, surveys, rewards, nominations, mentorship, budgets, wellbeing and calendar downloads entirely in the frontend
