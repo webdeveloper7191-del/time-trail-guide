@@ -105,7 +105,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const rules=usePerformanceRules();
-  const enpsAnswers=pulseResponses.flatMap(r=>r.responses.filter(a=>surveys.find(s=>s.id===r.surveyId)?.questions.some(q=>q.id===a.questionId && q.type==='enps')).map(a=>a.value)).filter((v):v is number=>typeof v==='number');
+  const enpsAnswers=pulseResponses.flatMap(r=>r.responses.filter(a=>{const survey=surveys.find(s=>s.id===r.surveyId);return survey?.questions.some(q=>q.id===a.questionId && q.type==='enps') && (!survey.anonymousResponses || pulseResponses.filter(v=>v.surveyId===survey.id).length>=rules.surveys.minResponsesToPublish);}).map(a=>a.value)).filter((v):v is number=>typeof v==='number');
   const promoters=enpsAnswers.filter(n=>n>=9).length;
   const detractors=enpsAnswers.filter(n=>n<=6).length;
   const latestENPS={score:enpsAnswers.length?Math.round(100*(promoters-detractors)/enpsAnswers.length):0,promoters,detractors,passives:enpsAnswers.length-promoters-detractors,responseRate:Math.min(100,Math.round(enpsAnswers.length/Math.max(1,mockStaff.filter(s=>s.status==='active').length)*100)),trend:'stable'};
@@ -142,7 +142,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   };
 
   const periods=[...new Set(pulseResponses.map(r=>r.submittedAt.slice(0,7)))].sort();
-  const enpsChartData=periods.map(period=>{const nums=pulseResponses.filter(r=>r.submittedAt.startsWith(period)).flatMap(r=>r.responses.filter(a=>surveys.find(s=>s.id===r.surveyId)?.questions.some(q=>q.id===a.questionId && q.type==='enps')).map(a=>a.value)).filter((v):v is number=>typeof v==='number');return {period,score:nums.length?Math.round(100*(nums.filter(n=>n>=9).length-nums.filter(n=>n<=6).length)/nums.length):0};});
+  const enpsChartData=periods.map(period=>{const nums=pulseResponses.filter(r=>r.submittedAt.startsWith(period)).flatMap(r=>r.responses.filter(a=>{const survey=surveys.find(s=>s.id===r.surveyId);return survey?.questions.some(q=>q.id===a.questionId && q.type==='enps') && (!survey.anonymousResponses || pulseResponses.filter(v=>v.surveyId===survey.id).length>=rules.surveys.minResponsesToPublish);}).map(a=>a.value)).filter((v):v is number=>typeof v==='number');return {period,score:nums.length?Math.round(100*(nums.filter(n=>n>=9).length-nums.filter(n=>n<=6).length)/nums.length):0};});
 
   const renderENPSCard = () => (
     <Card sx={{ p: 3 }}>
@@ -425,7 +425,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
               </Card>
               <Card sx={{ flex: 1, p: 2, textAlign: 'center' }}>
                 <Typography variant="h4" fontWeight={700} color="success.main">
-                  {results?.responseRate || Math.round((responses.length / 10) * 100)}%
+                  {results?.responseRate || Math.min(100,Math.round(responses.length/Math.max(1,mockStaff.filter(s=>s.status==='active').length)*100))}%
                 </Typography>
                 <Typography variant="caption" color="text.secondary">Response Rate</Typography>
               </Card>
@@ -546,7 +546,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
               {!results && responses.length > 0 && (
                 <Card sx={{ p: 3, textAlign: 'center' }}>
                   <Typography variant="body2" color="text.secondary">
-                    {responses.length} responses collected. Results being processed...
+                    {responses.length} responses collected. Results are withheld until the configured privacy threshold is reached.
                   </Typography>
                 </Card>
               )}
