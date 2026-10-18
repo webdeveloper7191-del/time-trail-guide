@@ -179,6 +179,7 @@ const defaultState = (): RewardsState => ({
 
 let cache: RewardsState | null = null;
 const listeners = new Set<() => void>();
+if(typeof window!=='undefined')window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY){cache=null;listeners.forEach(l=>l());}});
 
 function read(): RewardsState {
   if (cache) return cache;
@@ -188,7 +189,7 @@ function read(): RewardsState {
   } catch {
     cache = defaultState();
   }
-  return cache!;
+  return cache ?? defaultState();
 }
 
 function write(next: RewardsState) {

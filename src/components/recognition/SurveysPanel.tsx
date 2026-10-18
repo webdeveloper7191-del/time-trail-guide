@@ -1,3 +1,4 @@
+import { mockStaff } from '@/data/mockStaffData';
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -124,10 +125,10 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
             <TableBody>
               {surveys.map(survey => {
                 const daysLeft = differenceInDays(parseISO(survey.endDate), new Date());
-                const targetResponses = 10;
+                const targetResponses = Math.max(1, mockStaff.filter(s=>s.status==='active').length);
                 const responseRate = Math.min(100, (survey.responseCount / targetResponses) * 100);
                 const isEnding = daysLeft <= 3 && daysLeft >= 0 && survey.status === 'active';
-                const isActive = survey.status === 'active';
+                const isActive = survey.status === 'active' && daysLeft>=0;
 
                 return (
                   <TableRow 
@@ -202,7 +203,7 @@ export function SurveysPanel({ surveys, onCreateSurvey, onViewSurvey, onTakeSurv
                         className="flex items-center gap-1 opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {survey.status === 'active' && (
+                        {isActive && (
                           <Button size="sm" variant="default" onClick={() => onTakeSurvey(survey)}>
                             Take
                           </Button>
