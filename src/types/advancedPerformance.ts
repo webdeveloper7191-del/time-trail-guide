@@ -234,6 +234,7 @@ export interface TeamWellbeingSummary {
 export type CalibrationStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
 export interface CalibrationSession {
+  assessedStaffIds?: string[];
   id: string;
   title: string;
   reviewCycle: string;

@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, AlertTriangle } from 'lucide-react';
 import type { TalentAssessment, PerformanceLevel, PotentialLevel } from '@/types/advancedPerformance';
+import { talentLevel } from '@/lib/performanceDashboardMetrics';
 import { mockStaff } from '@/data/mockStaffData';
 
 interface TalentAssessmentDrawerProps {
@@ -43,8 +44,8 @@ export function TalentAssessmentDrawer({
   staffId 
 }: TalentAssessmentDrawerProps) {
   const [selectedStaffId, setSelectedStaffId] = useState(staffId || '');
-  const [performanceScore, setPerformanceScore] = useState(5);
-  const [potentialScore, setPotentialScore] = useState(5);
+  const [performanceScore, setPerformanceScore] = useState(3);
+  const [potentialScore, setPotentialScore] = useState(3);
   const [performanceLevel, setPerformanceLevel] = useState<PerformanceLevel>('medium');
   const [potentialLevel, setPotentialLevel] = useState<PotentialLevel>('medium');
   const [flightRisk, setFlightRisk] = useState<'low' | 'medium' | 'high'>('low');
@@ -66,23 +67,17 @@ export function TalentAssessmentDrawer({
     } else {
       resetForm();
     }
-  }, [assessment]);
+  }, [assessment, staffId, open]);
 
   useEffect(() => {
-    // Auto-calculate levels based on scores
-    if (performanceScore <= 3) setPerformanceLevel('low');
-    else if (performanceScore <= 6) setPerformanceLevel('medium');
-    else setPerformanceLevel('high');
-
-    if (potentialScore <= 3) setPotentialLevel('low');
-    else if (potentialScore <= 6) setPotentialLevel('medium');
-    else setPotentialLevel('high');
+    setPerformanceLevel(talentLevel(performanceScore));
+    setPotentialLevel(talentLevel(potentialScore));
   }, [performanceScore, potentialScore]);
 
   const resetForm = () => {
     setSelectedStaffId(staffId || '');
-    setPerformanceScore(5);
-    setPotentialScore(5);
+    setPerformanceScore(3);
+    setPotentialScore(3);
     setPerformanceLevel('medium');
     setPotentialLevel('medium');
     setFlightRisk('low');
@@ -103,7 +98,7 @@ export function TalentAssessmentDrawer({
       readiness,
       notes,
       developmentRecommendations: recommendations.split('\n').filter(r => r.trim()),
-      assessmentDate: new Date().toISOString(),
+      assessmentDate: assessment?.assessmentDate ?? new Date().toISOString(),
       assessorId: 'current-user',
     };
     onSave(newAssessment);
@@ -171,7 +166,7 @@ export function TalentAssessmentDrawer({
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Label>Performance Score</Label>
                 <Typography variant="body2" fontWeight={600} color="primary.main">
-                  {performanceScore}/10
+                  {performanceScore}/5
                 </Typography>
               </Stack>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
@@ -181,12 +176,12 @@ export function TalentAssessmentDrawer({
                 value={performanceScore}
                 onChange={(_, val) => setPerformanceScore(val as number)}
                 min={1}
-                max={10}
+                max={5}
                 step={0.5}
                 marks={[
                   { value: 1, label: '1' },
+                  { value: 3, label: '3' },
                   { value: 5, label: '5' },
-                  { value: 10, label: '10' },
                 ]}
                 sx={{ mt: 2 }}
               />
@@ -200,7 +195,7 @@ export function TalentAssessmentDrawer({
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Label>Potential Score</Label>
                 <Typography variant="body2" fontWeight={600} color="secondary.main">
-                  {potentialScore}/10
+                  {potentialScore}/5
                 </Typography>
               </Stack>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
@@ -210,12 +205,12 @@ export function TalentAssessmentDrawer({
                 value={potentialScore}
                 onChange={(_, val) => setPotentialScore(val as number)}
                 min={1}
-                max={10}
+                max={5}
                 step={0.5}
                 marks={[
                   { value: 1, label: '1' },
+                  { value: 3, label: '3' },
                   { value: 5, label: '5' },
-                  { value: 10, label: '10' },
                 ]}
                 color="secondary"
                 sx={{ mt: 2 }}

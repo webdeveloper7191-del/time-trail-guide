@@ -53,6 +53,7 @@ import { buildCalibrationDistribution } from '@/lib/calibrationDistribution';
 
 interface CalibrationPanelProps {
   currentUserId: string;
+  initialSessionId?: string;
 }
 
 const getSessionStatusStyle = (status: string) => {
@@ -65,7 +66,7 @@ const getSessionStatusStyle = (status: string) => {
   return styles[status] || styles.scheduled;
 };
 
-export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
+export function CalibrationPanel({ currentUserId, initialSessionId }: CalibrationPanelProps) {
   const { calibrationSessions: sessions, calibrationRatings } = usePerformanceOperations();
   const rules = usePerformanceRules();
   const ratingDistribution = React.useMemo(
@@ -82,6 +83,8 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
     const current = sessions.find(item => item.id === selectedSession.id);
     if (current) setSelectedSession(current);
   }, [sessions, selectedSession?.id]);
+
+  useEffect(()=>{if(!initialSessionId)return;const session=sessions.find(s=>s.id===initialSessionId);if(session){setSelectedSession(session);setShowDetailSheet(true);}},[initialSessionId]);
 
   const getStaffInfo = (id: string) => mockStaff.find(s => s.id === id);
 
