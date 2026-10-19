@@ -1,3 +1,7 @@
+import { PerformanceActionQueue } from '@/components/performance/PerformanceActionQueue';
+import { performanceOperationsStore } from '@/lib/performanceOperationsStore';
+import { performanceRecords } from '@/lib/api/performanceApi';
+import { latestTalentAt } from '@/lib/performanceDashboardMetrics';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Stack, Typography, Tab } from '@mui/material';
 import { Tabs } from '@/components/mui/Tabs';
@@ -67,10 +71,13 @@ import { toast } from 'sonner';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { ConfigureLink, PERFORMANCE_CONFIG_EVENT, tabConfigTargets, type PerformanceConfigTarget } from '@/components/performance/ConfigureLink';
 
-const CURRENT_USER_ID = 'staff-2'; // Sarah Williams - Lead Educator
+const CURRENT_USER_ID = 'staff-2'; // Local manager preview, not authenticated access
 
 export default function PerformanceManagement() {
   const [activeTab, setActiveTab] = useState('plans');
+  const [contextStaffId,setContextStaffId] = useState(CURRENT_USER_ID);
+  const [contextAssessmentId,setContextAssessmentId] = useState<string>();
+  const [contextSessionId,setContextSessionId] = useState<string>();
   const [configTarget, setConfigTarget] = useState<PerformanceConfigTarget | null>(null);
 
   // Configure links inside individual tabs jump to the matching Performance Setup section.
@@ -411,6 +418,22 @@ export default function PerformanceManagement() {
     setSelectedPlan(updated);
   };
 
+  const navigateEvidence = (tab: string, id?: string, staffId?: string) => {
+    if(staffId) setContextStaffId(staffId);
+    if(tab==='talent') setContextAssessmentId(id);
+    if(tab==='reviews' && id) {const record=performanceRecords.reviews().find(r=>r.id===id);if(record)handleViewReview(record);}
+    if(tab==='goals' && id) {const record=performanceRecords.goals().find(g=>g.id===id);if(record)handleViewGoal(record);}
+    if(tab==='plans' && id) {const record=assignedPlans.find(p=>p.id===id);if(record){setSelectedPlan(record);setShowPlanDetail(true);}}
+    setActiveTab(tab);
+  };
+  const runTalentCalibration = (staffIds:string[],period:string) => {
+    const stamp=new Date().toISOString();const id=crypto.randomUUID();
+    const assessments=latestTalentAt(performanceOperationsStore.getSnapshot().talentAssessments,period.slice(-10));
+    performanceOperationsStore.saveCalibrationSession({id,title:`Talent calibration ${period}`,reviewCycle:period,facilitatorId:CURRENT_USER_ID,participantIds:[CURRENT_USER_ID],assessedStaffIds:staffIds,status:'in_progress',scheduledDate:stamp,createdAt:stamp,updatedAt:stamp});
+    for(const staffId of staffIds){const assessment=assessments.find(a=>a.staffId===staffId);if(assessment)performanceOperationsStore.saveCalibrationRating({id:`${id}:${staffId}`,sessionId:id,staffId,originalRating:assessment.performanceScore});}
+    setContextSessionId(id);setActiveTab('calibration');
+  };
+
   /** Lightweight "needs attention" counters shown next to sidebar sections. */
   const navCounts = useMemo<Record<string, number>>(() => ({
     plans: assignedPlans.filter(p => p.status === 'active').length,
@@ -656,15 +679,15 @@ export default function PerformanceManagement() {
             )}
 
             {activeTab === 'talent' && (
-              <NineBoxTalentGrid onRunCalibration={() => setActiveTab('calibration')} />
+              <NineBoxTalentGrid initialAssessmentId={contextAssessmentId} onRunCalibration={runTalentCalibration} />
             )}
 
             {activeTab === 'scorecard' && (
-              <EmployeeScorecardPanel />
+              <EmployeeScorecardPanel initialStaffId={contextStaffId} currentUserId={CURRENT_USER_ID} onNavigate={navigateEvidence} />
             )}
 
             {activeTab === 'skills' && (
-              <SkillsCareerPanel staffId={CURRENT_USER_ID} />
+              <SkillsCareerPanel staffId={contextStaffId} />
             )}
 
             {activeTab === 'pulse' && (
@@ -676,7 +699,7 @@ export default function PerformanceManagement() {
             )}
 
             {activeTab === 'calibration' && (
-              <CalibrationPanel currentUserId={CURRENT_USER_ID} />
+              <CalibrationPanel currentUserId={CURRENT_USER_ID} initialSessionId={contextSessionId} />
             )}
 
             {activeTab === 'nominations' && <PeerNominationsPanel embedded staff={mockStaff} currentUserId={CURRENT_USER_ID} />}
@@ -705,12 +728,12 @@ export default function PerformanceManagement() {
             )}
 
             {activeTab === 'summary' && (
-              <PerformanceExecutiveDashboard
+              <div><PerformanceActionQueue onNavigate={navigateEvidence}/><PerformanceExecutiveDashboard
                 goals={goals}
                 reviews={reviews}
                 conversations={conversations}
                 feedback={feedback}
-              />
+              /></div>
             )}
 
             {activeTab === 'analytics' && (

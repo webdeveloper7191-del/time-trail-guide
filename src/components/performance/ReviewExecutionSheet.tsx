@@ -85,10 +85,10 @@ export function ReviewExecutionSheet({
   const [loading, setLoading] = useState(false);
   const recognition = useRecognitionState();
   const draftKey = review ? reviewDraftKey(currentUserId, review.id, review.status) : '';
-  const hydrated = useRef('');
+  const [hydratedKey,setHydratedKey] = useState('');
   const submitted = useRef(false);
   useEffect(() => {
-    if (!open || !review) { hydrated.current = ''; return; }
+    if (!open || !review) { setHydratedKey(''); return; }
     const saved = reviewDrafts.get()[draftKey];
     const self = review.staffId === currentUserId;
     const existing = Object.fromEntries(review.ratings.map(r => [r.criteriaId, {
@@ -102,21 +102,18 @@ export function ReviewExecutionSheet({
     setDevelopmentPlan(saved?.developmentPlan ?? review.developmentPlan ?? '');
     setActiveStep(saved?.activeStep ?? 0);
     submitted.current = false;
-    hydrated.current = '';
-    // Hydration completes after the state update; never save the previous person's form.
-    const timer = setTimeout(() => { hydrated.current = draftKey; }, 0);
-    return () => clearTimeout(timer);
+    setHydratedKey(draftKey);
   }, [open, draftKey]);
   const persistDraft = () => {
     if (!review || submitted.current || !['pending_self', 'pending_manager'].includes(review.status)) return;
     reviewDrafts.set(previous => ({ ...previous, [draftKey]: { activeStep, ratings, summary, strengths, areasForImprovement, developmentPlan } }));
   };
   useEffect(() => {
-    if (!open || hydrated.current !== draftKey || submitted.current) return;
+    if (!open || hydratedKey !== draftKey || submitted.current) return;
     try { persistDraft(); } catch { toast.error('Draft could not be saved in this browser'); }
-  }, [open, draftKey, activeStep, ratings, summary, strengths, areasForImprovement, developmentPlan]);
+  }, [open, draftKey, hydratedKey, activeStep, ratings, summary, strengths, areasForImprovement, developmentPlan]);
   const handleClose = () => {
-    try { if (hydrated.current === draftKey) persistDraft(); onClose(); }
+    try { if (hydratedKey === draftKey) persistDraft(); onClose(); }
     catch { toast.error('Draft could not be saved; keep this review open and try again'); }
   };
 
@@ -182,7 +179,7 @@ export function ReviewExecutionSheet({
       }));
       await onSubmitSelfReview(review.id, reviewRatings, summary);
       submitted.current = true;
-      clearReviewDraft(draftKey);
+      try { clearReviewDraft(draftKey); } catch { toast.warning('Review submitted; local draft could not be removed'); }
       onClose();
     } finally {
       setLoading(false);
@@ -206,7 +203,7 @@ export function ReviewExecutionSheet({
         developmentPlan
       );
       submitted.current = true;
-      clearReviewDraft(draftKey);
+      try { clearReviewDraft(draftKey); } catch { toast.warning('Review submitted; local draft could not be removed'); }
       onClose();
     } finally {
       setLoading(false);

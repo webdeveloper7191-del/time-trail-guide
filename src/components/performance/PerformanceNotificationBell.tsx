@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useBrowserState } from '@/lib/browserState';
 import { toast } from 'sonner';
 import {
@@ -87,6 +87,12 @@ export function PerformanceNotificationBell({
     return activeTab === 'plans' ? planNotifications : performanceNotifications;
   }, [activeTab, performanceNotifications, planNotifications]);
 
+  useEffect(()=>{
+    const active=new Set([...getAllPerformanceNotifications(goals,reviews,conversations,currentUserId),...getAllPlanNotifications(plans,goals,reviews,conversations,currentUserId)].map(n=>n.id));
+    const saved=dismissals[currentUserId]??[];const retained=saved.filter(id=>active.has(id));
+    if(retained.length!==saved.length)try{setDismissals(p=>({...p,[currentUserId]:retained}));}catch{toast.error('Could not refresh notification dismissals');}
+  },[goals,reviews,conversations,plans,currentUserId]);
+
   const totalCount = performanceNotifications.length + planNotifications.length;
   const errorCount = 
     performanceNotifications.filter(n => n.severity === 'error').length + 
@@ -112,6 +118,7 @@ export function PerformanceNotificationBell({
   };
 
   const handleNotificationClick = (notification: PerformanceNotification | PlanNotification) => {
+    if ('planId' in notification && onViewPlan) { onViewPlan(notification.planId); handleClose(); return; }
     if ('entityType' in notification && notification.entityType) {
       switch (notification.entityType) {
         case 'goal':
