@@ -219,8 +219,8 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
     setAnalyzing(true);
     
     // Simulate processing time
-    setTimeout(() => {
-      const analyzed = feedback.map(f => {
+    const timer = setTimeout(() => {
+      const analyzed = feedback.filter(f => !f.isPrivate || f.toStaffId===currentUserId || f.fromStaffId===currentUserId).map(f => {
         const analysis = analyzeSentiment(f.message, lexicon);
         return {
           feedbackId: f.id,
@@ -229,20 +229,22 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
       });
       setResults(analyzed);
       setAnalyzing(false);
-    }, 500);
-  }, [feedback, lexicon]);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [feedback, lexicon, currentUserId]);
 
   // Filter by time range
   const filteredFeedback = useMemo(() => {
-    if (timeRange === 'all') return feedback;
+    const visible = feedback.filter(f=>!f.isPrivate || f.toStaffId===currentUserId || f.fromStaffId===currentUserId);
+    if (timeRange === 'all') return visible;
     
     const now = new Date();
     const cutoff = timeRange === '3m' ? subMonths(now, 3) :
                    timeRange === '6m' ? subMonths(now, 6) :
                    subMonths(now, 12);
     
-    return feedback.filter(f => parseISO(f.createdAt) >= cutoff);
-  }, [feedback, timeRange]);
+    return visible.filter(f => parseISO(f.createdAt) >= cutoff);
+  }, [feedback, timeRange, currentUserId]);
 
   const filteredResults = useMemo(() => {
     const feedbackIds = new Set(filteredFeedback.map(f => f.id));
@@ -284,13 +286,14 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
     
     filteredFeedback.forEach((f, idx) => {
       const month = format(parseISO(f.createdAt), 'MMM yyyy');
-      const result = filteredResults[idx];
+      const result = filteredResults.find(r=>r.feedbackId===f.id);
       
       if (!monthMap.has(month)) {
         monthMap.set(month, { positive: 0, negative: 0, neutral: 0, scores: [] });
       }
       
-      const entry = monthMap.get(month)!;
+      const entry = monthMap.get(month);
+      if(!entry) return;
       if (result) {
         entry[result.sentiment]++;
         entry.scores.push(result.score);
@@ -303,9 +306,9 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
         ...data,
         avgScore: data.scores.length > 0 
           ? ((data.scores.reduce((a, b) => a + b, 0) / data.scores.length + 1) / 2) * 100 
-          : 50,
+          : null,
       }))
-      .slice(-6);
+      .filter(row=>row.scores.length >= rules.analytics.minGroupSizeForBreakdown).sort((a,b)=>new Date(a.month).getTime()-new Date(b.month).getTime()).slice(-6);
   }, [filteredFeedback, filteredResults]);
 
   // Top keywords
@@ -337,8 +340,10 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
     );
   }
 
+  if(new Set(filteredFeedback.map(f=>f.toStaffId)).size < rules.analytics.minGroupSizeForBreakdown) return <Box><Typography color="text.secondary">Not enough data: sentiment requires at least {rules.analytics.minGroupSizeForBreakdown} staff in this group.</Typography><Button variant="outlined" onClick={()=>setShowSettingsDrawer(true)}>Settings</Button><SentimentSettingsDrawer open={showSettingsDrawer} onOpenChange={setShowSettingsDrawer} onSave={saveSentimentSettings} currentSettings={settings}/></Box>;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <Typography variant="caption" color="text.secondary">Local keyword analysis · {filteredFeedback.length} feedback records · {timeRange==='all'?'All dates':timeRange} · Includes seeded demonstration records where present.</Typography>
       {/* Header */}
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} spacing={2}>
         {!embedded && (
@@ -352,7 +357,7 @@ export function SentimentAnalysisPanel({ feedback, staff, currentUserId, embedde
             </Typography>
           </Stack>
           <Typography variant="body2" color="text.secondary">
-            AI-powered analysis of feedback text for sentiment trends
+            Local keyword-based feedback analysis — not AI or a performance rating
           </Typography>
         </Box>
       )}
