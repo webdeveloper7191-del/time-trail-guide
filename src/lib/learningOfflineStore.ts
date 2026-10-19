@@ -11,6 +11,7 @@ export async function downloadLearningCourse(course: Course) {
   const cache = await caches.open(cacheName);
   const settings = learningOfflineSettings.get();
   const urls = [...new Set(course.modules.flatMap(module => module.content.flatMap(content => content.url ? [content.url] : [])))];
+  if(!urls.length) throw new Error('No downloadable files are attached to this course. Add learning material first.');
   const staged: [string, Response][] = [];
   let bytes = new Blob([JSON.stringify(course)]).size;
   for (const url of urls) {
@@ -43,7 +44,8 @@ export async function removeLearningDownload(id: string) {
 export async function learningMediaUrl(url: string, offline: boolean) {
   const parsed = new URL(url, window.location.origin);
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Unsupported content address');
-  const response = await (await caches.open(cacheName)).match(parsed.href);
+  const permitted=Object.values(learningDownloads.get()).some(row=>cachedCourseAvailable(row)&&row.course.modules.some(m=>m.content.some(c=>c.url&&new URL(c.url,window.location.origin).href===parsed.href)));
+  const response = permitted ? await (await caches.open(cacheName)).match(parsed.href) : undefined;
   if (response) return URL.createObjectURL(await response.blob());
   if (offline) throw new Error('Download this course before viewing this file offline');
   return parsed.href;

@@ -91,7 +91,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
       return matchesSearch && matchesCategory && course.status === 'published';
     });
-  }, [searchQuery, categoryFilter]);
+  }, [searchQuery, categoryFilter, mockCourses]);
 
   const analytics = mockLearnerAnalytics;
   const streakData = mockLearningStreak;
@@ -163,7 +163,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       if (course) {
         const totalContent = course.modules.reduce((sum, m) => sum + m.content.length, 0);
         const completedContent = moduleProgress.reduce((sum, p) => sum + p.completedContentIds.length, 0);
-        const newProgress = Math.round((completedContent / totalContent) * 100);
+        const newProgress = totalContent ? Math.round((completedContent / totalContent) * 100) : 0;
         
         return {
           ...e,
@@ -221,7 +221,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     }
     
     setSelectedCourse(null);
-  }, [enrollments]);
+  }, [enrollments, mockCourses]);
 
   const handleAssessmentSubmit = useCallback(async (
     enrollmentId: string, 
@@ -265,7 +265,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     }));
     
     return { score, passed };
-  }, [enrollments]);
+  }, [enrollments, mockCourses]);
 
   const getEnrollmentForCourse = (courseId: string) => 
     myEnrollments.find(e => e.courseId === courseId);

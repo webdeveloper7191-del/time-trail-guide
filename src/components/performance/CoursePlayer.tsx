@@ -147,7 +147,7 @@ export function CoursePlayer({
       // Check if course is complete
       if (currentModuleIndex === course.modules.length - 1) {
         onCourseComplete(enrollment.id);
-        toast.success('🎉 Course completed! Certificate earned.');
+        toast.success('Course completed!');
       } else {
         setCurrentModuleIndex(prev => prev + 1);
         setCurrentContentIndex(0);
@@ -162,10 +162,8 @@ export function CoursePlayer({
     const assessment = currentModule.assessment;
     const priorAttempts=enrollment.assessmentAttempts.filter(a=>a.assessmentId===assessment.id);
     if(!canAttemptAssessment(assessment,priorAttempts)){toast.error('Assessment attempt limit reached');return;}
-    const result = await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);
-    const attempts = enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id);
-    const retakeLimit = assessment.retakeLimit ?? assessment.maxAttempts ?? Infinity;
-    const canRetake = attempts.length < retakeLimit;
+    let result: {score:number;passed:boolean};
+    try {result=await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);}catch(error){toast.error(error instanceof Error?error.message:'Could not save assessment');return;}
     setAssessmentResult(result);
     setAssessmentSubmitted(true);
     
