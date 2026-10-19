@@ -37,6 +37,7 @@ import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
 // New advanced performance features
 import { Feedback360Panel } from '@/components/performance/Feedback360Panel';
 import { NineBoxTalentGrid } from '@/components/performance/NineBoxTalentGrid';
+import { EmployeeScorecardPanel } from '@/components/performance/EmployeeScorecardPanel';
 import { SkillsCareerPanel } from '@/components/performance/SkillsCareerPanel';
 import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
 import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
