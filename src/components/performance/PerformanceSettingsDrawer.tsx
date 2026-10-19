@@ -1,45 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Stack, Typography, Divider } from '@mui/material';
 import { Card } from '@/components/mui/Card';
 import { Button } from '@/components/mui/Button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, Sparkles, Coins, Eye, EyeOff, Users, Shield } from 'lucide-react';
 import { PrimaryOffCanvas } from '@/components/ui/off-canvas/PrimaryOffCanvas';
 import { toast } from 'sonner';
 
-export interface PerformanceSettings {
-  recognition: {
-    visibleInEmployeePortal: boolean;
-    hideIndependentPraise: boolean;
-    employeesCanAwardPoints: boolean;
-    maxPointsPerPraise: number;
-    requireApprovalForRewards: boolean;
-  };
-  surveys: {
-    anonymousByDefault: boolean;
-  };
-  goals: {
-    allowSelfCreation: boolean;
-  };
-}
-
-const defaultSettings: PerformanceSettings = {
-  recognition: {
-    visibleInEmployeePortal: true,
-    hideIndependentPraise: false,
-    employeesCanAwardPoints: true,
-    maxPointsPerPraise: 50,
-    requireApprovalForRewards: false,
-  },
-  surveys: {
-    anonymousByDefault: true,
-  },
-  goals: {
-    allowSelfCreation: true,
-  },
-};
+import { performanceSettingsStore, usePerformanceSettings, type PerformanceSettings } from '@/lib/performanceSettingsStore';
+export type { PerformanceSettings } from '@/lib/performanceSettingsStore';
 
 interface PerformanceSettingsDrawerProps {
   open: boolean;
@@ -51,20 +22,25 @@ interface PerformanceSettingsDrawerProps {
 export function PerformanceSettingsDrawer({ 
   open, 
   onOpenChange,
-  settings = defaultSettings,
+  settings,
   onSave,
 }: PerformanceSettingsDrawerProps) {
-  const [localSettings, setLocalSettings] = useState<PerformanceSettings>(settings);
+  const savedSettings = usePerformanceSettings();
+  const [localSettings, setLocalSettings] = useState<PerformanceSettings>(settings ?? savedSettings);
   const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (open) setLocalSettings(structuredClone(settings ?? savedSettings));
+  }, [open, settings, savedSettings]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      performanceSettingsStore.save(localSettings);
       onSave?.(localSettings);
       toast.success('Settings saved successfully');
       onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to save settings in this browser');
     } finally {
       setSaving(false);
     }
@@ -183,18 +159,10 @@ export function PerformanceSettingsDrawer({
                         Limit points employees can award at once
                       </p>
                     </div>
-                    <div className="flex gap-1">
-                      {[25, 50, 100].map(pts => (
-                        <Badge
-                          key={pts}
-                          variant={localSettings.recognition.maxPointsPerPraise === pts ? 'default' : 'outline'}
-                          className="cursor-pointer"
-                          onClick={() => updateRecognition('maxPointsPerPraise', pts)}
-                        >
-                          {pts}
-                        </Badge>
-                      ))}
-                    </div>
+                    <Select value={String(localSettings.recognition.maxPointsPerPraise)} onValueChange={value => updateRecognition('maxPointsPerPraise', Number(value))}>
+                      <SelectTrigger className="w-24" aria-label="Max points per praise"><SelectValue /></SelectTrigger>
+                      <SelectContent>{[25, 50, 100].map(points => <SelectItem key={points} value={String(points)}>{points}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
                 </div>
               )}
