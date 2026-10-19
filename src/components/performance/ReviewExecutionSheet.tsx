@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { reviewDrafts, reviewDraftKey, clearReviewDraft } from '@/lib/performanceExperienceStore';
+import { useRecognition } from '@/lib/recognitionStore';
 import {
   Box,
   Stack,
@@ -81,6 +83,42 @@ export function ReviewExecutionSheet({
   const [areasForImprovement, setAreasForImprovement] = useState<string[]>(['', '', '']);
   const [developmentPlan, setDevelopmentPlan] = useState('');
   const [loading, setLoading] = useState(false);
+  const recognition = useRecognition();
+  const draftKey = review ? reviewDraftKey(currentUserId, review.id, review.status) : '';
+  const hydrated = useRef('');
+  const submitted = useRef(false);
+  useEffect(() => {
+    if (!open || !review) { hydrated.current = ''; return; }
+    const saved = reviewDrafts.get()[draftKey];
+    const self = review.staffId === currentUserId;
+    const existing = Object.fromEntries(review.ratings.map(r => [r.criteriaId, {
+      rating: (self ? r.selfRating : r.managerRating) ?? 0,
+      comments: (self ? r.selfComments : r.managerComments) ?? '',
+    }]));
+    setRatings(saved?.ratings ?? existing);
+    setSummary(saved?.summary ?? (self ? review.selfSummary : review.managerSummary) ?? '');
+    setStrengths(saved?.strengths ?? review.strengths ?? ['', '', '']);
+    setAreasForImprovement(saved?.areasForImprovement ?? review.areasForImprovement ?? ['', '', '']);
+    setDevelopmentPlan(saved?.developmentPlan ?? review.developmentPlan ?? '');
+    setActiveStep(saved?.activeStep ?? 0);
+    submitted.current = false;
+    hydrated.current = '';
+    // Hydration completes after the state update; never save the previous person's form.
+    const timer = setTimeout(() => { hydrated.current = draftKey; }, 0);
+    return () => clearTimeout(timer);
+  }, [open, draftKey]);
+  const persistDraft = () => {
+    if (!review || submitted.current || !['pending_self', 'pending_manager'].includes(review.status)) return;
+    reviewDrafts.set(previous => ({ ...previous, [draftKey]: { activeStep, ratings, summary, strengths, areasForImprovement, developmentPlan } }));
+  };
+  useEffect(() => {
+    if (!open || hydrated.current !== draftKey || submitted.current) return;
+    try { persistDraft(); } catch { toast.error('Draft could not be saved in this browser'); }
+  }, [open, draftKey, activeStep, ratings, summary, strengths, areasForImprovement, developmentPlan]);
+  const handleClose = () => {
+    try { if (hydrated.current === draftKey) persistDraft(); onClose(); }
+    catch { toast.error('Draft could not be saved; keep this review open and try again'); }
+  };
 
   const staffMember = useMemo(
     () => staff.find((s) => s.id === review?.staffId),
@@ -143,6 +181,8 @@ export function ReviewExecutionSheet({
         selfComments: ratings[c.id]?.comments || '',
       }));
       await onSubmitSelfReview(review.id, reviewRatings, summary);
+      submitted.current = true;
+      clearReviewDraft(draftKey);
       onClose();
     } finally {
       setLoading(false);
@@ -165,6 +205,8 @@ export function ReviewExecutionSheet({
         areasForImprovement.filter((a) => a.trim()),
         developmentPlan
       );
+      submitted.current = true;
+      clearReviewDraft(draftKey);
       onClose();
     } finally {
       setLoading(false);
@@ -370,7 +412,7 @@ export function ReviewExecutionSheet({
   );
 
   const renderRecognitionSection = () => {
-    const reviewPraise = mockPraisePosts.filter(p => 
+    const reviewPraise = recognition.posts.filter(p => 
       p.toStaffId === review.staffId && 
       isWithinInterval(parseISO(p.createdAt), { start: parseISO(review.periodStart), end: parseISO(review.periodEnd) })
     );
@@ -453,7 +495,7 @@ export function ReviewExecutionSheet({
   const isLastStep = activeStep === steps.length - 1;
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
+    <Sheet open={open} onOpenChange={value => { if (!value) handleClose(); }}>
       <SheetContent className="w-[700px] sm:max-w-[700px] p-0">
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
@@ -486,7 +528,7 @@ export function ReviewExecutionSheet({
                   </Stack>
                 </Box>
               </Stack>
-              <IconButton size="small" onClick={onClose}>
+              <IconButton aria-label="Close review" size="small" onClick={handleClose}>
                 <X className="h-4 w-4" />
               </IconButton>
             </Stack>
@@ -536,7 +578,7 @@ export function ReviewExecutionSheet({
                 Back
               </Button>
               <Stack direction="row" spacing={2}>
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={handleClose}>
                   {isViewOnly ? 'Close' : 'Save Draft'}
                 </Button>
                 {!isViewOnly && (
