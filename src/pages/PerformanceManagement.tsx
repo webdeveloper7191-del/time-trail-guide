@@ -37,6 +37,7 @@ import { StartReviewDrawer } from '@/components/performance/StartReviewDrawer';
 // New advanced performance features
 import { Feedback360Panel } from '@/components/performance/Feedback360Panel';
 import { NineBoxTalentGrid } from '@/components/performance/NineBoxTalentGrid';
+import { EmployeeScorecardPanel } from '@/components/performance/EmployeeScorecardPanel';
 import { SkillsCareerPanel } from '@/components/performance/SkillsCareerPanel';
 import { PulseSurveyPanel } from '@/components/performance/PulseSurveyPanel';
 import { WellbeingDashboard } from '@/components/performance/WellbeingDashboard';
@@ -61,7 +62,7 @@ import { mockStaff } from '@/data/mockStaffData';
 import { performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { ConfigureLink, PERFORMANCE_CONFIG_EVENT, tabConfigTargets, type PerformanceConfigTarget } from '@/components/performance/ConfigureLink';
@@ -432,6 +433,7 @@ export default function PerformanceManagement() {
     { value: 'happiness', label: 'Happiness', icon: Smile },
     { value: 'conversations', label: '1:1s', icon: MessageSquare },
     { value: 'talent', label: '9-Box', icon: Grid3X3 },
+    { value: 'scorecard', label: 'Scorecard', icon: Gauge },
     { value: 'skills', label: 'Skills', icon: Compass },
     { value: 'pulse', label: 'Pulse', icon: Activity },
     { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
@@ -654,7 +656,11 @@ export default function PerformanceManagement() {
             )}
 
             {activeTab === 'talent' && (
-              <NineBoxTalentGrid />
+              <NineBoxTalentGrid onRunCalibration={() => setActiveTab('calibration')} />
+            )}
+
+            {activeTab === 'scorecard' && (
+              <EmployeeScorecardPanel />
             )}
 
             {activeTab === 'skills' && (

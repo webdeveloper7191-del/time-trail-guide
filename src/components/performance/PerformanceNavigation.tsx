@@ -6,7 +6,7 @@ import {
   Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, 
   Sparkles, Smile, TrendingUp, ChevronDown, Check, Heart, Wallet,
   UserPlus, Calendar, Lightbulb, Brain, GitCompareArrows, Route, SlidersHorizontal,
-  LucideIcon
+  Gauge, LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,6 +58,7 @@ const tabGroups: TabGroup[] = [
     label: 'Talent',
     items: [
       { value: 'talent', label: '9-Box Grid', icon: Grid3X3 },
+      { value: 'scorecard', label: 'Scorecard', icon: Gauge },
       { value: 'skills', label: 'Skills & Careers', icon: Compass },
       { value: 'career-pathing', label: 'Career Paths', icon: Route },
       { value: 'succession', label: 'Succession', icon: Users },

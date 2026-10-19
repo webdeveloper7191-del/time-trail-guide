@@ -68,6 +68,7 @@ export const performanceTabGroups: PerfTabGroup[] = [
     icon: Users,
     items: [
       { value: 'talent', label: '9-Box Grid', icon: Grid3X3 },
+      { value: 'scorecard', label: 'Scorecard', icon: Gauge },
       { value: 'skills', label: 'Skills & Careers', icon: Compass },
       { value: 'career-pathing', label: 'Career Paths', icon: Route },
       { value: 'succession', label: 'Succession', icon: Users },

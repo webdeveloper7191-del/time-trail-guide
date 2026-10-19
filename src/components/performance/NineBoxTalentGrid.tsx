@@ -47,6 +47,7 @@ import { performanceOperationsStore, usePerformanceOperations } from '@/lib/perf
 interface NineBoxTalentGridProps {
   assessments?: TalentAssessment[];
   onSelectStaff?: (staffId: string) => void;
+  onRunCalibration?: () => void;
 }
 
 const getBoxColor = (performance: PerformanceLevel, potential: PotentialLevel) => {
@@ -78,7 +79,7 @@ const getFlightRiskStyle = (risk: string) => {
   return styles[risk] || styles.low;
 };
 
-export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff }: NineBoxTalentGridProps) {
+export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff, onRunCalibration }: NineBoxTalentGridProps) {
   const operations = usePerformanceOperations();
   const assessments = initialAssessments ?? operations.talentAssessments;
   const [selectedAssessment, setSelectedAssessment] = useState<TalentAssessment | null>(null);
@@ -90,23 +91,38 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
     return mockStaff.find(s => s.id === id);
   };
 
+  // Only the most recent saved assessment per staff member places them on the grid.
+  const latestAssessments = useMemo(() => {
+    const byStaff = new Map<string, TalentAssessment>();
+    assessments.forEach(a => {
+      const existing = byStaff.get(a.staffId);
+      if (!existing || new Date(a.assessmentDate || a.updatedAt) > new Date(existing.assessmentDate || existing.updatedAt)) {
+        byStaff.set(a.staffId, a);
+      }
+    });
+    return [...byStaff.values()];
+  }, [assessments]);
+
+  const assessedStaffIds = useMemo(() => new Set(latestAssessments.map(a => a.staffId)), [latestAssessments]);
+  const unassessedStaff = useMemo(() => mockStaff.filter(s => !assessedStaffIds.has(s.id)), [assessedStaffIds]);
+
   const gridData = useMemo(() => {
     const grid: Record<string, TalentAssessment[]> = {};
-    
+
     const levels: PerformanceLevel[] = ['low', 'medium', 'high'];
     const potentials: PotentialLevel[] = ['high', 'medium', 'low'];
 
     potentials.forEach(potential => {
       levels.forEach(performance => {
         const key = `${performance}-${potential}`;
-        grid[key] = assessments.filter(
+        grid[key] = latestAssessments.filter(
           a => a.performanceLevel === performance && a.potentialLevel === potential
         );
       });
     });
 
     return grid;
-  }, [assessments]);
+  }, [latestAssessments]);
 
   const getBoxPosition = (performance: PerformanceLevel, potential: PotentialLevel) => {
     return getNineBoxPositions().find(
@@ -341,6 +357,12 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
                 </Box>
               )}
             </Stack>
+
+            <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+              <Button variant="outlined" startIcon={<Edit3 size={16} />} onClick={() => handleEditAssessment(selectedAssessment)}>
+                Edit assessment
+              </Button>
+            </div>
           </Box>
         </SheetContent>
       </Sheet>
@@ -359,7 +381,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<TrendingUp size={16} />}>
+          <Button variant="outlined" startIcon={<TrendingUp size={16} />} onClick={onRunCalibration}>
             Run Calibration
           </Button>
           <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowAssessmentDrawer(true)}>
@@ -451,6 +473,30 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
           </Stack>
         </Box>
       </Card>
+
+      {unassessedStaff.length > 0 && (
+        <Card sx={{ p: 3, mt: 3 }}>
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            Not yet assessed ({unassessedStaff.length})
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            These staff members have no saved performance × potential assessment, so they do not appear on the grid.
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {unassessedStaff.map(staff => (
+              <Chip
+                key={staff.id}
+                avatar={<Avatar sx={{ width: 24, height: 24, fontSize: 11 }}>{staff.firstName.charAt(0)}</Avatar>}
+                label={`${staff.firstName} ${staff.lastName}`}
+                size="small"
+                variant="outlined"
+                onClick={() => { setEditingAssessment(null); setShowAssessmentDrawer(true); }}
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Stack>
+        </Card>
+      )}
 
       {renderDetailSheet()}
       
