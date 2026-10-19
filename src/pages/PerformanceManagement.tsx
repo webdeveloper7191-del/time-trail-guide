@@ -432,6 +432,7 @@ export default function PerformanceManagement() {
     { value: 'happiness', label: 'Happiness', icon: Smile },
     { value: 'conversations', label: '1:1s', icon: MessageSquare },
     { value: 'talent', label: '9-Box', icon: Grid3X3 },
+    { value: 'scorecard', label: 'Scorecard', icon: Gauge },
     { value: 'skills', label: 'Skills', icon: Compass },
     { value: 'pulse', label: 'Pulse', icon: Activity },
     { value: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
@@ -654,7 +655,11 @@ export default function PerformanceManagement() {
             )}
 
             {activeTab === 'talent' && (
-              <NineBoxTalentGrid />
+              <NineBoxTalentGrid onRunCalibration={() => setActiveTab('calibration')} />
+            )}
+
+            {activeTab === 'scorecard' && (
+              <EmployeeScorecardPanel />
             )}
 
             {activeTab === 'skills' && (
