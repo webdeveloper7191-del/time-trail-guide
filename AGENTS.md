@@ -1,5 +1,9 @@
 # Architecture rules
 
+- Performance task records and skills/career collections use shared browserState hooks in performanceLocalData; per-person gaps and manager insights are keyed by staff ID so switching people cannot reuse another person's edits.
+- Calibration distribution derives from saved ratings in non-cancelled sessions, preferring calibrated values and rounding to the nearest rating bucket; wellbeing analysis upserts indicators for all staff with check-ins and uses their latest dated entry.
+- Performance settings persist before reporting success, refresh drafts on drawer opening, and write existing goal, survey and reward policies through their authoritative stores.
+
 - Role-preview dashboards derive read-only summaries from shared module stores with explicit timesheet date/location filters; attendance is never labelled roster coverage and preview profiles never imply authenticated access.
 - Staff dashboard and employee portal share one preview profile and portal tab query links, so self-service navigation uses a consistent identity and destination.
 

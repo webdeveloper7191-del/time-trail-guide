@@ -1,4 +1,5 @@
 import { exportToCSV } from '@/lib/reportExport';
+import { useBrowserState } from '@/lib/browserState';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
@@ -78,10 +79,9 @@ function loadSaved<T>(key: string, seed: T[]): T[] {
 }
 
 export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false }: SuccessionPlanningPanelProps) {
-  const [keyRoles, setKeyRoles] = useState<KeyRole[]>(() => loadSaved(ROLES_KEY, initialMockKeyRoles));
-  const [candidates, setCandidates] = useState<SuccessionCandidate[]>(() => loadSaved(CANDIDATES_KEY, initialMockCandidates));
-  useEffect(() => { try { localStorage.setItem(ROLES_KEY, JSON.stringify(keyRoles)); } catch { /* ignore */ } }, [keyRoles]);
-  useEffect(() => { try { localStorage.setItem(CANDIDATES_KEY, JSON.stringify(candidates)); } catch { /* ignore */ } }, [candidates]);
+  const [keyRoles, setKeyRoles] = useBrowserState<KeyRole[]>(ROLES_KEY, initialMockKeyRoles);
+  const [candidates, setCandidates] = useBrowserState<SuccessionCandidate[]>(CANDIDATES_KEY, initialMockCandidates);
+  const [roleStatus, setRoleStatus] = useState<'active' | 'archived'>('active');
   
   const [activeView, setActiveView] = useState<'pipeline' | 'candidates'>('pipeline');
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
@@ -103,7 +103,9 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
   const getStaffMember = (staffId: string) => staff.find(s => s.id === staffId);
 
   // Bulk action handlers for roles
-  const handleRoleSelectAll = () => setSelectedRoleIds(new Set(keyRoles.map(r => r.id)));
+  const visibleRoles = keyRoles.filter(role => Boolean(role.archived) === (roleStatus === 'archived') && `${role.title} ${role.department}`.toLowerCase().includes(searchQuery.toLowerCase()));
+  const visibleCandidates = candidates.filter(candidate => visibleRoles.some(role => role.id === candidate.keyRoleId));
+  const handleRoleSelectAll = () => setSelectedRoleIds(new Set(visibleRoles.map(r => r.id)));
   const handleRoleClearSelection = () => setSelectedRoleIds(new Set());
   const toggleRoleSelection = (id: string) => {
     setSelectedRoleIds(prev => {
@@ -120,12 +122,12 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
       { header: 'Vacancy risk', accessor: (r: any) => r.vacancyRisk ?? '' },
       { header: 'Candidates', accessor: (r: any) => candidates.filter(c => c.keyRoleId === r.id).length },
     ], keyRoles.filter(r => selectedRoleIds.has(r.id)), 'succession-roles'); toast.success(`Exported ${selectedRoleIds.size} role(s)`); handleRoleClearSelection(); } },
-    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedRoleIds.size} role(s) archived`); handleRoleClearSelection(); } },
-    { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { setKeyRoles(prev => prev.filter(r => !selectedRoleIds.has(r.id))); toast.success(`${selectedRoleIds.size} role(s) deleted`); handleRoleClearSelection(); }, variant: 'destructive' as const },
+    { id: 'archive', label: roleStatus === 'archived' ? 'Restore' : 'Archive', icon: <Archive size={14} />, onClick: () => { setKeyRoles(prev => prev.map(role => selectedRoleIds.has(role.id) ? { ...role, archived: roleStatus !== 'archived' } : role)); toast.success(`${selectedRoleIds.size} role(s) ${roleStatus === 'archived' ? 'restored' : 'archived'}`); handleRoleClearSelection(); } },
+    { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { setKeyRoles(prev => prev.filter(r => !selectedRoleIds.has(r.id))); setCandidates(prev => prev.filter(candidate => !selectedRoleIds.has(candidate.keyRoleId))); toast.success(`${selectedRoleIds.size} role(s) deleted`); handleRoleClearSelection(); }, variant: 'destructive' as const },
   ];
 
   // Bulk action handlers for candidates
-  const handleCandidateSelectAll = () => setSelectedCandidateIds(new Set(candidates.map(c => c.id)));
+  const handleCandidateSelectAll = () => setSelectedCandidateIds(new Set(visibleCandidates.map(c => c.id)));
   const handleCandidateClearSelection = () => setSelectedCandidateIds(new Set());
   const toggleCandidateSelection = (id: string) => {
     setSelectedCandidateIds(prev => {
@@ -146,13 +148,13 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
   ];
 
   const pipelines = useMemo<SuccessionPipeline[]>(() => {
-    return keyRoles.map(role => {
+    return visibleRoles.map(role => {
       const roleCandidates = candidates.filter(c => c.keyRoleId === role.id);
       const readyNowCount = roleCandidates.filter(c => c.readiness === 'ready_now').length;
       const benchStrength = roleCandidates.length > 0 ? (readyNowCount / roleCandidates.length) * 100 : 0;
       return { keyRole: role, candidates: roleCandidates, readyNowCount, benchStrength };
     });
-  }, [keyRoles, candidates]);
+  }, [keyRoles, candidates, roleStatus, searchQuery]);
 
   const stats = useMemo(() => {
     const totalRoles = keyRoles.length;
@@ -503,7 +505,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
           </TableRow>
         </TableHeader>
         <TableBody>
-          {candidates.map((candidate) => {
+          {visibleCandidates.map((candidate) => {
             const staffMember = getStaffMember(candidate.staffId);
             const keyRole = keyRoles.find(r => r.id === candidate.keyRoleId);
             const isReadyNow = candidate.readiness === 'ready_now';
@@ -705,11 +707,15 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
             ),
           }}
         />
+        <Select value={roleStatus} onValueChange={(value: 'active' | 'archived') => { setRoleStatus(value); handleRoleClearSelection(); handleCandidateClearSelection(); }}>
+          <SelectTrigger className="w-40" aria-label="Role status"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="active">Active roles</SelectItem><SelectItem value="archived">Archived roles</SelectItem></SelectContent>
+        </Select>
         <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
         {activeView === 'pipeline' ? (
           <InlineBulkActions
             selectedCount={selectedRoleIds.size}
-            totalCount={keyRoles.length}
+            totalCount={visibleRoles.length}
             onClearSelection={handleRoleClearSelection}
             onSelectAll={handleRoleSelectAll}
             actions={roleBulkActions}
@@ -718,7 +724,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
         ) : (
           <InlineBulkActions
             selectedCount={selectedCandidateIds.size}
-            totalCount={candidates.length}
+            totalCount={visibleCandidates.length}
             onClearSelection={handleCandidateClearSelection}
             onSelectAll={handleCandidateSelectAll}
             actions={candidateBulkActions}
@@ -745,7 +751,7 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
           setAddCandidateForRoleId(undefined);
         }}
         staff={staff}
-        keyRoles={keyRoles}
+        keyRoles={keyRoles.filter(role => !role.archived)}
         selectedRoleId={addCandidateForRoleId}
         existingCandidates={candidates}
         onSave={handleAddCandidate}
