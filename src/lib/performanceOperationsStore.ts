@@ -26,7 +26,7 @@ import {
 } from '@/data/mockAdvancedPerformanceData';
 import { mockPIPs } from '@/data/mockCompensationData';
 import { mockObjectives } from '@/data/mockOKRData';
-import { analyseWellbeing } from '@/lib/engagementLogic';
+import { updateWellbeingIndicators } from '@/lib/engagementLogic';
 import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 
 export interface HappinessEntry {
@@ -142,7 +142,8 @@ export const performanceOperationsStore = {
   },
   addWellbeingCheckIn(data: Omit<WellbeingCheckIn, 'id' | 'createdAt'>) {
     const item: WellbeingCheckIn = { ...data, id: uid('wellbeing-checkin'), createdAt: now() };
-    commit({ ...state, wellbeingCheckIns: [item, ...state.wellbeingCheckIns], wellbeingIndicators: state.wellbeingIndicators.map(i=>i.staffId===item.staffId?analyseWellbeing(i,item,performanceTaxonomyStore.get().rules.wellbeing):i) });
+    const checkIns = [item, ...state.wellbeingCheckIns];
+    commit({ ...state, wellbeingCheckIns: checkIns, wellbeingIndicators: updateWellbeingIndicators(state.wellbeingIndicators, checkIns, performanceTaxonomyStore.get().rules.wellbeing) });
     return item;
   },
   savePulseSurvey(survey: PulseSurvey) {
@@ -161,7 +162,7 @@ export const performanceOperationsStore = {
     return item;
   },
   analyseWellbeing() {
-    commit({...state,wellbeingIndicators:state.wellbeingIndicators.map(i=>analyseWellbeing(i,state.wellbeingCheckIns.filter(c=>c.staffId===i.staffId).sort((a,b)=>b.date.localeCompare(a.date))[0],performanceTaxonomyStore.get().rules.wellbeing))});
+    commit({...state,wellbeingIndicators:updateWellbeingIndicators(state.wellbeingIndicators,state.wellbeingCheckIns,performanceTaxonomyStore.get().rules.wellbeing)});
   },
   savePip(pip: PerformanceImprovementPlan) {
     const exists = state.pips.some(item => item.id === pip.id);

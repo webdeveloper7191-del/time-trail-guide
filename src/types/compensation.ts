@@ -202,6 +202,7 @@ export type SuccessionRisk = 'low' | 'medium' | 'high' | 'critical';
 
 export interface KeyRole {
   id: string;
+  archived?: boolean;
   title: string;
   department: string;
   currentHolderId?: string;
