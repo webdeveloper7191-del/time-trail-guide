@@ -26,7 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import { CareerPath, CareerLevel, StaffCareerProgress, SkillLevel, skillLevelLabels, skillLevelValues } from '@/types/advancedPerformance';
-import { mockCareerPaths, mockCareerProgress, mockSkills, mockStaffSkills } from '@/data/mockAdvancedPerformanceData';
+import { usePerformanceSkills, usePerformanceStaffSkills, usePerformanceCareerPaths, usePerformanceCareerProgress } from '@/lib/performanceLocalData';
 import { toast } from 'sonner';
 
 interface EmployeeCareerPathingPanelProps {
@@ -42,6 +42,10 @@ const levelColors = [
 ];
 
 export function EmployeeCareerPathingPanel({ currentUserId }: EmployeeCareerPathingPanelProps) {
+  const [skills] = usePerformanceSkills();
+  const [staffSkillsData] = usePerformanceStaffSkills();
+  const [careerPaths] = usePerformanceCareerPaths();
+  const [careerProgressList, setCareerProgressList] = usePerformanceCareerProgress();
   const careerRules = usePerformanceRules().careerPathing;
   const [showTargetSheet, setShowTargetSheet] = useState(false);
   const [selectedTargetLevel, setSelectedTargetLevel] = useState<string>('');
@@ -50,13 +54,12 @@ export function EmployeeCareerPathingPanel({ currentUserId }: EmployeeCareerPath
 
   // Get current career progress for user
   const careerProgress = useMemo(() => {
-    // Use staff-1 for demo since currentUserId might not have data
-    return mockCareerProgress.find(p => p.staffId === 'staff-1') || mockCareerProgress[0];
-  }, [currentUserId]);
+    return careerProgressList.find(p => p.staffId === currentUserId);
+  }, [currentUserId, careerProgressList]);
 
   const currentPath = useMemo(() => {
-    return mockCareerPaths.find(p => p.id === careerProgress?.currentPathId) || mockCareerPaths[0];
-  }, [careerProgress]);
+    return careerPaths.find(p => p.id === careerProgress?.currentPathId);
+  }, [careerProgress, careerPaths]);
 
   const currentLevel = useMemo(() => {
     if (!currentPath || !careerProgress) return null;
@@ -68,14 +71,14 @@ export function EmployeeCareerPathingPanel({ currentUserId }: EmployeeCareerPath
     return currentPath.levels.find(l => l.id === careerProgress.targetLevelId);
   }, [currentPath, careerProgress]);
 
-  const staffSkills = mockStaffSkills['staff-1'] || [];
+  const staffSkills = staffSkillsData[currentUserId] || [];
 
   // Calculate skill gaps for each level
   const calculateSkillGaps = (level: CareerLevel) => {
     const gaps: { skillName: string; current: SkillLevel; required: SkillLevel; met: boolean }[] = [];
     
     level.requiredSkills.forEach(req => {
-      const skill = mockSkills.find(s => s.id === req.skillId);
+      const skill = skills.find(s => s.id === req.skillId);
       const staffSkill = staffSkills.find(s => s.skillId === req.skillId);
       const currentLevel = staffSkill?.currentLevel || 'none';
       const met = skillLevelValues[currentLevel] >= skillLevelValues[req.minLevel];
@@ -111,6 +114,8 @@ export function EmployeeCareerPathingPanel({ currentUserId }: EmployeeCareerPath
       toast.error('Please select a target level');
       return;
     }
+    if (!careerProgress || !availableTargets.some(level => level.id === selectedTargetLevel)) return;
+    setCareerProgressList(previous => previous.map(progress => progress.staffId === currentUserId ? { ...progress, targetLevelId: selectedTargetLevel } : progress));
     toast.success('Career target updated successfully!');
     setShowTargetSheet(false);
   };

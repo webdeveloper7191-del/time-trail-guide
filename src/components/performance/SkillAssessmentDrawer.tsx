@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Stack, 
@@ -19,7 +19,7 @@ import {
   skillLevelLabels,
   skillLevelValues,
 } from '@/types/advancedPerformance';
-import { mockSkills } from '@/data/mockAdvancedPerformanceData';
+import { usePerformanceSkills } from '@/lib/performanceLocalData';
 import { toast } from 'sonner';
 
 interface SkillAssessmentDrawerProps {
@@ -50,15 +50,24 @@ export function SkillAssessmentDrawer({
   staffId, 
   existingSkill 
 }: SkillAssessmentDrawerProps) {
+  const [skills] = usePerformanceSkills();
   const [skillId, setSkillId] = useState(existingSkill?.skillId || '');
   const [currentLevel, setCurrentLevel] = useState<SkillLevel>(existingSkill?.currentLevel || 'beginner');
   const [targetLevel, setTargetLevel] = useState<SkillLevel>(existingSkill?.targetLevel || 'intermediate');
   const [notes, setNotes] = useState(existingSkill?.notes || '');
 
+  useEffect(() => {
+    if (!open) return;
+    setSkillId(existingSkill?.skillId ?? '');
+    setCurrentLevel(existingSkill?.currentLevel ?? 'beginner');
+    setTargetLevel(existingSkill?.targetLevel ?? 'intermediate');
+    setNotes(existingSkill?.notes ?? '');
+  }, [open, existingSkill, staffId]);
+
   const handleSave = () => {
     if (!skillId) return;
     
-    const skill = mockSkills.find(s => s.id === skillId);
+    const skill = skills.find(s => s.id === skillId);
     const staffSkill: Partial<StaffSkill> = {
       skillId,
       currentLevel,
@@ -79,7 +88,7 @@ export function SkillAssessmentDrawer({
     setNotes('');
   };
 
-  const selectedSkill = mockSkills.find(s => s.id === skillId);
+  const selectedSkill = skills.find(s => s.id === skillId);
   const currentLevelStyle = getSkillLevelColor(currentLevel);
   const targetLevelStyle = getSkillLevelColor(targetLevel);
 
@@ -111,7 +120,7 @@ export function SkillAssessmentDrawer({
                   <SelectValue placeholder="Select a skill to assess..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockSkills.map((skill) => (
+                  {skills.map((skill) => (
                     <SelectItem key={skill.id} value={skill.id}>
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <span>{skill.name}</span>

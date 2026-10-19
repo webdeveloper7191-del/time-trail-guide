@@ -18,6 +18,29 @@ export function analyseWellbeing(indicator: WellbeingIndicator, checkIn: Wellbei
   if(engagementScore<=3) riskFactors.push('Low reported energy');
   return {...indicator,workloadScore,engagementScore,riskFactors,riskLevel:riskFactors.length>=4?'critical':riskFactors.length>=2?'high':riskFactors.length?'moderate':'low',recommendations:riskFactors.length?['Discuss workload and support needs with the staff member','Review upcoming shifts, breaks and leave']:['Continue regular wellbeing check-ins']};
 }
+export function updateWellbeingIndicators(indicators: WellbeingIndicator[], checkIns: WellbeingCheckIn[], rules: PerformanceRules['wellbeing']): WellbeingIndicator[] {
+  const result = [...indicators];
+  const latest = new Map<string, WellbeingCheckIn>();
+  checkIns.forEach(checkIn => {
+    const previous = latest.get(checkIn.staffId);
+    if (!previous || checkIn.date > previous.date || (checkIn.date === previous.date && checkIn.createdAt > previous.createdAt)) latest.set(checkIn.staffId, checkIn);
+  });
+  latest.forEach(checkIn => {
+    if (result.some(indicator => indicator.staffId === checkIn.staffId)) return;
+    result.push({
+      id: `wellbeing-${checkIn.staffId}`, staffId: checkIn.staffId,
+      periodStart: checkIn.date, periodEnd: checkIn.date, createdAt: checkIn.createdAt,
+      overtimeHours: 0, averageWorkdayLength: 0, consecutiveWorkDays: 0, leaveBalance: 0,
+      daysSinceLastLeave: 0, missedBreaks: 0, afterHoursMessages: 0,
+      workloadScore: checkIn.workloadRating ?? 5, engagementScore: checkIn.energyLevel,
+      riskLevel: 'low', riskFactors: [], recommendations: [],
+    });
+  });
+  return result.map(indicator => {
+    const checkIn = latest.get(indicator.staffId);
+    return analyseWellbeing(checkIn ? { ...indicator, periodEnd: checkIn.date } : indicator, checkIn, rules);
+  });
+}
 export function pulseResults(survey: PulseSurvey, responses: PulseResponse[], audienceSize: number) {
   const rows=responses.filter(r=>r.surveyId===survey.id);
   return {surveyId:survey.id,totalResponses:rows.length,responseRate:Math.min(100,Math.round(rows.length/Math.max(1,audienceSize)*100)),questionResults:survey.questions.map(q=>{

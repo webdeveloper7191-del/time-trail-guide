@@ -21,6 +21,7 @@ import { RewardsAdminPanel } from './RewardsAdminPanel';
 import { TaxonomyAdminPanel } from './TaxonomyAdminPanel';
 import { NineBoxAdminPanel } from './NineBoxAdminPanel';
 import { PerformanceRulesPanel } from './PerformanceRulesPanel';
+import { PerformanceSettingsDrawer } from '../PerformanceSettingsDrawer';
 
 
 import { toast } from 'sonner';
@@ -45,6 +46,7 @@ interface PerformanceAdminPanelProps {
 
 export function PerformanceAdminPanel({ embedded = false, section, anchor }: PerformanceAdminPanelProps) {
   const config = useConfig();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [scaleDrawer, setScaleDrawer] = useState<{ open: boolean; scale: RatingScale | null }>({ open: false, scale: null });
   const [compDrawer, setCompDrawer] = useState<{ open: boolean; competency: Competency | null }>({ open: false, competency: null });
   const [cycleDrawer, setCycleDrawer] = useState<{ open: boolean; cycle: ReviewCycleConfig | null }>({ open: false, cycle: null });
@@ -85,6 +87,7 @@ export function PerformanceAdminPanel({ embedded = false, section, anchor }: Per
           </p>
         </div>
         )}
+        <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}><SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />Performance Settings</Button>
         <Button
           variant="outline"
           size="sm"
@@ -262,6 +265,7 @@ export function PerformanceAdminPanel({ embedded = false, section, anchor }: Per
 
 
       <RatingScaleDrawer open={scaleDrawer.open} scale={scaleDrawer.scale} onClose={() => setScaleDrawer({ open: false, scale: null })} />
+      <PerformanceSettingsDrawer open={settingsOpen} onOpenChange={setSettingsOpen} />
       <CompetencyDrawer open={compDrawer.open} competency={compDrawer.competency} onClose={() => setCompDrawer({ open: false, competency: null })} />
       <ReviewCycleDrawer open={cycleDrawer.open} cycle={cycleDrawer.cycle} onClose={() => setCycleDrawer({ open: false, cycle: null })} />
     </div>

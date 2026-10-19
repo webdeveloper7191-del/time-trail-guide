@@ -197,11 +197,11 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
               variant="body2"
               fontWeight={600}
               color={indicator.overtimeHours >= rules.wellbeing.overtimeHoursThreshold ? 'error.main' : 'text.primary'}
-            >{indicator.overtimeHours}h</Typography>
+            >{indicator.id === `wellbeing-${indicator.staffId}` ? '—' : `${indicator.overtimeHours}h`}</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Avg Day</Typography>
-            <Typography variant="body2" fontWeight={600}>{indicator.averageWorkdayLength}h</Typography>
+            <Typography variant="body2" fontWeight={600}>{indicator.id === `wellbeing-${indicator.staffId}` ? '—' : `${indicator.averageWorkdayLength}h`}</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">Days Since Leave</Typography>
@@ -209,7 +209,7 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
               variant="body2"
               fontWeight={600}
               color={indicator.daysSinceLastLeave >= rules.wellbeing.daysSinceLeaveThreshold ? 'error.main' : 'text.primary'}
-            >{indicator.daysSinceLastLeave}</Typography>
+            >{indicator.id === `wellbeing-${indicator.staffId}` ? '—' : indicator.daysSinceLastLeave}</Typography>
           </Box>
         </Stack>
 
@@ -362,21 +362,21 @@ export function WellbeingDashboard({ currentUserId }: WellbeingDashboardProps) {
                   <Clock size={16} className="text-muted-foreground" />
                   <Typography variant="caption" color="text.secondary">Overtime</Typography>
                 </Stack>
-                <Typography variant="h6" fontWeight={600}>{selectedIndicator.overtimeHours}h</Typography>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.id === `wellbeing-${selectedIndicator.staffId}` ? '—' : `${selectedIndicator.overtimeHours}h`}</Typography>
               </Card>
               <Card sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Sun size={16} className="text-muted-foreground" />
                   <Typography variant="caption" color="text.secondary">Avg Day Length</Typography>
                 </Stack>
-                <Typography variant="h6" fontWeight={600}>{selectedIndicator.averageWorkdayLength}h</Typography>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.id === `wellbeing-${selectedIndicator.staffId}` ? '—' : `${selectedIndicator.averageWorkdayLength}h`}</Typography>
               </Card>
               <Card sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
                   <Calendar size={16} className="text-muted-foreground" />
                   <Typography variant="caption" color="text.secondary">Days Since Leave</Typography>
                 </Stack>
-                <Typography variant="h6" fontWeight={600}>{selectedIndicator.daysSinceLastLeave}</Typography>
+                <Typography variant="h6" fontWeight={600}>{selectedIndicator.id === `wellbeing-${selectedIndicator.staffId}` ? '—' : selectedIndicator.daysSinceLastLeave}</Typography>
               </Card>
               <Card sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>

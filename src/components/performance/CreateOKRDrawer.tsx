@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Box, 
   Stack, 
@@ -35,7 +35,8 @@ import type {
   KeyResult,
   OKRLevel,
 } from '@/types/okr';
-import { mockObjectives, mockOKRCycles, mockTeams } from '@/data/mockOKRData';
+import { mockOKRCycles, mockTeams } from '@/data/mockOKRData';
+import { usePerformanceOperations } from '@/lib/performanceOperationsStore';
 import { mockStaff } from '@/data/mockStaffData';
 import { toast } from 'sonner';
 import { useTaxonomyOptions } from '@/hooks/usePerformanceTaxonomy';
@@ -73,6 +74,7 @@ interface KeyResultInput {
 }
 
 export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: CreateOKRDrawerProps) {
+  const { objectives } = usePerformanceOperations();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<OKRLevel>('team');
@@ -98,12 +100,23 @@ export function CreateOKRDrawer({ open, onClose, onSave, parentObjectiveId }: Cr
   // Filter parent objectives based on level hierarchy
   const availableParents = useMemo(() => {
     if (level === 'company') return [];
-    if (level === 'team') return mockObjectives.filter(o => o.level === 'company');
-    return mockObjectives.filter(o => o.level === 'company' || o.level === 'team');
-  }, [level]);
+    if (level === 'team') return objectives.filter(o => o.level === 'company');
+    return objectives.filter(o => o.level === 'company' || o.level === 'team');
+  }, [level, objectives]);
+
+  useEffect(() => {
+    if (!open) return;
+    const parent = objectives.find(objective => objective.id === parentObjectiveId);
+    if (parent) setLevel(parent.level === 'company' ? 'team' : 'individual');
+    setSelectedParentId(parent?.id ?? '');
+  }, [open, parentObjectiveId]);
+
+  useEffect(() => {
+    if (selectedParentId && !availableParents.some(parent => parent.id === selectedParentId)) setSelectedParentId('');
+  }, [availableParents, selectedParentId]);
 
   const selectedParent = selectedParentId 
-    ? mockObjectives.find(o => o.id === selectedParentId) 
+    ? objectives.find(o => o.id === selectedParentId)
     : null;
 
   const addKeyResult = () => {

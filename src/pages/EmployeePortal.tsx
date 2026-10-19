@@ -143,7 +143,7 @@ export function EmployeePortal() {
       case 'okrs':
         return <EmployeeOKRPanel currentUserId={currentEmployee.id} />;
       case 'career':
-        return <EmployeeCareerPathingPanel currentUserId={currentEmployee.id} />;
+        return <EmployeeCareerPathingPanel currentUserId={currentEmployee.staffId} />;
       case 'surveys':
         return <EmployeeSurveyPanel currentUserId={currentEmployee.id} />;
       case '360':

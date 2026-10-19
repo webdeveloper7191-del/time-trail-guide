@@ -32,8 +32,8 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react';
-import { CareerPath, StaffCareerProgress, SkillLevel, skillLevelLabels } from '@/types/advancedPerformance';
-import { mockCareerPaths, mockCareerProgress, mockSkills } from '@/data/mockAdvancedPerformanceData';
+import { CareerPath, StaffCareerProgress, SkillLevel, skillLevelLabels, skillLevelValues } from '@/types/advancedPerformance';
+import { usePerformanceSkills, usePerformanceStaffSkills, usePerformanceCareerPaths, usePerformanceCareerProgress } from '@/lib/performanceLocalData';
 import { mockStaff } from '@/data/mockStaffData';
 import { cn } from '@/lib/utils';
 import { CareerPathSetupDrawer } from './CareerPathSetupDrawer';
@@ -69,14 +69,17 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill,
   const [showLevelSheet, setShowLevelSheet] = useState(false);
   const [showSetupDrawer, setShowSetupDrawer] = useState(false);
   const [editingPath, setEditingPath] = useState<CareerPath | null>(null);
-  const [careerPaths, setCareerPaths] = useState<CareerPath[]>(mockCareerPaths);
+  const [careerPaths, setCareerPaths] = usePerformanceCareerPaths();
+  const [careerProgressList] = usePerformanceCareerProgress();
+  const [skills] = usePerformanceSkills();
+  const [staffSkills] = usePerformanceStaffSkills();
 
   const staff = mockStaff.find(s => s.id === staffId);
-  const careerProgress = mockCareerProgress.find(p => p.staffId === staffId);
+  const careerProgress = careerProgressList.find(p => p.staffId === staffId);
   const careerRules = usePerformanceRules().careerPathing;
   const currentPath = careerProgress ? careerPaths.find(p => p.id === careerProgress.currentPathId) : null;
   
-  const availableSkills = mockSkills.map(s => ({ id: s.id, name: s.name }));
+  const availableSkills = skills.map(s => ({ id: s.id, name: s.name }));
 
   const handleSaveCareerPath = (path: CareerPath) => {
     if (editingPath) {
@@ -117,8 +120,8 @@ export function CareerPathingVisualization({ staffId = 'staff-1', onAssessSkill,
 
   const getSkillProgress = (requiredSkills: CareerLevelDisplay['requiredSkills']) => {
     if (!requiredSkills || requiredSkills.length === 0) return 100;
-    // Mock: assume 60-90% progress for demo
-    return Math.floor(60 + Math.random() * 30);
+    const met = requiredSkills.filter(required => skillLevelValues[staffSkills[staffId]?.find(skill => skill.skillId === required.skillId)?.currentLevel ?? 'none'] >= skillLevelValues[required.minLevel]).length;
+    return Math.round(met / requiredSkills.length * 100);
   };
 
   const handleLevelClick = (level: CareerLevelDisplay, path: CareerPath) => {
