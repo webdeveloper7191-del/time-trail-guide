@@ -767,7 +767,7 @@ export function CourseAuthoringTool({
                                               <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              {contentTypeConfig.map((type) => (
+                                              {contentTypeConfig.filter(type => type.type !== 'scorm' || loadLmsSettings().allowScormUpload).map((type) => (
                                                 <SelectItem key={type.type} value={type.type}>
                                                   {type.label}
                                                 </SelectItem>
