@@ -198,15 +198,15 @@ export const mockTalentAssessments: TalentAssessment[] = [
 
 // ============ Skills & Career Path Mock Data ============
 export const mockSkills: Skill[] = [
-  { id: 'skill-1', name: 'Child Development', category: 'Core', description: 'Understanding of child development stages', isCore: true },
-  { id: 'skill-2', name: 'Curriculum Planning', category: 'Core', description: 'Ability to plan engaging curriculum', isCore: true },
+  { id: 'skill-1', name: 'Service Delivery', category: 'Core', description: 'Understanding of service delivery standards', isCore: true },
+  { id: 'skill-2', name: 'Work Planning', category: 'Core', description: 'Ability to plan effective work programmes', isCore: true },
   { id: 'skill-3', name: 'First Aid', category: 'Compliance', description: 'Current first aid certification', isCore: true },
   { id: 'skill-4', name: 'Communication', category: 'Soft Skills', description: 'Verbal and written communication', isCore: true },
   { id: 'skill-5', name: 'Leadership', category: 'Leadership', description: 'Team leadership capabilities', isCore: false },
   { id: 'skill-6', name: 'Conflict Resolution', category: 'Soft Skills', description: 'Handling disagreements professionally', isCore: false },
   { id: 'skill-7', name: 'Mentoring', category: 'Leadership', description: 'Guiding and developing others', isCore: false },
-  { id: 'skill-8', name: 'Technology', category: 'Technical', description: 'Using educational technology', isCore: false },
-  { id: 'skill-9', name: 'Parent Engagement', category: 'Service', description: 'Building relationships with families', isCore: true },
+  { id: 'skill-8', name: 'Technology', category: 'Technical', description: 'Using workplace technology', isCore: false },
+  { id: 'skill-9', name: 'Stakeholder Engagement', category: 'Service', description: 'Building relationships with stakeholders', isCore: true },
   { id: 'skill-10', name: 'Documentation', category: 'Compliance', description: 'Record keeping and reporting', isCore: true },
 ];
 
@@ -230,14 +230,14 @@ export const mockStaffSkills: Record<string, StaffSkill[]> = {
 export const mockCareerPaths: CareerPath[] = [
   {
     id: 'path-1',
-    name: 'Educator Track',
-    description: 'Career progression for educators from assistant to director',
+    name: 'Professional Track',
+    description: 'Career progression for staff from assistant to manager',
     levels: [
-      { id: 'level-1', title: 'Assistant Educator', level: 1, requiredSkills: [{ skillId: 'skill-1', minLevel: 'beginner' }, { skillId: 'skill-3', minLevel: 'intermediate' }], requiredExperienceYears: 0 },
-      { id: 'level-2', title: 'Educator', level: 2, requiredSkills: [{ skillId: 'skill-1', minLevel: 'intermediate' }, { skillId: 'skill-2', minLevel: 'intermediate' }], requiredExperienceYears: 1 },
-      { id: 'level-3', title: 'Senior Educator', level: 3, requiredSkills: [{ skillId: 'skill-1', minLevel: 'advanced' }, { skillId: 'skill-2', minLevel: 'advanced' }], requiredExperienceYears: 3 },
-      { id: 'level-4', title: 'Lead Educator', level: 4, requiredSkills: [{ skillId: 'skill-5', minLevel: 'intermediate' }, { skillId: 'skill-7', minLevel: 'intermediate' }], requiredExperienceYears: 5 },
-      { id: 'level-5', title: 'Room Leader', level: 5, requiredSkills: [{ skillId: 'skill-5', minLevel: 'advanced' }, { skillId: 'skill-7', minLevel: 'advanced' }], requiredExperienceYears: 7 },
+      { id: 'level-1', title: 'Assistant', level: 1, requiredSkills: [{ skillId: 'skill-1', minLevel: 'beginner' }, { skillId: 'skill-3', minLevel: 'intermediate' }], requiredExperienceYears: 0 },
+      { id: 'level-2', title: 'Specialist', level: 2, requiredSkills: [{ skillId: 'skill-1', minLevel: 'intermediate' }, { skillId: 'skill-2', minLevel: 'intermediate' }], requiredExperienceYears: 1 },
+      { id: 'level-3', title: 'Senior Specialist', level: 3, requiredSkills: [{ skillId: 'skill-1', minLevel: 'advanced' }, { skillId: 'skill-2', minLevel: 'advanced' }], requiredExperienceYears: 3 },
+      { id: 'level-4', title: 'Team Lead', level: 4, requiredSkills: [{ skillId: 'skill-5', minLevel: 'intermediate' }, { skillId: 'skill-7', minLevel: 'intermediate' }], requiredExperienceYears: 5 },
+      { id: 'level-5', title: 'Area Manager', level: 5, requiredSkills: [{ skillId: 'skill-5', minLevel: 'advanced' }, { skillId: 'skill-7', minLevel: 'advanced' }], requiredExperienceYears: 7 },
     ],
   },
 ];
