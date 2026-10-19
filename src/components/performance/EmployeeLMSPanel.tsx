@@ -714,6 +714,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
 
       {/* Mobile Course Player */}
       <MobileCoursePlayer
+        onAssessmentSubmit={handleAssessmentSubmit}
         open={showMobilePlayer}
         course={selectedCourse}
         enrollment={myEnrollments.find(e => e.courseId === selectedCourse?.id) || null}
