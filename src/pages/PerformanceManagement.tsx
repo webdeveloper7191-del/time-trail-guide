@@ -62,7 +62,7 @@ import { mockStaff } from '@/data/mockStaffData';
 import { performancePlanTemplates } from '@/data/mockPerformancePlanTemplates';
 import { Goal, PerformanceReview, Conversation, Feedback, ReviewRating } from '@/types/performance';
 import { PerformancePlanTemplate, AssignedPlan, PlanStatus } from '@/types/performancePlan';
-import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp } from 'lucide-react';
+import { Target, ClipboardCheck, MessageSquareHeart, MessageSquare, BarChart3, Users, FileText, ListTodo, GraduationCap, Users2, Grid3X3, Compass, HeartPulse, Scale, Activity, Crosshair, Sparkles, Smile, TrendingUp, Gauge } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePlanManagement } from '@/hooks/usePlanManagement';
 import { ConfigureLink, PERFORMANCE_CONFIG_EVENT, tabConfigTargets, type PerformanceConfigTarget } from '@/components/performance/ConfigureLink';
