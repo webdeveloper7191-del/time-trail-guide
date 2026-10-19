@@ -26,7 +26,7 @@ export default function DashboardHub() {
   const exportOverview = () => {
     const records = filterDashboardTimesheets(data.timesheets,period,undefined,persona==='staff'?employeePortalProfile.email:undefined);
     const rows = [['Employee','Location','Period start','Status','Recorded hours','Overtime hours'], ...records.map(t=>[t.employee.name,t.location.name,t.weekStartDate,t.status,t.totalHours,t.overtimeHours])];
-    const csv = rows.map(row=>row.map(cell=>`"${String(cell).replaceAll('"','""')}"`).join(',')).join('\r\n');
+    const csv = rows.map(row=>row.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
     const a=document.createElement('a');a.href=url;a.download=`dashboard-${persona}-${period}.csv`;a.click();URL.revokeObjectURL(url);
   };

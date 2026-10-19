@@ -10,7 +10,7 @@ export function DashboardSection({ title, subtitle, action, children }: { title:
   return <section className="min-w-0 space-y-4 border-t border-border pt-5"><div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-sm font-semibold text-foreground">{title}</h2>{subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}</div>{action}</div>{children}</section>;
 }
 export function DashboardLink({ to, children }: { to: string; children: ReactNode }) {
-  return <Button asChild variant="ghost" size="sm" className="h-8 gap-1 text-xs"><Link to={to}>{children}<ArrowUpRight className="h-3.5 w-3.5 shrink-0" /></Link></Button>;
+  return <Button asChild variant="ghost" size="sm" className="h-8 gap-1 text-xs"><Link to={to} className="inline-flex items-center gap-1 whitespace-nowrap">{children}<ArrowUpRight className="h-3.5 w-3.5 shrink-0" /></Link></Button>;
 }
 export interface ActionItem { label: string; detail: string; count: number; to: string; icon: ElementType; urgent?: boolean }
 export function ActionQueue({ items }: { items: ActionItem[] }) {
