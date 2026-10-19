@@ -54,21 +54,14 @@ import { EmployeePayslipsPanel } from '@/components/employee/EmployeePayslipsPan
 import { OnboardingBanner } from '@/components/employee/OnboardingBanner';
 import { EmployeeDashboard } from '@/components/employee/EmployeeDashboard';
 import { EmployeeShiftsPanel } from '@/components/employee/EmployeeShiftsPanel';
-
-// Mock current employee (in real app, this would come from auth)
-const currentEmployee = {
-  id: 'ts-001',
-  /** Matching id in the workforce/performance records for this portal user. */
-  staffId: 'staff-1',
-  name: 'Sarah Chen',
-  email: 'sarah.chen@company.com',
-  department: 'Operations',
-  position: 'Operations Coordinator',
-  hourlyRate: 28,
-};
+import { employeePortalProfile as currentEmployee } from '@/components/employee/employeePortalProfile';
+import { useSearchParams } from 'react-router-dom';
 
 export function EmployeePortal() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab') ?? 'dashboard';
+  const activeTab = ['dashboard', 'onboarding', 'schedule', 'current', 'leave-balances', 'payslips', 'documents', 'recognition', 'performance', 'okrs', 'career', 'surveys', '360', 'learning'].includes(requestedTab) ? requestedTab : 'dashboard';
+  const setActiveTab = (tab: string) => setSearchParams({ tab });
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const onboardingProgress = onboardingComplete ? 100 : 35; // Mock progress
   // Filter timesheets for current employee
