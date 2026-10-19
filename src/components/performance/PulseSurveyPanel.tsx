@@ -1,3 +1,4 @@
+import { enpsMetric, periodForDays } from '@/lib/performanceDashboardMetrics';
 import { pulseResults } from '@/lib/engagementLogic';
 import { pulseResultsCsv, downloadPerformanceCsv } from '@/lib/performanceExperienceStore';
 import { mockStaff } from '@/data/mockStaffData';
@@ -106,10 +107,13 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
 
   const rules=usePerformanceRules();
-  const enpsAnswers=pulseResponses.flatMap(r=>r.responses.filter(a=>{const survey=surveys.find(s=>s.id===r.surveyId);return survey?.questions.some(q=>q.id===a.questionId && q.type==='enps') && (!survey.anonymousResponses || pulseResponses.filter(v=>v.surveyId===survey.id).length>=rules.surveys.minResponsesToPublish);}).map(a=>a.value)).filter((v):v is number=>typeof v==='number');
+  const reportingPeriod=periodForDays(rules.analytics.defaultRangeDays);
+  const minimum=Math.max(rules.surveys.minResponsesToPublish,rules.analytics.minGroupSizeForBreakdown);
+  const enps=enpsMetric(surveys,pulseResponses,reportingPeriod,minimum);
+  const enpsAnswers=enps.value===null?[]:pulseResponses.filter(r=>r.submittedAt.slice(0,10)>=reportingPeriod.start&&r.submittedAt.slice(0,10)<=reportingPeriod.end).flatMap(r=>r.responses.filter(a=>surveys.find(s=>s.id===r.surveyId)?.questions.some(q=>q.id===a.questionId&&q.type==='enps')).map(a=>a.value)).filter((v):v is number=>typeof v==='number'&&v>=0&&v<=10);
   const promoters=enpsAnswers.filter(n=>n>=9).length;
   const detractors=enpsAnswers.filter(n=>n<=6).length;
-  const latestENPS={score:enpsAnswers.length?Math.round(100*(promoters-detractors)/enpsAnswers.length):0,promoters,detractors,passives:enpsAnswers.length-promoters-detractors,responseRate:Math.min(100,Math.round(enpsAnswers.length/Math.max(1,mockStaff.filter(s=>s.status==='active').length)*100)),trend:'stable'};
+  const latestENPS={score:enps.value??0,promoters,detractors,passives:enpsAnswers.length-promoters-detractors,responseRate:Math.min(100,Math.round(enpsAnswers.length/Math.max(1,mockStaff.filter(s=>s.status==='active').length)*100)),trend:'stable'};
   const activeSurveys = surveys.filter(s => s.status === 'active');
   const completedSurveys = surveys.filter(s => s.status === 'completed');
 
@@ -143,20 +147,21 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
   };
 
   const periods=[...new Set(pulseResponses.map(r=>r.submittedAt.slice(0,7)))].sort();
-  const enpsChartData=periods.map(period=>{const nums=pulseResponses.filter(r=>r.submittedAt.startsWith(period)).flatMap(r=>r.responses.filter(a=>{const survey=surveys.find(s=>s.id===r.surveyId);return survey?.questions.some(q=>q.id===a.questionId && q.type==='enps') && (!survey.anonymousResponses || pulseResponses.filter(v=>v.surveyId===survey.id).length>=rules.surveys.minResponsesToPublish);}).map(a=>a.value)).filter((v):v is number=>typeof v==='number');return {period,score:nums.length?Math.round(100*(nums.filter(n=>n>=9).length-nums.filter(n=>n<=6).length)/nums.length):0};});
+  const enpsChartData=periods.map(period=>({period,score:enpsMetric(surveys,pulseResponses,{start:`${period}-01`,end:`${period}-31`},minimum).value}));
 
   const renderENPSCard = () => (
     <Card sx={{ p: 3 }}>
+      <Typography variant="caption" color="text.secondary">{reportingPeriod.start} – {reportingPeriod.end} · {enps.count} dated answers · Minimum {minimum}</Typography>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
         <Box>
           <Typography variant="subtitle2" color="text.secondary">
             Employee Net Promoter Score
           </Typography>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-            <Typography variant="h3" fontWeight={700} sx={{ color: getENPSColor(latestENPS.score) }}>
-              {latestENPS.score > 0 ? '+' : ''}{latestENPS.score}
+            <Typography variant="h5" fontWeight={700} sx={{ color: getENPSColor(latestENPS.score) }}>
+              {enps.value===null?'Not enough data':`${latestENPS.score>0?'+':''}${Math.round(latestENPS.score)}`}
             </Typography>
-            {getTrendIcon(latestENPS.trend)}
+            
             {false && (
               <Typography variant="body2" color="text.secondary">
                 vs {latestENPS.score > 0 ? '+' : ''}{latestENPS.score}
@@ -166,7 +171,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
         </Box>
         <Box sx={{ textAlign: 'right' }}>
           <Typography variant="caption" color="text.secondary">Response Rate</Typography>
-          <Typography variant="h6" fontWeight={600}>{latestENPS.responseRate}%</Typography>
+          <Typography variant="h6" fontWeight={600}>{enps.value===null?'—':`${latestENPS.responseRate}%`}</Typography>
         </Box>
       </Stack>
 
@@ -178,7 +183,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
             <Typography variant="caption" fontWeight={600} color="text.secondary">Promoters</Typography>
           </Stack>
           <Typography variant="h6" fontWeight={700} sx={{ color: 'rgb(22, 163, 74)' }}>
-            {latestENPS.promoters}
+            {enps.value===null?'—':latestENPS.promoters}
           </Typography>
         </Box>
         <Box sx={{ flex: 1, p: 2, bgcolor: 'rgba(148, 163, 184, 0.08)', borderRadius: 1 }}>
@@ -187,7 +192,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
             <Typography variant="caption" fontWeight={600} color="text.secondary">Passives</Typography>
           </Stack>
           <Typography variant="h6" fontWeight={700} sx={{ color: 'rgb(100, 116, 139)' }}>
-            {latestENPS.passives}
+            {enps.value===null?'—':latestENPS.passives}
           </Typography>
         </Box>
         <Box sx={{ flex: 1, p: 2, bgcolor: 'rgba(239, 68, 68, 0.08)', borderRadius: 1 }}>
@@ -196,7 +201,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
             <Typography variant="caption" fontWeight={600} color="text.secondary">Detractors</Typography>
           </Stack>
           <Typography variant="h6" fontWeight={700} sx={{ color: 'rgb(220, 38, 38)' }}>
-            {latestENPS.detractors}
+            {enps.value===null?'—':latestENPS.detractors}
           </Typography>
         </Box>
       </Stack>
@@ -515,7 +520,7 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
                   )}
 
                   {/* Text Responses */}
-                  {qr.textResponses && qr.textResponses.length > 0 && (
+                  {!selectedSurvey.anonymousResponses && qr.textResponses && qr.textResponses.length > 0 && (
                     <Box sx={{ mt: 2 }}>
                       <Typography variant="caption" fontWeight={600} color="text.secondary" gutterBottom>
                         Text Responses ({qr.textResponses.length})

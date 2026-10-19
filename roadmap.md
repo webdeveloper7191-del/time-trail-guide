@@ -1,10 +1,10 @@
 # Roadmap
 
-- [ ] Performance: finish survey export, durable review drafts/notification dismissals and usable browser-offline learning
-- [ ] Performance: replace sample insights and benchmarks with period-aware, privacy-safe stored-record reporting
-- [ ] Performance: add scorecard evidence/history/coverage, talent movement and connected calibration
-- [ ] Performance: connect development follow-ups, learning and manager action queues with contextual approved attendance
-- [ ] Performance: clean universal sample wording/branding and verify completed flows
+- [x] Performance: finish survey export, durable review drafts/notification dismissals and usable browser-offline learning (draft refresh, aggregate CSV and cached media verified)
+- [x] Performance: replace sample insights and benchmarks with period-aware, privacy-safe stored-record reporting (manual benchmark evidence; unavailable data withheld)
+- [x] Performance: add scorecard evidence/history/coverage, talent movement and connected calibration (selected-staff session verified)
+- [x] Performance: connect development follow-ups, learning and manager action queues with contextual approved attendance (linked journey verified after refresh)
+- [x] Performance: clean universal sample wording/branding and verify completed flows (21 targeted tests passed; browser-only saving, no online delivery or cross-device sync)
 
 - [x] Fix seven performance gaps: succession archive/restore, saved-rating calibration spread, live OKR parents, task and skills persistence, missing wellbeing indicators and settings saving (browser-only; tests and refresh flows verified)
 
