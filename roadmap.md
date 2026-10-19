@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Fix seven performance gaps: succession archive, calibration spread, OKR parent selection, task persistence, skills persistence, wellbeing indicator creation and settings saving
+- [x] Fix seven performance gaps: succession archive/restore, saved-rating calibration spread, live OKR parents, task and skills persistence, missing wellbeing indicators and settings saving (browser-only; tests and refresh flows verified)
 
 - [x] Expand tenant admin, location admin and staff dashboards with shared-record summaries, filters, action queues and useful navigation (role preview, sample data labelled; no new backend)
 
