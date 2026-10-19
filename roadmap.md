@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Expand tenant admin, location admin and staff dashboards with shared-record summaries, filters, action queues and useful navigation
+- [x] Expand tenant admin, location admin and staff dashboards with shared-record summaries, filters, action queues and useful navigation (role preview, sample data labelled; no new backend)
 
 - [x] Compare Employment Hero guide and complete frontend value-based recognition approvals, milestone points and reward history (real purchases, cards and email remain outside frontend-only scope)
 
