@@ -1,6 +1,6 @@
 import { LearningOfflineControls } from './LearningOfflineControls';
-import { learningMediaUrl } from '@/lib/learningOfflineStore';
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { learningDownloads, learningMediaUrl } from '@/lib/learningOfflineStore';
+import React, { useState, useMemo, useCallback, useEffect, useSyncExternalStore } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -400,6 +400,7 @@ function ContentView({
   onVideoProgress,
   isCompleted,
 }: ContentViewProps) {
+  const downloads=useSyncExternalStore(learningDownloads.subscribe,learningDownloads.get,learningDownloads.get);
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaError, setMediaError] = useState('');
   useEffect(() => {
@@ -409,7 +410,7 @@ function ContentView({
       resolved = url; if (active) setMediaUrl(url); else if(url.startsWith('blob:')) URL.revokeObjectURL(url);
     }).catch(error => { if(active) setMediaError(error.message); });
     return () => { active = false; if(resolved.startsWith('blob:')) URL.revokeObjectURL(resolved); };
-  }, [content.url]);
+  }, [content.url, downloads]);
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 mb-4">
