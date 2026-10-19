@@ -21,7 +21,7 @@ export function ConnectedDevelopmentPanel({staffId,currentUserId,onNavigate}:{st
     const pending=journeys.find(j=>j.id===resumeId);
     const selectedReview=pending?.reviewId??reviewId, selectedSkill=pending?.skillId??skillId, selectedCourse=pending?.courseId??courseId, selectedDate=pending?.followUpDate??date;
     const review=reviews.find(r=>r.id===selectedReview);const skill=skills.find(s=>s.id===selectedSkill);const course=courses.find(c=>c.id===selectedCourse);
-    if(!review||!skill||!course||!selectedDate||(!pending&&selectedDate<=new Date().toISOString().slice(0,10))){toast.error('Select evidence, a skill gap, a course and a future follow-up date');return;}
+    if(!review||!skill||!course||course.status!=='published'||!selectedDate||(!pending&&selectedDate<=new Date().toISOString().slice(0,10))){toast.error('Select evidence, a skill gap, a published course and a future follow-up date');return;}
     if(!pending&&journeys.some(j=>j.reviewId===selectedReview&&j.skillId===selectedSkill&&j.courseId===selectedCourse)){toast.error('This development journey already exists');return;}
     setBusy(true);try {
       const timestamp=pending?.createdAt??new Date().toISOString();const start=timestamp.slice(0,10);

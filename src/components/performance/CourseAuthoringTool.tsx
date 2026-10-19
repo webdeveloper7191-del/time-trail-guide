@@ -207,8 +207,8 @@ export function CourseAuthoringTool({
         id: `assessment-${Date.now()}`,
         title: 'Module Assessment',
         type: 'quiz',
-        passingScore: 80,
-        maxAttempts: 3,
+        passingScore: course.passingScore ?? loadLmsSettings().passMark,
+        maxAttempts: course.maxAttempts ?? loadLmsSettings().maxAttempts,
         shuffleQuestions: true,
         showCorrectAnswers: true,
         questions: [createEmptyQuestion(1)],
@@ -278,6 +278,7 @@ export function CourseAuthoringTool({
       toast.error('Please fill in all required fields');
       return;
     }
+    if (loadLmsSettings().requireApprovalBeforePublish && !window.confirm('Approve this course for publication?')) return;
     try { onPublish({ ...course, status: 'published' }); toast.success('Course published successfully!'); } catch { toast.error('Course could not be published; your edits are retained'); }
   };
 

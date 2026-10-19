@@ -125,6 +125,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   };
 
   const handleStartFromDetail = (enrollment: Enrollment) => {
+    if (isMobile && !loadLmsSettings().allowMobileLearning) { toast.error('Mobile learning is disabled by your learning settings'); return; }
     const course = mockCourses.find(c => c.id === enrollment.courseId);
     if (course) {
       setShowCourseDetail(false);
@@ -138,6 +139,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   };
 
   const handleContinueLearning = (enrollment: Enrollment) => {
+    if (isMobile && !loadLmsSettings().allowMobileLearning) { toast.error('Mobile learning is disabled by your learning settings'); return; }
     const course = mockCourses.find(c => c.id === enrollment.courseId);
     if (course) {
       setSelectedCourse(course);
@@ -614,7 +616,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1 text-amber-500">
                           <Star className="h-3 w-3 fill-current" />
-                          <span className="text-xs font-medium">{course.rating}</span>
+                          <span className="text-xs font-medium">{loadLmsSettings().showRatingsAndReviews ? course.rating : '—'}</span>
                         </div>
                       </TableCell>
                       <TableCell>
