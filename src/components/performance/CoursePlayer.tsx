@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { LearningOfflineControls } from './LearningOfflineControls';
+import { learningMediaUrl } from '@/lib/learningOfflineStore';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +92,8 @@ export function CoursePlayer({
   const [assessmentSubmitted, setAssessmentSubmitted] = useState(false);
   const [assessmentResult, setAssessmentResult] = useState<{ score: number; passed: boolean } | null>(null);
 
+  useEffect(()=>{if(open){setCurrentModuleIndex(0);setCurrentContentIndex(0);setShowAssessment(false);setAssessmentSubmitted(false);setAssessmentResult(null);setAssessmentAnswers({});}},[open,course?.id]);
+
   const currentModule = course?.modules[currentModuleIndex];
   const currentContent = currentModule?.content[currentContentIndex];
   
@@ -108,7 +112,7 @@ export function CoursePlayer({
     const completedContent = enrollment.moduleProgress.reduce(
       (sum, mp) => sum + mp.completedContentIds.length, 0
     );
-    return Math.round((completedContent / totalContent) * 100);
+    return totalContent ? Math.round((completedContent / totalContent) * 100) : 0;
   }, [enrollment, course]);
 
   const isContentCompleted = useCallback((contentId: string) => {
@@ -124,7 +128,7 @@ export function CoursePlayer({
   }, [enrollment]);
 
   const handleContentComplete = () => {
-    if (!enrollment || !currentModule || !currentContent) return;
+    if (!enrollment || !course || !currentModule || !currentContent) return;
     
     if (!isContentCompleted(currentContent.id)) {
       onProgressUpdate(enrollment.id, currentModule.id, currentContent.id, true);
@@ -134,16 +138,16 @@ export function CoursePlayer({
     // Auto-advance to next content
     if (currentContentIndex < currentModule.content.length - 1) {
       setCurrentContentIndex(prev => prev + 1);
-    } else if (currentModule.assessment && !assessmentSubmitted) {
+    } else if (currentModule.assessment && !enrollment.assessmentAttempts.some(a=>a.assessmentId===currentModule.assessment?.id&&a.passed) && !assessmentResult?.passed) {
       setShowAssessment(true);
     } else {
       // Module complete
       onModuleComplete(enrollment.id, currentModule.id);
       
       // Check if course is complete
-      if (currentModuleIndex === course!.modules.length - 1) {
+      if (currentModuleIndex === course.modules.length - 1) {
         onCourseComplete(enrollment.id);
-        toast.success('🎉 Course completed! Certificate earned.');
+        toast.success('Course completed!');
       } else {
         setCurrentModuleIndex(prev => prev + 1);
         setCurrentContentIndex(0);
@@ -156,10 +160,10 @@ export function CoursePlayer({
     if (!enrollment || !currentModule?.assessment) return;
     
     const assessment = currentModule.assessment;
-    const result = await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);
-    const attempts = enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id);
-    const retakeLimit = assessment.retakeLimit ?? assessment.maxAttempts ?? Infinity;
-    const canRetake = attempts.length < retakeLimit;
+    const priorAttempts=enrollment.assessmentAttempts.filter(a=>a.assessmentId===assessment.id);
+    if(!canAttemptAssessment(assessment,priorAttempts)){toast.error('Assessment attempt limit reached');return;}
+    let result: {score:number;passed:boolean};
+    try {result=await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);}catch(error){toast.error(error instanceof Error?error.message:'Could not save assessment');return;}
     setAssessmentResult(result);
     setAssessmentSubmitted(true);
     
@@ -171,6 +175,8 @@ export function CoursePlayer({
   };
 
   const handleRetryAssessment = () => {
+    if(!enrollment||!currentModule?.assessment)return;
+    if(!canAttemptAssessment(currentModule.assessment,enrollment.assessmentAttempts.filter(a=>a.assessmentId===currentModule.assessment?.id))){toast.error('Assessment attempt limit reached');return;}
     setAssessmentAnswers({});
     setAssessmentSubmitted(false);
     setAssessmentResult(null);
@@ -193,6 +199,7 @@ export function CoursePlayer({
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-4xl p-0 flex flex-col" side="right">
+        <LearningOfflineControls course={course} enrollment={enrollment} />
         {/* Header */}
         <div className="p-4 border-b bg-muted/30">
           <div className="flex items-center justify-between">
@@ -393,6 +400,16 @@ function ContentView({
   onVideoProgress,
   isCompleted,
 }: ContentViewProps) {
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaError, setMediaError] = useState('');
+  useEffect(() => {
+    let active = true; let resolved = '';
+    setMediaUrl(''); setMediaError('');
+    if (content.url) learningMediaUrl(content.url, !navigator.onLine).then(url => {
+      resolved = url; if (active) setMediaUrl(url); else if(url.startsWith('blob:')) URL.revokeObjectURL(url);
+    }).catch(error => { if(active) setMediaError(error.message); });
+    return () => { active = false; if(resolved.startsWith('blob:')) URL.revokeObjectURL(resolved); };
+  }, [content.url]);
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 mb-4">
@@ -408,123 +425,13 @@ function ContentView({
         <p className="text-muted-foreground mb-6">{content.description}</p>
       )}
 
-      {content.type === 'video' && (
-        <div className="space-y-4">
-          {/* Video Player Mockup */}
-          <div className="aspect-video bg-black rounded-lg relative overflow-hidden">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-white text-center">
-                <Video className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg opacity-75">Video Content: {content.title}</p>
-                <p className="text-sm opacity-50 mt-2">{content.duration} minutes</p>
-              </div>
-            </div>
-            
-            {/* Video Controls */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <Progress value={videoProgress} className="h-1 mb-3" />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white hover:bg-white/20"
-                    onClick={() => onVideoProgress(Math.max(0, videoProgress - 10))}
-                  >
-                    <SkipBack className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white hover:bg-white/20"
-                    onClick={onPlayPause}
-                  >
-                    {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white hover:bg-white/20"
-                    onClick={() => onVideoProgress(Math.min(100, videoProgress + 10))}
-                  >
-                    <SkipForward className="h-5 w-5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white hover:bg-white/20"
-                    onClick={onMuteToggle}
-                  >
-                    {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                  </Button>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-white hover:bg-white/20"
-                >
-                  <Maximize className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {content.url ? (
+        mediaError ? <p role="alert" className="text-sm text-destructive">{mediaError}</p> : mediaUrl ? (
+          content.type === 'video' || content.type === 'webinar' ? <video controls src={mediaUrl} className="aspect-video w-full rounded-md bg-muted" /> :
+          <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">Open {content.title}</a>
+        ) : <p className="text-sm text-muted-foreground">Loading course file…</p>
+      ) : <div className="border-t border-border py-4 text-sm text-muted-foreground">{content.description || 'No learning material attached to this item.'}</div>}
 
-      {content.type === 'document' && (
-        <Card>
-          <CardContent className="p-6">
-            <div className="prose dark:prose-invert max-w-none">
-              <div className="border rounded-lg p-8 bg-muted/30 text-center">
-                <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg font-medium">Document: {content.title}</p>
-                <p className="text-muted-foreground mt-2">
-                  This document covers important concepts and guidelines.
-                  Estimated reading time: {content.duration} minutes.
-                </p>
-                <Button className="mt-4" variant="outline">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Open Full Document
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {content.type === 'interactive' && (
-        <Card>
-          <CardContent className="p-6">
-            <div className="border rounded-lg p-8 bg-gradient-to-br from-primary/10 to-primary/5 text-center">
-              <MousePointer className="h-16 w-16 mx-auto mb-4 text-primary" />
-              <p className="text-lg font-medium">Interactive Exercise</p>
-              <p className="text-muted-foreground mt-2">
-                Complete this hands-on activity to practice what you've learned.
-                Estimated time: {content.duration} minutes.
-              </p>
-              <Button className="mt-4">
-                Start Activity
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {(content.type === 'external_link' || content.type === 'webinar') && (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <ExternalLink className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium">{content.title}</p>
-            <p className="text-muted-foreground mt-2">
-              This content is hosted externally.
-            </p>
-            <Button className="mt-4">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open in New Tab
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

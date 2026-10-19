@@ -1,3 +1,5 @@
+import { Input } from '@/components/ui/input';
+import { latestTalentAt, previousPeriod, periodForDays } from '@/lib/performanceDashboardMetrics';
 import React, { useState, useMemo } from 'react';
 import { 
   Box, 
@@ -47,7 +49,8 @@ import { performanceOperationsStore, usePerformanceOperations } from '@/lib/perf
 interface NineBoxTalentGridProps {
   assessments?: TalentAssessment[];
   onSelectStaff?: (staffId: string) => void;
-  onRunCalibration?: () => void;
+  onRunCalibration?: (staffIds: string[], period: string) => void;
+  initialAssessmentId?: string;
 }
 
 const getBoxColor = (performance: PerformanceLevel, potential: PotentialLevel) => {
@@ -79,9 +82,12 @@ const getFlightRiskStyle = (risk: string) => {
   return styles[risk] || styles.low;
 };
 
-export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff, onRunCalibration }: NineBoxTalentGridProps) {
+export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff, onRunCalibration, initialAssessmentId }: NineBoxTalentGridProps) {
   const operations = usePerformanceOperations();
   const assessments = initialAssessments ?? operations.talentAssessments;
+  const [period, setPeriod] = useState(()=>periodForDays(90));
+  const [assessmentStaffId,setAssessmentStaffId]=useState('');
+  React.useEffect(()=>{if(!initialAssessmentId)return;const found=assessments.find(a=>a.id===initialAssessmentId);if(found){setSelectedAssessment(found);setShowDetailSheet(true);}},[initialAssessmentId]);
   const [selectedAssessment, setSelectedAssessment] = useState<TalentAssessment | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [showAssessmentDrawer, setShowAssessmentDrawer] = useState(false);
@@ -91,17 +97,8 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
     return mockStaff.find(s => s.id === id);
   };
 
-  // Only the most recent saved assessment per staff member places them on the grid.
-  const latestAssessments = useMemo(() => {
-    const byStaff = new Map<string, TalentAssessment>();
-    assessments.forEach(a => {
-      const existing = byStaff.get(a.staffId);
-      if (!existing || new Date(a.assessmentDate || a.updatedAt) > new Date(existing.assessmentDate || existing.updatedAt)) {
-        byStaff.set(a.staffId, a);
-      }
-    });
-    return [...byStaff.values()];
-  }, [assessments]);
+  const latestAssessments = useMemo(() => latestTalentAt(assessments, period.end), [assessments, period.end]);
+  const previousAssessments = useMemo(()=>latestTalentAt(assessments,previousPeriod(period).end),[assessments,period]);
 
   const assessedStaffIds = useMemo(() => new Set(latestAssessments.map(a => a.staffId)), [latestAssessments]);
   const unassessedStaff = useMemo(() => mockStaff.filter(s => !assessedStaffIds.has(s.id)), [assessedStaffIds]);
@@ -198,13 +195,13 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
             const staffName = staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown';
             return (
               <Tooltip key={assessment.id} title={staffName}>
-                <Avatar
+                <Button aria-label={`View talent assessment for ${staffName}`} variant="text" onClick={()=>handleSelectAssessment(assessment)} sx={{minWidth:32,p:0}}><Avatar
                   sx={{ 
                     width: 32, 
                     height: 32, 
                     fontSize: 12,
                     cursor: 'pointer',
-                    border: '2px solid white',
+                    border: '2px solid', borderColor: 'background.paper',
                     boxShadow: 1,
                     '&:hover': { transform: 'scale(1.1)' },
                     transition: 'transform 0.2s ease',
@@ -212,7 +209,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
                   onClick={() => handleSelectAssessment(assessment)}
                 >
                   {staff?.firstName.charAt(0) || '?'}
-                </Avatar>
+                </Avatar></Button>
               </Tooltip>
             );
           })}
@@ -381,7 +378,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<TrendingUp size={16} />} onClick={onRunCalibration}>
+          <Button variant="outlined" startIcon={<TrendingUp size={16} />} disabled={!latestAssessments.length} onClick={()=>onRunCalibration?.(latestAssessments.map(a=>a.staffId), `${period.start} – ${period.end}`)}>
             Run Calibration
           </Button>
           <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowAssessmentDrawer(true)}>
@@ -390,6 +387,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
         </Stack>
       </Stack>
 
+      <div className="mb-4 flex flex-wrap items-end gap-3"><label className="text-xs">Comparison from<Input aria-label="Talent comparison start" type="date" value={period.start} max={period.end} onChange={e=>setPeriod(p=>({...p,start:e.target.value}))}/></label><label className="text-xs">As of<Input aria-label="Talent as of date" type="date" value={period.end} min={period.start} onChange={e=>setPeriod(p=>({...p,end:e.target.value}))}/></label><p className="text-xs text-muted-foreground">Latest assessment as of selected date · {latestAssessments.filter(a=>a.assessmentDate.slice(0,10)<period.start).length} overdue for this period · Includes seeded demonstration records.</p></div>
       <Card sx={{ p: 3 }}>
         <Box sx={{ display: 'grid', gap: 2 }}>
           {/* Y-Axis Label */}
@@ -490,7 +488,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
                 label={`${staff.firstName} ${staff.lastName}`}
                 size="small"
                 variant="outlined"
-                onClick={() => { setEditingAssessment(null); setShowAssessmentDrawer(true); }}
+                onClick={() => { setAssessmentStaffId(staff.id); setEditingAssessment(null); setShowAssessmentDrawer(true); }}
                 sx={{ cursor: 'pointer' }}
               />
             ))}
@@ -498,6 +496,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
         </Card>
       )}
 
+      <section className="mt-5 border-t border-border pt-4"><h3 className="text-sm font-semibold">Movement since previous period</h3><div className="mt-2 space-y-2">{latestAssessments.map(a=>{const previous=previousAssessments.find(p=>p.staffId===a.staffId);const staff=getStaffInfo(a.staffId);return <div key={a.staffId} className="flex flex-wrap items-center gap-3 text-xs"><span>{staff?.firstName} {staff?.lastName}</span><span>{previous ? `${previous.performanceLevel}/${previous.potentialLevel} → ${a.performanceLevel}/${a.potentialLevel}`:'No prior assessment'}</span><span className="text-muted-foreground">{a.assessmentDate.slice(0,10)<period.start?'Overdue assessment':'Assessed in period'}</span><Button size="small" variant="text" onClick={()=>{setAssessmentStaffId(a.staffId);setEditingAssessment(null);setShowAssessmentDrawer(true);}}>Reassess</Button></div>;})}</div></section>
       {renderDetailSheet()}
       
       <TalentAssessmentDrawer
@@ -505,6 +504,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
         onClose={() => { setShowAssessmentDrawer(false); setEditingAssessment(null); }}
         onSave={handleSaveAssessment}
         assessment={editingAssessment}
+        staffId={assessmentStaffId}
       />
     </Box>
   );

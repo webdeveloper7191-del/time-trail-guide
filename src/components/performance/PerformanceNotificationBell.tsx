@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useBrowserState } from '@/lib/browserState';
+import { toast } from 'sonner';
 import {
   Box,
   Stack,
@@ -65,7 +67,8 @@ export function PerformanceNotificationBell({
   onViewPlan,
 }: PerformanceNotificationBellProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dismissals, setDismissals] = useBrowserState<Record<string, string[]>>('rostered.performance.notification-dismissals.v1', {});
+  const dismissedIds = useMemo(() => new Set(dismissals[currentUserId] ?? []), [dismissals, currentUserId]);
   const [activeTab, setActiveTab] = useState<'all' | 'plans'>('all');
 
   // Performance notifications (goals, reviews, conversations)
@@ -84,6 +87,12 @@ export function PerformanceNotificationBell({
     return activeTab === 'plans' ? planNotifications : performanceNotifications;
   }, [activeTab, performanceNotifications, planNotifications]);
 
+  useEffect(()=>{
+    const active=new Set([...getAllPerformanceNotifications(goals,reviews,conversations,currentUserId),...getAllPlanNotifications(plans,goals,reviews,conversations,currentUserId)].map(n=>n.id));
+    const saved=dismissals[currentUserId]??[];const retained=saved.filter(id=>active.has(id));
+    if(retained.length!==saved.length)try{setDismissals(p=>({...p,[currentUserId]:retained}));}catch{toast.error('Could not refresh notification dismissals');}
+  },[goals,reviews,conversations,plans,currentUserId]);
+
   const totalCount = performanceNotifications.length + planNotifications.length;
   const errorCount = 
     performanceNotifications.filter(n => n.severity === 'error').length + 
@@ -98,15 +107,18 @@ export function PerformanceNotificationBell({
   };
 
   const handleDismiss = (notificationId: string) => {
-    setDismissedIds((prev) => new Set([...prev, notificationId]));
+    try { setDismissals(prev => ({ ...prev, [currentUserId]: [...new Set([...(prev[currentUserId] ?? []), notificationId])] })); }
+    catch { toast.error('Could not save notification dismissal'); }
   };
 
   const handleDismissAll = () => {
     const allIds = [...performanceNotifications, ...planNotifications].map(n => n.id);
-    setDismissedIds(new Set(allIds));
+    try { setDismissals(prev => ({ ...prev, [currentUserId]: [...new Set([...(prev[currentUserId] ?? []), ...allIds])] })); }
+    catch { toast.error('Could not save notification dismissals'); }
   };
 
   const handleNotificationClick = (notification: PerformanceNotification | PlanNotification) => {
+    if ('planId' in notification && onViewPlan) { onViewPlan(notification.planId); handleClose(); return; }
     if ('entityType' in notification && notification.entityType) {
       switch (notification.entityType) {
         case 'goal':
@@ -132,7 +144,7 @@ export function PerformanceNotificationBell({
 
   return (
     <>
-      <IconButton onClick={handleClick} size="small">
+      <IconButton aria-label="Performance notifications" onClick={handleClick} size="small">
         <Badge
           badgeContent={totalCount}
           color={errorCount > 0 ? 'error' : totalCount > 0 ? 'warning' : 'primary'}
@@ -256,6 +268,7 @@ export function PerformanceNotificationBell({
                         )}
                       </Box>
                       <IconButton
+                        aria-label={`Dismiss ${notification.title}`}
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();

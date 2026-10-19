@@ -69,7 +69,7 @@ export function AdminSidebar() {
             <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
               <Clock className="h-5 w-5 text-sidebar-primary-foreground" />
             </div>
-            <span className="font-semibold text-sidebar-foreground">TimeTrack</span>
+            <span className="font-semibold text-sidebar-foreground">rostered.ai</span>
           </div>
         )}
         <Button

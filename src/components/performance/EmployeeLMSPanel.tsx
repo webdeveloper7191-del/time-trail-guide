@@ -41,7 +41,7 @@ import {
 import { mockCourses, mockEnrollments, mockLearnerAnalytics, mockCertificates, mockLearningPaths } from '@/data/mockLmsData';
 import { mockLearningStreak } from '@/data/mockLmsEngagementData';
 import { MobileCoursePlayer } from '@/components/performance/MobileCoursePlayer';
-import { calculateAssessmentScore, determineEnrollmentStatus } from "@/lib/lmsLogic";
+import { calculateAssessmentScore, determineEnrollmentStatus, canAttemptAssessment } from "@/lib/lmsLogic";
 import { isCourseLocked } from "@/lib/lmsLogic";
 import { mockStaff } from "@/data/mockStaffData";
 import { CoursePlayer } from '@/components/performance/CoursePlayer';
@@ -91,7 +91,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
       return matchesSearch && matchesCategory && course.status === 'published';
     });
-  }, [searchQuery, categoryFilter]);
+  }, [searchQuery, categoryFilter, mockCourses]);
 
   const analytics = mockLearnerAnalytics;
   const streakData = mockLearningStreak;
@@ -163,7 +163,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       if (course) {
         const totalContent = course.modules.reduce((sum, m) => sum + m.content.length, 0);
         const completedContent = moduleProgress.reduce((sum, p) => sum + p.completedContentIds.length, 0);
-        const newProgress = Math.round((completedContent / totalContent) * 100);
+        const newProgress = totalContent ? Math.round((completedContent / totalContent) * 100) : 0;
         
         return {
           ...e,
@@ -176,7 +176,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       
       return { ...e, moduleProgress };
     }));
-  }, []);
+  }, [mockCourses]);
 
   const handleModuleComplete = useCallback((enrollmentId: string, moduleId: string) => {
     setEnrollments(prev => prev.map(e => {
@@ -221,7 +221,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     }
     
     setSelectedCourse(null);
-  }, [enrollments]);
+  }, [enrollments, mockCourses]);
 
   const handleAssessmentSubmit = useCallback(async (
     enrollmentId: string, 
@@ -231,7 +231,8 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     const enrollment = enrollments.find(e => e.id === enrollmentId);
     const course = mockCourses.find(c => c.id === enrollment?.courseId);
     const assessment = course?.modules.map(m => m.assessment).find(a => a?.id === assessmentId);
-    if (!assessment) return { score: 0, passed: false };
+    if (!assessment || !enrollment) return { score: 0, passed: false };
+    if(!canAttemptAssessment(assessment,enrollment.assessmentAttempts.filter(a=>a.assessmentId===assessmentId))) throw new Error('Assessment attempt limit reached');
     
     const score = calculateAssessmentScore(assessment.questions, answers);
     const passed = score >= assessment.passingScore;
@@ -258,13 +259,13 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       return {
         ...e,
         assessmentAttempts: attempts,
-        status: passed ? "completed" : "failed",
+        status: 'in_progress',
         updatedAt: new Date().toISOString()
       };
     }));
     
     return { score, passed };
-  }, [enrollments]);
+  }, [enrollments, mockCourses]);
 
   const getEnrollmentForCourse = (courseId: string) => 
     myEnrollments.find(e => e.courseId === courseId);
@@ -714,6 +715,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
 
       {/* Mobile Course Player */}
       <MobileCoursePlayer
+        onAssessmentSubmit={handleAssessmentSubmit}
         open={showMobilePlayer}
         course={selectedCourse}
         enrollment={myEnrollments.find(e => e.courseId === selectedCourse?.id) || null}

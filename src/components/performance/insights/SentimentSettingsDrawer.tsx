@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -79,6 +79,8 @@ export function SentimentSettingsDrawer({
   const [newIntensifier, setNewIntensifier] = useState('');
   const [newNegator, setNewNegator] = useState('');
 
+  useEffect(()=>{if(open)setSettings(currentSettings || defaultSettings);},[open]);
+
   const handleAddKeyword = (
     type: 'positiveKeywords' | 'negativeKeywords' | 'intensifiers' | 'negators',
     value: string,
@@ -115,7 +117,7 @@ export function SentimentSettingsDrawer({
   };
 
   const handleSave = () => {
-    onSave(settings);
+    try{onSave(settings);}catch{toast.error('Settings could not be saved');return;}
     toast.success('Sentiment analysis settings saved');
     onOpenChange(false);
   };

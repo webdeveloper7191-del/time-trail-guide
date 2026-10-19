@@ -1,4 +1,5 @@
 import { pulseResults } from '@/lib/engagementLogic';
+import { pulseResultsCsv, downloadPerformanceCsv } from '@/lib/performanceExperienceStore';
 import { mockStaff } from '@/data/mockStaffData';
 import { EmployeeSurveyPanel } from './EmployeeSurveyPanel';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
@@ -557,7 +558,12 @@ export function PulseSurveyPanel({ currentUserId }: PulseSurveyPanelProps) {
             <Button variant="outlined" onClick={() => setShowResultsSheet(false)}>
               Close
             </Button>
-            <Button variant="contained" startIcon={<BarChart3 size={16} />}>
+            <Button variant="contained" disabled={!results || responses.length === 0} startIcon={<BarChart3 size={16} />} onClick={() => {
+              try {
+                downloadPerformanceCsv(pulseResultsCsv(selectedSurvey, responses, mockStaff.filter(s => s.status === 'active').length, rules.surveys.minResponsesToPublish), `pulse-${selectedSurvey.id}-results.csv`);
+                toast.success('Aggregate results exported; free-text answers and respondent identities are excluded');
+              } catch (error) { toast.error(error instanceof Error ? error.message : 'Export failed'); }
+            }}>
               Export Results
             </Button>
           </SheetFooter>

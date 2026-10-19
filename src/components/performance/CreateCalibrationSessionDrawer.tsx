@@ -32,7 +32,7 @@ const toLocalDateTime = (value?: string) => {
 
 export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session }: CreateCalibrationSessionDrawerProps) {
   const [title, setTitle] = useState('');
-  const [reviewCycle, setReviewCycle] = useState('Q1 2024 Review');
+  const [reviewCycle, setReviewCycle] = useState('Current review period');
   const [scheduledDate, setScheduledDate] = useState('');
   const [facilitatorId, setFacilitatorId] = useState('');
   const [participantIds, setParticipantIds] = useState<string[]>([]);
@@ -41,7 +41,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session 
   useEffect(() => {
     if (!open) return;
     setTitle(session?.title ?? '');
-    setReviewCycle(session?.reviewCycle ?? 'Q1 2024 Review');
+    setReviewCycle(session?.reviewCycle ?? 'Current review period');
     setScheduledDate(toLocalDateTime(session?.scheduledDate));
     setFacilitatorId(session?.facilitatorId ?? '');
     setParticipantIds(session?.participantIds ?? []);
@@ -76,7 +76,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session 
 
   const resetForm = () => {
     setTitle('');
-    setReviewCycle('Q1 2024 Review');
+    setReviewCycle('Current review period');
     setScheduledDate('');
     setFacilitatorId('');
     setParticipantIds([]);
@@ -121,10 +121,7 @@ export function CreateCalibrationSessionDrawer({ open, onClose, onSave, session 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Q1 2024 Review">Q1 2024 Review</SelectItem>
-                  <SelectItem value="Q2 2024 Review">Q2 2024 Review</SelectItem>
-                  <SelectItem value="Annual 2024">Annual 2024 Review</SelectItem>
-                  <SelectItem value="Mid-Year 2024">Mid-Year 2024 Review</SelectItem>
+                  {[...new Set([reviewCycle, `Q${Math.floor(new Date().getMonth()/3)+1} ${new Date().getFullYear()}`, `Annual ${new Date().getFullYear()}`])].map(cycle=><SelectItem key={cycle} value={cycle}>{cycle}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>

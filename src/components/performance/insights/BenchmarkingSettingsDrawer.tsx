@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -136,6 +136,8 @@ export function BenchmarkingSettingsDrawer({
     higherIsBetter: true,
   });
 
+  useEffect(() => { if(open) setSettings(currentSettings || defaultSettings); }, [open]);
+
   const handleAddCustomMetric = () => {
     if (!newMetric.name?.trim()) {
       toast.error('Please enter a metric name');
@@ -186,7 +188,7 @@ export function BenchmarkingSettingsDrawer({
   };
 
   const handleSave = () => {
-    onSave(settings);
+    try { onSave(settings); } catch { toast.error('Settings could not be saved'); return; }
     toast.success('Benchmarking settings saved');
     onOpenChange(false);
   };

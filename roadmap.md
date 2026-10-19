@@ -1,5 +1,11 @@
 # Roadmap
 
+- [ ] Performance: finish survey export, durable review drafts/notification dismissals and usable browser-offline learning
+- [ ] Performance: replace sample insights and benchmarks with period-aware, privacy-safe stored-record reporting
+- [ ] Performance: add scorecard evidence/history/coverage, talent movement and connected calibration
+- [ ] Performance: connect development follow-ups, learning and manager action queues with contextual approved attendance
+- [ ] Performance: clean universal sample wording/branding and verify completed flows
+
 - [x] Fix seven performance gaps: succession archive/restore, saved-rating calibration spread, live OKR parents, task and skills persistence, missing wellbeing indicators and settings saving (browser-only; tests and refresh flows verified)
 
 - [x] Expand tenant admin, location admin and staff dashboards with shared-record summaries, filters, action queues and useful navigation (role preview, sample data labelled; no new backend)

@@ -1,3 +1,4 @@
+import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
 import React, { useState } from 'react';
 import { 
   Box, 
@@ -71,6 +72,7 @@ const getSourceChipStyle = (source: string) => {
 
 export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
   const operations = usePerformanceOperations();
+  const privacyMinimum = usePerformanceRules().surveys.minResponsesToPublish;
   const performanceConfig = usePerformanceConfig();
   const competencies = performanceConfig.competencies.filter(item => item.isActive);
   const maxRating = Math.max(...(performanceConfig.ratingScales.find(scale => scale.isDefault && scale.isActive)?.points.map(point => point.value) ?? [5]));
@@ -224,8 +226,11 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
     
     const responses = getResponsesForRequest(selectedRequest.id);
     const subjectName = getStaffName(selectedRequest.subjectStaffId);
+    const anonymous=responses.filter(r=>r.isAnonymous&&r.status==='completed');
+    const withheld=selectedRequest.anonymousResponses && anonymous.length<privacyMinimum;
 
     const calculateAverageByCompetency = (competencyId: string) => {
+      if(withheld) return null;
       const completedResponses = responses.filter(r => r.status === 'completed');
       const ratings = completedResponses
         .flatMap(r => r.ratings)
@@ -263,9 +268,9 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                 <TabsTrigger value="competencies">By Competency</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="responses" className="mt-4">
+              <TabsContent value="responses" className="mt-4"><Typography variant="body2" color="text.secondary">Anonymous responses are shown only as aggregates, never as individual comments or source groups.</Typography>
                 <Stack spacing={2}>
-                  {responses.map(response => {
+                  {responses.filter(response=>!response.isAnonymous).map(response => {
                     const sourceStyle = getSourceChipStyle(response.sourceType);
                     const responderName = response.isAnonymous 
                       ? 'Anonymous' 
@@ -318,13 +323,13 @@ export function Feedback360Panel({ currentUserId }: Feedback360PanelProps) {
                 </Stack>
               </TabsContent>
 
-              <TabsContent value="summary" className="mt-4">
+              <TabsContent value="summary" className="mt-4">{withheld && <Typography color="text.secondary">Anonymous results withheld until {privacyMinimum} anonymous responses are received.</Typography>}
                 <Card sx={{ p: 3 }}>
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                     Overall Feedback Summary
                   </Typography>
                   <Stack spacing={2} sx={{ mt: 2 }}>
-                    {responses.filter(r => r.status === 'completed' && r.strengths).map(r => (
+                    {responses.filter(r => r.status === 'completed' && !r.isAnonymous && r.strengths).map(r => (
                       <Box key={r.id}>
                         <Typography variant="caption" color="text.secondary">
                           {feedbackSourceLabels[r.sourceType]}

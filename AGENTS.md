@@ -17,3 +17,7 @@
 - Forms templates persist in `formTemplatesStore`; recognition surveys link by stable template ID through `surveyForms`, retaining recognition lifecycle, anonymity and duplicate-response checks so editing and completion share one survey definition.
 - Value-based nominations use `recognitionWorkflowStore`, separate from review-feedback nominations; approval publishes a stable-ID post and an idempotent points ledger entry so repeated decisions cannot duplicate awards. Local approver selections are workflow configuration, not account permissions.
 - Staff rewards use the shared `rewardsStore` wallet and ledger; milestone rewards run on workspace opening rather than implying a background scheduler or real-money fulfilment.
+
+- Performance experience drafts are keyed by user/review/stage; analytics use dated records and privacy thresholds, and scorecards withhold fixed-weight totals when evidence is incomplete so missing sources never change the formula.
+- Browser learning downloads store course snapshots in browserState and media in Cache Storage, with actual saved-progress checks and one shared course assessment player across screen sizes; no action implies server synchronisation.
+- Development journeys persist explicit review, skill, plan, enrolment and follow-up review links; calibration from talent saves an assessed-staff snapshot and ratings, so navigation retains evidence context.
