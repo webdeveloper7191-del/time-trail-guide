@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { reviewDrafts, reviewDraftKey, clearReviewDraft } from '@/lib/performanceExperienceStore';
-import { useRecognition } from '@/lib/recognitionStore';
+import { useRecognitionState } from '@/lib/recognitionStore';
 import {
   Box,
   Stack,
@@ -83,7 +83,7 @@ export function ReviewExecutionSheet({
   const [areasForImprovement, setAreasForImprovement] = useState<string[]>(['', '', '']);
   const [developmentPlan, setDevelopmentPlan] = useState('');
   const [loading, setLoading] = useState(false);
-  const recognition = useRecognition();
+  const recognition = useRecognitionState();
   const draftKey = review ? reviewDraftKey(currentUserId, review.id, review.status) : '';
   const hydrated = useRef('');
   const submitted = useRef(false);
