@@ -23,6 +23,7 @@ export function canAttemptAssessment(assessment: Assessment, attempts: Assessmen
 }
 
 export function isCourseLocked(course: Course, enrollments: Enrollment[], staffRoles: string[], staffLocation: string): { locked: boolean; reason?: string } {
+  if (course.status !== 'published') return { locked:true,reason:'This course is not published' };
   const now = new Date();
   
   if (course.availableFrom && isBefore(now, parseISO(course.availableFrom))) {

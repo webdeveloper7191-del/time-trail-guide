@@ -21,3 +21,7 @@
 - Performance experience drafts are keyed by user/review/stage; analytics use dated records and privacy thresholds, and scorecards withhold fixed-weight totals when evidence is incomplete so missing sources never change the formula.
 - Browser learning downloads store course snapshots in browserState and media in Cache Storage, with actual saved-progress checks and one shared course assessment player across screen sizes; no action implies server synchronisation.
 - Development journeys persist explicit review, skill, plan, enrolment and follow-up review links; calibration from talent saves an assessed-staff snapshot and ratings, so navigation retains evidence context.
+- Reviews snapshot cycle IDs, competencies and scale points at creation, merge stage-specific evidence and reject failed writes before draft removal; weighted scores use that immutable evidence for consistent comparisons.
+- Scorecard 360 evidence must meet each request's threshold, including its anonymous subset, before aggregation; pooling cannot bypass privacy limits.
+- Course authoring uses one lossless conversion to the shared LMS store; browser persistence precedes success and certificate issuance honours course/global policies and local completion approvals.
+- Development setup persists a pending journey with stable linked IDs before child writes and resumes idempotently, preventing duplicate goals, reviews or plans after partial failures.

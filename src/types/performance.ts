@@ -28,6 +28,8 @@ export interface PerformanceReview {
   staffId: string;
   reviewerId: string; // manager conducting review
   reviewCycle: ReviewCycle;
+  reviewCycleId?: string;
+  ratingScaleSnapshot?: { id: string; name: string; points: { value: number; label: string; description?: string }[] };
   periodStart: string;
   periodEnd: string;
   status: ReviewStatus;

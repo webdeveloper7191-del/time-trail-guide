@@ -1,3 +1,4 @@
+import { lmsStore } from '@/lib/lmsStore';
 import { LearningOfflineControls } from './LearningOfflineControls';
 import { learningDownloads, learningMediaUrl } from '@/lib/learningOfflineStore';
 import React, { useState, useMemo, useCallback, useEffect, useSyncExternalStore } from 'react';
@@ -147,7 +148,7 @@ export function CoursePlayer({
       // Check if course is complete
       if (currentModuleIndex === course.modules.length - 1) {
         onCourseComplete(enrollment.id);
-        toast.success('Course completed!');
+        toast.success(lmsStore.getSnapshot().enrollments.find(e=>e.id===enrollment.id)?.completionApprovalPending?'Learning finished; awaiting manager approval':'Course completed!');
       } else {
         setCurrentModuleIndex(prev => prev + 1);
         setCurrentContentIndex(0);

@@ -1,3 +1,5 @@
+import { saveAuthoredCourse } from '@/lib/lmsAuthoring';
+import { loadLmsSettings } from '@/lib/lmsSettingsStore';
 import { useLmsState } from '@/lib/lmsStore';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,6 +38,7 @@ import { isPast, parseISO } from 'date-fns';
 interface LMSAdminModuleProps {
   staff: StaffMember[];
   currentUserId: string;
+  initialCourseId?: string;
 }
 
 const TABS = [
@@ -57,10 +60,12 @@ const PANEL_TAB: Record<string, string> = {
   reviews: 'reviews',
 };
 
-export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
-  const [activeTab, setActiveTab] = useState<string>('overview');
+export function LMSAdminModule({ staff, currentUserId, initialCourseId }: LMSAdminModuleProps) {
+  const [activeTab, setActiveTab] = useState<string>(initialCourseId ? 'courses' : 'overview');
   const [showAuthoringTool, setShowAuthoringTool] = useState(false);
   const [showGettingStarted, setShowGettingStarted] = useState(true);
+  const [courses] = useLmsState('courses');
+  const [paths] = useLmsState('learningPaths');
   const [enrollments, setEnrollments] = useLmsState('enrollments');
 
   const stats = useMemo(() => {
@@ -80,7 +85,9 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
   }, [enrollments]);
 
   const handleAssignCourse = (courseId: string, staffIds: string[], dueDate?: Date) => {
-    const newEnrollments = staffIds.map((staffId) => ({
+    if (!courses.some(c=>c.id===courseId&&c.status==='published')) throw new Error('Publish the course before assigning it');
+    const defaultDue = new Date(); defaultDue.setDate(defaultDue.getDate()+loadLmsSettings().defaultDueDays);
+    const newEnrollments = staffIds.filter(id=>!enrollments.some(e=>e.staffId===id&&e.courseId===courseId&&e.status!=='expired'&&e.status!=='failed')).map((staffId) => ({
       id: `enroll-${Date.now()}-${staffId}`,
       staffId,
       courseId,
@@ -89,7 +96,7 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
       moduleProgress: [],
       assessmentAttempts: [],
       assignedBy: currentUserId,
-      dueDate: dueDate?.toISOString().split('T')[0],
+      dueDate: (dueDate ?? defaultDue).toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }));
@@ -98,21 +105,17 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
     toast.success(`Course assigned to ${staffIds.length} staff member(s)`);
   };
 
-  const handleSaveCourse = (_course: CourseAuthoringState) => {
-    toast.success('Course saved as a draft');
-  };
-
-  const handlePublishCourse = (_course: CourseAuthoringState) => {
-    toast.success('Course published — you can now assign it to staff');
-    setShowAuthoringTool(false);
-    setActiveTab('courses');
+  const handleSaveCourse = (course: CourseAuthoringState) => { saveAuthoredCourse({...course,status:'draft'}); };
+  const handlePublishCourse = (course: CourseAuthoringState) => {
+    saveAuthoredCourse({...course,status:'published'});
+    setShowAuthoringTool(false); setActiveTab('courses');
   };
 
   const activeMeta = TABS.find((t) => t.value === activeTab);
 
   const kpis = [
-    { label: 'Courses', value: mockCourses.length, icon: BookOpen, tone: 'primary' as const, hint: 'in your library' },
-    { label: 'Learning paths', value: mockLearningPaths.length, icon: Route, tone: 'primary' as const, hint: 'programs built' },
+    { label: 'Courses', value: courses.length, icon: BookOpen, tone: 'primary' as const, hint: 'in your library' },
+    { label: 'Learning paths', value: paths.length, icon: Route, tone: 'primary' as const, hint: 'programs built' },
     { label: 'Assigned', value: stats.total, icon: Users, tone: 'muted' as const, hint: 'courses given to staff' },
     { label: 'Completed', value: `${stats.completionRate}%`, icon: CheckCircle2, tone: 'success' as const, hint: `${stats.completed} finished` },
     { label: 'In progress', value: stats.inProgress, icon: Clock, tone: 'warning' as const, hint: 'started, not finished' },
@@ -241,8 +244,10 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
           <TabsContent key={value} value={value} className="mt-4">
             <LMSAdminPanel
               staff={staff}
+              currentUserId={currentUserId}
               onAssignCourse={handleAssignCourse}
               embedded
+              initialCourseId={initialCourseId}
               tab={PANEL_TAB[value]}
               onTabChange={(panelTab) => {
                 const moduleTab = Object.keys(PANEL_TAB).find((k) => PANEL_TAB[k] === panelTab);

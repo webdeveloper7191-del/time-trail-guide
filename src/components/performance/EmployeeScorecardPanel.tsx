@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { eligibleScorecard360, reviewPercentage } from '@/lib/performanceReviewRules';
 import { useTimesheets } from '@/lib/timesheetStore';
 interface Props { initialStaffId?:string; currentUserId?:string; onNavigate?:(tab:string,id?:string)=>void }
 export function EmployeeScorecardPanel({initialStaffId,currentUserId='staff-2',onNavigate=()=>{}}:Props) {
@@ -20,10 +21,11 @@ export function EmployeeScorecardPanel({initialStaffId,currentUserId='staff-2',o
   const history=ops.talentAssessments.filter(a=>a.staffId===staffId&&inPeriod(a.assessmentDate,period)).sort((a,b)=>b.assessmentDate.localeCompare(a.assessmentDate));const assessment=history[0];
   const reviews=performanceRecords.reviews().filter(r=>r.staffId===staffId&&r.status==='completed'&&inPeriod(r.completedAt,period)).sort((a,b)=>(b.completedAt??'').localeCompare(a.completedAt??''));const review=reviews[0];
   const goals=performanceRecords.goals().filter(g=>g.staffId===staffId&&g.status!=='cancelled'&&inPeriod(g.targetDate,period));
-  const responses=ops.feedback360Responses.filter(r=>r.status==='completed'&&inPeriod(r.submittedAt,period)&&ops.feedback360Requests.some(q=>q.id===r.requestId&&q.subjectStaffId===staffId));
+  const periodResponses=ops.feedback360Responses.filter(r=>r.status==='completed'&&inPeriod(r.submittedAt,period)&&ops.feedback360Requests.some(q=>q.id===r.requestId&&q.subjectStaffId===staffId));
+  const responses=eligibleScorecard360(ops.feedback360Requests.filter(q=>q.subjectStaffId===staffId),periodResponses,Math.max(rules.surveys.minResponsesToPublish,rules.analytics.minGroupSizeForBreakdown));
   const allow360=responses.length>=Math.max(rules.surveys.minResponsesToPublish,rules.analytics.minGroupSizeForBreakdown);
   const avg360=allow360?average(responses.flatMap(r=>r.ratings.filter(a=>a.rating>0).map(a=>a.rating))):null;
-  const parts=[{label:'Talent performance',weight:40,value:assessment?Math.min(100,assessment.performanceScore/5*100):null,count:history.length,tab:'talent',id:assessment?.id},{label:'Completed review',weight:25,value:typeof review?.overallManagerRating==='number'?review.overallManagerRating/5*100:null,count:reviews.length,tab:'reviews',id:review?.id},{label:'Goal completion',weight:20,value:goals.length?goals.filter(g=>g.status==='completed').length/goals.length*100:null,count:goals.length,tab:'goals',id:undefined},{label:'360° feedback',weight:15,value:avg360===null?null:avg360/5*100,count:allow360?responses.length:0,tab:'360feedback',id:undefined}];
+  const parts=[{label:'Talent performance',weight:40,value:assessment?Math.min(100,assessment.performanceScore/5*100):null,count:history.length,tab:'talent',id:assessment?.id},{label:'Completed review',weight:25,value:review?reviewPercentage(review):null,count:reviews.length,tab:'reviews',id:review?.id},{label:'Goal completion',weight:20,value:goals.length?goals.filter(g=>g.status==='completed').length/goals.length*100:null,count:goals.length,tab:'goals',id:undefined},{label:'360° feedback',weight:15,value:avg360===null?null:avg360/5*100,count:allow360?responses.length:0,tab:'360feedback',id:undefined}];
   const score=fixedScore(parts);const coverage=parts.filter(p=>p.value!==null).reduce((n,p)=>n+p.weight,0);
   const feedback=performanceRecords.feedback().filter(f=>f.toStaffId===staffId&&!f.isPrivate&&inPeriod(f.createdAt,period));
   const approved=timesheets.filter(t=>t.status==='approved'&&(t.employee.id===staffId||t.employee.email===person?.email)).flatMap(t=>t.entries.filter(e=>inPeriod(e.date,period)));

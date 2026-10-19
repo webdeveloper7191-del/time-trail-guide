@@ -310,9 +310,9 @@ export function EmployeeOKRPanel({ currentUserId }: EmployeeOKRPanelProps) {
                             </Typography>
                             <Slider
                               value={[kr.currentValue]}
-                              min={kr.startValue}
-                              max={kr.targetValue}
-                              step={1}
+                              min={Math.min(kr.startValue, kr.targetValue)}
+                              max={Math.max(kr.startValue, kr.targetValue)}
+                              step={0.01}
                               onValueChange={(val) => updateKeyResult(objective.id, kr.id, val[0])}
                               className="mb-2"
                             />

@@ -139,15 +139,15 @@ export function LmsSettingsPanel() {
     setDraft((prev) => ({ ...prev, [key]: value }));
 
   const handleSave = () => {
-    saveLmsSettings(draft);
+    try { saveLmsSettings(draft);
     setSaved(draft);
-    toast.success('Learning settings saved');
+    toast.success('Learning settings saved'); } catch { toast.error('Settings could not be saved; your changes are retained'); }
   };
 
   const handleReset = () => {
-    const defaults = resetLmsSettings();
+    try { const defaults = resetLmsSettings();
     setSaved(defaults);
-    toast.info('Settings restored to recommended defaults');
+    toast.info('Settings restored to recommended defaults'); } catch { toast.error('Settings could not be reset'); }
   };
 
   return (
@@ -281,7 +281,7 @@ export function LmsSettingsPanel() {
 
           <SettingRow
             label="Manager must confirm completion"
-            help="For hands-on training, a manager signs off before the course is marked complete."
+            help="Completion needs local manager approval; no approval email is sent."
           >
             <Switch checked={draft.requireManagerSignOff} onCheckedChange={(v) => set('requireManagerSignOff', v)} />
           </SettingRow>

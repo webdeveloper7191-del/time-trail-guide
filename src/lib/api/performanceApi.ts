@@ -9,6 +9,7 @@ import {
 import { mockReviews, mockGoals, mockFeedback, mockConversations } from '@/data/mockPerformanceData';
 import { mockApiCall, ApiResponse } from './mockApi';
 import { useSyncExternalStore } from 'react';
+import { snapshotReview, mergeReviewRatings, weightedReviewRating } from '@/lib/performanceReviewRules';
 
 // Shared change channel so manager and staff screens stay in sync.
 const recordListeners = new Set<() => void>();
@@ -36,8 +37,8 @@ const loadGoals = (): Goal[] => {
 };
 let persistedGoals = loadGoals();
 const saveGoals = (goals: Goal[]) => {
+  window.localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
   persistedGoals = goals;
-  try { window.localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals)); } catch { /* retain memory state */ }
   notifyRecords();
 };
 
@@ -46,11 +47,11 @@ function persisted<T>(key: string, seed: T[]) {
   try { const raw = window.localStorage.getItem(key); if (raw) items = JSON.parse(raw); } catch { /* use seed */ }
   return {
     get: () => items,
-    set: (next: T[]) => { items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ } notifyRecords(); },
+    set: (next: T[]) => { window.localStorage.setItem(key, JSON.stringify(next)); items = next; notifyRecords(); },
     upsert: (item: T & { id: string }) => {
       const exists = items.some((i: any) => i.id === item.id);
       const next = exists ? items.map((i: any) => i.id === item.id ? item : i) : [...items, item];
-      items = next; try { window.localStorage.setItem(key, JSON.stringify(next)); } catch { /* memory only */ }
+      window.localStorage.setItem(key, JSON.stringify(next)); items = next;
       notifyRecords();
       return item;
     },
@@ -75,10 +76,12 @@ export const performanceApi = {
     return mockApiCall(review ?? null);
   },
 
-  async createReview(data: Omit<PerformanceReview, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<PerformanceReview>> {
+  async createReview(data: Omit<PerformanceReview, 'id' | 'createdAt' | 'updatedAt'>, stableId?: string): Promise<ApiResponse<PerformanceReview>> {
+    const existing = stableId ? reviewsDb.get().find(r=>r.id===stableId) : undefined;
+    if (existing) return mockApiCall(existing);
     const newReview: PerformanceReview = {
-      ...data,
-      id: `review-${Date.now()}`,
+      ...snapshotReview(data),
+      id: stableId ?? crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -98,12 +101,15 @@ export const performanceApi = {
     const review = reviewsDb.get().find(r => r.id === id);
     if (!review) throw new Error('Review not found');
     
-    const selfRatingAvg = ratings.reduce((sum, r) => sum + (r.selfRating || 0), 0) / ratings.length;
+    const frozen = snapshotReview(review);
+    const merged = mergeReviewRatings(review.ratings, ratings, 'self');
+    const selfRatingAvg = weightedReviewRating({ ...frozen, ratings: merged }, 'self');
+    if (selfRatingAvg === undefined) throw new Error('Rate every weighted criterion using the review scale');
     
     const updated: PerformanceReview = {
-      ...review,
-      ratings,
-      overallSelfRating: Math.round(selfRatingAvg * 10) / 10,
+      ...frozen,
+      ratings: merged,
+      overallSelfRating: selfRatingAvg,
       selfSummary: summary,
       status: 'pending_manager',
       submittedAt: new Date().toISOString(),
@@ -124,12 +130,15 @@ export const performanceApi = {
     const review = reviewsDb.get().find(r => r.id === id);
     if (!review) throw new Error('Review not found');
     
-    const managerRatingAvg = ratings.reduce((sum, r) => sum + (r.managerRating || 0), 0) / ratings.filter(r => r.managerRating).length;
+    const frozen = snapshotReview(review);
+    const merged = mergeReviewRatings(review.ratings, ratings, 'manager');
+    const managerRatingAvg = weightedReviewRating({ ...frozen, ratings: merged }, 'manager');
+    if (managerRatingAvg === undefined) throw new Error('Rate every weighted criterion using the review scale');
     
     const updated: PerformanceReview = {
-      ...review,
-      ratings,
-      overallManagerRating: Math.round(managerRatingAvg * 10) / 10,
+      ...frozen,
+      ratings: merged,
+      overallManagerRating: managerRatingAvg,
       managerSummary: summary,
       strengths,
       areasForImprovement,
@@ -156,10 +165,12 @@ export const performanceApi = {
     return mockApiCall(goal ?? null);
   },
 
-  async createGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Goal>> {
+  async createGoal(data: Omit<Goal, 'id' | 'createdAt' | 'updatedAt'>, stableId?: string): Promise<ApiResponse<Goal>> {
+    const existing = stableId ? persistedGoals.find(g=>g.id===stableId) : undefined;
+    if (existing) return mockApiCall(existing);
     const newGoal: Goal = {
       ...data,
-      id: `goal-${Date.now()}`,
+      id: stableId ?? crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

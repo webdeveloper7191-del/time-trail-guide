@@ -4,7 +4,7 @@ import type { LmsState } from './lmsStore';
 
 describe('certificates', () => {
   it('issues one certificate per completed enrolment without one', () => {
-    const s = { courses: [], certificates: [], learningPaths: [], pathEnrollments: null,
+    const s = { courses: [{id:'c1',title:'Safety',certificateOnCompletion:true}], certificates: [], learningPaths: [], pathEnrollments: null,
       enrollments: [{ id: 'e1', staffId: 's1', courseId: 'c1', status: 'completed' }, { id: 'e2', staffId: 's1', courseId: 'c1', status: 'in_progress' }],
     } as unknown as LmsState;
     const out = issueMissingCertificates(s);

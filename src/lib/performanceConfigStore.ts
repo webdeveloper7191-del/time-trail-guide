@@ -144,16 +144,12 @@ function read(): PerformanceConfig {
   } catch {
     cache = defaultConfig();
   }
-  return cache!;
+  return cache ?? defaultConfig();
 }
 
 function write(next: PerformanceConfig) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   cache = next;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* storage unavailable — keep in-memory */
-  }
   listeners.forEach(l => l());
 }
 

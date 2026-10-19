@@ -113,6 +113,8 @@ export interface Enrollment {
   assignedBy?: string;
   dueDate?: string;
   notes?: string;
+  completionApprovalPending?: boolean;
+  completionApprovedBy?: string;
   createdAt: string;
   updatedAt: string;
 }

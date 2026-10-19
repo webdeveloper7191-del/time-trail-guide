@@ -1,4 +1,5 @@
-import { useLmsState } from '@/lib/lmsStore';
+import { loadLmsSettings } from '@/lib/lmsSettingsStore';
+import { lmsStore, useLmsState } from '@/lib/lmsStore';
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -97,8 +98,13 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   const streakData = mockLearningStreak;
 
   const handleEnroll = (course: Course) => {
+    const policy=loadLmsSettings();
+    if(!policy.allowSelfEnrol){toast.error('Self-enrolment is disabled; ask your manager to assign learning');return;}
+    if(myEnrollments.some(e=>e.courseId===course.id&&e.status!=='failed'&&e.status!=='expired')){toast.error('Already enrolled in this course');return;}
+    const due=new Date();due.setDate(due.getDate()+policy.defaultDueDays);
     const newEnrollment: Enrollment = {
-      id: `enroll-${Date.now()}`,
+      id: crypto.randomUUID(),
+      dueDate:due.toISOString().slice(0,10),
       staffId: currentUserId,
       courseId: course.id,
       status: 'not_started',
@@ -108,7 +114,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setEnrollments(prev => [...prev, newEnrollment]);
+    try { setEnrollments(prev => [...prev, newEnrollment]); } catch { toast.error('Enrolment could not be saved'); return; }
     setShowCourseDetail(false);
     toast.success(`Enrolled in ${course.title}`);
   };
@@ -119,6 +125,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   };
 
   const handleStartFromDetail = (enrollment: Enrollment) => {
+    if (isMobile && !loadLmsSettings().allowMobileLearning) { toast.error('Mobile learning is disabled by your learning settings'); return; }
     const course = mockCourses.find(c => c.id === enrollment.courseId);
     if (course) {
       setShowCourseDetail(false);
@@ -132,6 +139,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   };
 
   const handleContinueLearning = (enrollment: Enrollment) => {
+    if (isMobile && !loadLmsSettings().allowMobileLearning) { toast.error('Mobile learning is disabled by your learning settings'); return; }
     const course = mockCourses.find(c => c.id === enrollment.courseId);
     if (course) {
       setSelectedCourse(course);
@@ -147,7 +155,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     setEnrollments(prev => prev.map(e => {
       if (e.id !== enrollmentId) return e;
       
-      const moduleProgress = [...e.moduleProgress];
+      const moduleProgress = e.moduleProgress.map(mp => ({ ...mp, completedContentIds: [...mp.completedContentIds] }));
       let mp = moduleProgress.find(p => p.moduleId === moduleId);
       
       if (!mp) {
@@ -209,6 +217,8 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     setShowCoursePlayer(false);
     setShowMobilePlayer(false);
     
+    const saved=lmsStore.getSnapshot().enrollments.find(e=>e.id===enrollmentId);
+    if(saved?.completionApprovalPending){toast.info('Learning finished; awaiting manager approval');setSelectedCourse(null);return;}
     if (course && enrollment) {
       setCompletedCourse(course);
       setCompletedEnrollment({
@@ -606,7 +616,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1 text-amber-500">
                           <Star className="h-3 w-3 fill-current" />
-                          <span className="text-xs font-medium">{course.rating}</span>
+                          <span className="text-xs font-medium">{loadLmsSettings().showRatingsAndReviews ? course.rating : '—'}</span>
                         </div>
                       </TableCell>
                       <TableCell>

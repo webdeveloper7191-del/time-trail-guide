@@ -27,6 +27,7 @@ import {
 import { mockPIPs } from '@/data/mockCompensationData';
 import { mockObjectives } from '@/data/mockOKRData';
 import { updateWellbeingIndicators } from '@/lib/engagementLogic';
+import { keyResultProgress } from '@/lib/performanceReviewRules';
 import { performanceTaxonomyStore } from '@/lib/performanceTaxonomyStore';
 
 export interface HappinessEntry {
@@ -89,8 +90,8 @@ let state = load();
 const listeners = new Set<() => void>();
 if (typeof window !== 'undefined') window.addEventListener('storage', e => { if(e.key === STORAGE_KEY || e.key === null) {state=load(); listeners.forEach(fn=>fn());} });
 function commit(next: PerformanceOperationsState) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   state = next;
-  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* retain memory state */ }
   listeners.forEach(listener => listener());
 }
 
@@ -187,7 +188,7 @@ export const performanceOperationsStore = {
   updateKeyResult(objectiveId: string, keyResultId: string, currentValue: number) {
     commit({ ...state, objectives: state.objectives.map(objective => {
       if (objective.id !== objectiveId) return objective;
-      const keyResults = objective.keyResults.map(result => result.id === keyResultId ? { ...result, currentValue, progress: Math.max(0, Math.min(100, Math.round(((currentValue - result.startValue) / Math.max(1, result.targetValue - result.startValue)) * 100))), updatedAt: now() } : result);
+      const keyResults = objective.keyResults.map(result => result.id === keyResultId ? { ...result, currentValue, progress: keyResultProgress(result.startValue, result.targetValue, currentValue), updatedAt: now() } : result);
       return { ...objective, keyResults, progress: keyResults.length ? Math.round(keyResults.reduce((sum, item) => sum + item.progress, 0) / keyResults.length) : 0, updatedAt: now() };
     }) });
   },

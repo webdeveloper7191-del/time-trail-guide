@@ -133,13 +133,10 @@ export function ReviewExecutionSheet({
   const isManagerReview = review.reviewerId === currentUserId && review.status === 'pending_manager';
   const isViewOnly = !isSelfReview && !isManagerReview;
 
-  const configuredCycle = performanceConfig.reviewCycles.find(cycle => cycle.cycle === review.reviewCycle && cycle.stage !== 'closed');
-  const scale = performanceConfig.ratingScales.find(item => item.id === configuredCycle?.ratingScaleId && item.isActive)
-    ?? performanceConfig.ratingScales.find(item => item.isDefault && item.isActive && item.appliesTo !== 'goals')
-    ?? performanceConfig.ratingScales.find(item => item.isActive);
-  const configuredCompetencies = performanceConfig.competencies.filter(item => item.isActive && (!configuredCycle || configuredCycle.competencyIds.includes(item.id)));
-  const criteria = review.customCriteria?.length ? review.customCriteria : configuredCompetencies;
-  const maxRating = Math.max(...(scale?.points.map(point => point.value) ?? [5]));
+  const configuredCycle = performanceConfig.reviewCycles.find(cycle => cycle.id === review.reviewCycleId);
+  const scale = review.ratingScaleSnapshot ?? { points: [1,2,3,4,5].map(value => ({ value, label: `Rating ${value}` })) };
+  const criteria = review.customCriteria ?? performanceConfig.competencies.filter(item => item.isActive && (!configuredCycle || configuredCycle.competencyIds.includes(item.id)));
+  const maxRating = Math.max(...scale.points.map(point => point.value));
   const steps = isSelfReview
     ? ['Rate Yourself', 'Summary', 'Submit']
     : isManagerReview
@@ -149,14 +146,14 @@ export function ReviewExecutionSheet({
   const handleRatingChange = (criteriaId: string, value: number | null) => {
     setRatings((prev) => ({
       ...prev,
-      [criteriaId]: { ...prev[criteriaId], rating: value || 0 },
+      [criteriaId]: { comments: '', ...prev[criteriaId], rating: value ?? 0 },
     }));
   };
 
   const handleCommentsChange = (criteriaId: string, comments: string) => {
     setRatings((prev) => ({
       ...prev,
-      [criteriaId]: { ...prev[criteriaId], comments },
+      [criteriaId]: { rating: 0, ...prev[criteriaId], comments },
     }));
   };
 
@@ -181,6 +178,8 @@ export function ReviewExecutionSheet({
       submitted.current = true;
       try { clearReviewDraft(draftKey); } catch { toast.warning('Review submitted; local draft could not be removed'); }
       onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Review could not be saved; your draft is retained');
     } finally {
       setLoading(false);
     }
@@ -205,6 +204,8 @@ export function ReviewExecutionSheet({
       submitted.current = true;
       try { clearReviewDraft(draftKey); } catch { toast.warning('Review submitted; local draft could not be removed'); }
       onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Review could not be saved; your draft is retained');
     } finally {
       setLoading(false);
     }
@@ -239,6 +240,7 @@ export function ReviewExecutionSheet({
               </Typography>
             </Box>
           </Stack>
+          {review.ratings.find(r => r.criteriaId === criterion.id)?.selfRating !== undefined && !isSelfReview && <Typography variant="body2" sx={{ mt: 1 }}>Self: {review.ratings.find(r => r.criteriaId === criterion.id)?.selfRating} / {maxRating} · {review.ratings.find(r => r.criteriaId === criterion.id)?.selfComments}</Typography>}
           <TextField
             placeholder="Add comments for this criteria..."
             value={ratings[criterion.id]?.comments || ''}
@@ -254,7 +256,7 @@ export function ReviewExecutionSheet({
       ))}
 
       <Alert severity="info">
-        <AlertTitle>Overall Score: {calculateOverallScore()} / 5</AlertTitle>
+        <AlertTitle>Overall Score: {calculateOverallScore()} / {maxRating}</AlertTitle>
         Based on weighted average of all criteria ratings
       </Alert>
     </Stack>
@@ -379,7 +381,7 @@ export function ReviewExecutionSheet({
         <Stack spacing={1}>
           <Stack direction="row" justifyContent="space-between">
             <Typography variant="body2" color="text.secondary">Overall Score</Typography>
-            <Typography variant="body2" fontWeight={600}>{calculateOverallScore()} / 5</Typography>
+            <Typography variant="body2" fontWeight={600}>{calculateOverallScore()} / {maxRating}</Typography>
           </Stack>
           <Stack direction="row" justifyContent="space-between">
             <Typography variant="body2" color="text.secondary">Criteria Rated</Typography>
