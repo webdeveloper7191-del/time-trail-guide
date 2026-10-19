@@ -357,6 +357,12 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
                 </Box>
               )}
             </Stack>
+
+            <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
+              <Button variant="outlined" startIcon={<Edit3 size={16} />} onClick={() => handleEditAssessment(selectedAssessment)}>
+                Edit assessment
+              </Button>
+            </div>
           </Box>
         </SheetContent>
       </Sheet>
@@ -467,6 +473,30 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
           </Stack>
         </Box>
       </Card>
+
+      {unassessedStaff.length > 0 && (
+        <Card sx={{ p: 3, mt: 3 }}>
+          <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            Not yet assessed ({unassessedStaff.length})
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            These staff members have no saved performance × potential assessment, so they do not appear on the grid.
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {unassessedStaff.map(staff => (
+              <Chip
+                key={staff.id}
+                avatar={<Avatar sx={{ width: 24, height: 24, fontSize: 11 }}>{staff.firstName.charAt(0)}</Avatar>}
+                label={`${staff.firstName} ${staff.lastName}`}
+                size="small"
+                variant="outlined"
+                onClick={() => { setEditingAssessment(null); setShowAssessmentDrawer(true); }}
+                sx={{ cursor: 'pointer' }}
+              />
+            ))}
+          </Stack>
+        </Card>
+      )}
 
       {renderDetailSheet()}
       
