@@ -79,19 +79,11 @@ export function loadLmsSettings(): LmsSettings {
 }
 
 export function saveLmsSettings(settings: LmsSettings): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    /* storage unavailable — settings stay in memory for this session */
-  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }
 
 export function resetLmsSettings(): LmsSettings {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
+  localStorage.removeItem(STORAGE_KEY);
   return { ...defaultLmsSettings };
 }
 
@@ -99,12 +91,10 @@ export function resetLmsSettings(): LmsSettings {
 export function summariseLmsSettings(s: LmsSettings): string[] {
   const lines = [
     `New learning is due ${s.defaultDueDays} days after it is assigned.`,
-    s.autoAssignOnHire
-      ? 'New starters are enrolled into onboarding learning automatically.'
-      : 'New starters are not enrolled automatically.',
+    'Assignments and reminders are saved in this browser; no emails are delivered.',
     s.overdueReminderFrequency === 'off'
-      ? 'No reminders are sent once learning is overdue.'
-      : `Overdue reminders are sent ${s.overdueReminderFrequency.replace(/_/g, ' ')}.`,
+      ? 'Overdue reminders are disabled.'
+      : `Overdue reminder preference: ${s.overdueReminderFrequency.replace(/_/g, ' ')}.`,
     `Staff must score at least ${s.passMark}% to pass, with up to ${s.maxAttempts} attempts.`,
   ];
   if (s.blockShiftsOnExpiredCompliance) {

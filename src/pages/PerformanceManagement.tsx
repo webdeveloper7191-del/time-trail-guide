@@ -77,6 +77,7 @@ export default function PerformanceManagement() {
   const [activeTab, setActiveTab] = useState('plans');
   const [contextStaffId,setContextStaffId] = useState(CURRENT_USER_ID);
   const [contextAssessmentId,setContextAssessmentId] = useState<string>();
+  const [contextCourseId,setContextCourseId] = useState<string>();
   const [contextSessionId,setContextSessionId] = useState<string>();
   const [configTarget, setConfigTarget] = useState<PerformanceConfigTarget | null>(null);
 
@@ -198,8 +199,8 @@ export default function PerformanceManagement() {
   };
 
   const handleSubmitSelfReview = async (id: string, ratings: ReviewRating[], summary: string) => {
-    await submitSelfReview(id, ratings, summary);
-    toast.success('Self-review submitted successfully');
+    const saved = await submitSelfReview(id, ratings, summary);
+    if (!saved) throw new Error('Review was not saved');
   };
 
   const handleCompleteManagerReview = async (
@@ -210,8 +211,8 @@ export default function PerformanceManagement() {
     areasForImprovement: string[],
     developmentPlan: string
   ) => {
-    await completeManagerReview(id, ratings, summary, strengths, areasForImprovement, developmentPlan);
-    toast.success('Review completed successfully');
+    const saved = await completeManagerReview(id, ratings, summary, strengths, areasForImprovement, developmentPlan);
+    if (!saved) throw new Error('Review was not saved');
   };
 
   // Conversation handlers
@@ -420,6 +421,7 @@ export default function PerformanceManagement() {
 
   const navigateEvidence = (tab: string, id?: string, staffId?: string) => {
     if(staffId) setContextStaffId(staffId);
+    if(tab==='lms') setContextCourseId(id);
     if(tab==='talent') setContextAssessmentId(id);
     if(tab==='reviews' && id) {const record=performanceRecords.reviews().find(r=>r.id===id);if(record)handleViewReview(record);}
     if(tab==='goals' && id) {const record=performanceRecords.goals().find(g=>g.id===id);if(record)handleViewGoal(record);}
@@ -524,7 +526,7 @@ export default function PerformanceManagement() {
 
           {/* Tab Content */}
           {activeTab === 'lms' && (
-            <LMSAdminModule currentUserId={CURRENT_USER_ID} staff={mockStaff} />
+            <LMSAdminModule initialCourseId={contextCourseId} currentUserId={CURRENT_USER_ID} staff={mockStaff} />
           )}
 
           {activeTab !== 'lms' && (

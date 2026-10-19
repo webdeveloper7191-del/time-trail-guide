@@ -1,4 +1,5 @@
-import { useLmsState } from '@/lib/lmsStore';
+import { loadLmsSettings } from '@/lib/lmsSettingsStore';
+import { lmsStore, useLmsState } from '@/lib/lmsStore';
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -97,8 +98,13 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
   const streakData = mockLearningStreak;
 
   const handleEnroll = (course: Course) => {
+    const policy=loadLmsSettings();
+    if(!policy.allowSelfEnrol){toast.error('Self-enrolment is disabled; ask your manager to assign learning');return;}
+    if(myEnrollments.some(e=>e.courseId===course.id&&e.status!=='failed'&&e.status!=='expired')){toast.error('Already enrolled in this course');return;}
+    const due=new Date();due.setDate(due.getDate()+policy.defaultDueDays);
     const newEnrollment: Enrollment = {
-      id: `enroll-${Date.now()}`,
+      id: crypto.randomUUID(),
+      dueDate:due.toISOString().slice(0,10),
       staffId: currentUserId,
       courseId: course.id,
       status: 'not_started',
@@ -108,7 +114,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setEnrollments(prev => [...prev, newEnrollment]);
+    try { setEnrollments(prev => [...prev, newEnrollment]); } catch { toast.error('Enrolment could not be saved'); return; }
     setShowCourseDetail(false);
     toast.success(`Enrolled in ${course.title}`);
   };
@@ -209,6 +215,8 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     setShowCoursePlayer(false);
     setShowMobilePlayer(false);
     
+    const saved=lmsStore.getSnapshot().enrollments.find(e=>e.id===enrollmentId);
+    if(saved?.completionApprovalPending){toast.info('Learning finished; awaiting manager approval');setSelectedCourse(null);return;}
     if (course && enrollment) {
       setCompletedCourse(course);
       setCompletedEnrollment({

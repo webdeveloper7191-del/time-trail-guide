@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import { loadLmsSettings } from '@/lib/lmsSettingsStore';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,6 +135,7 @@ export function CourseAuthoringTool({
       isDirty: false,
     }
   );
+  useEffect(()=>{if(open){const settings=loadLmsSettings();setCourse(initialCourse ?? {courseId:crypto.randomUUID(),title:'',description:'',category:'',difficulty:'beginner',complianceRequired:false,certificateOnCompletion:settings.issueCertificates,passingScore:settings.passMark,maxAttempts:settings.maxAttempts,tags:[],modules:[createEmptyModule(1)],status:'draft',isDirty:false});setActiveTab('details');}},[open,initialCourse]);
   const [tagInput, setTagInput] = useState('');
   const [draggedModule, setDraggedModule] = useState<number | null>(null);
   const [draggedContent, setDraggedContent] = useState<{ moduleIdx: number; contentIdx: number } | null>(null);
@@ -264,9 +266,11 @@ export function CourseAuthoringTool({
   };
 
   const handleSave = () => {
-    onSave({ ...course, lastSavedAt: new Date().toISOString(), isDirty: false });
+    try {
+    onSave({ ...course, status:'draft', lastSavedAt: new Date().toISOString(), isDirty: false });
     setCourse(prev => ({ ...prev, isDirty: false, lastSavedAt: new Date().toISOString() }));
     toast.success('Course saved as draft');
+    } catch { toast.error('Course could not be saved; your edits are retained'); }
   };
 
   const handlePublish = () => {
@@ -274,8 +278,7 @@ export function CourseAuthoringTool({
       toast.error('Please fill in all required fields');
       return;
     }
-    onPublish({ ...course, status: 'published' });
-    toast.success('Course published successfully!');
+    try { onPublish({ ...course, status: 'published' }); toast.success('Course published successfully!'); } catch { toast.error('Course could not be published; your edits are retained'); }
   };
 
   const calculateTotalDuration = () => {

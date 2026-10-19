@@ -47,6 +47,8 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
   const performanceConfig = usePerformanceConfig();
   const configuredCriteria = useMemo(() => performanceConfig.competencies.filter(c => c.isActive).map(c => ({ id: c.id, name: c.name, description: c.description, weight: c.weight })), [performanceConfig.competencies]);
   const [staffId, setStaffId] = useState('');
+  const [configuredCycleId,setConfiguredCycleId] = useState('standalone');
+  const selectedCycle=performanceConfig.reviewCycles.find(c=>c.id===configuredCycleId);
   const [reviewCycle, setReviewCycle] = useState<ReviewCycle>('quarterly');
   const [periodStart, setPeriodStart] = useState<Date>();
   const [periodEnd, setPeriodEnd] = useState<Date>();
@@ -133,24 +135,28 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
 
     setLoading(true);
     try {
+      if (!periodStart || !periodEnd || periodEnd < periodStart) { setErrors({period:'End date must follow the start date'}); return; }
       await onSubmit({
         staffId,
         reviewerId,
         reviewCycle,
-        periodStart: format(periodStart!, 'yyyy-MM-dd'),
-        periodEnd: format(periodEnd!, 'yyyy-MM-dd'),
+        periodStart: format(periodStart, 'yyyy-MM-dd'),
+        periodEnd: format(periodEnd, 'yyyy-MM-dd'),
         status: 'pending_self',
         ratings: [],
-        customCriteria: useCustomCriteria ? criteria : undefined,
+        reviewCycleId:selectedCycle?.id,
+        customCriteria:useCustomCriteria?criteria: selectedCycle?configuredCriteria.filter(c=>selectedCycle.competencyIds.includes(c.id)):configuredCriteria,
       });
       onOpenChange(false);
       resetForm();
+    } catch (error) { toast.error(error instanceof Error?error.message:'Review could not be created');
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
+    setConfiguredCycleId('standalone');
     setStaffId('');
     setReviewCycle('quarterly');
     setPeriodStart(undefined);
@@ -205,6 +211,7 @@ export function StartReviewDrawer({ open, onOpenChange, onSubmit, staff, reviewe
           </Select>
         </FormField>
 
+        <FormField label="Configured cycle"><Select value={configuredCycleId} onValueChange={id=>{setConfiguredCycleId(id);const c=performanceConfig.reviewCycles.find(c=>c.id===id);if(c){setReviewCycle(c.cycle);setPeriodStart(new Date(c.periodStart+'T12:00:00'));setPeriodEnd(new Date(c.periodEnd+'T12:00:00'));setCriteria(configuredCriteria.filter(k=>c.competencyIds.includes(k.id)));}}}><SelectTrigger aria-label="Configured review cycle"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="standalone">Standalone review</SelectItem>{performanceConfig.reviewCycles.filter(c=>c.stage!=='closed').map(c=><SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></FormField>
         <FormField label="Review Cycle" required tooltip="Select the review frequency">
           <SelectWithCreate
             value={reviewCycle}

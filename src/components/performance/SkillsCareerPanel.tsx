@@ -181,12 +181,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   ]);
 
   // Historical ratings data
-  const [ratingHistory] = useState<RatingHistoryEntry[]>([
-    { date: '2024-04', ratings: { tech: 3.5, comm: 4.0, problem: 3.2, team: 4.2, lead: 3.0, adapt: 3.5 }, overallRating: 3.6 },
-    { date: '2024-07', ratings: { tech: 3.8, comm: 4.2, problem: 3.5, team: 4.4, lead: 3.2, adapt: 3.7 }, overallRating: 3.8 },
-    { date: '2024-10', ratings: { tech: 4.0, comm: 4.3, problem: 3.6, team: 4.5, lead: 3.3, adapt: 3.9 }, overallRating: 3.9 },
-    { date: '2025-01', ratings: { tech: 4.2, comm: 4.5, problem: 3.8, team: 4.7, lead: 3.5, adapt: 4.0 }, overallRating: 4.1 },
-  ]);
+  const [ratingHistory,setRatingHistory] = useBrowserState<RatingHistoryEntry[]>(`rostered.performance.manager-rating-history.${selectedStaffId}.v1`, []);
 
   // Edit form state
   const [editFormRating, setEditFormRating] = useState(0);
@@ -217,7 +212,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   // Chart data for trends
   const trendChartData = useMemo(() => {
     return ratingHistory.map(entry => ({
-      date: entry.date,
+      date: entry.date.slice(0,10),
       'Overall': entry.overallRating,
       'Technical': entry.ratings.tech,
       'Communication': entry.ratings.comm,
@@ -238,12 +233,12 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const handleSaveRating = () => {
     if (editingRatingIndex === null) return;
     
-    setManagerRatings(prev => prev.map((r, i) => 
-      i === editingRatingIndex 
-        ? { ...r, rating: editFormRating, comment: editFormComment, lastUpdated: format(new Date(), 'yyyy-MM-dd') }
-        : r
-    ));
-    
+    try {
+      const next=managerRatings.map((r,i)=>i===editingRatingIndex?{...r,rating:editFormRating,comment:editFormComment,lastUpdated:format(new Date(),'yyyy-MM-dd')}:r);
+      const entry={date:new Date().toISOString(),ratings:Object.fromEntries(next.map(r=>[r.id,r.rating])),overallRating:next.length?next.reduce((n,r)=>n+r.rating,0)/next.length:0};
+      setRatingHistory(prev=>[...prev,entry]);
+      setManagerRatings(next);
+    } catch { toast.error('Rating could not be saved'); return; }
     toast.success('Rating updated successfully');
     setShowEditRatingSheet(false);
     setEditingRatingIndex(null);
@@ -1361,7 +1356,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
                 Historical Records
               </Typography>
               <Stack spacing={2}>
-                {ratingHistory.slice().reverse().map((entry, index) => (
+                {!ratingHistory.length&&<Typography variant="body2" color="text.secondary">No saved rating history for this staff member.</Typography>}{ratingHistory.slice().reverse().map((entry, index) => (
                   <Card key={index} className="p-4">
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" fontWeight={600}>

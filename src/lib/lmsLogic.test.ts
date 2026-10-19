@@ -16,7 +16,7 @@ describe('LMS Logic', () => {
   });
 
   it('should lock course if prerequisites are not met', () => {
-    const course = { id: 'c2', prerequisites: ['c1'] } as Course;
+    const course = { id: 'c2', status: 'published', prerequisites: ['c1'] } as Course;
     const enrollments = [{ courseId: 'c1', status: 'in_progress' }] as Enrollment[];
     const result = isCourseLocked(course, enrollments, ['admin'], 'loc1');
     expect(result.locked).toBe(true);
@@ -24,7 +24,7 @@ describe('LMS Logic', () => {
   });
 
   it('should unlock course if prerequisites are met', () => {
-    const course = { id: 'c2', prerequisites: ['c1'] } as Course;
+    const course = { id: 'c2', status: 'published', prerequisites: ['c1'] } as Course;
     const enrollments = [{ courseId: 'c1', status: 'completed' }] as Enrollment[];
     const result = isCourseLocked(course, enrollments, ['admin'], 'loc1');
     expect(result.locked).toBe(false);

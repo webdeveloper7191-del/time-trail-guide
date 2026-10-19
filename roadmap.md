@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Performance: retain self/manager evidence, propagate save failures, freeze cycle configuration and weighted rating scales, enforce per-survey scorecard privacy
+- [ ] Performance: persist course authoring and library actions, apply learning/certificate policies and honest local reminders
+- [ ] Performance: correct decreasing/fractional OKRs, recover partial development saves, exact learning destinations and real skills history; verify regression flows
+
 - [x] Performance: finish survey export, durable review drafts/notification dismissals and usable browser-offline learning (draft refresh, aggregate CSV and cached media verified)
 - [x] Performance: replace sample insights and benchmarks with period-aware, privacy-safe stored-record reporting (manual benchmark evidence; unavailable data withheld)
 - [x] Performance: add scorecard evidence/history/coverage, talent movement and connected calibration (selected-staff session verified)

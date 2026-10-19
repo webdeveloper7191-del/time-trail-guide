@@ -1,4 +1,7 @@
-import { useLmsState } from '@/lib/lmsStore';
+import { saveAuthoredCourse, duplicateCourse, learningCsv } from '@/lib/lmsAuthoring';
+import { downloadPerformanceCsv } from '@/lib/performanceExperienceStore';
+import { useBrowserState } from '@/lib/browserState';
+import { lmsStore, useLmsState } from '@/lib/lmsStore';
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -68,16 +71,19 @@ interface LMSAdminPanelProps {
   onAssignCourse: (courseId: string, staffIds: string[], dueDate?: Date) => void;
   /** When embedded, the parent module renders the header, KPI strip and tab bar. */
   embedded?: boolean;
+  initialCourseId?: string;
+  currentUserId?: string;
   tab?: string;
   onTabChange?: (tab: string) => void;
 }
 
-export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChange }: LMSAdminPanelProps) {
+export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChange, initialCourseId, currentUserId="staff-2" }: LMSAdminPanelProps) {
   const [internalTab, setInternalTab] = useState('overview');
   const activeTab = tab ?? internalTab;
   const setActiveTab = (value: string) => (onTabChange ? onTabChange(value) : setInternalTab(value));
 
   const [searchQuery, setSearchQuery] = useState('');
+  React.useEffect(()=>{if(initialCourseId){const course=courses.find(c=>c.id===initialCourseId);if(course)handleOpenEditCourse(course);}},[initialCourseId]);
   const [showAssignSheet, setShowAssignSheet] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
@@ -86,6 +92,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   const [editingCourse, setEditingCourse] = useState<CourseAuthoringState | undefined>();
   const [courses, setCourses] = useLmsState('courses');
   const [mockEnrollments] = useLmsState('enrollments');
+  const [reminders,setReminders] = useBrowserState<{id:string;staffId:string;courseId:string;createdAt:string}[]>('rostered.lms.local-reminders.v1',[]);
   const [certificates] = useLmsState('certificates');
   const mockCourses = courses;
   const [selectedCourseIds, setSelectedCourseIds] = useState<Set<string>>(new Set());
@@ -124,7 +131,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
           : 0,
       };
     });
-  }, [staff]);
+  }, [staff, mockEnrollments]);
 
   // Course stats
   const courseStats = useMemo(() => {
@@ -143,7 +150,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
           : 0,
       };
     });
-  }, [courses]);
+  }, [courses, mockEnrollments]);
 
   const handleOpenCreateCourse = () => {
     setEditingCourse(undefined);
@@ -184,7 +191,10 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
           mandatory: c.mandatory,
           duration: c.duration,
           url: c.url,
+          description: c.description,
         })),
+        assessment: m.assessment ? {...m.assessment,questions:m.assessment.questions.map(q=>({...q,options:q.options??[]}))} : undefined,
+        unlockAfterModuleId: m.unlockAfterModuleId,
         isLocked: m.isLocked,
         isExpanded: true,
       })),
@@ -195,71 +205,11 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
     setShowCourseAuthoring(true);
   };
 
-  const handleSaveCourse = (courseData: CourseAuthoringState) => {
-    // Convert CourseAuthoringState back to Course format
-    const newCourse: Course = {
-      id: courseData.courseId,
-      title: courseData.title,
-      description: courseData.description,
-      category: courseData.category,
-      difficulty: courseData.difficulty as Course['difficulty'],
-      duration: courseData.modules.reduce((sum, m) => 
-        sum + m.content.reduce((cSum, c) => cSum + (c.duration || 0), 0), 0
-      ),
-      status: 'draft',
-      modules: courseData.modules.map(m => ({
-        id: m.id,
-        title: m.title,
-        description: m.description,
-        order: m.order,
-        duration: m.duration,
-        content: m.content.map((c, idx) => ({
-          id: c.id,
-          title: c.title,
-          type: c.type as Course['modules'][0]['content'][0]['type'],
-          order: c.order || idx + 1,
-          duration: c.duration,
-          mandatory: c.mandatory,
-          url: c.url,
-        })),
-        isLocked: m.isLocked,
-      })),
-      instructor: 'Admin',
-      skills: [],
-      industry: courseData.industry,
-      tags: courseData.tags,
-      complianceRequired: courseData.complianceRequired,
-      certificateOnCompletion: courseData.certificateOnCompletion,
-      validityPeriod: courseData.validityPeriod,
-      passingScore: courseData.passingScore,
-      maxAttempts: courseData.maxAttempts,
-      prerequisites: courseData.prerequisites ?? [],
-      availableFrom: courseData.availableFrom,
-      availableUntil: courseData.availableUntil,
-      assignedRoles: courseData.assignedRoles,
-      assignedLocations: courseData.assignedLocations,
-      rating: 0,
-      enrollmentCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setCourses(prev => {
-      const existingIdx = prev.findIndex(c => c.id === newCourse.id);
-      if (existingIdx >= 0) {
-        const updated = [...prev];
-        updated[existingIdx] = newCourse;
-        return updated;
-      }
-      return [...prev, newCourse];
-    });
-  };
-
-  const handlePublishCourse = (courseData: CourseAuthoringState) => {
-    handleSaveCourse({ ...courseData, status: 'published' });
-    setShowCourseAuthoring(false);
-  };
-
+  const handleSaveCourse = (data: CourseAuthoringState) => { saveAuthoredCourse({...data,status:'draft'}); };
+  const handlePublishCourse = (data: CourseAuthoringState) => { saveAuthoredCourse({...data,status:'published'}); setShowCourseAuthoring(false); };
+  const archiveCourses = (ids: Set<string>) => { try { setCourses(prev=>prev.map(c=>ids.has(c.id)?{...c,status:'archived',updatedAt:new Date().toISOString()}:c)); toast.success('Courses archived'); } catch { toast.error('Courses could not be saved'); } };
+  const deleteCourses = (ids: Set<string>) => { if(mockEnrollments.some(e=>ids.has(e.courseId))) { toast.error('Assigned courses cannot be deleted; archive them instead'); return; } try { setCourses(prev=>prev.filter(c=>!ids.has(c.id))); } catch { toast.error('Courses could not be deleted'); } };
+  const exportCourses = () => downloadPerformanceCsv(learningCsv([['Course ID','Title','Status','Enrolments'],...courseStats.filter(s=>selectedCourseIds.has(s.course.id)).map(s=>[s.course.id,s.course.title,s.course.status,s.totalEnrollments])]),'learning-courses.csv');
   const handleOpenAssign = (course: Course) => {
     setSelectedCourse(course);
     setSelectedStaffIds([]);
@@ -273,7 +223,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
       return;
     }
     
-    onAssignCourse(selectedCourse.id, selectedStaffIds, assignDueDate);
+    try { onAssignCourse(selectedCourse.id, selectedStaffIds, assignDueDate); } catch { toast.error('Assignment could not be saved'); return; }
     toast.success(`Course assigned to ${selectedStaffIds.length} staff member(s)`);
     setShowAssignSheet(false);
   };
@@ -317,9 +267,9 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   const handleCourseClearSelection = () => setSelectedCourseIds(new Set());
 
   const courseBulkActions = [
-    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { toast.success(`${selectedCourseIds.size} course(s) archived`); handleCourseClearSelection(); } },
-    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { toast.success(`Exporting ${selectedCourseIds.size} course(s)...`); handleCourseClearSelection(); } },
-    { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { toast.success(`${selectedCourseIds.size} course(s) deleted`); handleCourseClearSelection(); }, variant: 'destructive' as const },
+    { id: 'archive', label: 'Archive', icon: <Archive size={14} />, onClick: () => { archiveCourses(selectedCourseIds); handleCourseClearSelection(); } },
+    { id: 'export', label: 'Export', icon: <Send size={14} />, onClick: () => { exportCourses(); handleCourseClearSelection(); } },
+    { id: 'delete', label: 'Delete', icon: <Trash2 size={14} />, onClick: () => { deleteCourses(selectedCourseIds); handleCourseClearSelection(); }, variant: 'destructive' as const },
   ];
 
   // Staff row selection handlers
@@ -342,9 +292,9 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   const handleStaffRowClearSelection = () => setSelectedStaffRowIds(new Set());
 
   const staffBulkActions = [
-    { id: 'assign', label: 'Assign Course', icon: <UserPlus size={14} />, onClick: () => { toast.info('Select a course to assign'); handleStaffRowClearSelection(); } },
-    { id: 'remind', label: 'Send Reminder', icon: <Send size={14} />, onClick: () => { toast.success(`Reminder sent to ${selectedStaffRowIds.size} staff`); handleStaffRowClearSelection(); } },
-    { id: 'export', label: 'Export', icon: <Archive size={14} />, onClick: () => { toast.success(`Exporting ${selectedStaffRowIds.size} staff...`); handleStaffRowClearSelection(); } },
+    { id: 'assign', label: 'Assign Course', icon: <UserPlus size={14} />, onClick: () => { setSelectedStaffIds([...selectedStaffRowIds]); setSelectedCourse(null); setShowAssignSheet(true); } },
+    { id: 'remind', label: 'Save Local Reminder', icon: <Send size={14} />, onClick: () => { setReminders(prev=>[...prev,...mockEnrollments.filter(e=>selectedStaffRowIds.has(e.staffId)&&e.status!=='completed').map(e=>({id:crypto.randomUUID(),staffId:e.staffId,courseId:e.courseId,createdAt:new Date().toISOString()}))]); toast.success('Reminder records saved in this browser; no emails sent'); handleStaffRowClearSelection(); } },
+    { id: 'export', label: 'Export', icon: <Archive size={14} />, onClick: () => { downloadPerformanceCsv(learningCsv([['Staff ID','Name','Enrolments','Completed'],...staffLearningStats.filter(s=>selectedStaffRowIds.has(s.staff.id)).map(s=>[s.staff.id,s.staff.firstName+' '+s.staff.lastName,s.totalEnrollments,s.completed])]),'learning-staff.csv'); handleStaffRowClearSelection(); } },
   ];
 
   return (
@@ -674,9 +624,9 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
                           <RowActionsMenu
                             actions={[
                               {
-                                label: 'View Details',
+                                label: 'Open Course',
                                 icon: <Eye className="h-4 w-4" />,
-                                onClick: () => toast.info(`Viewing course: ${stat.course.title}`),
+                                onClick: () => handleOpenEditCourse(stat.course),
                               },
                               {
                                 label: 'Edit Course',
@@ -686,22 +636,21 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
                               {
                                 label: 'Duplicate',
                                 icon: <GraduationCap className="h-4 w-4" />,
-                                onClick: () => toast.info('Course duplicated'),
+                                onClick: () => (() => { try { setCourses(prev=>[...prev,duplicateCourse(stat.course)]); toast.success('Draft copy saved'); } catch { toast.error('Copy could not be saved'); } })(),
                               },
                               {
                                 label: 'Archive',
                                 icon: <Archive className="h-4 w-4" />,
                                 variant: 'warning',
                                 separator: true,
-                                onClick: () => toast.success('Course archived'),
+                                onClick: () => archiveCourses(new Set([stat.course.id])),
                               },
                               {
                                 label: 'Delete',
                                 icon: <Trash2 className="h-4 w-4" />,
                                 variant: 'destructive',
                                 onClick: () => {
-                                  setCourses(prev => prev.filter(c => c.id !== stat.course.id));
-                                  toast.success('Course deleted');
+                                  deleteCourses(new Set([stat.course.id]));
                                 },
                               },
                             ]}
@@ -897,8 +846,9 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
                         }
                       </TableCell>
                       <TableCell className="py-3">
+                        {enrollment.completionApprovalPending&&<Button size="sm" onClick={()=>{try{lmsStore.approveCompletion(enrollment.id,currentUserId);toast.success('Completion approved');}catch{toast.error('Completion could not be approved');}}}>Approve completion</Button>}
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" aria-label="Open assigned course" onClick={()=>{const course=courses.find(c=>c.id===enrollment.courseId);if(course)handleOpenEditCourse(course);}}>
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
@@ -927,6 +877,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
             <SheetTitle>Assign Course</SheetTitle>
           </SheetHeader>
           
+          {!selectedCourse&&<div className="mt-4"><Label>Published course</Label><Select onValueChange={id=>setSelectedCourse(courses.find(c=>c.id===id)??null)}><SelectTrigger aria-label="Assign published course"><SelectValue placeholder="Select course"/></SelectTrigger><SelectContent>{courses.filter(c=>c.status==='published').map(c=><SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}</SelectContent></Select></div>}
           {selectedCourse && (
             <div className="mt-6 space-y-6">
               <Card className="bg-muted/50">

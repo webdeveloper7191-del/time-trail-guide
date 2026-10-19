@@ -8,15 +8,17 @@ const defaults = (): PlanState => ({ assignedPlans: mockAssignedPlans, customTem
 function load(): PlanState { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? { ...defaults(), ...JSON.parse(raw) } : defaults(); } catch { return defaults(); } }
 let state = load();
 const listeners = new Set<() => void>();
-function commit(next: PlanState) { state = next; try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* memory fallback */ } listeners.forEach(listener => listener()); }
+function commit(next: PlanState) { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); state = next; listeners.forEach(listener => listener()); }
 const now = () => new Date().toISOString();
 
 export const performancePlanStore = {
   subscribe(listener: () => void) { listeners.add(listener); return () => listeners.delete(listener); },
   getSnapshot: () => state,
-  createPlan(data: Omit<AssignedPlan, 'id' | 'createdAt' | 'updatedAt' | 'progress'>) {
+  createPlan(data: Omit<AssignedPlan, 'id' | 'createdAt' | 'updatedAt' | 'progress'>, stableId?: string) {
+    const existing = stableId ? state.assignedPlans.find(p=>p.id===stableId) : undefined;
+    if (existing) return existing;
     const stamp = now();
-    const plan: AssignedPlan = { ...data, id: `plan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, progress: 0, createdAt: stamp, updatedAt: stamp };
+    const plan: AssignedPlan = { ...data, id: stableId ?? `plan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, progress: 0, createdAt: stamp, updatedAt: stamp };
     commit({ ...state, assignedPlans: [...state.assignedPlans, plan] }); return plan;
   },
   updatePlan(id: string, updates: Partial<AssignedPlan>) { const existing = state.assignedPlans.find(item => item.id === id); if (!existing) return null; const updated = { ...existing, ...updates, id: existing.id, updatedAt: now() }; commit({ ...state, assignedPlans: state.assignedPlans.map(item => item.id === id ? updated : item) }); return updated; },

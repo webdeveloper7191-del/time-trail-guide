@@ -91,15 +91,16 @@ export function usePerformanceData(): UsePerformanceDataReturn {
   const submitSelfReview = useCallback(async (id: string, ratings: ReviewRating[], summary: string): Promise<PerformanceReview | null> => {
     try {
       const response = await performanceApi.submitSelfReview(id, ratings, summary);
-      if (response.data) {
-        setReviews(prev => prev.map(r => r.id === id ? response.data! : r));
+      const saved = response.data;
+      if (saved) {
+        setReviews(prev => prev.map(r => r.id === id ? saved : r));
         toast.success('Self-review submitted successfully');
         return response.data;
       }
-      return null;
+      throw new Error('Review was not saved');
     } catch (err) {
       toast.error('Failed to submit self-review');
-      return null;
+      throw err;
     }
   }, []);
 
@@ -113,15 +114,16 @@ export function usePerformanceData(): UsePerformanceDataReturn {
   ): Promise<PerformanceReview | null> => {
     try {
       const response = await performanceApi.completeManagerReview(id, ratings, summary, strengths, areasForImprovement, developmentPlan);
-      if (response.data) {
-        setReviews(prev => prev.map(r => r.id === id ? response.data! : r));
+      const saved = response.data;
+      if (saved) {
+        setReviews(prev => prev.map(r => r.id === id ? saved : r));
         toast.success('Review completed successfully');
         return response.data;
       }
-      return null;
+      throw new Error('Review was not saved');
     } catch (err) {
       toast.error('Failed to complete review');
-      return null;
+      throw err;
     }
   }, []);
 
