@@ -47,6 +47,7 @@ import { performanceOperationsStore, usePerformanceOperations } from '@/lib/perf
 interface NineBoxTalentGridProps {
   assessments?: TalentAssessment[];
   onSelectStaff?: (staffId: string) => void;
+  onRunCalibration?: () => void;
 }
 
 const getBoxColor = (performance: PerformanceLevel, potential: PotentialLevel) => {
@@ -90,23 +91,38 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
     return mockStaff.find(s => s.id === id);
   };
 
+  // Only the most recent saved assessment per staff member places them on the grid.
+  const latestAssessments = useMemo(() => {
+    const byStaff = new Map<string, TalentAssessment>();
+    assessments.forEach(a => {
+      const existing = byStaff.get(a.staffId);
+      if (!existing || new Date(a.assessmentDate || a.updatedAt) > new Date(existing.assessmentDate || existing.updatedAt)) {
+        byStaff.set(a.staffId, a);
+      }
+    });
+    return [...byStaff.values()];
+  }, [assessments]);
+
+  const assessedStaffIds = useMemo(() => new Set(latestAssessments.map(a => a.staffId)), [latestAssessments]);
+  const unassessedStaff = useMemo(() => mockStaff.filter(s => !assessedStaffIds.has(s.id)), [assessedStaffIds]);
+
   const gridData = useMemo(() => {
     const grid: Record<string, TalentAssessment[]> = {};
-    
+
     const levels: PerformanceLevel[] = ['low', 'medium', 'high'];
     const potentials: PotentialLevel[] = ['high', 'medium', 'low'];
 
     potentials.forEach(potential => {
       levels.forEach(performance => {
         const key = `${performance}-${potential}`;
-        grid[key] = assessments.filter(
+        grid[key] = latestAssessments.filter(
           a => a.performanceLevel === performance && a.potentialLevel === potential
         );
       });
     });
 
     return grid;
-  }, [assessments]);
+  }, [latestAssessments]);
 
   const getBoxPosition = (performance: PerformanceLevel, potential: PotentialLevel) => {
     return getNineBoxPositions().find(
