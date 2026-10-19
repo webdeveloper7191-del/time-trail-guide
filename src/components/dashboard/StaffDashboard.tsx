@@ -1,103 +1,38 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useSyncExternalStore } from 'react';
+import { Calendar, Clock, GraduationCap, Sparkles, FileText, Target, Receipt, CheckSquare, Award, CalendarCheck } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Link } from 'react-router-dom';
-import { CalendarDays, Clock, CalendarCheck, FileText, ArrowRight, Wallet } from 'lucide-react';
+import { rewardsStore, pointsBalance } from '@/lib/rewardsStore';
+import { useLeaveBalances } from '@/lib/payroll/leaveBalances';
+import { useRecognitionState } from '@/lib/recognitionStore';
+import { employeePortalProfile as employee } from '@/components/employee/employeePortalProfile';
 import { DashboardKpis } from './DashboardKpis';
+import { DashboardSection, DashboardLink, ActionQueue, ShortcutGrid, EmptyDashboard } from './DashboardSections';
+import { useDashboardData, filterDashboardTimesheets, hours, money, type DashboardPeriod } from './dashboardData';
+import { TimesheetChart, TimesheetQueue, timesheetActions } from './TimesheetInsights';
 
-const upcomingShifts = [
-  { day: 'Tue 11 Aug', time: '7:00 AM - 3:00 PM', area: 'Nursery', location: 'Sunshine Centre', status: 'Confirmed' },
-  { day: 'Wed 12 Aug', time: '9:00 AM - 5:00 PM', area: 'Toddler', location: 'Sunshine Centre', status: 'Confirmed' },
-  { day: 'Thu 13 Aug', time: '6:30 AM - 2:30 PM', area: 'Preschool', location: 'Harbor View', status: 'Pending' },
-];
-
-const leaveBalances = [
-  { type: 'Annual leave', balance: 68.5, accruedPct: 72 },
-  { type: 'Personal / carer', balance: 24.0, accruedPct: 48 },
-  { type: 'TOIL', balance: 6.5, accruedPct: 30 },
-  { type: 'RDO / ADO', balance: 1, accruedPct: 25 },
-];
-
-export function StaffDashboard() {
-  return (
-    <div className="space-y-6">
-      <DashboardKpis
-        columns={4}
-        items={[
-          { label: 'Hours this week', value: '32.5h', icon: Clock, hint: 'of 38h contracted' },
-          { label: 'Upcoming shifts', value: String(upcomingShifts.length), icon: CalendarDays },
-          { label: 'Leave balance', value: '68.5h', icon: CalendarCheck, hint: 'Annual leave' },
-          { label: 'Est. pay this period', value: '$1,842', icon: Wallet, trend: '+$96' },
-        ]}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 border-border/60">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">My upcoming shifts</CardTitle>
-            <CardDescription className="text-xs">Next scheduled work across your assigned locations</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {upcomingShifts.map((s) => (
-              <div key={s.day} className="flex items-center gap-3 rounded-lg border border-border/60 p-3">
-                <div className="w-24">
-                  <p className="text-xs font-medium text-foreground">{s.day}</p>
-                  <p className="text-[11px] text-muted-foreground">{s.time}</p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-foreground">{s.area}</p>
-                  <p className="text-[11px] text-muted-foreground">{s.location}</p>
-                </div>
-                <Badge variant={s.status === 'Confirmed' ? 'secondary' : 'outline'} className="text-[10px]">{s.status}</Badge>
-              </div>
-            ))}
-            <Button asChild variant="outline" size="sm" className="w-full h-8 text-xs mt-1">
-              <Link to="/employee-portal">Open my portal<ArrowRight className="h-3 w-3 ml-1.5" /></Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <Card className="border-border/60">
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Leave balances</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {leaveBalances.map((l) => (
-                <div key={l.type}>
-                  <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
-                    <span>{l.type}</span><span className="text-foreground font-medium">{l.balance}h</span>
-                  </div>
-                  <Progress value={l.accruedPct} className="h-1.5" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60">
-            <CardHeader className="pb-3"><CardTitle className="text-sm">Quick actions</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2">
-              {[
-                { label: 'Clock in / out', to: '/employee-portal' },
-                { label: 'Submit timesheet', to: '/employee-portal' },
-                { label: 'Request leave', to: '/leave' },
-                { label: 'My availability', to: '/employee-portal' },
-              ].map((q) => (
-                <Button key={q.label} asChild variant="outline" size="sm" className="justify-start h-9 text-xs">
-                  <Link to={q.to}>{q.label}</Link>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      <Card className="border-border/60">
-        <CardContent className="p-4 flex items-center gap-3">
-          <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs text-foreground flex-1">2 documents awaiting your signature and 1 timesheet needs resubmission.</span>
-          <Button asChild size="sm" variant="outline" className="h-8 text-xs"><Link to="/employee-portal">Review</Link></Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
+export function StaffDashboard({ period }: { period: DashboardPeriod }) {
+  const data = useDashboardData();
+  const rewards = useSyncExternalStore(rewardsStore.subscribe, rewardsStore.get);
+  const recognition = useRecognitionState();
+  const ledger = useLeaveBalances();
+  const records = filterDashboardTimesheets(data.timesheets, period, undefined, employee.email);
+  const employeeIds = new Set([employee.id, employee.staffId, ...data.timesheets.filter(t=>t.employee.email===employee.email).map(t=>t.employee.id)]);
+  const enrolments = data.learning.enrollments.filter(e=>e.staffId===employee.staffId);
+  const active = enrolments.filter(e=>['not_started','in_progress','failed'].includes(e.status));
+  const certificates = data.learning.certificates.filter(c=>c.staffId===employee.staffId);
+  const posts = recognition.posts.filter(p=>p.toStaffId===employee.staffId).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const payslips = data.payroll.runs.filter(r=>r.payslipsPublishedAt && !r.reversedAt && !r.reversalOfRunId).map(r=>({run:r,line:r.lines.find(l=>employeeIds.has(l.staffId))})).filter(p=>p.line).sort((a,b)=>b.run.paymentDate.localeCompare(a.run.paymentDate));
+  const leave = ledger.filter(e=>employeeIds.has(e.staffId));
+  const balances = ['annual','personal','lsl'].map(kind=>({kind,value:leave.filter(e=>e.kind===kind).reduce((s,e)=>s+e.hours,0)}));
+  return <div className="space-y-7">
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Hello, {employee.name.split(' ')[0]}</h2><p className="text-xs text-muted-foreground">{employee.position} · {employee.department}</p></div><Badge variant="outline">Sample portal profile</Badge></div>
+    <DashboardKpis items={[{label:'Recorded hours',value:hours(records.reduce((s,t)=>s+t.totalHours,0)),icon:Clock,hint:'Selected period'},{label:'Awaiting approval',value:String(records.filter(t=>t.status==='pending').length),icon:CheckSquare},{label:'Active learning',value:String(active.length),icon:GraduationCap,hint:'Current assignments'},{label:'Reward points',value:String(pointsBalance(rewards,employee.staffId)),icon:Sparkles,hint:'Current wallet balance'}]}/>
+    <DashboardSection title="My workspace"><ShortcutGrid items={[{label:'My schedule',to:'/employee-portal?tab=schedule',icon:Calendar},{label:'My timesheets',to:'/employee-portal?tab=current',icon:Clock},{label:'Leave balances',to:'/employee-portal?tab=leave-balances',icon:CalendarCheck},{label:'My payslips',to:'/employee-portal?tab=payslips',icon:Receipt},{label:'Contracts & documents',to:'/employee-portal?tab=documents',icon:FileText},{label:'My performance',to:'/employee-portal?tab=performance',icon:Target}]}/></DashboardSection>
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]"><TimesheetChart records={records}/><DashboardSection title="My action queue"><ActionQueue items={[...timesheetActions(records,true).slice(0,3),{label:'Learning to complete',detail:'Assigned courses not yet completed',count:active.length,to:'/employee-portal?tab=learning',icon:GraduationCap}]}/></DashboardSection></div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><DashboardSection title="Continue learning" subtitle="Your current course assignments" action={<DashboardLink to="/employee-portal?tab=learning">Learning</DashboardLink>}>{active.length===0?<EmptyDashboard>No outstanding course assignments.</EmptyDashboard>:<div className="divide-y divide-border">{active.slice(0,4).map(e=><div key={e.id} className="space-y-2 py-3"><div className="flex items-center justify-between gap-2"><p className="text-sm font-medium">{data.learning.courses.find(c=>c.id===e.courseId)?.title ?? 'Assigned course'}</p><DashboardLink to="/employee-portal?tab=learning">Continue</DashboardLink></div><Progress value={e.progress} className="h-1.5"/><div className="flex justify-between text-xs text-muted-foreground"><span>{e.progress}% complete</span><span>{e.dueDate ? `Due ${format(parseISO(e.dueDate),'d MMM yyyy')}`:'No due date'}</span></div></div>)}</div>}</DashboardSection><DashboardSection title="My certificates" action={<DashboardLink to="/employee-portal?tab=learning">View all</DashboardLink>}>{certificates.length===0?<EmptyDashboard>No certificates issued yet.</EmptyDashboard>:<div className="divide-y divide-border">{certificates.slice(0,4).map(c=><div key={c.id} className="flex items-start gap-3 py-3"><Award className="mt-1 h-5 w-5 shrink-0 text-primary"/><div className="min-w-0 flex-1"><p className="text-sm font-medium">{data.learning.courses.find(course=>course.id===c.courseId)?.title ?? 'Training certificate'}</p><p className="break-all text-xs text-muted-foreground">{c.certificateNumber}</p><p className="text-xs text-muted-foreground">Issued {format(parseISO(c.issuedAt),'d MMM yyyy')}</p></div><Badge variant="outline">{c.expiresAt && c.expiresAt.slice(0,10)<new Date().toISOString().slice(0,10)?'Expired':c.status}</Badge></div>)}</div>}</DashboardSection></div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3"><DashboardSection title="Payroll leave ledger" action={<DashboardLink to="/employee-portal?tab=leave-balances">Leave</DashboardLink>}>{leave.length===0?<EmptyDashboard>No payroll leave postings for this profile.</EmptyDashboard>:<div className="divide-y divide-border">{balances.map(b=><div key={b.kind} className="flex items-center justify-between py-3 text-sm"><span>{b.kind==='annual'?'Annual leave':b.kind==='personal'?"Personal / carer's leave":'Long service leave'}</span><span className="font-semibold">{hours(b.value)}</span></div>)}</div>}</DashboardSection><DashboardSection title="Latest published payslip" action={<DashboardLink to="/employee-portal?tab=payslips">Payslips</DashboardLink>}>{payslips[0]?.line ? <div className="space-y-3"><p className="text-2xl font-semibold">{money(payslips[0].line.netPay)}</p><p className="text-xs text-muted-foreground">Net pay · {format(parseISO(payslips[0].run.paymentDate),'d MMM yyyy')}</p><p className="text-xs">{payslips[0].run.name}</p><p className="text-xs text-muted-foreground">Gross {money(payslips[0].line.grossPay)} · Tax {money(payslips[0].line.paygTax)}</p></div>:<EmptyDashboard>No published payslip for this profile.</EmptyDashboard>}</DashboardSection><DashboardSection title="Recognition received" action={<DashboardLink to="/employee-portal?tab=recognition">My rewards</DashboardLink>}>{posts.length===0?<EmptyDashboard>No recognition received yet.</EmptyDashboard>:<div className="divide-y divide-border">{posts.slice(0,3).map(p=><div key={p.id} className="py-3"><p className="line-clamp-3 text-sm">{p.message}</p><p className="mt-2 text-xs text-muted-foreground">{format(parseISO(p.createdAt),'d MMM yyyy')}</p></div>)}</div>}</DashboardSection></div>
+    <TimesheetQueue records={records} staff/>
+  </div>;
 }
