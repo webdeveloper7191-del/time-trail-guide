@@ -239,29 +239,6 @@ export function SentimentSettingsDrawer({
                   </Typography>
                 </Box>
 
-                <Box>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="body2" fontWeight={500} className="flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      Confidence Threshold
-                    </Typography>
-                    <Badge variant="outline">
-                      {(settings.confidenceThreshold * 100).toFixed(0)}%
-                    </Badge>
-                  </Stack>
-                  <Slider
-                    value={settings.confidenceThreshold}
-                    onChange={(_, v) => setSettings({ ...settings, confidenceThreshold: v as number })}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(v) => `${(v * 100).toFixed(0)}%`}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Minimum confidence level to display sentiment results
-                  </Typography>
-                </Box>
               </Card>
             </div>
 
