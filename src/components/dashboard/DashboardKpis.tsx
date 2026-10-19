@@ -15,7 +15,7 @@ export function DashboardKpis({ items, columns = 4 }: { items: KpiItem[]; column
     <div
       className={cn(
         'grid grid-cols-2 gap-3',
-        columns === 3 ? 'lg:grid-cols-3' : columns === 5 ? 'lg:grid-cols-5' : 'md:grid-cols-4',
+        columns === 3 ? 'lg:grid-cols-3' : columns === 5 ? 'xl:grid-cols-5' : 'lg:grid-cols-4',
       )}
     >
       {items.map((item) => (
@@ -24,12 +24,12 @@ export function DashboardKpis({ items, columns = 4 }: { items: KpiItem[]; column
             <div className="flex items-center justify-between mb-2">
               <item.icon className="h-4 w-4 text-muted-foreground" />
               {item.trend && (
-                <span className={cn('text-xs font-medium', item.negative ? 'text-destructive' : 'text-emerald-600')}>
+                <span className={cn('text-xs font-medium', item.negative ? 'text-destructive' : 'text-primary')}>
                   {item.trend}
                 </span>
               )}
             </div>
-            <p className="text-2xl font-bold tracking-tight text-foreground">{item.value}</p>
+            <p className="break-words text-2xl font-bold text-foreground">{item.value}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
             {item.hint && <p className="text-[11px] text-muted-foreground/80 mt-1">{item.hint}</p>}
           </CardContent>
