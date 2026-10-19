@@ -49,6 +49,7 @@ import { toast } from 'sonner';
 import { CreateCalibrationSessionDrawer } from './CreateCalibrationSessionDrawer';
 import { performanceOperationsStore, usePerformanceOperations } from '@/lib/performanceOperationsStore';
 import { usePerformanceRules } from '@/hooks/usePerformanceTaxonomy';
+import { buildCalibrationDistribution } from '@/lib/calibrationDistribution';
 
 interface CalibrationPanelProps {
   currentUserId: string;
@@ -64,28 +65,12 @@ const getSessionStatusStyle = (status: string) => {
   return styles[status] || styles.scheduled;
 };
 
-/** Actual observed spread; expected values come from the tenant's configured curve. */
-const actualRatingSpread: { rating: number; count: number; percentage: number }[] = [
-  { rating: 1, count: 0, percentage: 0 },
-  { rating: 2, count: 1, percentage: 10 },
-  { rating: 3, count: 2, percentage: 50 },
-  { rating: 4, count: 1, percentage: 30 },
-  { rating: 5, count: 0, percentage: 10 },
-];
-
-function buildDistribution(targets: { rating: number; percentage: number }[]): RatingDistribution[] {
-  return actualRatingSpread.map(a => {
-    const expectedPercentage = targets.find(t => t.rating === a.rating)?.percentage ?? 0;
-    return { ...a, expectedPercentage, variance: a.percentage - expectedPercentage };
-  });
-}
-
 export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
   const { calibrationSessions: sessions, calibrationRatings } = usePerformanceOperations();
   const rules = usePerformanceRules();
   const ratingDistribution = React.useMemo(
-    () => buildDistribution(rules.reviews.distributionTargets),
-    [rules.reviews.distributionTargets],
+    () => buildCalibrationDistribution(calibrationRatings.filter(rating => sessions.some(session => session.id === rating.sessionId && session.status !== 'cancelled')), rules.reviews.distributionTargets),
+    [calibrationRatings, sessions, rules.reviews.distributionTargets],
   );
   const [selectedSession, setSelectedSession] = useState<CalibrationSession | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
@@ -162,7 +147,7 @@ export function CalibrationPanel({ currentUserId }: CalibrationPanelProps) {
           Rating Distribution Analysis
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Compare actual ratings against expected bell curve distribution
+          All non-cancelled sessions · {ratingDistribution.reduce((sum, row) => sum + row.count, 0)} saved ratings
         </Typography>
         
         <Box sx={{ height: 250 }}>

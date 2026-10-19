@@ -80,6 +80,7 @@ import { PerformanceTaskKanbanBoard } from './PerformanceTaskKanbanBoard';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Goal, PerformanceReview, Conversation } from '@/types/performance';
+import { usePerformanceTasks, usePerformancePipelines, usePerformanceTaskTypes } from '@/lib/performanceLocalData';
 
 const taskTypeIcons: Record<PerformanceTaskType, React.ReactElement> = {
   goal_action: <Target className="h-4 w-4" />,
@@ -152,9 +153,9 @@ export function PerformanceTaskManagementPanel({
   onNavigateToReview,
   onNavigateToConversation,
 }: PerformanceTaskManagementPanelProps) {
-  const [tasks, setTasks] = useState<PerformanceTask[]>(mockPerformanceTasks);
-  const [pipelines, setPipelines] = useState<PerformanceTaskPipeline[]>(mockPerformancePipelines);
-  const [customTaskTypes, setCustomTaskTypes] = useState<CustomTaskType[]>([]);
+  const [tasks, setTasks] = usePerformanceTasks();
+  const [pipelines, setPipelines] = usePerformancePipelines();
+  const [customTaskTypes, setCustomTaskTypes] = usePerformanceTaskTypes();
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>(mockPerformancePipelines[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<PerformanceTaskStatus | 'all'>('all');
@@ -282,8 +283,8 @@ export function PerformanceTaskManagementPanel({
         id: `perf-task-${Date.now()}`,
         ...formData,
         status: 'open',
-        pipelineId: selectedPipelineId,
-        stageId: selectedPipeline.stages[0]?.id,
+        pipelineId: formData.pipelineId || selectedPipeline?.id,
+        stageId: formData.stageId || pipelines.find(p => p.id === (formData.pipelineId || selectedPipeline?.id))?.stages[0]?.id,
         attachments,
         comments: [],
         activityLog: [
@@ -350,7 +351,7 @@ export function PerformanceTaskManagementPanel({
         status: newStatus,
         activityLog: [...t.activityLog, statusLog],
         updatedAt: new Date().toISOString(),
-        completedAt: newStatus === 'completed' ? new Date().toISOString() : t.completedAt,
+        completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined,
       };
     }));
 
@@ -362,7 +363,7 @@ export function PerformanceTaskManagementPanel({
   };
 
   const handleStageChange = (taskId: string, newStageId: string) => {
-    const stage = selectedPipeline.stages.find(s => s.id === newStageId);
+    const stage = selectedPipeline?.stages.find(s => s.id === newStageId);
     if (!stage) return;
 
     setTasks(prev => prev.map(t => {
@@ -879,7 +880,7 @@ export function PerformanceTaskManagementPanel({
       {/* Task Detail Sheet */}
       <PerformanceTaskDetailSheet
         open={showDetailSheet}
-        task={selectedTask}
+        task={tasks.find(task => task.id === selectedTask?.id) ?? null}
         goals={goals}
         reviews={reviews}
         conversations={conversations}

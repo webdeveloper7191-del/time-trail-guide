@@ -59,6 +59,8 @@ import { SkillAssessmentDrawer } from './SkillAssessmentDrawer';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useBrowserState } from '@/lib/browserState';
+import { usePerformanceSkills, usePerformanceStaffSkills, usePerformanceCareerPaths, usePerformanceCareerProgress } from '@/lib/performanceLocalData';
 
 // Manager rating type
 interface ManagerRating {
@@ -115,7 +117,8 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const [selectedStaffId, setSelectedStaffId] = useState(staffId);
   const [showCareerPathSheet, setShowCareerPathSheet] = useState(false);
   const [showAssessDrawer, setShowAssessDrawer] = useState(false);
-  const [staffSkillsData, setStaffSkillsData] = useState(mockStaffSkills);
+  const [staffSkillsData, setStaffSkillsData] = usePerformanceStaffSkills();
+  const [careerProgressList] = usePerformanceCareerProgress();
   const [editingSkill, setEditingSkill] = useState<StaffSkill | null>(null);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [isStaffSelectorOpen, setIsStaffSelectorOpen] = useState(false);
@@ -133,15 +136,15 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const [showAddCareerPathSheet, setShowAddCareerPathSheet] = useState(false);
   
   // Skills list state (mutable)
-  const [skillsList, setSkillsList] = useState<Skill[]>(mockSkills);
+  const [skillsList, setSkillsList] = usePerformanceSkills();
   
   // Skill gaps state (mutable)
-  const [skillGapsList, setSkillGapsList] = useState<SkillGap[]>(
+  const [skillGapsList, setSkillGapsList] = useBrowserState<SkillGap[]>(`rostered.performance.skill-gaps.${selectedStaffId}.v1`,
     mockCareerProgress.find(p => p.staffId === selectedStaffId)?.skillGaps || []
   );
   
   // Career paths state (mutable)
-  const [careerPathsList, setCareerPathsList] = useState<CareerPath[]>(mockCareerPaths);
+  const [careerPathsList, setCareerPathsList] = usePerformanceCareerPaths();
   
   // New skill form state
   const [newSkillName, setNewSkillName] = useState('');
@@ -168,7 +171,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   ]);
   
   // Initialize manager ratings with state
-  const [managerRatings, setManagerRatings] = useState<ManagerRating[]>([
+  const [managerRatings, setManagerRatings] = useBrowserState<ManagerRating[]>(`rostered.performance.manager-ratings.${selectedStaffId}.v1`, [
     { id: 'tech', competency: 'Technical Skills', rating: 4.2, comment: 'Strong foundation, continues to improve', lastUpdated: '2025-01-15' },
     { id: 'comm', competency: 'Communication', rating: 4.5, comment: 'Excellent verbal and written communication', lastUpdated: '2025-01-15' },
     { id: 'problem', competency: 'Problem Solving', rating: 3.8, comment: 'Good analytical thinking, can improve creativity', lastUpdated: '2025-01-15' },
@@ -190,7 +193,7 @@ export function SkillsCareerPanel({ staffId = 'staff-1' }: SkillsCareerPanelProp
   const [editFormComment, setEditFormComment] = useState('');
 
   const staffSkills = staffSkillsData[selectedStaffId] || [];
-  const careerProgress = mockCareerProgress.find(p => p.staffId === selectedStaffId);
+  const careerProgress = careerProgressList.find(p => p.staffId === selectedStaffId);
   const staff = mockStaff.find(s => s.id === selectedStaffId);
 
   // Filter staff for searchable selector
