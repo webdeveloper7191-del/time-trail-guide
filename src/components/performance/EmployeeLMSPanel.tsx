@@ -153,7 +153,7 @@ export function EmployeeLMSPanel({ currentUserId }: EmployeeLMSPanelProps) {
     setEnrollments(prev => prev.map(e => {
       if (e.id !== enrollmentId) return e;
       
-      const moduleProgress = [...e.moduleProgress];
+      const moduleProgress = e.moduleProgress.map(mp => ({ ...mp, completedContentIds: [...mp.completedContentIds] }));
       let mp = moduleProgress.find(p => p.moduleId === moduleId);
       
       if (!mp) {

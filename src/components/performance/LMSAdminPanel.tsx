@@ -237,10 +237,11 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
   };
 
   const selectAllStaff = () => {
-    if (selectedStaffIds.length === staff.filter(s => s.status === 'active').length) {
+    const eligible = staff.filter(s => s.status === 'active' && !mockEnrollments.some(e => e.staffId === s.id && e.courseId === selectedCourse?.id && e.status !== 'expired' && e.status !== 'failed'));
+    if (selectedStaffIds.length === eligible.length) {
       setSelectedStaffIds([]);
     } else {
-      setSelectedStaffIds(staff.filter(s => s.status === 'active').map(s => s.id));
+      setSelectedStaffIds(eligible.map(s => s.id));
     }
   };
 
@@ -905,7 +906,7 @@ export function LMSAdminPanel({ staff, onAssignCourse, embedded, tab, onTabChang
                       .filter(s => s.status === 'active')
                       .map((s) => {
                         const isEnrolled = mockEnrollments.some(
-                          e => e.staffId === s.id && e.courseId === selectedCourse.id
+                          e => e.staffId === s.id && e.courseId === selectedCourse.id && e.status !== 'expired' && e.status !== 'failed'
                         );
                         
                         return (

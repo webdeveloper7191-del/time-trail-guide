@@ -146,14 +146,14 @@ export function ReviewExecutionSheet({
   const handleRatingChange = (criteriaId: string, value: number | null) => {
     setRatings((prev) => ({
       ...prev,
-      [criteriaId]: { ...prev[criteriaId], rating: value || 0 },
+      [criteriaId]: { comments: '', ...prev[criteriaId], rating: value ?? 0 },
     }));
   };
 
   const handleCommentsChange = (criteriaId: string, comments: string) => {
     setRatings((prev) => ({
       ...prev,
-      [criteriaId]: { ...prev[criteriaId], comments },
+      [criteriaId]: { rating: 0, ...prev[criteriaId], comments },
     }));
   };
 

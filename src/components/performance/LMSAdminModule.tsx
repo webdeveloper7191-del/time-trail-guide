@@ -85,7 +85,7 @@ export function LMSAdminModule({ staff, currentUserId, initialCourseId }: LMSAdm
   }, [enrollments]);
 
   const handleAssignCourse = (courseId: string, staffIds: string[], dueDate?: Date) => {
-    if (!courses.some(c=>c.id===courseId&&c.status==='published')) { toast.error('Publish the course before assigning it'); return; }
+    if (!courses.some(c=>c.id===courseId&&c.status==='published')) throw new Error('Publish the course before assigning it');
     const defaultDue = new Date(); defaultDue.setDate(defaultDue.getDate()+loadLmsSettings().defaultDueDays);
     const newEnrollments = staffIds.filter(id=>!enrollments.some(e=>e.staffId===id&&e.courseId===courseId&&e.status!=='expired'&&e.status!=='failed')).map((staffId) => ({
       id: `enroll-${Date.now()}-${staffId}`,
