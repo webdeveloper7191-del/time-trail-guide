@@ -11,8 +11,10 @@ import { PrimaryOffCanvas } from '@/components/ui/off-canvas';
 import type { StaffMember } from '@/types/staff';
 import { Coins, Gift, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePerformanceSettings } from '@/lib/performanceSettingsStore';
 
 export function RewardsWallet({ currentUserId, staff }: { currentUserId: string; staff: StaffMember[] }) {
+  const performanceSettings = usePerformanceSettings();
   const state = useSyncExternalStore(rewardsStore.subscribe, rewardsStore.get, rewardsStore.get);
   const [open, setOpen] = useState(false);
   const [recipient, setRecipient] = useState('');
@@ -27,7 +29,7 @@ export function RewardsWallet({ currentUserId, staff }: { currentUserId: string;
     const a = document.createElement('a'); a.href = url; a.download = 'my-reward-points.csv'; a.click(); URL.revokeObjectURL(url);
   };
   return <div className="space-y-4">
-    <div className="flex flex-wrap justify-between items-center gap-3"><div><h2 className="text-xl font-semibold flex gap-2 items-center"><Coins className="h-5 w-5 text-primary" />My rewards</h2><p className="text-sm text-muted-foreground">{pointsBalance(state, currentUserId).toLocaleString()} points available</p></div><Button onClick={() => setOpen(true)} disabled={!state.settings.programEnabled}><Gift className="h-4 w-4 mr-2" />Send points</Button></div>
+    <div className="flex flex-wrap justify-between items-center gap-3"><div><h2 className="text-xl font-semibold flex gap-2 items-center"><Coins className="h-5 w-5 text-primary" />My rewards</h2><p className="text-sm text-muted-foreground">{pointsBalance(state, currentUserId).toLocaleString()} points available</p></div><Button onClick={() => setOpen(true)} disabled={!state.settings.programEnabled || !performanceSettings.recognition.employeesCanAwardPoints}><Gift className="h-4 w-4 mr-2" />Send points</Button></div>
     <p className="text-xs text-muted-foreground">Browser-only rewards. Catalogue requests require manual fulfilment; no gift cards, payments or emails are sent.</p>
     <Tabs defaultValue="catalogue"><TabsList className="flex flex-wrap h-auto"><TabsTrigger value="catalogue">Catalogue</TabsTrigger><TabsTrigger value="history">Points history</TabsTrigger><TabsTrigger value="requests">My redemptions</TabsTrigger></TabsList>
       <TabsContent value="catalogue"><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{state.catalogue.filter(r => r.isActive).map(r => <div key={r.id} className="border border-border rounded-lg p-4 space-y-3"><h3 className="font-medium">{r.emoji} {r.name}</h3><p className="text-sm text-muted-foreground">{r.description}</p><p className="text-xs text-muted-foreground">{r.stock === undefined ? 'Unlimited stock' : `${r.stock} remaining`}{r.limitPerStaffPerYear ? ` · ${r.limitPerStaffPerYear} per year` : ''}</p><div className="flex justify-between items-center"><Badge variant="secondary">{r.pointsCost} pts</Badge><Button size="sm" variant="outline" disabled={!state.settings.programEnabled || r.stock === 0 || pointsBalance(state, currentUserId) < r.pointsCost} onClick={() => act(() => { rewardsStore.requestRedemption(currentUserId, r.id); toast.success('Reward request saved in this browser'); })}>Request reward</Button></div></div>)}</div></TabsContent>
