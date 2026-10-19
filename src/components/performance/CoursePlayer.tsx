@@ -92,6 +92,8 @@ export function CoursePlayer({
   const [assessmentSubmitted, setAssessmentSubmitted] = useState(false);
   const [assessmentResult, setAssessmentResult] = useState<{ score: number; passed: boolean } | null>(null);
 
+  useEffect(()=>{if(open){setCurrentModuleIndex(0);setCurrentContentIndex(0);setShowAssessment(false);setAssessmentSubmitted(false);setAssessmentResult(null);setAssessmentAnswers({});}},[open,course?.id]);
+
   const currentModule = course?.modules[currentModuleIndex];
   const currentContent = currentModule?.content[currentContentIndex];
   
@@ -136,7 +138,7 @@ export function CoursePlayer({
     // Auto-advance to next content
     if (currentContentIndex < currentModule.content.length - 1) {
       setCurrentContentIndex(prev => prev + 1);
-    } else if (currentModule.assessment && !assessmentSubmitted) {
+    } else if (currentModule.assessment && !enrollment.assessmentAttempts.some(a=>a.assessmentId===currentModule.assessment?.id&&a.passed) && !assessmentResult?.passed) {
       setShowAssessment(true);
     } else {
       // Module complete
@@ -158,6 +160,8 @@ export function CoursePlayer({
     if (!enrollment || !currentModule?.assessment) return;
     
     const assessment = currentModule.assessment;
+    const priorAttempts=enrollment.assessmentAttempts.filter(a=>a.assessmentId===assessment.id);
+    if(!canAttemptAssessment(assessment,priorAttempts)){toast.error('Assessment attempt limit reached');return;}
     const result = await onAssessmentSubmit(enrollment.id, assessment.id, assessmentAnswers);
     const attempts = enrollment.assessmentAttempts.filter(a => a.assessmentId === assessment.id);
     const retakeLimit = assessment.retakeLimit ?? assessment.maxAttempts ?? Infinity;
@@ -173,6 +177,8 @@ export function CoursePlayer({
   };
 
   const handleRetryAssessment = () => {
+    if(!enrollment||!currentModule?.assessment)return;
+    if(!canAttemptAssessment(currentModule.assessment,enrollment.assessmentAttempts.filter(a=>a.assessmentId===currentModule.assessment?.id))){toast.error('Assessment attempt limit reached');return;}
     setAssessmentAnswers({});
     setAssessmentSubmitted(false);
     setAssessmentResult(null);

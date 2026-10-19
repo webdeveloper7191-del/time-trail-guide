@@ -141,13 +141,13 @@ export function EmployeePortal() {
       case 'performance':
         return <EmployeePerformancePanel currentUserId={currentEmployee.staffId} />;
       case 'okrs':
-        return <EmployeeOKRPanel currentUserId={currentEmployee.id} />;
+        return <EmployeeOKRPanel currentUserId={currentEmployee.staffId} />;
       case 'career':
         return <EmployeeCareerPathingPanel currentUserId={currentEmployee.staffId} />;
       case 'surveys':
-        return <EmployeeSurveyPanel currentUserId={currentEmployee.id} />;
+        return <EmployeeSurveyPanel currentUserId={currentEmployee.staffId} />;
       case '360':
-        return <Employee360Panel currentUserId={currentEmployee.id} />;
+        return <Employee360Panel currentUserId={currentEmployee.staffId} />;
       case 'learning':
         return <EmployeeLMSPanel currentUserId={currentEmployee.staffId} />;
       default:

@@ -171,7 +171,7 @@ export function LMSAdminModule({ staff, currentUserId }: LMSAdminModuleProps) {
               {[
                 { step: '1', title: 'Build a course', body: 'Add lessons, videos and a short quiz — or upload one from a provider.', action: () => setShowAuthoringTool(true), cta: 'Create a course' },
                 { step: '2', title: 'Group into a path', body: 'Put courses in order, e.g. everything a new starter needs in week one.', action: () => setActiveTab('paths'), cta: 'Build a path' },
-                { step: '3', title: 'Assign and track', body: 'Give it to staff with a due date. Reminders are sent automatically.', action: () => setActiveTab('assignments'), cta: 'Assign learning' },
+                { step: '3', title: 'Assign and track', body: 'Give it to staff with a due date. Track due dates and learning progress.', action: () => setActiveTab('assignments'), cta: 'Assign learning' },
               ].map((s) => (
                 <div key={s.step} className="rounded-lg border bg-card p-4">
                   <div className="flex items-center gap-2">
