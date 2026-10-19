@@ -79,7 +79,7 @@ const getFlightRiskStyle = (risk: string) => {
   return styles[risk] || styles.low;
 };
 
-export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff }: NineBoxTalentGridProps) {
+export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectStaff, onRunCalibration }: NineBoxTalentGridProps) {
   const operations = usePerformanceOperations();
   const assessments = initialAssessments ?? operations.talentAssessments;
   const [selectedAssessment, setSelectedAssessment] = useState<TalentAssessment | null>(null);
@@ -375,7 +375,7 @@ export function NineBoxTalentGrid({ assessments: initialAssessments, onSelectSta
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<TrendingUp size={16} />}>
+          <Button variant="outlined" startIcon={<TrendingUp size={16} />} onClick={onRunCalibration}>
             Run Calibration
           </Button>
           <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => setShowAssessmentDrawer(true)}>
