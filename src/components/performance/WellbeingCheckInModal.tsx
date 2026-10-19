@@ -49,10 +49,14 @@ export function WellbeingCheckInModal({ open, onClose, onSubmit, staffId }: Well
       notes: notes.trim() || undefined,
       createdAt: new Date().toISOString(),
     };
-    onSubmit(checkIn);
-    toast.success('Check-in submitted successfully');
-    resetForm();
-    onClose();
+    try {
+      onSubmit(checkIn);
+      toast.success('Check-in submitted successfully');
+      resetForm();
+      onClose();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to save check-in');
+    }
   };
 
   const resetForm = () => {

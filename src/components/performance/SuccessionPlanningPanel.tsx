@@ -377,6 +377,15 @@ export function SuccessionPlanningPanel({ staff, currentUserId, embedded = false
                           onClick: (e) => { e.stopPropagation(); openAddCandidateForRole(pipeline.keyRole.id); },
                         },
                         {
+                          label: pipeline.keyRole.archived ? 'Restore Role' : 'Archive Role',
+                          icon: <Archive size={14} />,
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            setKeyRoles(previous => previous.map(role => role.id === pipeline.keyRole.id ? { ...role, archived: !role.archived } : role));
+                            toast.success(pipeline.keyRole.archived ? 'Role restored' : 'Role archived');
+                          },
+                        },
+                        {
                           label: 'Delete Role',
                           icon: <Trash2 size={14} />,
                           variant: 'destructive',
