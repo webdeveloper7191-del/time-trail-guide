@@ -67,3 +67,20 @@ export const rosterPolicySections: PolicySection[] = [
   ] },
 ];
 export const rosterPolicyDefaults: PolicyValues = Object.fromEntries(rosterPolicySections.flatMap(section => section.groups.flatMap(group => group.fields.map(field => [field.key, field.initial]))));
+
+// Worked example shown in the section help icon. Universal terminology only.
+export const rosterPolicyExamples: Record<string, string> = {
+  swaps: 'Example: Tom, a casual staff member, asks to swap his Saturday 9:00 AM–1:00 PM shift with Priya. With these settings Priya must hold the required skills and accept the swap, and because her rate is higher, the projected shift cost rise is checked against the maximum allowed increase — above that, a manager must approve before the swap is confirmed.',
+  'open-shifts': 'Example: a Tuesday 4:00 PM–8:00 PM shift is left open. Staff at this location see it first for the internal offer window; Maya, a casual, claims it. Her skills, availability and weekly hours are rechecked, the manager picks her from the list of applicants, and the offer expires if nobody claims it in time.',
+  leave: 'Example: Sarah\'s annual leave for next Thursday is approved, so her 7:00 AM–3:00 PM shift automatically becomes an open shift and a replacement requirement is flagged. If her leave is later cancelled before anyone claims the shift, her original rostered shift is restored.',
+  publishing: 'Example: James edits two shifts on a roster that staff can already see. His edits stay as a draft and staff keep seeing the last published version until James explicitly republishes. Every change needs a reason and is kept in the version history.',
+  hours: 'Example: Alex finishes a closing shift at 11:00 PM and is rostered to start again at 6:00 AM — only 7 hours of rest. Depending on the setting, the system blocks the assignment, requires manager approval, or only warns. Mandatory award and contract limits always stay in force.',
+  breaks: 'Example: a 6-hour shift includes a 30-minute unpaid break scheduled mid-shift. Breaks are staggered across staff so coverage never drops below the minimum, and any shift where the break is missed is flagged for review.',
+  availability: 'Example: Priya submits a recurring unavailability for Tuesday evenings before the cut-off, and her manager approves the change. The scheduler then avoids assigning her those hours; assigning staff outside their availability is blocked or requires approval.',
+  coverage: 'Example: the 9:00 AM–11:00 AM interval needs 4 staff with a current first-aid qualification. Only 3 are rostered, so the minimum-staffing action applies — and a staff member with an expired qualification is blocked or flagged before assignment.',
+  'auto-schedule': 'Example: generating the next fortnight keeps every locked and manually assigned shift, fills the remaining gaps using the chosen priority, and shows a preview for the manager to review before anything is applied to the roster.',
+  templates: 'Example: copying last week\'s roster keeps full-time and part-time staff in their shifts, releases casual staff per the setting, and releases anyone on approved leave — their shifts become open shifts instead of being copied onto them.',
+  budget: 'Example: the week\'s labour cost reaches 92% of the location budget, so a warning appears. Assigning an agency staff member would lift the projected cost by 15%, which exceeds the 10% approval threshold, so a manager must approve it first.',
+  'ado-toil': 'Example: Ben has an approved ADO day this Friday, so the system prevents him from being rostered that day. His ADO accrual follows the existing leave policy, and his leave hours are excluded from worked-hours totals so they are not counted twice on his timesheet.',
+  notifications: 'Example: a swap request sits unanswered for 24 hours, so it escalates from the location administrator to the tenant administrator, with a reminder ahead of the deadline. Every approval decision is kept in the decision history.',
+};

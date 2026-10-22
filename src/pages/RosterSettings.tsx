@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, Building2, Check, ChevronRight, Globe2, History, Info, LockKeyhole, RotateCcw, Save, Search, Settings2 } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Building2, Check, ChevronRight, Globe2, HelpCircle, History, Info, LockKeyhole, RotateCcw, Save, Search, Settings2 } from 'lucide-react';
 import { AdminSidebar } from '@/components/timesheet/AdminSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PrimaryOffCanvas from '@/components/ui/off-canvas/PrimaryOffCanvas';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { rosterPolicyDefaults, rosterPolicySections, type PolicyField } from '@/components/settings/rosterPolicyCatalog';
+import { rosterPolicyDefaults, rosterPolicyExamples, rosterPolicySections, type PolicyField } from '@/components/settings/rosterPolicyCatalog';
 import { emptyPolicyDrafts, resolvePolicyDraft, savePolicySection, type PolicyValue, type PolicyValues } from '@/lib/rosterPolicyDrafts';
 import { useBrowserState } from '@/lib/browserState';
 import { mockLocations } from '@/data/mockLocationData';
@@ -93,7 +94,7 @@ export default function RosterSettings() {
 
         <div className="flex-1 min-w-0 overflow-y-auto px-4 sm:px-8 py-6">
           <div className="max-w-5xl mx-auto">
-            <div className="flex flex-wrap items-start justify-between gap-3 mb-6"><div><h2 className="text-xl font-semibold">{section.title}</h2><p className="text-sm text-muted-foreground mt-1">{section.subtitle}</p></div><Button variant="ghost" size="sm" onClick={restoreSection} className="text-muted-foreground gap-2"><RotateCcw className="h-3.5 w-3.5" />{isBusiness ? 'Reset section' : 'Use business defaults'}</Button></div>
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-6"><div><div className="flex items-center gap-2"><h2 className="text-xl font-semibold">{section.title}</h2><Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" aria-label={`Help and example for ${section.title}`} className="h-7 w-7 text-muted-foreground hover:text-foreground"><HelpCircle className="h-4 w-4" /></Button></PopoverTrigger><PopoverContent align="start" className="w-80 max-w-[85vw]"><p className="text-[11px] uppercase font-medium text-muted-foreground mb-2">Worked example</p><p className="text-sm leading-relaxed">{rosterPolicyExamples[section.id]}</p><p className="text-xs text-muted-foreground mt-3 pt-3 border-t">Changes save as browser drafts only; live roster rules are unchanged.</p></PopoverContent></Popover></div><p className="text-sm text-muted-foreground mt-1">{section.subtitle}</p></div><Button variant="ghost" size="sm" onClick={restoreSection} className="text-muted-foreground gap-2"><RotateCcw className="h-3.5 w-3.5" />{isBusiness ? 'Reset section' : 'Use business defaults'}</Button></div>
             {!isBusiness && <div className="mb-5 flex items-center gap-2 text-xs text-muted-foreground"><Globe2 className="h-4 w-4" />Inherited from business defaults unless overridden.</div>}
             {section.groups.map(group => <section key={group.title} className="mb-8"><div className="border-b pb-3 flex items-center gap-2"><h3 className="font-semibold text-sm">{group.title}</h3></div><div className="divide-y">{group.fields.map(field => <div key={field.key} className="grid sm:grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-6 py-5"><div className="flex items-center gap-2 flex-wrap"><Label htmlFor={`policy-${field.key}`} className="text-sm leading-relaxed font-normal">{field.label}</Label>{field.locked && <Tooltip><TooltipTrigger><LockKeyhole className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger><TooltipContent>Required publishing policy</TooltipContent></Tooltip>}{!isBusiness && <Badge variant="outline" className={cn('text-[10px] font-normal rounded-sm', !inherited(field.key) && 'text-primary border-primary/30 bg-primary/5')}>{inherited(field.key) ? 'Inherited' : 'Override'}</Badge>}</div><div className="flex items-center gap-2 justify-start sm:justify-end">{fieldControl(field)}{!isBusiness && !inherited(field.key) && <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" aria-label={`Reset ${field.label} to business default`} onClick={() => edit(field.key, saved.business[field.key] ?? rosterPolicyDefaults[field.key])}><RotateCcw className="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent>Use business default</TooltipContent></Tooltip>}</div></div>)}</div></section>)}
             {section.id === 'swaps' && <div className="flex items-start gap-3 border-t py-4 text-sm text-muted-foreground"><Info className="h-4 w-4 shrink-0 mt-0.5" /><span>Cost comparisons include projected penalties, overtime and allowances, not only the hourly wage.</span></div>}
