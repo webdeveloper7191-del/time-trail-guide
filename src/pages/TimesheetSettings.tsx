@@ -389,6 +389,9 @@ export default function TimesheetSettings() {
           {/* Main Section Tabs */}
           <div className="px-6 pb-2">
             <div className="flex gap-2">
+              <Button variant="outline" asChild className="gap-2">
+                <Link to="/settings/roster"><Calendar className="h-4 w-4" />Roster & Scheduling</Link>
+              </Button>
               <Button
                 variant={activeSection === 'timesheet' ? 'default' : 'outline'}
                 onClick={() => setActiveSection('timesheet')}

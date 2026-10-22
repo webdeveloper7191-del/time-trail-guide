@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Design roster and scheduling settings: 13 policy screens, business/location scope, saved browser drafts and navigation; live scheduling rules unchanged (5 tests and browser save/reload, location isolation, publishing controls and narrow layout verified).
+
 - [x] Performance: retain self/manager evidence, propagate save failures, freeze cycle configuration and weighted rating scales, enforce per-survey scorecard privacy (manager retry and retained draft verified in browser)
 - [x] Performance: persist course authoring and library actions, apply learning/certificate policies and honest local reminders (publish, refresh and assignment verified)
 - [x] Performance: correct decreasing/fractional OKRs, recover partial development saves, exact learning destinations and real skills history (34 focused regression tests passed; linked setup retry covered)

@@ -44,6 +44,7 @@ const navItems = [
   { icon: Briefcase, label: 'Recruitment', to: '/recruitment' },
   { icon: UserCircle, label: 'Employee Portal', to: '/employee-portal' },
   { icon: Settings, label: 'Settings', to: '/settings' },
+  { icon: Calendar, label: 'Roster Settings', to: '/settings/roster' },
   { icon: Database, label: 'Master Data', to: '/settings/master-data' },
   { icon: Banknote, label: 'Payroll Settings', to: '/settings/payroll' },
   { icon: Handshake, label: 'Agency Partners', to: '/settings/agency-partners' },
