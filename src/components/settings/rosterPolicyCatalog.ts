@@ -1,0 +1,69 @@
+import { ArrowLeftRight, Megaphone, CalendarOff, Send, Clock, Coffee, Users, BarChart3, Wand2, Copy, Wallet, CalendarCheck, Bell } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { PolicyValues } from '@/lib/rosterPolicyDrafts';
+
+export interface PolicyField {
+  key: string; label: string; type: 'switch' | 'select' | 'number'; initial: string | number | boolean;
+  options?: string[]; unit?: string; min?: number; max?: number; locked?: boolean;
+}
+export interface PolicyGroup { title: string; fields: PolicyField[] }
+export interface PolicySection { id: string; title: string; subtitle: string; icon: LucideIcon; groups: PolicyGroup[]; link?: { label: string; to: string } }
+const toggle = (key: string, label: string, initial = true): PolicyField => ({ key, label, type: 'switch', initial });
+const select = (key: string, label: string, options: string[]): PolicyField => ({ key, label, type: 'select', initial: options[0], options });
+const number = (key: string, label: string, initial: number, unit: string, max = 168): PolicyField => ({ key, label, type: 'number', initial, unit, min: 0, max });
+const action = (key: string, label: string) => select(key, label, ['Block assignment', 'Require approval', 'Warn only']);
+export const rosterPolicySections: PolicySection[] = [
+  { id: 'swaps', title: 'Shift swaps', subtitle: 'Requests, eligibility and replacement cost', icon: ArrowLeftRight, groups: [
+    { title: 'Requests & eligibility', fields: [toggle('swapEnabled', 'Allow staff swap requests'), select('swapScope', 'Eligible replacements', ['Same location', 'Assigned locations', 'All eligible locations']), toggle('swapSkills', 'Require matching skills and qualifications'), toggle('swapAccept', 'Require replacement staff acceptance'), number('swapCutoff', 'Request cut-off before shift', 24, 'hours')] },
+    { title: 'Approval & wage policy', fields: [toggle('swapApproval', 'Require manager approval'), select('swapWages', 'Replacement wage eligibility', ['Equal or lower wages', 'Equal wages only', 'Higher, equal or lower wages']), number('swapCost', 'Maximum projected shift cost increase', 0, '%', 100), toggle('swapCostApproval', 'Require approval for a cost increase'), number('swapExpiry', 'Request expires after', 48, 'hours'), toggle('swapCancel', 'Allow cancellation before acceptance')] },
+  ] },
+  { id: 'open-shifts', title: 'Open shifts', subtitle: 'Visibility, offers and assignment', icon: Megaphone, groups: [
+    { title: 'Visibility & eligibility', fields: [toggle('openEnabled', 'Allow staff to request open shifts'), select('openVisibility', 'Visible to', ['Eligible staff at this location', 'Eligible staff across assigned locations']), select('openTypes', 'Eligible employment types', ['All employment types', 'Permanent staff only', 'Casual and agency staff']), toggle('openInternal', 'Offer to internal staff before agency'), toggle('openCheck', 'Recheck skills, availability and hours on assignment')] },
+    { title: 'Offers & assignment', fields: [select('openAssignment', 'Assignment method', ['Manager selects applicant', 'Approval required', 'First eligible claim']), number('openExpiry', 'Offer expires after', 24, 'hours'), number('openCutoff', 'Claim cut-off before shift', 4, 'hours'), number('openAgencyDelay', 'Internal offer window before agency', 12, 'hours'), toggle('openWithdraw', 'Allow staff to withdraw a pending request')] },
+  ] },
+  { id: 'leave', title: 'Leave & replacements', subtitle: 'Affected shifts and replacement handling', icon: CalendarOff, link: { label: 'Leave management', to: '/leave' }, groups: [
+    { title: 'Approved leave', fields: [select('leaveOutcome', 'Affected rostered shifts become', ['Open shifts', 'Empty shifts']), select('leavePartial', 'Partial-day leave', ['Split shift and release affected hours', 'Require manager review']), toggle('leaveNotify', 'Flag replacement requirement'), toggle('leavePending', 'Flag pending leave without releasing staff')] },
+    { title: 'Cancellation & conflicts', fields: [select('leaveCancel', 'When approved leave is cancelled', ['Manager reviews affected shifts', 'Restore staff only if replacement is unassigned']), action('leaveConflict', 'Assignment during approved leave'), toggle('leaveReason', 'Require reason for a manual override')] },
+  ] },
+  { id: 'publishing', title: 'Publishing & changes', subtitle: 'Drafts, approvals and staff acknowledgement', icon: Send, groups: [
+    { title: 'Publishing policy', fields: [select('publishAuthority', 'Proposed publishing authority', ['Location administrators', 'Tenant administrators only', 'Location and tenant administrators']), toggle('publishApproval', 'Require approval before publishing', false), number('publishNotice', 'Minimum publication notice', 7, 'days', 90), toggle('publishAcknowledge', 'Request staff acknowledgement')] },
+    { title: 'Changes to a published roster', fields: [{ ...select('publishChanges', 'Edited shifts remain', ['Draft until explicitly republished']), locked: true }, { ...select('publishStaffView', 'Staff see', ['Last published roster until republishing']), locked: true }, toggle('publishReason', 'Require a reason for roster changes'), toggle('publishHistory', 'Retain published version history'), number('publishShortNotice', 'Short-notice change threshold', 24, 'hours')] },
+  ] },
+  { id: 'hours', title: 'Hours & fatigue', subtitle: 'Rest, limits and exception handling', icon: Clock, link: { label: 'Existing scheduling constraints', to: '/roster' }, groups: [
+    { title: 'Working time policy', fields: [action('hoursOverlap', 'Overlapping shifts'), action('hoursContract', 'Contracted hours exceeded'), action('hoursRest', 'Minimum rest requirement not met'), action('hoursConsecutive', 'Consecutive-day limit exceeded')] },
+    { title: 'Exceptions & overnight shifts', fields: [toggle('hoursAward', 'Retain mandatory award and contract restrictions'), toggle('hoursTravel', 'Include inter-location travel in rest checks'), select('hoursOvernight', 'Overnight shift allocation', ['Allocate to shift start date', 'Split at midnight']), toggle('hoursReason', 'Require a reason for an authorised exception')] },
+  ] },
+  { id: 'breaks', title: 'Break scheduling', subtitle: 'Award-linked breaks and coverage', icon: Coffee, link: { label: 'Existing break rules', to: '/settings' }, groups: [
+    { title: 'Scheduling policy', fields: [toggle('breakAward', 'Use authoritative award-linked break rules'), toggle('breakAuto', 'Include breaks in generated shifts'), toggle('breakStagger', 'Stagger breaks across staff'), number('breakStaggerWindow', 'Minimum stagger interval', 15, 'minutes', 120)] },
+    { title: 'Coverage & exceptions', fields: [action('breakCoverage', 'Minimum coverage not met during breaks'), toggle('breakManual', 'Allow manual break adjustment'), toggle('breakReason', 'Require a reason for mandatory-break changes'), toggle('breakMissed', 'Flag missing or missed breaks')] },
+  ] },
+  { id: 'availability', title: 'Availability & preferences', subtitle: 'Staff submissions and cross-location work', icon: Users, link: { label: 'Staff scheduling preferences', to: '/workforce' }, groups: [
+    { title: 'Availability submissions', fields: [toggle('availabilityRecurring', 'Allow recurring availability'), number('availabilityCutoff', 'Submission cut-off before roster period', 7, 'days', 90), toggle('availabilityApproval', 'Require approval for availability changes'), action('availabilityConflict', 'Assignment outside availability')] },
+    { title: 'Location preferences', fields: [toggle('availabilityPreferences', 'Consider preferred and avoided areas'), toggle('availabilityCross', 'Allow cross-location scheduling'), toggle('availabilityAssigned', 'Restrict to assigned locations'), toggle('availabilityTravel', 'Check travel time between locations')] },
+  ] },
+  { id: 'coverage', title: 'Demand, coverage & skills', subtitle: 'Staffing checks and area combining', icon: BarChart3, link: { label: 'Location operating hours and staffing', to: '/locations' }, groups: [
+    { title: 'Coverage policy', fields: [select('coverageInterval', 'Coverage check interval', ['15 minutes', '30 minutes', '60 minutes']), action('coverageUnder', 'Minimum staffing not met'), select('coverageOver', 'Staffing above demand', ['Warn only', 'Require approval']), toggle('coverageSkills', 'Require skill coverage for each area'), action('coverageExpired', 'Required qualification expired')] },
+    { title: 'Area combining', fields: [toggle('coverageCombine', 'Allow eligible area combinations', false), toggle('coverageProtected', 'Preserve protected coverage requirements'), toggle('coverageReview', 'Require manager review before combining')] },
+  ] },
+  { id: 'auto-schedule', title: 'Auto-Schedule', subtitle: 'Generation defaults and assignment priorities', icon: Wand2, link: { label: 'Existing Auto-Schedule configuration', to: '/roster' }, groups: [
+    { title: 'Generation defaults', fields: [select('autoPeriod', 'Default scheduling period', ['One week', 'Two weeks', 'Four weeks']), toggle('autoLocked', 'Preserve locked assignments'), toggle('autoManual', 'Preserve manual assignments'), select('autoOverwrite', 'Existing draft shifts', ['Keep existing drafts', 'Replace unassigned drafts', 'Replace all unlocked drafts']), toggle('autoPreview', 'Require preview before applying')] },
+    { title: 'Priorities', fields: [select('autoPriority', 'Primary optimisation priority', ['Coverage first', 'Balanced coverage and cost', 'Cost within required coverage']), toggle('autoContract', 'Prioritise contracted-hours targets'), toggle('autoFairness', 'Balance undesirable shifts fairly'), toggle('autoGaps', 'Retain unresolved gaps for manager review')] },
+  ] },
+  { id: 'templates', title: 'Templates & copying', subtitle: 'Recurring patterns and staff retention', icon: Copy, link: { label: 'Existing roster templates and Copy Week', to: '/roster' }, groups: [
+    { title: 'Staff retention', fields: [toggle('copyPermanent', 'Retain full-time and part-time staff'), toggle('copyCasual', 'Retain casual staff', false), toggle('copyAgency', 'Retain agency staff', false), select('copyReleased', 'Released assignments', ['Become open shifts', 'Do not copy']), toggle('copyLeave', 'Release staff on approved leave or RDO')] },
+    { title: 'Recurring shift policy', fields: [select('copyHoliday', 'Public holidays', ['Require review', 'Copy normal pattern', 'Skip affected shifts']), toggle('copyDuplicates', 'Prevent duplicate shifts'), select('copyRecurring', 'Regenerating a recurring pattern', ['Preview clear and replace', 'Add missing shifts only']), toggle('copyUnassigned', 'Apply templates as unassigned shifts')] },
+  ] },
+  { id: 'budget', title: 'Budget & labour cost', subtitle: 'Cost controls and approval thresholds', icon: Wallet, link: { label: 'Existing location budgets', to: '/locations' }, groups: [
+    { title: 'Cost policy', fields: [toggle('budgetPenalties', 'Include penalties, overtime and allowances'), toggle('budgetDifference', 'Show replacement shift cost difference'), number('budgetWarning', 'Warn at budget utilisation', 90, '%', 100), action('budgetExceeded', 'Location budget exceeded')] },
+    { title: 'Approvals', fields: [toggle('budgetOvertime', 'Require approval for projected overtime'), toggle('budgetAgency', 'Require approval for agency assignments'), number('budgetIncrease', 'Cost increase requiring approval', 10, '%', 100), toggle('budgetReason', 'Require a reason for budget exceptions')] },
+  ] },
+  { id: 'ado-toil', title: 'RDO, ADO & TOIL', subtitle: 'Protected leave and hours calculation', icon: CalendarCheck, link: { label: 'Authoritative leave accrual policies', to: '/leave-accruals' }, groups: [
+    { title: 'Assignment prevention', fields: [toggle('adoBlock', 'Prevent assignments during approved ADO'), toggle('toilBlock', 'Prevent assignments during approved TOIL'), toggle('rdoBlock', 'Prevent assignments during approved RDO'), action('adoInsufficient', 'Insufficient leave balance'), toggle('adoOverride', 'Require approval for permitted exceptions')] },
+    { title: 'Hours & accrual — proposed policy', fields: [select('adoAccrual', 'ADO accrual', ['Follow existing award and leave policy', 'Prevent additional accrual pending approval']), select('toilAccrual', 'TOIL accrual', ['Follow existing award and leave policy', 'Prevent additional accrual pending approval']), toggle('adoDouble', 'Exclude leave hours from worked-hours totals'), toggle('adoReconcile', 'Flag roster and timesheet hours discrepancies')] },
+  ] },
+  { id: 'notifications', title: 'Notifications & approvals', subtitle: 'Proposed recipients, escalation and audit', icon: Bell, link: { label: 'Account permissions', to: '/settings/permissions' }, groups: [
+    { title: 'Approval routing', fields: [select('notifyApprover', 'Proposed primary approver', ['Location administrator', 'Tenant administrator']), select('notifyEscalation', 'Proposed escalation recipient', ['Tenant administrator', 'Primary approver']), number('notifySla', 'Approval deadline', 24, 'hours'), number('notifyReminder', 'Reminder before deadline', 4, 'hours'), toggle('notifyReason', 'Require rejection reason')] },
+    { title: 'Event preferences', fields: [toggle('notifyPublished', 'Roster publication'), toggle('notifyChanged', 'Republished shift changes'), toggle('notifyOpen', 'Open shift offers'), toggle('notifySwap', 'Swap request decisions'), toggle('notifyAudit', 'Retain approval decision history')] },
+  ] },
+];
+export const rosterPolicyDefaults: PolicyValues = Object.fromEntries(rosterPolicySections.flatMap(section => section.groups.flatMap(group => group.fields.map(field => [field.key, field.initial]))));
