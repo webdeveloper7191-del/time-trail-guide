@@ -40,7 +40,7 @@ export default function RosterSettings() {
   function save() {
     if (!changedKeys.length) return;
     try {
-      const next = savePolicySection(saved, scope, allKeys, values, rosterPolicyDefaults);
+      const next = savePolicySection(saved, scope, changedKeys, values, rosterPolicyDefaults);
       setSaved({ ...next, history: [{ id: crypto.randomUUID(), scope: scopeName, section: section.title, date: new Date().toISOString(), changes: changedKeys.length }, ...next.history].slice(0, 100) });
       setEdited({});
       setDrawer(null);
@@ -58,7 +58,7 @@ export default function RosterSettings() {
   }
   function fieldControl(field: PolicyField) {
     const id = `policy-${field.key}`;
-    if (field.type === 'switch') return <Switch id={id} checked={Boolean(values[field.key])} onCheckedChange={value => edit(field.key, value)} disabled={field.locked} aria-label={field.label} />;
+    if (field.type === 'switch') return <Switch id={id} checked={Boolean(values[field.key])} onCheckedChange={value => edit(field.key, value)} disabled={field.locked} inputProps={{ 'aria-label': field.label, role: 'switch' }} />;
     if (field.type === 'number') return <div className="flex items-center gap-2"><Input id={id} aria-label={field.label} className="w-24 text-right" type="number" min={field.min} max={field.max} step="any" value={Number(values[field.key])} onChange={event => { const value = Number(event.target.value); if (Number.isFinite(value)) edit(field.key, Math.min(field.max ?? Infinity, Math.max(field.min ?? 0, value))); }} /><span className="text-xs text-muted-foreground w-12">{field.unit}</span></div>;
     return <Select value={String(values[field.key])} onValueChange={value => edit(field.key, value)} disabled={field.locked}><SelectTrigger id={id} {...(field.locked ? { disabled: true } : {})} aria-label={field.label} className="w-full sm:w-72 h-auto min-h-10 text-left [&>span]:whitespace-normal"><SelectValue /></SelectTrigger><SelectContent>{field.options?.map(option => <SelectItem value={option} key={option}>{option}</SelectItem>)}</SelectContent></Select>;
   }
